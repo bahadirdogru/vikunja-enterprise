@@ -308,6 +308,25 @@ export type AuthorizeResponse = {
     state?: string;
 };
 
+export type AvailableTransition = {
+    /**
+     * The required fields the task does not have yet. The change is rejected until they are set.
+     */
+    readonly missing_fields?: Array<string> | null;
+    /**
+     * Whether a comment has to be sent with the change.
+     */
+    readonly require_comment?: boolean;
+    /**
+     * The button label of the transition, empty for plain changes.
+     */
+    readonly title?: string;
+    /**
+     * The status the task would enter.
+     */
+    readonly to_status?: WorkflowStatus;
+};
+
 export type BotUser = {
     /**
      * A URL to the JSON Schema for this object.
@@ -1737,6 +1756,18 @@ export type PaginatedTaskComment = {
     total_pages?: number;
 };
 
+export type PaginatedTaskStatusHistory = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    items?: Array<TaskStatusHistory> | null;
+    page?: number;
+    per_page?: number;
+    total?: number;
+    total_pages?: number;
+};
+
 export type PaginatedTeam = {
     /**
      * A URL to the JSON Schema for this object.
@@ -3097,6 +3128,103 @@ export type TaskReminder = {
     reminder?: string;
 };
 
+export type TaskStatusChange = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * A comment that is stored in the history of the task. Required when the transition says so.
+     */
+    comment?: string;
+    /**
+     * Whether the task is done after the change.
+     */
+    readonly done?: boolean;
+    /**
+     * The status the task left, null when it had none.
+     */
+    readonly from_status_id?: number | null;
+    /**
+     * The status the task is in after the change.
+     */
+    readonly status?: WorkflowStatus;
+    /**
+     * The task. Taken from the URL.
+     */
+    readonly task_id?: number;
+    /**
+     * The status the task should enter.
+     */
+    to_status_id?: number;
+};
+
+export type TaskStatusHistory = {
+    /**
+     * The comment left with the change.
+     */
+    readonly comment?: string;
+    /**
+     * When the change happened.
+     */
+    readonly created?: string;
+    /**
+     * Who made the change. Null for changes made through a link share.
+     */
+    readonly doer?: User;
+    /**
+     * The status the task left, null for the first status of a task.
+     */
+    readonly from_status_id?: number | null;
+    /**
+     * The title of the status the task left when the change happened.
+     */
+    readonly from_title?: string;
+    /**
+     * The unique, numeric id of this history entry.
+     */
+    readonly id?: number;
+    /**
+     * The task the entry belongs to.
+     */
+    readonly task_id?: number;
+    /**
+     * The status the task entered.
+     */
+    readonly to_status_id?: number;
+    /**
+     * The title of the status the task entered when the change happened.
+     */
+    readonly to_title?: string;
+};
+
+export type TaskWorkflowStatus = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * When the task entered its current status.
+     */
+    readonly entered?: string | null;
+    /**
+     * The current status, null when the task has none.
+     */
+    readonly status?: WorkflowStatus;
+    /**
+     * The task. Taken from the URL.
+     */
+    readonly task_id?: number;
+    /**
+     * The changes the requesting user may perform now: the workflow allows them and the user has the permission and team they need. Each lists the requirements the task does not meet yet.
+     */
+    readonly transitions?: Array<AvailableTransition> | null;
+    /**
+     * The workflow of the project of the task.
+     */
+    readonly workflow_id?: number;
+};
+
 export type Team = {
     /**
      * A URL to the JSON Schema for this object.
@@ -4354,6 +4482,119 @@ export type Webhook = {
     readonly user_id?: number;
 };
 
+export type Workflow = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * A timestamp when this workflow was created. You cannot change this value.
+     */
+    readonly created?: string;
+    /**
+     * The unique, numeric id of this workflow.
+     */
+    readonly id?: number;
+    /**
+     * Write only. The status, by id or by the negative id of a new status of the same document, that receives the tasks of every status the submitted document removes. Required when a removed status still has tasks.
+     */
+    move_tasks_to?: number;
+    /**
+     * The project this workflow belongs to. Taken from the URL.
+     */
+    readonly project_id?: number;
+    /**
+     * When false every status change is allowed and the listed transitions only add rules for their pairs. When true only the listed transitions are allowed.
+     */
+    restrict_transitions?: boolean;
+    /**
+     * The statuses of the workflow ordered by position, archived ones included. On write the submitted list replaces the stored one: statuses with an id are updated, statuses without one are created and missing ones are deleted, or archived when they have history.
+     */
+    statuses?: Array<WorkflowStatus> | null;
+    /**
+     * The transition rules. On write the submitted list replaces the stored one.
+     */
+    transitions?: Array<WorkflowTransition> | null;
+    /**
+     * A timestamp when this workflow was last updated. You cannot change this value.
+     */
+    readonly updated?: string;
+};
+
+export type WorkflowStatus = {
+    /**
+     * Archived statuses are hidden from pickers and keep their history. Set by the server when a status that has history is removed from the document.
+     */
+    readonly archived?: boolean;
+    /**
+     * The category of the status. Tasks in a done or cancelled status are marked done.
+     */
+    category?: 'open' | 'in_progress' | 'done' | 'cancelled';
+    /**
+     * Optional hex color including the leading #, e.g. #ff8800.
+     */
+    color?: string;
+    /**
+     * The unique, numeric id of this status. Send 0 or omit it to create a status. A negative id creates a status too and lets transitions and move_tasks_to of the same document refer to it before it has a real id.
+     */
+    id?: number;
+    /**
+     * Whether new tasks start in this status. Exactly one non-archived status must be the initial one.
+     */
+    is_initial?: boolean;
+    /**
+     * The position of the status in pickers. Statuses go in the submitted order when it is 0.
+     */
+    position?: number;
+    /**
+     * The title of the status.
+     */
+    title?: string;
+    /**
+     * The workflow this status belongs to.
+     */
+    readonly workflow_id?: number;
+};
+
+export type WorkflowTransition = {
+    /**
+     * The status tasks leave. A negative id refers to a new status of the same document.
+     */
+    from_status_id?: number;
+    /**
+     * The unique, numeric id of this transition. Send 0 or omit it to create one.
+     */
+    id?: number;
+    /**
+     * The lowest project permission that may perform the transition. write when omitted.
+     */
+    min_permission?: 'write' | 'admin';
+    /**
+     * Whether the person performing the transition has to leave a comment.
+     */
+    require_comment?: boolean;
+    /**
+     * Fields that must be set on the task before the transition: assignees, due_date, start_date, end_date, description, attachments, labels or cf_<id> for a custom field of the project.
+     */
+    required_fields?: Array<string> | null;
+    /**
+     * When not empty, only members of one of these teams, or project admins, may perform the transition.
+     */
+    team_ids?: Array<number> | null;
+    /**
+     * Optional button label, e.g. Send to design.
+     */
+    title?: string;
+    /**
+     * The status tasks enter. A negative id refers to a new status of the same document.
+     */
+    to_status_id?: number;
+    /**
+     * The workflow this transition belongs to.
+     */
+    readonly workflow_id?: number;
+};
+
 export type ApiTokenWritable = {
     /**
      * The date when this key expires.
@@ -4496,6 +4737,10 @@ export type AuthorizeResponseWritable = {
     code?: string;
     redirect_uri?: string;
     state?: string;
+};
+
+export type AvailableTransitionWritable = {
+    [key: string]: never;
 };
 
 export type BotUserWritable = {
@@ -5160,6 +5405,14 @@ export type PaginatedTaskCommentWritable = {
     total_pages?: number;
 };
 
+export type PaginatedTaskStatusHistoryWritable = {
+    items?: Array<TaskStatusHistoryWritable> | null;
+    page?: number;
+    per_page?: number;
+    total?: number;
+    total_pages?: number;
+};
+
 export type PaginatedTeamWritable = {
     items?: Array<TeamWritable> | null;
     page?: number;
@@ -5671,6 +5924,25 @@ export type TaskRelationWritable = {
      * The kind of relation, describing the direction from the base task to the other task (e.g. subtask, blocking, related). The inverse relation is created automatically.
      */
     relation_kind?: 'subtask' | 'parenttask' | 'related' | 'duplicateof' | 'duplicates' | 'blocking' | 'blocked' | 'precedes' | 'follows' | 'copiedfrom' | 'copiedto';
+};
+
+export type TaskStatusChangeWritable = {
+    /**
+     * A comment that is stored in the history of the task. Required when the transition says so.
+     */
+    comment?: string;
+    /**
+     * The status the task should enter.
+     */
+    to_status_id?: number;
+};
+
+export type TaskStatusHistoryWritable = {
+    [key: string]: never;
+};
+
+export type TaskWorkflowStatusWritable = {
+    [key: string]: never;
 };
 
 export type TeamWritable = {
@@ -6269,6 +6541,87 @@ export type WebhookWritable = {
      * The target URL where the POST request with the webhook payload will be made.
      */
     target_url?: string;
+};
+
+export type WorkflowWritable = {
+    /**
+     * Write only. The status, by id or by the negative id of a new status of the same document, that receives the tasks of every status the submitted document removes. Required when a removed status still has tasks.
+     */
+    move_tasks_to?: number;
+    /**
+     * When false every status change is allowed and the listed transitions only add rules for their pairs. When true only the listed transitions are allowed.
+     */
+    restrict_transitions?: boolean;
+    /**
+     * The statuses of the workflow ordered by position, archived ones included. On write the submitted list replaces the stored one: statuses with an id are updated, statuses without one are created and missing ones are deleted, or archived when they have history.
+     */
+    statuses?: Array<WorkflowStatusWritable> | null;
+    /**
+     * The transition rules. On write the submitted list replaces the stored one.
+     */
+    transitions?: Array<WorkflowTransitionWritable> | null;
+};
+
+export type WorkflowStatusWritable = {
+    /**
+     * The category of the status. Tasks in a done or cancelled status are marked done.
+     */
+    category?: 'open' | 'in_progress' | 'done' | 'cancelled';
+    /**
+     * Optional hex color including the leading #, e.g. #ff8800.
+     */
+    color?: string;
+    /**
+     * The unique, numeric id of this status. Send 0 or omit it to create a status. A negative id creates a status too and lets transitions and move_tasks_to of the same document refer to it before it has a real id.
+     */
+    id?: number;
+    /**
+     * Whether new tasks start in this status. Exactly one non-archived status must be the initial one.
+     */
+    is_initial?: boolean;
+    /**
+     * The position of the status in pickers. Statuses go in the submitted order when it is 0.
+     */
+    position?: number;
+    /**
+     * The title of the status.
+     */
+    title?: string;
+};
+
+export type WorkflowTransitionWritable = {
+    /**
+     * The status tasks leave. A negative id refers to a new status of the same document.
+     */
+    from_status_id?: number;
+    /**
+     * The unique, numeric id of this transition. Send 0 or omit it to create one.
+     */
+    id?: number;
+    /**
+     * The lowest project permission that may perform the transition. write when omitted.
+     */
+    min_permission?: 'write' | 'admin';
+    /**
+     * Whether the person performing the transition has to leave a comment.
+     */
+    require_comment?: boolean;
+    /**
+     * Fields that must be set on the task before the transition: assignees, due_date, start_date, end_date, description, attachments, labels or cf_<id> for a custom field of the project.
+     */
+    required_fields?: Array<string> | null;
+    /**
+     * When not empty, only members of one of these teams, or project admins, may perform the transition.
+     */
+    team_ids?: Array<number> | null;
+    /**
+     * Optional button label, e.g. Send to design.
+     */
+    title?: string;
+    /**
+     * The status tasks enter. A negative id refers to a new status of the same document.
+     */
+    to_status_id?: number;
 };
 
 export type AdminInviteLinksListData = {
@@ -10289,6 +10642,132 @@ export type WebhooksUpdateResponses = {
 
 export type WebhooksUpdateResponse = WebhooksUpdateResponses[keyof WebhooksUpdateResponses];
 
+export type WorkflowDeleteData = {
+    body?: never;
+    path: {
+        project: number;
+    };
+    query?: never;
+    url: '/projects/{project}/workflow';
+};
+
+export type WorkflowDeleteErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type WorkflowDeleteError = WorkflowDeleteErrors[keyof WorkflowDeleteErrors];
+
+export type WorkflowDeleteResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type WorkflowDeleteResponse = WorkflowDeleteResponses[keyof WorkflowDeleteResponses];
+
+export type WorkflowReadData = {
+    body?: never;
+    headers?: {
+        /**
+         * Succeeds if the server's resource matches one of the passed values.
+         */
+        'If-Match'?: Array<string> | null;
+        /**
+         * Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.
+         */
+        'If-None-Match'?: Array<string> | null;
+        /**
+         * Succeeds if the server's resource date is more recent than the passed date.
+         */
+        'If-Modified-Since'?: string;
+        /**
+         * Succeeds if the server's resource date is older or the same as the passed date.
+         */
+        'If-Unmodified-Since'?: string;
+    };
+    path: {
+        project: number;
+    };
+    query?: never;
+    url: '/projects/{project}/workflow';
+};
+
+export type WorkflowReadErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type WorkflowReadError = WorkflowReadErrors[keyof WorkflowReadErrors];
+
+export type WorkflowReadResponses = {
+    /**
+     * OK
+     */
+    200: Workflow;
+};
+
+export type WorkflowReadResponse = WorkflowReadResponses[keyof WorkflowReadResponses];
+
+export type PatchWorkflowReadData = {
+    body: Array<JsonPatchOp> | null;
+    path: {
+        project: number;
+    };
+    query?: never;
+    url: '/projects/{project}/workflow';
+};
+
+export type PatchWorkflowReadErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type PatchWorkflowReadError = PatchWorkflowReadErrors[keyof PatchWorkflowReadErrors];
+
+export type PatchWorkflowReadResponses = {
+    /**
+     * OK
+     */
+    200: Workflow;
+};
+
+export type PatchWorkflowReadResponse = PatchWorkflowReadResponses[keyof PatchWorkflowReadResponses];
+
+export type WorkflowReplaceData = {
+    body: WorkflowWritable;
+    path: {
+        project: number;
+    };
+    query?: never;
+    url: '/projects/{project}/workflow';
+};
+
+export type WorkflowReplaceErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type WorkflowReplaceError = WorkflowReplaceErrors[keyof WorkflowReplaceErrors];
+
+export type WorkflowReplaceResponses = {
+    /**
+     * OK
+     */
+    200: Workflow;
+};
+
+export type WorkflowReplaceResponse = WorkflowReplaceResponses[keyof WorkflowReplaceResponses];
+
 export type AuthRegisterData = {
     body: RegisterUserRequestWritable;
     path?: never;
@@ -11784,6 +12263,96 @@ export type TasksRestoreResponses = {
 };
 
 export type TasksRestoreResponse = TasksRestoreResponses[keyof TasksRestoreResponses];
+
+export type TaskStatusReadData = {
+    body?: never;
+    path: {
+        task: number;
+    };
+    query?: never;
+    url: '/tasks/{task}/status';
+};
+
+export type TaskStatusReadErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type TaskStatusReadError = TaskStatusReadErrors[keyof TaskStatusReadErrors];
+
+export type TaskStatusReadResponses = {
+    /**
+     * OK
+     */
+    200: TaskWorkflowStatus;
+};
+
+export type TaskStatusReadResponse = TaskStatusReadResponses[keyof TaskStatusReadResponses];
+
+export type TaskStatusChangeData = {
+    body: TaskStatusChangeWritable;
+    path: {
+        task: number;
+    };
+    query?: never;
+    url: '/tasks/{task}/status';
+};
+
+export type TaskStatusChangeErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type TaskStatusChangeError = TaskStatusChangeErrors[keyof TaskStatusChangeErrors];
+
+export type TaskStatusChangeResponses = {
+    /**
+     * OK
+     */
+    200: TaskStatusChange;
+};
+
+export type TaskStatusChangeResponse = TaskStatusChangeResponses[keyof TaskStatusChangeResponses];
+
+export type TaskStatusHistoryListData = {
+    body?: never;
+    path: {
+        task: number;
+    };
+    query?: {
+        /**
+         * 1-based page number.
+         */
+        page?: number;
+        /**
+         * Items per page. Defaults to the instance's configured maximum (service.maxitemsperpage, reported as max_items_per_page by /info) and is silently capped at it; asking for more is not an error.
+         */
+        per_page?: number;
+    };
+    url: '/tasks/{task}/status/history';
+};
+
+export type TaskStatusHistoryListErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type TaskStatusHistoryListError = TaskStatusHistoryListErrors[keyof TaskStatusHistoryListErrors];
+
+export type TaskStatusHistoryListResponses = {
+    /**
+     * OK
+     */
+    200: PaginatedTaskStatusHistory;
+};
+
+export type TaskStatusHistoryListResponse = TaskStatusHistoryListResponses[keyof TaskStatusHistoryListResponses];
 
 export type TeamsListData = {
     body?: never;
