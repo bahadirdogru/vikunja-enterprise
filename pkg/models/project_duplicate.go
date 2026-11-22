@@ -111,6 +111,15 @@ func (pd *ProjectDuplicate) Create(s *xorm.Session, doer web.Auth) (err error) {
 
 	log.Debugf("Duplicated all tasks from project %d into %d", pd.ProjectID, pd.Project.ID)
 
+	customFieldIDs, customFieldOptionIDs, err := duplicateCustomFieldsForProject(s, pd.ProjectID, pd.Project.ID)
+	if err != nil {
+		return
+	}
+	err = copyCustomFieldValues(s, newTaskIDs, pd.Project.ID, customFieldIDs, customFieldOptionIDs)
+	if err != nil {
+		return
+	}
+
 	err = duplicateViews(s, pd, doer, newTaskIDs)
 	if err != nil {
 		return

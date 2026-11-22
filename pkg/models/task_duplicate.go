@@ -116,6 +116,12 @@ func (td *TaskDuplicate) Create(s *xorm.Session, doer web.Auth) (err error) {
 		}
 	}
 
+	// Same project, so field and option ids stay valid
+	err = copyCustomFieldValues(s, map[int64]int64{td.TaskID: newTask.ID}, newTask.ProjectID, nil, nil)
+	if err != nil {
+		return err
+	}
+
 	// Duplicate attachments (copy underlying files)
 	attachments, err := getTaskAttachmentsByTaskIDs(s, []int64{td.TaskID})
 	if err != nil {

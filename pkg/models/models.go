@@ -75,6 +75,9 @@ func GetTables() []interface{} {
 		&Session{},
 		&OAuthCode{},
 		&TimeEntry{},
+		&CustomField{},
+		&CustomFieldOption{},
+		&TaskCustomFieldValue{},
 		&UserInviteLink{},
 		&UserInviteLinkTeam{},
 	}

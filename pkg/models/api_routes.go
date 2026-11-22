@@ -218,6 +218,10 @@ func isStandardCRUDRoute(routeGroupName string, routeParts []string, _ string) b
 		"projects_views_tasks": true,
 	}
 
+	// Kept out of the literal above so its alignment (and the upstream diff) stays untouched.
+	crudResources["projects_custom_fields"] = true
+	crudResources["tasks_custom_field_values"] = true
+
 	// Check if this is a standard CRUD resource
 	if crudResources[routeGroupName] {
 		return true

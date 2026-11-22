@@ -2430,6 +2430,11 @@ func hardDeleteTask(s *xorm.Session, t *Task) (err error) {
 		return
 	}
 
+	err = deleteCustomFieldValuesForTask(s, t.ID)
+	if err != nil {
+		return err
+	}
+
 	// Tracked time outlives the task
 	_, err = s.Table("time_entries").
 		Where("task_id = ?", t.ID).

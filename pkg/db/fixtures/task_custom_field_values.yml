@@ -1,0 +1,37 @@
+# Task 1: text "REF-1", select "Open", multi_select Red + Blue. Task 2: text only. Task 18 (project 9): text.
+- id: 1
+  task_id: 1
+  custom_field_id: 1
+  value_text: REF-1
+  created: 2018-12-01 15:13:12
+  updated: 2018-12-02 15:13:12
+- id: 2
+  task_id: 1
+  custom_field_id: 2
+  option_id: 1
+  created: 2018-12-01 15:13:12
+  updated: 2018-12-02 15:13:12
+- id: 3
+  task_id: 1
+  custom_field_id: 4
+  option_id: 3
+  created: 2018-12-01 15:13:12
+  updated: 2018-12-02 15:13:12
+- id: 4
+  task_id: 1
+  custom_field_id: 4
+  option_id: 4
+  created: 2018-12-01 15:13:12
+  updated: 2018-12-02 15:13:12
+- id: 5
+  task_id: 2
+  custom_field_id: 1
+  value_text: REF-2
+  created: 2018-12-01 15:13:12
+  updated: 2018-12-02 15:13:12
+- id: 6
+  task_id: 18
+  custom_field_id: 5
+  value_text: Visible to readers
+  created: 2018-12-01 15:13:12
+  updated: 2018-12-02 15:13:12

@@ -1,6 +1,6 @@
 # Custom fields — design
 
-Status: backend in progress (step 1a). Frontend, filtering and table/kanban
+Status: backend done (step 1a). Frontend, filtering and table/kanban
 display follow in later steps.
 
 ## Model
@@ -92,5 +92,6 @@ The JSON value shape depends on the type: string (`text`, `long_text`, `url`,
 
 Deleting a field deletes its options and values. Deleting a task or a project
 deletes the values / definitions that belong to it. Duplicating a project
-copies the definitions; duplicating a task inside the same project copies the
-values.
+copies the definitions and the values of the copied tasks (ids remapped);
+duplicating a task inside the same project copies the values. Values are
+removed when a task is purged, not when it is moved to the trash.

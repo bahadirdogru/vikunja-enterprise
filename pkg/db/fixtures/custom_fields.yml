@@ -1,0 +1,58 @@
+# Project 1 (owned by user1): text, select, number, multi_select.
+# Project 9: user1 has read access. Project 10: user1 has write access.
+- id: 1
+  project_id: 1
+  title: Reference
+  description: An external reference number
+  type: text
+  required: false
+  position: 65536
+  created_by_id: 1
+  created: 2018-12-01 15:13:12
+  updated: 2018-12-02 15:13:12
+- id: 2
+  project_id: 1
+  title: Stage
+  type: select
+  required: true
+  position: 131072
+  created_by_id: 1
+  created: 2018-12-01 15:13:12
+  updated: 2018-12-02 15:13:12
+- id: 3
+  project_id: 1
+  title: Budget
+  type: number
+  required: false
+  config: '{"min":0,"max":1000,"precision":2}'
+  position: 196608
+  created_by_id: 1
+  created: 2018-12-01 15:13:12
+  updated: 2018-12-02 15:13:12
+- id: 4
+  project_id: 1
+  title: Colors
+  type: multi_select
+  required: false
+  position: 262144
+  created_by_id: 1
+  created: 2018-12-01 15:13:12
+  updated: 2018-12-02 15:13:12
+- id: 5
+  project_id: 9
+  title: Field in a read-only project
+  type: text
+  required: false
+  position: 65536
+  created_by_id: 6
+  created: 2018-12-01 15:13:12
+  updated: 2018-12-02 15:13:12
+- id: 6
+  project_id: 10
+  title: Field in a writable project
+  type: text
+  required: false
+  position: 65536
+  created_by_id: 6
+  created: 2018-12-01 15:13:12
+  updated: 2018-12-02 15:13:12
