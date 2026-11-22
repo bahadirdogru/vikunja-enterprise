@@ -47,6 +47,8 @@ function stored(): WorkflowResponse {
 			require_comment: true,
 			required_fields: ['due_date', 'cf_4'],
 			team_ids: [2],
+			requires_approval: false,
+			approval: null,
 		}],
 	}
 }
@@ -320,5 +322,71 @@ describe('status columns', () => {
 		expect(statusBadgeOf({title: 'Odd', category: 'unknown'})).toEqual({title: 'Odd', color: '', category: 'open'})
 		expect(statusBadgeOf(undefined)).toBeNull()
 		expect(statusBadgeOf({})).toBeNull()
+	})
+})
+
+describe('transition approval', () => {
+	function approvalWorkflow(): WorkflowResponse {
+		const workflow = stored()
+		workflow.statuses = workflow.statuses.filter(status => !status.archived)
+		workflow.transitions = [{
+			...workflow.transitions[0]!,
+			requires_approval: true,
+			approval: {
+				mode: 'all',
+				approvers: [{type: 'user', id: 2}, {type: 'custom_field', id: 4}],
+				rejected_status_id: 10,
+				allow_self: false,
+				due_in: '2d',
+			},
+		}]
+		return workflow
+	}
+
+	it('carries the approval from the workflow into the draft and back into the document', () => {
+		const draft = draftFromWorkflow(approvalWorkflow())
+		expect(draft.transitions[0]!.requires_approval).toBe(true)
+		expect(draft.transitions[0]!.approval.approvers).toHaveLength(2)
+		expect(draftToDocument(draft).transitions![0]).toMatchObject({
+			requires_approval: true,
+			approval: {mode: 'all', approvers: [{type: 'user', id: 2}, {type: 'custom_field', id: 4}], rejected_status_id: 10, due_in: '2d'},
+		})
+	})
+
+	it('sends no approval for a transition that does not need one', () => {
+		const document = draftToDocument(draftFromWorkflow(stored()))
+		expect(document.transitions![0]).not.toHaveProperty('approval')
+		expect(document.transitions![0]).not.toHaveProperty('requires_approval')
+	})
+
+	it('is not dirty after a reload and dirty after a change of the approvers', () => {
+		const saved = draftFromWorkflow(approvalWorkflow())
+		expect(isDraftDirty(draftFromWorkflow(approvalWorkflow()), saved)).toBe(false)
+		const changed = draftFromWorkflow(approvalWorkflow())
+		changed.transitions[0]!.approval.approvers.pop()
+		expect(isDraftDirty(changed, saved)).toBe(true)
+	})
+
+	it('needs an approver source when the approval is on, and none when it is off', () => {
+		const draft = draftFromWorkflow(approvalWorkflow())
+		draft.transitions[0]!.approval.approvers = []
+		const errors = validateDraft(draft)
+		expect(errors.transitions[draft.transitions[0]!.key]).toContain('approvalApproversRequired')
+		draft.transitions[0]!.requires_approval = false
+		expect(validateDraft(draft).transitions[draft.transitions[0]!.key]).toBeUndefined()
+	})
+
+	it('flags a rejected status equal to the target and one that was removed', () => {
+		const draft = draftFromWorkflow(approvalWorkflow())
+		const key = draft.transitions[0]!.key
+		draft.transitions[0]!.approval.rejected_status_id = 12
+		expect(validateDraft(draft).transitions[key]).toContain('approvalRejectedStatusSame')
+		draft.transitions[0]!.approval.rejected_status_id = 10
+		expect(validateDraft(removeStatus(draft, 10)).transitions[key]).toBeUndefined()
+		// The transition itself left with the status; a remaining one has its rejected status cleared.
+		const two = draftFromWorkflow(approvalWorkflow())
+		two.statuses.push({id: 13, title: 'Extra', color: '', category: 'open', is_initial: false, archived: false})
+		two.transitions[0]!.approval.rejected_status_id = 13
+		expect(removeStatus(two, 13).transitions[0]!.approval.rejected_status_id).toBe(0)
 	})
 })

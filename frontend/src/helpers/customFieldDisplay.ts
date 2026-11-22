@@ -60,6 +60,11 @@ export function withStatusExpand<T extends string>(expand: readonly T[], active:
 	return active && !expand.includes('status' as T) ? [...expand, 'status'] : [...expand]
 }
 
+// The pending-approval marker next to the status needs the summary of the page, in one query.
+export function withApprovalsExpand<T extends string>(expand: readonly T[], active: boolean): (T | 'approvals')[] {
+	return active && !expand.includes('approvals' as T) ? [...expand, 'approvals'] : [...expand]
+}
+
 export type TaskCustomFieldValues = {custom_field_id?: number, value?: unknown}[] | null | undefined
 
 export function valueOfCustomField(values: TaskCustomFieldValues, fieldId: number): unknown {

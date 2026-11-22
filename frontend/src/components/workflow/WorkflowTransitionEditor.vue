@@ -6,6 +6,8 @@ import FormCheckbox from '@/components/input/FormCheckbox.vue'
 import FormInput from '@/components/input/FormInput.vue'
 import FormSelect from '@/components/input/FormSelect.vue'
 import XButton from '@/components/input/Button.vue'
+import ApprovalTransitionSettings from '@/components/approvals/ApprovalTransitionSettings.vue'
+import type {ApprovalServerField} from '@/helpers/approvals'
 import type {CustomFieldResponse} from '@/client/queries/customFields'
 import {
 	WORKFLOW_BUILTIN_FIELDS,
@@ -23,6 +25,8 @@ const props = defineProps<{
 	teams: {id?: number, name?: string}[]
 	errors: DraftErrors
 	showErrors: boolean
+	projectId: number
+	approvalServerError?: {field: ApprovalServerField | null, message: string} | null
 }>()
 
 const emit = defineEmits<{
@@ -48,7 +52,10 @@ const permissionOptions = computed(() => [
 	{value: 'admin', label: t('workflow.transitions.permission.admin')},
 ])
 
-const errorCodes = computed(() => props.showErrors ? props.errors.transitions[props.transition.key] ?? [] : [])
+const allErrorCodes = computed(() => props.showErrors ? props.errors.transitions[props.transition.key] ?? [] : [])
+// The approval settings show their own errors next to the controls.
+const errorCodes = computed(() => allErrorCodes.value.filter(code => !code.startsWith('approval')))
+const approvalErrorCodes = computed(() => allErrorCodes.value.filter(code => code.startsWith('approval')))
 
 function toggle(list: readonly (string | number)[], value: string | number, on: boolean) {
 	const rest = list.filter(entry => entry !== value)
@@ -166,6 +173,16 @@ function toggle(list: readonly (string | number)[], value: string | number, on: 
 				</FormCheckbox>
 			</div>
 		</fieldset>
+
+		<ApprovalTransitionSettings
+			:draft="draft"
+			:transition="transition"
+			:project-id="projectId"
+			:custom-fields="customFields"
+			:error-codes="approvalErrorCodes"
+			:server-error="approvalServerError"
+			@update="patch => emit('update', patch)"
+		/>
 
 		<div class="transition-editor__footer">
 			<XButton

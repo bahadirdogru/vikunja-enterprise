@@ -14,7 +14,7 @@ import {
 	type WorkflowResponse,
 	type WorkflowStatusResponse,
 } from '@/helpers/workflow'
-import {error, getErrorText} from '@/message'
+import {error, getErrorText, success} from '@/message'
 
 export type StatusColumnDialog = {
 	taskId: number
@@ -68,10 +68,16 @@ export function useStatusColumnMove(
 		error(outcome.kind === 'message' ? {message: t(outcome.messageKey)} : {message: getErrorText(cause)})
 	}
 
-	/** Resolves whether the task now is in the column. */
+	/** Resolves whether the task now is in the column (false: it stayed, a rejection or an approval request). */
 	async function move(task: Pick<Task, 'id'> & Task, bucketId: number): Promise<boolean> {
 		try {
-			await moveMutation.mutateAsync({project: toValue(project), view: toValue(view), bucket: bucketId, task})
+			const result = await moveMutation.mutateAsync({project: toValue(project), view: toValue(view), bucket: bucketId, task})
+			if (result.approval) {
+				// 202: the card stays, a request was made.
+				success({message: t('approvals.requested')})
+				void refreshBoard()
+				return false
+			}
 			return true
 		} catch (cause) {
 			if (!isRequestContextAbort(cause)) {

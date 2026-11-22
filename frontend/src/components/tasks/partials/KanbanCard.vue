@@ -73,6 +73,11 @@
 				:status="statusBadge"
 				class="kanban-card__status"
 			/>
+			<ApprovalMarker
+				v-if="task.approvals?.has_pending"
+				:count="task.approvals.pending_count"
+				class="kanban-card__approval"
+			/>
 
 			<span
 				v-if="projectTitle"
@@ -178,6 +183,7 @@ import CustomFieldValueDisplay from '@/components/custom-fields/CustomFieldValue
 import CommentCount from './CommentCount.vue'
 import WorkflowStatusBadge from '@/components/workflow/WorkflowStatusBadge.vue'
 import {statusBadgeOf} from '@/helpers/workflow'
+import ApprovalMarker from '@/components/approvals/ApprovalMarker.vue'
 
 import {getHexColor, getTaskIdentifier} from '@/helpers/task'
 import {getDisplayName} from '@/helpers/user'
@@ -384,6 +390,11 @@ onBeforeUnmount(() => {
 .kanban-card__status {
 	margin-block-start: .25rem;
 	font-size: .75rem;
+}
+
+.kanban-card__approval {
+	margin-block-start: .25rem;
+	margin-inline-start: .25rem;
 }
 
 $task-background: var(--white);

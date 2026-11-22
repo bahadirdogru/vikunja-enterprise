@@ -139,3 +139,34 @@ describe('notificationDoer', () => {
 		expect(notificationDoer({})).toBeUndefined()
 	})
 })
+
+describe('approval notifications', () => {
+	const APPROVAL = {id: 4, title: 'To do → Print ready', status: 'pending'}
+
+	it('names the request and the task for a new request and a reminder', () => {
+		const payload = {task: TASK, project: PROJECT, doer: SAM, approval: APPROVAL}
+		expect(notificationText(notification(NOTIFICATION_NAMES.APPROVAL_REQUESTED, payload)))
+			.toBe('asked for your approval: “To do → Print ready” on #12')
+		expect(notificationText(notification(NOTIFICATION_NAMES.APPROVAL_REMINDER, payload)))
+			.toBe('asked for your approval (overdue): “To do → Print ready” on #12')
+	})
+
+	it('says who resolved a request and falls back to a sentence when the system did', () => {
+		const approved = {task: TASK, approval: {...APPROVAL, status: 'approved'}}
+		expect(notificationText(notification(NOTIFICATION_NAMES.APPROVAL_RESOLVED, {...approved, doer: ANA})))
+			.toBe('approved the approval “To do → Print ready” on #12')
+		expect(notificationText(notification(NOTIFICATION_NAMES.APPROVAL_RESOLVED, {task: TASK, approval: {...APPROVAL, status: 'cancelled'}})))
+			.toBe('The approval “To do → Print ready” on #12 was cancelled')
+	})
+
+	it('links to the task, and to the approvals page when the task is unknown', () => {
+		for (const name of ['approval.requested', 'approval.resolved', 'approval.reminder']) {
+			expect(notificationRoute(notification(name, {task: TASK}))).toEqual({name: 'task.detail', params: {id: 3}})
+			expect(notificationRoute(notification(name, {}))).toEqual({name: 'approvals.index'})
+		}
+	})
+
+	it('shows the requester as the doer', () => {
+		expect(notificationDoer(notification('approval.requested', {doer: SAM}))).toEqual(SAM)
+	})
+})

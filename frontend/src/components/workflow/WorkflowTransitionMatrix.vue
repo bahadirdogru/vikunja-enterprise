@@ -95,6 +95,14 @@ function onCheckboxChange(event: Event, from: number, to: number) {
 							:aria-label="$t('workflow.matrix.cell', {from: from.title, to: to.title})"
 							@change="event => onCheckboxChange(event, from.id, to.id)"
 						>
+						<Icon
+							v-if="cell(from.id, to.id)?.requires_approval"
+							v-tooltip="$t('workflow.approval.marker')"
+							icon="user-check"
+							class="matrix__approval"
+							role="img"
+							:aria-label="$t('workflow.approval.marker')"
+						/>
 					</td>
 				</tr>
 			</tbody>
@@ -146,6 +154,12 @@ function onCheckboxChange(event: Event, from: number, to: number) {
 
 	&__self {
 		color: var(--grey-400);
+	}
+
+	&__approval {
+		margin-inline-start: .25rem;
+		color: var(--primary);
+		font-size: .75rem;
 	}
 
 	&__check {

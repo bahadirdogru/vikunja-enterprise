@@ -25,6 +25,8 @@ import {customFieldKeys} from './customFields'
 import {fetchAllPages} from './fetchAllPages'
 import {invalidateTaskMembership} from './taskCache'
 import {i18n} from '@/i18n'
+import {approvalKeys} from './approvalKeys'
+import {normalizeApproval, normalizeTransitionApproval, type ApprovalResponse} from '@/helpers/approvals'
 import {
 	WORKFLOW_ERROR_CODE,
 	type AvailableTransitionResponse,
@@ -40,6 +42,7 @@ export type TaskStatusResponse = {
 	status: WorkflowStatusResponse | null
 	entered: string | null
 	transitions: AvailableTransitionResponse[]
+	pending_approvals: ApprovalResponse[]
 }
 
 export type StatusHistoryResponse = {
@@ -51,6 +54,8 @@ export type StatusHistoryResponse = {
 	doer: User | null
 	comment: string
 	created: string
+	// Set when the change was made by an approved request.
+	approval_request_id: number | null
 }
 
 export function normalizeWorkflowStatus(status: WorkflowStatus): WorkflowStatusResponse {
@@ -75,6 +80,8 @@ function normalizeWorkflowTransition(transition: WorkflowTransition): WorkflowTr
 		require_comment: transition.require_comment ?? false,
 		required_fields: transition.required_fields ?? [],
 		team_ids: transition.team_ids ?? [],
+		requires_approval: transition.requires_approval ?? false,
+		approval: transition.requires_approval ? normalizeTransitionApproval(transition.approval) : null,
 	}
 }
 
@@ -94,6 +101,9 @@ function normalizeAvailableTransition(transition: AvailableTransition): Availabl
 		title: transition.title ?? '',
 		require_comment: transition.require_comment ?? false,
 		missing_fields: transition.missing_fields ?? [],
+		requires_approval: transition.requires_approval ?? false,
+		approval_mode: transition.approval_mode ?? '',
+		approvers: transition.approvers ?? [],
 	}
 }
 
@@ -104,6 +114,7 @@ export function normalizeTaskStatus(status: TaskWorkflowStatus): TaskStatusRespo
 		status: status.status ? normalizeWorkflowStatus(status.status) : null,
 		entered: status.entered ?? null,
 		transitions: (status.transitions ?? []).map(normalizeAvailableTransition),
+		pending_approvals: (status.pending_approvals ?? []).map(normalizeApproval),
 	}
 }
 
@@ -117,6 +128,7 @@ function normalizeHistory(entry: TaskStatusHistory): StatusHistoryResponse {
 		doer: entry.doer ?? null,
 		comment: entry.comment ?? '',
 		created: entry.created ?? '',
+		approval_request_id: entry.approval_request_id ?? null,
 	}
 }
 
@@ -242,10 +254,15 @@ export function changeTaskStatusMutationOptions() {
 		onSettled: ({taskId}, client) => Promise.all([
 			client.invalidateQueries({queryKey: workflowKeys.taskStatus(taskId)}),
 			client.invalidateQueries({queryKey: workflowKeys.history(taskId)}),
+			// A change that needed approval answers 202 with a new pending request.
+			client.invalidateQueries({queryKey: approvalKeys.all}),
 			// The done flag may have changed.
 			invalidateTaskMembership(client, taskId, 'active'),
 		]),
-		successMessage: data => i18n.global.t('workflow.task.changed', {status: data.status?.title ?? ''}),
+		// 202: the status did not change, a request was made.
+		successMessage: data => data.approval
+			? i18n.global.t('approvals.requested')
+			: i18n.global.t('workflow.task.changed', {status: data.status?.title ?? ''}),
 		// Callers turn 400/403/422 into a dialog or a message.
 		toastError: () => false,
 	})

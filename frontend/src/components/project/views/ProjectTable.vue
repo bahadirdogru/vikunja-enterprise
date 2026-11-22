@@ -314,6 +314,11 @@
 											v-if="statusBadgeOf(t.status)"
 											:status="statusBadgeOf(t.status)!"
 										/>
+										<ApprovalMarker
+											v-if="t.approvals?.has_pending"
+											:count="t.approvals.pending_count"
+											class="mis-1"
+										/>
 									</td>
 									<td v-if="activeColumns.priority">
 										<PriorityLabel
@@ -425,6 +430,7 @@ import AddTask from '@/components/tasks/AddTask.vue'
 import WorkflowStatusBadge from '@/components/workflow/WorkflowStatusBadge.vue'
 import {useProjectWorkflow} from '@/composables/useProjectWorkflow'
 import {statusBadgeOf} from '@/helpers/workflow'
+import ApprovalMarker from '@/components/approvals/ApprovalMarker.vue'
 
 import type {SortBy} from '@/composables/useTaskList'
 import {useTaskList} from '@/composables/useTaskList'
@@ -448,6 +454,7 @@ import {
 	valueOfCustomField,
 	withCustomFieldsExpand,
 	withStatusExpand,
+	withApprovalsExpand,
 } from '@/helpers/customFieldDisplay'
 
 const props = defineProps<{
@@ -518,10 +525,10 @@ const taskList = useTaskList(
 	() => props.viewId, 
 	// A custom field sort left in storage may belong to another project.
 	omitCustomSortKeys(sortBy.value),
-	() => withStatusExpand(
+	() => withApprovalsExpand(withStatusExpand(
 		withCustomFieldsExpand(['comment_count', 'is_unread'], customColumns.value.length > 0),
 		showStatusColumn.value,
-	),
+	), showStatusColumn.value),
 	() => props.view,
 )
 

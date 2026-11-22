@@ -1,6 +1,14 @@
 import type {IconProp} from '@fortawesome/fontawesome-svg-core'
 
-import type {WorkflowWritable} from '@/client/generated'
+import type {User, WorkflowWritable} from '@/client/generated'
+import {
+	approvalDraftFromResponse,
+	approvalDraftToDocument,
+	emptyApprovalDraft,
+	validateApprovalDraft,
+	type ApprovalDraft,
+	type TransitionApprovalResponse,
+} from '@/helpers/approvals'
 import {readableTextColor} from '@/helpers/customFields'
 
 export const WORKFLOW_CATEGORIES = ['open', 'in_progress', 'done', 'cancelled'] as const
@@ -53,6 +61,8 @@ export type WorkflowTransitionResponse = {
 	require_comment: boolean
 	required_fields: string[]
 	team_ids: number[]
+	requires_approval: boolean
+	approval: TransitionApprovalResponse | null
 }
 
 export type WorkflowResponse = {
@@ -68,6 +78,10 @@ export type AvailableTransitionResponse = {
 	title: string
 	require_comment: boolean
 	missing_fields: string[]
+	// The user has to ask for an approval instead of changing the status; approvers is who would be asked.
+	requires_approval: boolean
+	approval_mode: string
+	approvers: User[]
 }
 
 export type StatusDraft = {
@@ -90,6 +104,8 @@ export type TransitionDraft = {
 	require_comment: boolean
 	required_fields: string[]
 	team_ids: number[]
+	requires_approval: boolean
+	approval: ApprovalDraft
 }
 
 export type WorkflowDraft = {
@@ -179,6 +195,8 @@ export function draftFromWorkflow(workflow: WorkflowResponse): WorkflowDraft {
 			require_comment: transition.require_comment,
 			required_fields: [...transition.required_fields],
 			team_ids: [...transition.team_ids],
+			requires_approval: transition.requires_approval,
+			approval: approvalDraftFromResponse(transition.approval),
 		})),
 	}
 }
@@ -206,6 +224,9 @@ export function draftToDocument(draft: WorkflowDraft, moveTasksTo = 0): Workflow
 				require_comment: transition.require_comment,
 				required_fields: transition.required_fields,
 				team_ids: transition.team_ids,
+				...(transition.requires_approval
+					? {requires_approval: true, approval: approvalDraftToDocument(transition.approval)}
+					: {}),
 			})),
 		...(moveTasksTo !== 0 ? {move_tasks_to: moveTasksTo} : {}),
 	}
@@ -216,7 +237,13 @@ export function serializeDraft(draft: WorkflowDraft): string {
 	return JSON.stringify({
 		restrict_transitions: draft.restrict_transitions,
 		statuses: draft.statuses,
-		transitions: draft.transitions.map(({key: _key, ...transition}) => transition),
+		transitions: draft.transitions.map(({key: _key, ...transition}) => ({
+			...transition,
+			// A switched off approval keeps nothing the server would store.
+			approval: transition.requires_approval
+				? {...transition.approval, approvers: transition.approval.approvers.map(({key: _source, ...source}) => source)}
+				: null,
+		})),
 	})
 }
 
@@ -277,9 +304,11 @@ export function removeStatus(draft: WorkflowDraft, id: number): WorkflowDraft {
 	const next: WorkflowDraft = {
 		...draft,
 		statuses,
-		transitions: draft.transitions.filter(
-			transition => transition.from_status_id !== id && transition.to_status_id !== id,
-		),
+		transitions: draft.transitions
+			.filter(transition => transition.from_status_id !== id && transition.to_status_id !== id)
+			.map(transition => transition.approval.rejected_status_id === id
+				? {...transition, approval: {...transition.approval, rejected_status_id: 0}}
+				: transition),
 	}
 	if (removed?.is_initial) {
 		const first = statuses.find(status => !status.archived)
@@ -301,6 +330,8 @@ export function newTransition(from: number, to: number): TransitionDraft {
 		require_comment: false,
 		required_fields: [],
 		team_ids: [],
+		requires_approval: false,
+		approval: emptyApprovalDraft(),
 	}
 }
 
@@ -407,6 +438,15 @@ export function validateDraft(draft: WorkflowDraft): DraftErrors {
 		seenPairs.add(pair)
 		if ([...transition.title.trim()].length > MAX_TITLE_LENGTH) {
 			addTransitionError(transition.key, 'titleTooLong')
+		}
+		if (transition.requires_approval) {
+			for (const code of validateApprovalDraft(transition.approval, transition.to_status_id)) {
+				addTransitionError(transition.key, `approval${code.charAt(0).toUpperCase()}${code.slice(1)}`)
+			}
+			const rejected = transition.approval.rejected_status_id
+			if (rejected !== 0 && !activeIds.has(rejected)) {
+				addTransitionError(transition.key, 'approvalRejectedStatusGone')
+			}
 		}
 	}
 

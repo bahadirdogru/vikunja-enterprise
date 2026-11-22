@@ -17,6 +17,7 @@ import {
 	workflowTeamsQuery,
 } from '@/client/queries/workflow'
 import {isRequestContextAbort} from '@/client/requestContext'
+import {approvalFieldOfServerMessage, type ApprovalServerField} from '@/helpers/approvals'
 import {
 	activeStatuses,
 	createDefaultDraft,
@@ -54,6 +55,8 @@ const saved = ref<WorkflowDraft | null>(initialDraft())
 const draft = ref<WorkflowDraft | null>(initialDraft())
 const showErrors = ref(false)
 const apiError = ref<string | null>(null)
+// The server's definition errors name no transition; the approval controls show the one that is about them.
+const approvalServerError = ref<{field: ApprovalServerField | null, message: string} | null>(null)
 const isSaving = computed(() => replace.isPending.value)
 
 const errors = computed(() => draft.value ? validateDraft(draft.value) : null)
@@ -73,6 +76,7 @@ function enable() {
 function update(value: WorkflowDraft) {
 	draft.value = value
 	apiError.value = null
+	approvalServerError.value = null
 }
 
 function reseed(workflow: WorkflowResponse) {
@@ -100,6 +104,7 @@ async function save(moveTasksTo = 0) {
 	}
 	const projectId = props.projectId
 	apiError.value = null
+	approvalServerError.value = null
 	try {
 		const result = await replace.mutateAsync({
 			projectId,
@@ -123,6 +128,12 @@ async function save(moveTasksTo = 0) {
 		apiError.value = problem.kind === 'invalidDefinition' && problem.message
 			? problem.message
 			: getErrorText(cause)
+		if (problem.kind === 'invalidDefinition') {
+			const field = approvalFieldOfServerMessage(problem.message)
+			if (field !== null) {
+				approvalServerError.value = {field, message: problem.message}
+			}
+		}
 	}
 }
 
@@ -249,6 +260,8 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', warnBeforeUnloa
 				:teams="teams"
 				:errors="errors!"
 				:show-errors="showErrors"
+				:project-id="projectId"
+				:approval-server-error="approvalServerError"
 				@update:modelValue="update"
 			/>
 

@@ -14,6 +14,7 @@ import {
 	type TimeEntryResponse,
 } from './timeEntries'
 import {notificationKeys} from './notifications'
+import {approvalKeys} from './approvalKeys'
 import {commentKeys} from './comments'
 import {taskKeys} from './tasks'
 import {
@@ -39,6 +40,8 @@ export type ServerCacheEvent =
 	| {
 		kind: 'notifications',
 		taskId?: number,
+		// An approval notification: the requests waiting for the user changed.
+		approvals?: boolean,
 	}
 	| {
 		kind: 'subscribed',
@@ -69,9 +72,15 @@ export function parseServerCacheEvent(
 		const task = data.name === 'task.comment' && isRecord(data.notification) ? data.notification.task : undefined
 		const taskId = isRecord(task) && typeof task.id === 'number' && task.id > 0 ? task.id : undefined
 		if (taskId === undefined && !(typeof data.id === 'number' && data.id > 0)) return null
+		const approvals = typeof data.name === 'string' && data.name.startsWith('approval.')
+		const approvalTask = approvals && isRecord(data.notification) && isRecord(data.notification.task)
+			&& typeof data.notification.task.id === 'number' && data.notification.task.id > 0
+			? data.notification.task.id
+			: undefined
 		return {
 			kind: 'notifications',
-			taskId,
+			taskId: taskId ?? approvalTask,
+			...(approvals ? {approvals} : {}),
 		}
 	}
 	return null
@@ -117,6 +126,7 @@ export function serverCacheEventMutationOptions() {
 				const taskId = event.taskId
 				return Promise.all([
 					client.invalidateQueries({queryKey: notificationKeys.all}),
+					...(event.approvals ? [client.invalidateQueries({queryKey: approvalKeys.all})] : []),
 					...(taskId === undefined ? [] : [
 						client.invalidateQueries({queryKey: commentKeys.task(taskId)}),
 						invalidateCachedTask(client, taskId),

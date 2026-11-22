@@ -269,6 +269,13 @@
 										{{ $t('task.detail.actions.moveProject') }}
 									</DropdownItem>
 									<DropdownItem
+										v-if="!authStore.isLinkShareAuth"
+										icon="user-check"
+										@click="adHocApprovalOpen = true"
+									>
+										{{ $t('approvals.adHoc.action') }}
+									</DropdownItem>
+									<DropdownItem
 										icon="copy"
 										@click="duplicateCurrentTask"
 									>
@@ -287,6 +294,19 @@
 							</template>
 						</Dropdown>
 					</div>
+
+					<TaskApprovals
+						v-if="!authStore.isLinkShareAuth"
+						:task-id="task.id"
+						:is-project-admin="(taskQuery.task.value?.max_permission ?? 0) >= PERMISSIONS.ADMIN"
+						@changed="refreshAfterStatusChange"
+					/>
+					<AdHocApprovalDialog
+						v-if="adHocApprovalOpen"
+						:task-id="task.id"
+						:project-id="task.project_id"
+						@close="adHocApprovalOpen = false"
+					/>
 
 					<dl
 						v-if="canWrite || hasAnyProperty || hasCustomFields || hasWorkflow"
@@ -571,6 +591,8 @@ import Reminders from '@/components/tasks/partials/Reminders.vue'
 import RepeatAfter from '@/components/tasks/partials/RepeatAfter.vue'
 import TaskCustomFields from '@/components/tasks/partials/TaskCustomFields.vue'
 import TaskStatus from '@/components/workflow/TaskStatus.vue'
+import TaskApprovals from '@/components/approvals/TaskApprovals.vue'
+import AdHocApprovalDialog from '@/components/approvals/AdHocApprovalDialog.vue'
 import {customFieldsQuery} from '@/client/queries/customFields'
 import {workflowQuery} from '@/client/queries/workflow'
 import {useQuery} from '@tanstack/vue-query'
@@ -942,6 +964,7 @@ const hasCustomFields = computed(() => (customFieldsForVisibility.data.value?.le
 const workflowForVisibility = useQuery(computed(() => workflowQuery(task.value?.project_id ?? 0)))
 const hasWorkflow = computed(() => (workflowForVisibility.data.value ?? null) !== null)
 const workflowStatus = ref<InstanceType<typeof TaskStatus> | null>(null)
+const adHocApprovalOpen = ref(false)
 
 // A status change can flip done, and the requirements dialog can save fields the local draft keeps.
 async function refreshAfterStatusChange() {

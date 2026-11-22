@@ -74,6 +74,11 @@
 					:status="statusBadge"
 					class="task-status mis-2"
 				/>
+				<ApprovalMarker
+					v-if="theTask.approvals?.has_pending"
+					:count="theTask.approvals.pending_count"
+					class="mis-2"
+				/>
 
 				<Labels
 					v-if="(task.labels?.length ?? 0) > 0"
@@ -241,6 +246,7 @@ import FancyCheckbox from '@/components/input/FancyCheckbox.vue'
 import ColorBubble from '@/components/misc/ColorBubble.vue'
 import WorkflowStatusBadge from '@/components/workflow/WorkflowStatusBadge.vue'
 import {statusBadgeOf} from '@/helpers/workflow'
+import ApprovalMarker from '@/components/approvals/ApprovalMarker.vue'
 import Popup from '@/components/misc/Popup.vue'
 
 

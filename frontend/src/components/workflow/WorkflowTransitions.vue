@@ -8,6 +8,7 @@ import WorkflowStatusBadge from '@/components/workflow/WorkflowStatusBadge.vue'
 import WorkflowTransitionEditor from '@/components/workflow/WorkflowTransitionEditor.vue'
 import WorkflowTransitionMatrix from '@/components/workflow/WorkflowTransitionMatrix.vue'
 import type {CustomFieldResponse} from '@/client/queries/customFields'
+import type {ApprovalServerField} from '@/helpers/approvals'
 import {
 	activeStatuses,
 	addTransition,
@@ -25,6 +26,8 @@ const props = defineProps<{
 	teams: {id?: number, name?: string}[]
 	errors: DraftErrors
 	showErrors: boolean
+	projectId: number
+	approvalServerError?: {field: ApprovalServerField | null, message: string} | null
 }>()
 
 const emit = defineEmits<{
@@ -44,6 +47,7 @@ function summary(transition: TransitionDraft): string[] {
 	if (transition.required_fields.length > 0) parts.push('fields')
 	if (transition.team_ids.length > 0) parts.push('teams')
 	if (transition.min_permission === 'admin') parts.push('admin')
+	if (transition.requires_approval) parts.push('approval')
 	return parts
 }
 
@@ -163,6 +167,8 @@ function toggleOpen(key: string) {
 					:teams="teams"
 					:errors="errors"
 					:show-errors="showErrors"
+					:project-id="projectId"
+					:approval-server-error="approvalServerError"
 					@update="change => patch(openTransition!.key, change)"
 					@remove="remove(openTransition!.key)"
 				/>
@@ -230,6 +236,8 @@ function toggleOpen(key: string) {
 							:teams="teams"
 							:errors="errors"
 							:show-errors="showErrors"
+							:project-id="projectId"
+							:approval-server-error="approvalServerError"
 							@update="change => patch(transition.key, change)"
 							@remove="remove(transition.key)"
 						/>

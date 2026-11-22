@@ -173,7 +173,7 @@ const {
 			? ['comment_count' as const, 'is_unread' as const]
 			: ['subtasks' as const, 'comment_count' as const, 'is_unread' as const]
 		// The status badge needs a workflow; the list of a project without one asks for nothing extra.
-		return hasWorkflow.value ? [...expand, 'status' as const] : expand
+		return hasWorkflow.value ? [...expand, 'status' as const, 'approvals' as const] : expand
 	},
 	() => props.view,
 )

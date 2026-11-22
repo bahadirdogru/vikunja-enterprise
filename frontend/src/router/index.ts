@@ -507,6 +507,14 @@ const router = createRouter({
 			component: () => import('@/views/About.vue'),
 		},
 		{
+			path: '/approvals',
+			name: 'approvals.index',
+			component: () => import('@/views/approvals/ApprovalsView.vue'),
+			meta: {
+				title: 'approvals.title',
+			},
+		},
+		{
 			path: '/time-tracking',
 			name: 'time-tracking',
 			component: () => import('@/views/time-tracking/TimeTracking.vue'),

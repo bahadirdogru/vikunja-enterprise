@@ -27,6 +27,7 @@ import {
 	type AvailableTransitionResponse,
 	type WorkflowStatusResponse,
 } from '@/helpers/workflow'
+import {describeApprovers} from '@/helpers/approvals'
 import {error, getErrorText} from '@/message'
 
 const props = defineProps<{
@@ -79,6 +80,18 @@ function requirementText(transition: AvailableTransitionResponse): string {
 	return t('workflow.menu.needs', {items: parts.join(', ')})
 }
 
+function transitionLabel(transition: AvailableTransitionResponse): string {
+	if (transition.requires_approval) {
+		return t('approvals.menu.request', {status: transition.title || transition.to_status.title})
+	}
+	return transition.title || transition.to_status.title
+}
+
+function approverText(transition: AvailableTransitionResponse): string {
+	const names = describeApprovers(transition.approvers)
+	return names === '' ? t('approvals.menu.askNobody') : t('approvals.menu.willAsk', {names})
+}
+
 type DialogState = {
 	toStatus: WorkflowStatusResponse
 	missingFields: string[]
@@ -92,8 +105,9 @@ async function attempt(toStatus: WorkflowStatusResponse, comment = ''): Promise<
 	const taskId = props.taskId
 	let succeeded = false
 	try {
-		await change.mutateAsync({taskId, toStatusId: toStatus.id, comment})
-		succeeded = true
+		const result = await change.mutateAsync({taskId, toStatusId: toStatus.id, comment})
+		// 202: a request was made, the task is still in its status. The mutation announced it.
+		succeeded = !result.approval
 		if (props.taskId === taskId) {
 			dialog.value = null
 		}
@@ -207,16 +221,28 @@ defineExpose({toggleDone, visible})
 					v-for="transition in transitions"
 					:key="transition.to_status.id"
 					class="menu-item"
-					:class="{'has-requirements': needsInput(transition)}"
+					:class="{'has-requirements': needsInput(transition), 'needs-approval': transition.requires_approval}"
+					:title="transition.requires_approval ? approverText(transition) : undefined"
 					role="menuitem"
 					@click="choose(transition, close)"
 				>
 					<span class="menu-item__main">
-						<span class="menu-item__label">{{ transition.title || transition.to_status.title }}</span>
+						<Icon
+							v-if="transition.requires_approval"
+							icon="user-check"
+							class="menu-item__approval-icon"
+						/>
+						<span class="menu-item__label">{{ transitionLabel(transition) }}</span>
 						<WorkflowStatusBadge
-							v-if="transition.title"
+							v-if="transition.title || transition.requires_approval"
 							:status="transition.to_status"
 						/>
+					</span>
+					<span
+						v-if="transition.requires_approval"
+						class="menu-item__approvers"
+					>
+						{{ approverText(transition) }}
 					</span>
 					<span
 						v-if="needsInput(transition)"
@@ -346,6 +372,16 @@ defineExpose({toggleDone, visible})
 
 	&__label {
 		font-weight: 600;
+	}
+
+	&__approval-icon {
+		color: var(--primary);
+	}
+
+	&__approvers {
+		color: var(--grey-600);
+		font-size: .75rem;
+		white-space: normal;
 	}
 
 	&__needs {

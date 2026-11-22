@@ -27,7 +27,7 @@ vi.mock('@/message', () => ({
 import TaskStatus from './TaskStatus.vue'
 import XButton from '@/components/input/Button.vue'
 import en from '@/i18n/lang/en.json'
-import {error} from '@/message'
+import {error, success} from '@/message'
 import {workflowKeys} from '@/client/queries/workflow'
 
 const i18n = createI18n({legacy: false, locale: 'en', fallbackLocale: 'en', messages: {en}})
@@ -79,6 +79,7 @@ describe('TaskStatus', () => {
 	beforeEach(() => {
 		Object.values(sdk).forEach(mock => mock.mockReset())
 		vi.mocked(error).mockClear()
+	vi.mocked(success).mockClear()
 		sdk.customFieldsList.mockResolvedValue({data: {items: [], total_pages: 1}})
 		sdk.taskCustomFieldValuesList.mockResolvedValue({data: {items: [], total_pages: 1}})
 		sdk.taskStatusHistoryList.mockResolvedValue({data: {items: [], total_pages: 1}})
@@ -235,6 +236,81 @@ describe('TaskStatus', () => {
 		expect(result).toBe(false)
 		expect(document.body.querySelector('dialog')?.textContent).toContain('Change status to "Done"')
 		expect(error).not.toHaveBeenCalled()
+	})
+
+	describe('transitions that need an approval', () => {
+		const approvalRequested = {
+			status: statuses[0],
+			done: false,
+			approval: {id: 9, task_id: 7, status: 'pending', mode: 'any', approvers: [], to_status_id: 12},
+		}
+		const needsApproval = {
+			...plain,
+			to_status: statuses[2],
+			requires_approval: true,
+			approval_mode: 'all',
+			approvers: [{id: 2, username: 'anna'}, {id: 3, username: 'bob', name: 'Bob B'}],
+		}
+
+		it('labels the transition and previews who will be asked', async () => {
+			const {wrapper} = mountStatus([plain, needsApproval])
+			await flushPromises()
+			await openMenu(wrapper)
+
+			const item = menuItems(wrapper)[1]!
+			expect(item.text()).toContain('Request approval → Done')
+			expect(item.text()).toContain('Will ask: anna, Bob B')
+			expect(item.attributes('title')).toBe('Will ask: anna, Bob B')
+			expect(menuItems(wrapper)[0]!.text()).not.toContain('approval')
+		})
+
+		it('answers 202 with a success message and no error, dialog or status change', async () => {
+			sdk.taskStatusChange.mockResolvedValue({data: approvalRequested})
+			const {wrapper} = mountStatus([needsApproval])
+			await flushPromises()
+			await openMenu(wrapper)
+			await menuItems(wrapper)[0]!.trigger('click')
+			await flushPromises()
+
+			expect(sdk.taskStatusChange).toHaveBeenCalledWith(expect.objectContaining({body: {to_status_id: 12, comment: ''}}))
+			expect(success).toHaveBeenCalledWith({message: 'Approval requested'})
+			expect(error).not.toHaveBeenCalled()
+			expect(document.body.querySelector('dialog')).toBeNull()
+			expect(wrapper.emitted('changed')).toHaveLength(1)
+		})
+
+		it('runs the requirements dialog first when fields or a comment are missing', async () => {
+			sdk.taskStatusChange.mockResolvedValue({data: approvalRequested})
+			const {wrapper} = mountStatus([{...needsApproval, require_comment: true}])
+			await flushPromises()
+			await openMenu(wrapper)
+			await menuItems(wrapper)[0]!.trigger('click')
+			await flushPromises()
+
+			const dialog = document.body.querySelector('dialog')!
+			expect(sdk.taskStatusChange).not.toHaveBeenCalled()
+			const comment = dialog.querySelector('textarea')!
+			comment.value = 'Please check'
+			comment.dispatchEvent(new Event('input'))
+			Array.from(dialog.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Change status')!.click()
+			await flushPromises()
+
+			expect(sdk.taskStatusChange).toHaveBeenCalledWith(expect.objectContaining({body: {to_status_id: 12, comment: 'Please check'}}))
+			expect(success).toHaveBeenCalledWith({message: 'Approval requested'})
+			expect(document.body.querySelector('dialog')).toBeNull()
+		})
+
+		it('requests the approval through the done button and reports that the task did not change', async () => {
+			sdk.taskStatusChange.mockResolvedValue({data: approvalRequested})
+			const {wrapper} = mountStatus([needsApproval])
+			await flushPromises()
+
+			const result = await (wrapper.vm as unknown as {toggleDone: () => Promise<boolean | null>}).toggleDone()
+
+			expect(result).toBe(false)
+			expect(success).toHaveBeenCalledWith({message: 'Approval requested'})
+			expect(error).not.toHaveBeenCalled()
+		})
 	})
 
 	it('is read-only without write access', async () => {

@@ -82,6 +82,21 @@
 						{{ $t('team.title') }}
 					</RouterLink>
 				</li>
+				<li v-if="!authStore.isLinkShareAuth">
+					<RouterLink :to="{ name: 'approvals.index'}">
+						<span class="menu-item-icon icon">
+							<Icon icon="user-check" />
+						</span>
+						{{ $t('approvals.title') }}
+						<span
+							v-if="approvalCount > 0"
+							class="approvals-badge"
+						>
+							{{ approvalCount }}
+							<span class="is-sr-only">{{ $t('approvals.page.badgeLabel', {count: approvalCount}) }}</span>
+						</span>
+					</RouterLink>
+				</li>
 				<li v-if="timeTrackingEnabled">
 					<RouterLink :to="{ name: 'time-tracking'}">
 						<span class="menu-item-icon icon">
@@ -161,6 +176,7 @@
 
 <script setup lang="ts">
 import {computed} from 'vue'
+import {useQuery} from '@tanstack/vue-query'
 
 import {SHORTCUTS} from '@/constants/shortcuts'
 import PoweredByLink from '@/components/home/PoweredByLink.vue'
@@ -173,10 +189,23 @@ import {useConfigStore} from '@/stores/config'
 import {PRO_FEATURE} from '@/constants/proFeatures'
 import ProjectsNavigation from '@/components/home/ProjectsNavigation.vue'
 import {useSidebarResize} from '@/composables/useSidebarResize'
+import {approvalCountQuery} from '@/client/queries/approvals'
+import {useAuthStore} from '@/stores/auth'
+import {useWebSocket} from '@/composables/useWebSocket'
 
 const baseStore = useBaseStore()
 const projectList = useProjects()
 const configStore = useConfigStore()
+
+const authStore = useAuthStore()
+// Requests waiting for the user. Notifications of new requests invalidate it; without a socket it is polled.
+const {authenticated: socketConnected} = useWebSocket()
+const approvalCountResult = useQuery(computed(() => ({
+	...approvalCountQuery(),
+	enabled: !authStore.isLinkShareAuth,
+	refetchInterval: socketConnected.value ? false : 60_000,
+})))
+const approvalCount = computed(() => approvalCountResult.data.value ?? 0)
 
 const timeTrackingEnabled = computed(() => configStore.isProFeatureEnabled(PRO_FEATURE.TIME_TRACKING))
 
@@ -188,6 +217,17 @@ const savedFilterProjects = computed(() => projectList.savedFilterProjects)
 </script>
 
 <style lang="scss" scoped>
+.approvals-badge {
+	margin-inline-start: auto;
+	padding: 0 .4rem;
+	background: var(--primary);
+	border-radius: 999px;
+	color: var(--white);
+	font-size: .75rem;
+	font-weight: 600;
+	line-height: 1.4;
+}
+
 .logo {
 	display: block;
 

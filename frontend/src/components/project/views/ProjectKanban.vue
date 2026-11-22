@@ -587,6 +587,8 @@ const boardParams = computed(() => {
 	const expand = [
 		...(cardFields.value.length > 0 ? ['custom_fields' as const] : []),
 		...(showCardStatus.value ? ['status' as const] : []),
+		// Cards of a project with a workflow show a marker while a request waits for approval.
+		...(hasWorkflow.value ? ['approvals' as const] : []),
 	]
 	return {
 		...params.value,

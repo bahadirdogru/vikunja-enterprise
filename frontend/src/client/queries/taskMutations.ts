@@ -39,6 +39,7 @@ import {
 import {getCachedProject, projectKeys} from './projects'
 import {invalidateAfterTrashChange} from './trash'
 import {colorFromHex} from '@/helpers/color/colorFromHex'
+import {approvalKeys} from './approvalKeys'
 import {getDefaultBucketId, moveTaskToBucket} from '@/helpers/task'
 import {readWorkflowProblem} from '@/helpers/workflow'
 import {translatedError} from '@/message'
@@ -414,6 +415,27 @@ export function moveTaskMutationOptions({reportErrors = true}: {reportErrors?: b
 			),
 		},
 		onSuccess: (data, {project, view, bucket, task}, client) => {
+			if (data.approval) {
+				// 202: the move became an approval request, the card is still in the column it was dragged from.
+				const stayed = data.bucket?.id
+				if (stayed !== undefined) {
+					client.setQueriesData<BoardData>(
+						{queryKey: kanbanKeys.view(project, view)},
+						current => current ? {
+							...current,
+							buckets: moveTaskToBucket(current.buckets, task, stayed).map(normalizeBucket),
+						} : current,
+					)
+				}
+				if (task.id !== undefined) {
+					mapTaskEverywhere(client, task.id, current => ({
+						...current,
+						approvals: {has_pending: true, pending_count: Math.max(1, (current.approvals?.pending_count ?? 0))},
+					}))
+				}
+				void client.invalidateQueries({queryKey: approvalKeys.all})
+				return
+			}
 			const target = data.bucket_id ?? bucket
 			if (data.task) replaceTaskEverywhere(client, data.task)
 			client.setQueriesData<BoardData>(

@@ -3,7 +3,11 @@ import {computed} from 'vue'
 import {useQuery} from '@tanstack/vue-query'
 
 import User from '@/components/misc/User.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
+import {taskApprovalsQuery} from '@/client/queries/approvals'
 import {taskStatusHistoryQuery} from '@/client/queries/workflow'
+import {focusApproval} from '@/composables/useApprovalFocus'
+import {describeApprovers} from '@/helpers/approvals'
 import {formatDateLong, formatDateSince} from '@/helpers/time/formatDate'
 
 const props = defineProps<{
@@ -12,6 +16,17 @@ const props = defineProps<{
 
 const historyResult = useQuery(computed(() => taskStatusHistoryQuery(props.taskId)))
 const entries = computed(() => historyResult.data.value ?? [])
+const approvalsResult = useQuery(computed(() => taskApprovalsQuery(props.taskId)))
+
+// Who approved the request that caused this change, empty when the entry has none.
+function approvedBy(requestId: number | null): string | null {
+	if (requestId === null) {
+		return null
+	}
+	const request = approvalsResult.data.value?.find(entry => entry.id === requestId)
+	const names = describeApprovers(request?.approvers.filter(a => a.decision === 'approved').flatMap(a => a.user ? [a.user] : []) ?? [])
+	return names === '' ? '' : names
+}
 </script>
 
 <template>
@@ -68,6 +83,20 @@ const entries = computed(() => historyResult.data.value ?? [])
 						:datetime="entry.created"
 					>{{ formatDateSince(entry.created) }}</time>
 				</div>
+				<p
+					v-if="approvedBy(entry.approval_request_id) !== null"
+					class="status-history__approval"
+				>
+					<Icon icon="user-check" />
+					<BaseButton
+						class="status-history__approval-link"
+						@click="focusApproval(entry.approval_request_id!)"
+					>
+						{{ approvedBy(entry.approval_request_id)
+							? $t('approvals.history.approvedBy', {names: approvedBy(entry.approval_request_id)})
+							: $t('approvals.history.viaApproval') }}
+					</BaseButton>
+				</p>
 				<p
 					v-if="entry.comment"
 					class="status-history__comment"
@@ -138,5 +167,19 @@ const entries = computed(() => historyResult.data.value ?? [])
 		white-space: pre-wrap;
 		overflow-wrap: anywhere;
 	}
+}
+
+.status-history__approval {
+	display: flex;
+	align-items: center;
+	gap: .375rem;
+	margin: .125rem 0 0;
+	color: var(--grey-600);
+	font-size: .75rem;
+}
+
+.status-history__approval-link {
+	color: var(--primary);
+	text-decoration: underline;
 }
 </style>

@@ -27,6 +27,7 @@ import {
 	faCheckDouble,
 	faChessKnight,
 	faChevronDown,
+	faChevronRight,
 	faCircleInfo,
 	faCloudDownloadAlt,
 	faCloudUploadAlt,
@@ -51,6 +52,8 @@ import {
 	faHeader,
 	faHistory,
 	faHourglassEnd,
+	faHourglassHalf,
+	faUserCheck,
 	faImage,
 	faKeyboard,
 	faLayerGroup,
@@ -170,6 +173,7 @@ library.add(faCheck)
 library.add(faCheckDouble)
 library.add(faChessKnight)
 library.add(faChevronDown)
+library.add(faChevronRight)
 library.add(faCircleInfo)
 library.add(faCircleQuestion)
 library.add(faClock)
@@ -193,6 +197,8 @@ library.add(faGripLines)
 library.add(faHeader)
 library.add(faHistory)
 library.add(faHourglassEnd)
+library.add(faHourglassHalf)
+library.add(faUserCheck)
 library.add(faImage)
 library.add(faKeyboard)
 library.add(faLayerGroup)
