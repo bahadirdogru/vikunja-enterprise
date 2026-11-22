@@ -36,7 +36,10 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
 | 4a | Dashboards: task aggregation API (`POST /api/v2/reports/tasks`), options endpoint, dashboards/widgets CRUD ([dashboards.md](dashboards.md)) | Done |
 | 4b | Dashboards: pages, SVG charts, widget editor, drill-down | Next |
 | 4c | Dashboards: status time, workload, time tracking widgets, CSV export | Planned |
-| 5 | Forms and approvals | Planned |
+| 5a | Approvals backend ([forms-approvals.md](forms-approvals.md)) | Designed |
+| 5b | Approvals UI | Planned |
+| 5c | Forms backend | Designed |
+| 5d | Forms UI (builder, public form page) | Planned |
 | – | Organisation / tenant layer, AI features | Deferred |
 
 ## Log
