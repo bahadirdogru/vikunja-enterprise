@@ -1,0 +1,1280 @@
+{
+ "triggers": [
+  {
+   "type": "task.created",
+   "title_key": "automation.trigger.task_created",
+   "event": "task.created",
+   "options": []
+  },
+  {
+   "type": "task.updated",
+   "title_key": "automation.trigger.task_updated",
+   "event": "task.updated",
+   "options": [
+    {
+     "name": "fields",
+     "kind": "enum",
+     "required": false,
+     "multiple": true,
+     "enum": [
+      "title",
+      "description",
+      "done",
+      "priority",
+      "percent_done",
+      "due_date",
+      "start_date",
+      "end_date",
+      "hex_color",
+      "project_id",
+      "repeat_after"
+     ],
+     "title_key": "automation.option.fields"
+    }
+   ]
+  },
+  {
+   "type": "task.completed",
+   "title_key": "automation.trigger.task_completed",
+   "event": "task.updated",
+   "options": []
+  },
+  {
+   "type": "task.reopened",
+   "title_key": "automation.trigger.task_reopened",
+   "event": "task.updated",
+   "options": []
+  },
+  {
+   "type": "task.deleted",
+   "title_key": "automation.trigger.task_deleted",
+   "event": "task.deleted",
+   "options": []
+  },
+  {
+   "type": "task.status_changed",
+   "title_key": "automation.trigger.task_status_changed",
+   "event": "task.status.changed",
+   "options": [
+    {
+     "name": "from_status_id",
+     "kind": "status",
+     "required": false,
+     "title_key": "automation.option.from_status_id"
+    },
+    {
+     "name": "to_status_id",
+     "kind": "status",
+     "required": false,
+     "title_key": "automation.option.to_status_id"
+    },
+    {
+     "name": "to_category",
+     "kind": "enum",
+     "required": false,
+     "enum": [
+      "open",
+      "in_progress",
+      "done",
+      "cancelled"
+     ],
+     "title_key": "automation.option.to_category"
+    }
+   ]
+  },
+  {
+   "type": "task.custom_field_changed",
+   "title_key": "automation.trigger.task_custom_field_changed",
+   "event": "task.custom-field-value.updated",
+   "options": [
+    {
+     "name": "field_id",
+     "kind": "custom_field",
+     "required": false,
+     "title_key": "automation.option.field_id"
+    }
+   ]
+  },
+  {
+   "type": "task.assignee_added",
+   "title_key": "automation.trigger.task_assignee_added",
+   "event": "task.assignee.created",
+   "options": []
+  },
+  {
+   "type": "task.assignee_removed",
+   "title_key": "automation.trigger.task_assignee_removed",
+   "event": "task.assignee.deleted",
+   "options": []
+  },
+  {
+   "type": "task.comment_added",
+   "title_key": "automation.trigger.task_comment_added",
+   "event": "task.comment.created",
+   "options": []
+  },
+  {
+   "type": "task.attachment_added",
+   "title_key": "automation.trigger.task_attachment_added",
+   "event": "task.attachment.created",
+   "options": []
+  }
+ ],
+ "fields": [
+  {
+   "name": "title",
+   "kind": "string",
+   "operators": [
+    "=",
+    "!=",
+    "like",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.title"
+  },
+  {
+   "name": "description",
+   "kind": "text",
+   "operators": [
+    "=",
+    "!=",
+    "like",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.description"
+  },
+  {
+   "name": "done",
+   "kind": "bool",
+   "operators": [
+    "=",
+    "!="
+   ],
+   "title_key": "automation.field.done"
+  },
+  {
+   "name": "priority",
+   "kind": "number",
+   "operators": [
+    "=",
+    "!=",
+    ">",
+    ">=",
+    "<",
+    "<=",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.priority"
+  },
+  {
+   "name": "percent_done",
+   "kind": "number",
+   "operators": [
+    "=",
+    "!=",
+    ">",
+    ">=",
+    "<",
+    "<=",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.percent_done"
+  },
+  {
+   "name": "due_date",
+   "kind": "date",
+   "operators": [
+    "=",
+    "!=",
+    ">",
+    ">=",
+    "<",
+    "<=",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.due_date"
+  },
+  {
+   "name": "start_date",
+   "kind": "date",
+   "operators": [
+    "=",
+    "!=",
+    ">",
+    ">=",
+    "<",
+    "<=",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.start_date"
+  },
+  {
+   "name": "end_date",
+   "kind": "date",
+   "operators": [
+    "=",
+    "!=",
+    ">",
+    ">=",
+    "<",
+    "<=",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.end_date"
+  },
+  {
+   "name": "done_at",
+   "kind": "date",
+   "operators": [
+    "=",
+    "!=",
+    ">",
+    ">=",
+    "<",
+    "<=",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.done_at"
+  },
+  {
+   "name": "created",
+   "kind": "date",
+   "operators": [
+    "=",
+    "!=",
+    ">",
+    ">=",
+    "<",
+    "<=",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.created"
+  },
+  {
+   "name": "updated",
+   "kind": "date",
+   "operators": [
+    "=",
+    "!=",
+    ">",
+    ">=",
+    "<",
+    "<=",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.updated"
+  },
+  {
+   "name": "hex_color",
+   "kind": "string",
+   "operators": [
+    "=",
+    "!=",
+    "like",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.hex_color"
+  },
+  {
+   "name": "identifier",
+   "kind": "string",
+   "operators": [
+    "=",
+    "!=",
+    "like",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.identifier"
+  },
+  {
+   "name": "project_id",
+   "kind": "project",
+   "operators": [
+    "=",
+    "!=",
+    "in",
+    "not in"
+   ],
+   "title_key": "automation.field.project_id"
+  },
+  {
+   "name": "created_by",
+   "kind": "user",
+   "operators": [
+    "=",
+    "!=",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.created_by"
+  },
+  {
+   "name": "assignees",
+   "kind": "users",
+   "multiple": true,
+   "operators": [
+    "=",
+    "!=",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.assignees"
+  },
+  {
+   "name": "labels",
+   "kind": "label",
+   "multiple": true,
+   "operators": [
+    "=",
+    "!=",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.labels"
+  },
+  {
+   "name": "status",
+   "kind": "status",
+   "operators": [
+    "=",
+    "!=",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.status"
+  },
+  {
+   "name": "status_category",
+   "kind": "enum",
+   "enum": [
+    "open",
+    "in_progress",
+    "done",
+    "cancelled"
+   ],
+   "operators": [
+    "=",
+    "!=",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.status_category"
+  },
+  {
+   "name": "cf_<id>",
+   "pattern": "cf_<id>",
+   "kind": "custom_field",
+   "operators": [
+    "=",
+    "!=",
+    ">",
+    ">=",
+    "<",
+    "<=",
+    "like",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.cf_<id>"
+  },
+  {
+   "name": "event.doer.id",
+   "kind": "user",
+   "operators": [
+    "=",
+    "!=",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.event_doer_id"
+  },
+  {
+   "name": "event.doer.username",
+   "kind": "string",
+   "operators": [
+    "=",
+    "!=",
+    "like",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.event_doer_username"
+  },
+  {
+   "name": "event.doer.name",
+   "kind": "string",
+   "operators": [
+    "=",
+    "!=",
+    "like",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.event_doer_name"
+  },
+  {
+   "name": "event.old.title",
+   "kind": "string",
+   "operators": [
+    "=",
+    "!=",
+    "like",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.event_old_title"
+  },
+  {
+   "name": "event.old.description",
+   "kind": "text",
+   "operators": [
+    "=",
+    "!=",
+    "like",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.event_old_description"
+  },
+  {
+   "name": "event.old.done",
+   "kind": "bool",
+   "operators": [
+    "=",
+    "!="
+   ],
+   "title_key": "automation.field.event_old_done"
+  },
+  {
+   "name": "event.old.priority",
+   "kind": "number",
+   "operators": [
+    "=",
+    "!=",
+    ">",
+    ">=",
+    "<",
+    "<=",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.event_old_priority"
+  },
+  {
+   "name": "event.old.percent_done",
+   "kind": "number",
+   "operators": [
+    "=",
+    "!=",
+    ">",
+    ">=",
+    "<",
+    "<=",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.event_old_percent_done"
+  },
+  {
+   "name": "event.old.due_date",
+   "kind": "date",
+   "operators": [
+    "=",
+    "!=",
+    ">",
+    ">=",
+    "<",
+    "<=",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.event_old_due_date"
+  },
+  {
+   "name": "event.old.start_date",
+   "kind": "date",
+   "operators": [
+    "=",
+    "!=",
+    ">",
+    ">=",
+    "<",
+    "<=",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.event_old_start_date"
+  },
+  {
+   "name": "event.old.end_date",
+   "kind": "date",
+   "operators": [
+    "=",
+    "!=",
+    ">",
+    ">=",
+    "<",
+    "<=",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.event_old_end_date"
+  },
+  {
+   "name": "event.old.hex_color",
+   "kind": "string",
+   "operators": [
+    "=",
+    "!=",
+    "like",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.event_old_hex_color"
+  },
+  {
+   "name": "event.old.project_id",
+   "kind": "project",
+   "operators": [
+    "=",
+    "!=",
+    "in",
+    "not in"
+   ],
+   "title_key": "automation.field.event_old_project_id"
+  },
+  {
+   "name": "event.old.repeat_after",
+   "kind": "number",
+   "operators": [
+    "=",
+    "!=",
+    ">",
+    ">=",
+    "<",
+    "<=",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.event_old_repeat_after"
+  },
+  {
+   "name": "event.old.status",
+   "kind": "status",
+   "operators": [
+    "=",
+    "!=",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.event_old_status"
+  },
+  {
+   "name": "event.old.status_category",
+   "kind": "enum",
+   "enum": [
+    "open",
+    "in_progress",
+    "done",
+    "cancelled"
+   ],
+   "operators": [
+    "=",
+    "!=",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.event_old_status_category"
+  },
+  {
+   "name": "event.old.value",
+   "kind": "any",
+   "operators": [
+    "=",
+    "!=",
+    ">",
+    ">=",
+    "<",
+    "<=",
+    "like",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.event_old_value"
+  },
+  {
+   "name": "event.old.assignee",
+   "kind": "user",
+   "operators": [
+    "=",
+    "!=",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.event_old_assignee"
+  },
+  {
+   "name": "event.new.title",
+   "kind": "string",
+   "operators": [
+    "=",
+    "!=",
+    "like",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.event_new_title"
+  },
+  {
+   "name": "event.new.description",
+   "kind": "text",
+   "operators": [
+    "=",
+    "!=",
+    "like",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.event_new_description"
+  },
+  {
+   "name": "event.new.done",
+   "kind": "bool",
+   "operators": [
+    "=",
+    "!="
+   ],
+   "title_key": "automation.field.event_new_done"
+  },
+  {
+   "name": "event.new.priority",
+   "kind": "number",
+   "operators": [
+    "=",
+    "!=",
+    ">",
+    ">=",
+    "<",
+    "<=",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.event_new_priority"
+  },
+  {
+   "name": "event.new.percent_done",
+   "kind": "number",
+   "operators": [
+    "=",
+    "!=",
+    ">",
+    ">=",
+    "<",
+    "<=",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.event_new_percent_done"
+  },
+  {
+   "name": "event.new.due_date",
+   "kind": "date",
+   "operators": [
+    "=",
+    "!=",
+    ">",
+    ">=",
+    "<",
+    "<=",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.event_new_due_date"
+  },
+  {
+   "name": "event.new.start_date",
+   "kind": "date",
+   "operators": [
+    "=",
+    "!=",
+    ">",
+    ">=",
+    "<",
+    "<=",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.event_new_start_date"
+  },
+  {
+   "name": "event.new.end_date",
+   "kind": "date",
+   "operators": [
+    "=",
+    "!=",
+    ">",
+    ">=",
+    "<",
+    "<=",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.event_new_end_date"
+  },
+  {
+   "name": "event.new.hex_color",
+   "kind": "string",
+   "operators": [
+    "=",
+    "!=",
+    "like",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.event_new_hex_color"
+  },
+  {
+   "name": "event.new.project_id",
+   "kind": "project",
+   "operators": [
+    "=",
+    "!=",
+    "in",
+    "not in"
+   ],
+   "title_key": "automation.field.event_new_project_id"
+  },
+  {
+   "name": "event.new.repeat_after",
+   "kind": "number",
+   "operators": [
+    "=",
+    "!=",
+    ">",
+    ">=",
+    "<",
+    "<=",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.event_new_repeat_after"
+  },
+  {
+   "name": "event.new.status",
+   "kind": "status",
+   "operators": [
+    "=",
+    "!=",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.event_new_status"
+  },
+  {
+   "name": "event.new.status_category",
+   "kind": "enum",
+   "enum": [
+    "open",
+    "in_progress",
+    "done",
+    "cancelled"
+   ],
+   "operators": [
+    "=",
+    "!=",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.event_new_status_category"
+  },
+  {
+   "name": "event.new.value",
+   "kind": "any",
+   "operators": [
+    "=",
+    "!=",
+    ">",
+    ">=",
+    "<",
+    "<=",
+    "like",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.event_new_value"
+  },
+  {
+   "name": "event.new.assignee",
+   "kind": "user",
+   "operators": [
+    "=",
+    "!=",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.event_new_assignee"
+  },
+  {
+   "name": "event.new.comment",
+   "kind": "text",
+   "operators": [
+    "=",
+    "!=",
+    "like",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.event_new_comment"
+  },
+  {
+   "name": "event.new.attachment_name",
+   "kind": "string",
+   "operators": [
+    "=",
+    "!=",
+    "like",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.event_new_attachment_name"
+  },
+  {
+   "name": "cf_1",
+   "kind": "number",
+   "operators": [
+    "=",
+    "!=",
+    ">",
+    ">=",
+    "<",
+    "<=",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.custom_field",
+   "title": "Baskı adedi",
+   "custom_field_type": "number"
+  },
+  {
+   "name": "cf_2",
+   "kind": "enum",
+   "operators": [
+    "=",
+    "!=",
+    "in",
+    "not in",
+    "is_empty",
+    "is_not_empty"
+   ],
+   "title_key": "automation.field.custom_field",
+   "title": "Aşama",
+   "custom_field_type": "select"
+  }
+ ],
+ "operators": [
+  {
+   "type": "=",
+   "title_key": "automation.op.eq"
+  },
+  {
+   "type": "!=",
+   "title_key": "automation.op.ne"
+  },
+  {
+   "type": ">",
+   "title_key": "automation.op.gt"
+  },
+  {
+   "type": ">=",
+   "title_key": "automation.op.ge"
+  },
+  {
+   "type": "<",
+   "title_key": "automation.op.lt"
+  },
+  {
+   "type": "<=",
+   "title_key": "automation.op.le"
+  },
+  {
+   "type": "like",
+   "title_key": "automation.op.like"
+  },
+  {
+   "type": "in",
+   "title_key": "automation.op.in",
+   "list": true
+  },
+  {
+   "type": "not in",
+   "title_key": "automation.op.not_in",
+   "list": true
+  },
+  {
+   "type": "is_empty",
+   "title_key": "automation.op.is_empty",
+   "no_value": true
+  },
+  {
+   "type": "is_not_empty",
+   "title_key": "automation.op.is_not_empty",
+   "no_value": true
+  }
+ ],
+ "actions": [
+  {
+   "type": "task.set_field",
+   "title_key": "automation.action.set_field",
+   "params": [
+    {
+     "name": "field",
+     "kind": "enum",
+     "required": true,
+     "enum": [
+      "title",
+      "description",
+      "priority",
+      "due_date",
+      "start_date",
+      "end_date",
+      "percent_done",
+      "hex_color"
+     ],
+     "title_key": "automation.param.field"
+    },
+    {
+     "name": "value",
+     "kind": "any",
+     "required": true,
+     "title_key": "automation.param.value",
+     "kind_by": {
+      "param": "field",
+      "kinds": {
+       "description": "template",
+       "due_date": "date",
+       "end_date": "date",
+       "hex_color": "string",
+       "percent_done": "number",
+       "priority": "number",
+       "start_date": "date",
+       "title": "template"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "type": "task.set_custom_field",
+   "title_key": "automation.action.set_custom_field",
+   "params": [
+    {
+     "name": "field_id",
+     "kind": "custom_field",
+     "required": true,
+     "title_key": "automation.param.field_id"
+    },
+    {
+     "name": "value",
+     "kind": "any",
+     "required": false,
+     "title_key": "automation.param.value"
+    }
+   ]
+  },
+  {
+   "type": "task.set_done",
+   "title_key": "automation.action.set_done",
+   "params": [
+    {
+     "name": "done",
+     "kind": "bool",
+     "required": true,
+     "title_key": "automation.param.done"
+    }
+   ]
+  },
+  {
+   "type": "task.set_status",
+   "title_key": "automation.action.set_status",
+   "params": [
+    {
+     "name": "status_id",
+     "kind": "status",
+     "required": true,
+     "title_key": "automation.param.status_id"
+    },
+    {
+     "name": "comment",
+     "kind": "template",
+     "required": false,
+     "title_key": "automation.param.comment"
+    }
+   ]
+  },
+  {
+   "type": "task.assign",
+   "title_key": "automation.action.assign",
+   "params": [
+    {
+     "name": "user",
+     "kind": "user",
+     "required": true,
+     "enum": [
+      "event_doer",
+      "task_creator"
+     ],
+     "title_key": "automation.param.user"
+    }
+   ]
+  },
+  {
+   "type": "task.unassign",
+   "title_key": "automation.action.unassign",
+   "params": [
+    {
+     "name": "user",
+     "kind": "user",
+     "required": true,
+     "enum": [
+      "event_doer",
+      "task_creator"
+     ],
+     "title_key": "automation.param.user"
+    }
+   ]
+  },
+  {
+   "type": "task.add_label",
+   "title_key": "automation.action.add_label",
+   "params": [
+    {
+     "name": "label_id",
+     "kind": "label",
+     "required": true,
+     "title_key": "automation.param.label_id"
+    }
+   ]
+  },
+  {
+   "type": "task.remove_label",
+   "title_key": "automation.action.remove_label",
+   "params": [
+    {
+     "name": "label_id",
+     "kind": "label",
+     "required": true,
+     "title_key": "automation.param.label_id"
+    }
+   ]
+  },
+  {
+   "type": "task.add_comment",
+   "title_key": "automation.action.add_comment",
+   "params": [
+    {
+     "name": "text",
+     "kind": "template",
+     "required": true,
+     "title_key": "automation.param.text"
+    }
+   ]
+  },
+  {
+   "type": "task.create_subtask",
+   "title_key": "automation.action.create_subtask",
+   "params": [
+    {
+     "name": "title",
+     "kind": "template",
+     "required": true,
+     "title_key": "automation.param.title"
+    },
+    {
+     "name": "description",
+     "kind": "template",
+     "required": false,
+     "title_key": "automation.param.description"
+    },
+    {
+     "name": "assignee",
+     "kind": "user",
+     "required": false,
+     "enum": [
+      "event_doer",
+      "task_creator"
+     ],
+     "title_key": "automation.param.assignee"
+    },
+    {
+     "name": "due_offset",
+     "kind": "duration",
+     "required": false,
+     "title_key": "automation.param.due_offset"
+    }
+   ]
+  },
+  {
+   "type": "task.create_related",
+   "title_key": "automation.action.create_related",
+   "params": [
+    {
+     "name": "title",
+     "kind": "template",
+     "required": true,
+     "title_key": "automation.param.title"
+    },
+    {
+     "name": "description",
+     "kind": "template",
+     "required": false,
+     "title_key": "automation.param.description"
+    },
+    {
+     "name": "assignee",
+     "kind": "user",
+     "required": false,
+     "enum": [
+      "event_doer",
+      "task_creator"
+     ],
+     "title_key": "automation.param.assignee"
+    },
+    {
+     "name": "due_offset",
+     "kind": "duration",
+     "required": false,
+     "title_key": "automation.param.due_offset"
+    },
+    {
+     "name": "relation_kind",
+     "kind": "enum",
+     "required": false,
+     "enum": [
+      "related",
+      "blocking",
+      "blocked",
+      "precedes",
+      "follows",
+      "duplicates",
+      "duplicateof"
+     ],
+     "title_key": "automation.param.relation_kind"
+    }
+   ]
+  },
+  {
+   "type": "task.move",
+   "title_key": "automation.action.move",
+   "params": [
+    {
+     "name": "project_id",
+     "kind": "project",
+     "required": true,
+     "title_key": "automation.param.project_id"
+    }
+   ]
+  },
+  {
+   "type": "flow.stop_if",
+   "title_key": "automation.action.stop_if",
+   "params": [
+    {
+     "name": "condition",
+     "kind": "condition",
+     "required": true,
+     "title_key": "automation.param.condition"
+    }
+   ]
+  }
+ ],
+ "placeholders": [
+  "task.id",
+  "task.title",
+  "task.description",
+  "task.identifier",
+  "task.cf.<id>",
+  "event.doer.name",
+  "event.doer.username",
+  "project.title"
+ ]
+}

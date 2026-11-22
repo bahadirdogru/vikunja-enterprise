@@ -343,6 +343,15 @@ const router = createRouter({
 			props: route => ({projectId: Number(route.params.projectId as string)}),
 		},
 		{
+			path: '/projects/:projectId(\\d+)/settings/automations',
+			name: 'project.settings.automations',
+			component: () => import('@/views/project/settings/ProjectSettingsAutomations.vue'),
+			meta: {
+				showAsModal: true,
+			},
+			props: route => ({projectId: Number(route.params.projectId as string)}),
+		},
+		{
 			path: '/projects/:projectId(\\d+)/settings/delete',
 			name: 'project.settings.delete',
 			component: () => import('@/views/project/settings/ProjectSettingsDelete.vue'),

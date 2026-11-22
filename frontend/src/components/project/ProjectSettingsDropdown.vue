@@ -119,6 +119,13 @@
 				{{ $t('workflow.title') }}
 			</DropdownItem>
 			<DropdownItem
+				v-if="forceAllActions || project.max_permission === PERMISSIONS.ADMIN"
+				:to="{ name: 'project.settings.automations', params: { projectId: project.id } }"
+				icon="bolt"
+			>
+				{{ $t('automation.title') }}
+			</DropdownItem>
+			<DropdownItem
 				:to="{ name: 'project.createFromParent', params: { parentProjectId: project.id } }"
 				icon="layer-group"
 			>

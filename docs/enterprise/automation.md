@@ -315,6 +315,34 @@ that succeeded are not executed again. Manual trigger (`/tasks/{task}/automation
   task" shows the plan before saving.
 - Runs: table of runs, a run opens to its steps with output and error.
 
+### UI status (3c)
+
+Implemented in `frontend/`: project settings -> Automations (project admins),
+rule list with enable switch, last run, a warning badge for rules the system
+disabled, duplicate and delete; starter templates (only offered when the
+catalog and the project can serve them); the rule editor with When / If / Then
+generated from the catalog (one generic parameter renderer per catalog `kind`,
+nested all / any / not condition builder, ordered actions with move, duplicate
+and remove); client-side required checks and mapping of the server's issue
+paths (`actions[1].params.status_id`) onto the exact inputs; "Test with a task"
+(dry run); per-rule runs table with steps, output, error, retry and automatic
+refresh while a run is `running`. Translation keys of the catalog are checked
+against `en.json` and `tr-TR.json` by a unit test on a catalog snapshot.
+
+Known limits / deferred:
+
+- The dry run endpoint only tests a *saved* rule, so the editor asks to save
+  first and disables the test for a changed draft.
+- The runs list has no server-side status filter; the filter narrows the loaded
+  page.
+- Script editing (`code` kind, script condition node, `secret`, `map`) is
+  handled generically (textarea with tab support, API reference from any
+  `script*` list in the catalog, key/value rows) but untested against a real
+  3b backend. Unknown kinds fall back to a JSON textarea. No syntax
+  highlighting yet.
+- No drag-and-drop reordering (buttons only), no manual-trigger button on the
+  task (3d).
+
 ## What 3a does and does not do
 
 Implemented: everything marked *(3a)* above, rules CRUD with validation against
