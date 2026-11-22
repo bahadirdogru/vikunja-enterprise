@@ -131,6 +131,11 @@ func (l *Label) Update(s *xorm.Session, a web.Auth) (err error) {
 // @Failure 500 {object} models.Message "Internal error"
 // @Router /labels/{id} [delete]
 func (l *Label) Delete(s *xorm.Session, _ web.Auth) (err error) {
+	// A form that refers to the label cannot work without it.
+	if err = disableFormsForLabel(s, l.ID); err != nil {
+		return err
+	}
+
 	// No FK cascade in the schema, so the associations must go explicitly.
 	_, err = s.Where("label_id = ?", l.ID).Delete(&LabelTask{})
 	if err != nil {

@@ -76,6 +76,14 @@ func placeholderValue(name string, sub *Subject) (string, bool) {
 		if sub.Project != nil {
 			return sub.Project.Title, true
 		}
+	case "event.form.title", "event.form.submitter_name", "event.form.submitter_email":
+		key := map[string]string{"event.form.title": "form_title", "event.form.submitter_name": "submitter_name", "event.form.submitter_email": "submitter_email"}[name]
+		if sub.Event != nil {
+			if v, has := sub.Event.New[key]; has {
+				return toString(canon(v)), true
+			}
+		}
+		return "", true
 	case "event.approval.id", "event.approval.title", "event.approval.outcome":
 		key := map[string]string{"event.approval.id": "approval_id", "event.approval.title": "approval_title", "event.approval.outcome": "outcome"}[name]
 		if sub.Event != nil {

@@ -124,6 +124,12 @@
         "project": {
             "created": "%[1]s created the project \"%[2]s\""
         },
+        "form": {
+            "submitted": {
+                "subject": "New form submission: \"%[1]s\" created \"%[2]s\" (%[3]s)",
+                "message": "The form \"%[1]s\" was submitted and created the task \"%[2]s\" (%[3]s)."
+            }
+        },
         "approval": {
             "outcome": {
                 "approved": "approved",
@@ -210,6 +216,9 @@
                 "mentioned_you_new_task": "%[1]s mentioned you in a new task"
             }
         }
+    },
+    "forms": {
+        "submitted_by": "Submitted by"
     },
     "time": {
         "since_years": "one year|%[1]d years",

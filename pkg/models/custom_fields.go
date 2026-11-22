@@ -473,6 +473,9 @@ func deleteCustomFieldsByCond(s *xorm.Session, cond builder.Cond) error {
 	if err := disableAutomationRulesForCustomFields(s, ids); err != nil {
 		return err
 	}
+	if err := disableFormsForCustomFields(s, ids); err != nil {
+		return err
+	}
 	if _, err := s.Where(builder.In("custom_field_id", ids)).Delete(&TaskCustomFieldValue{}); err != nil {
 		return err
 	}

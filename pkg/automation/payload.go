@@ -184,6 +184,16 @@ func describe(event events.Event) (p *Payload, ok bool) {
 			return nil, false
 		}
 		return taskPayload(e.Name(), e.Task, e.Doer, approvalOld(e.Approval), approvalNew(e.Approval, string(e.Outcome))), true
+	case *models.FormSubmittedEvent:
+		if e.Task == nil {
+			return nil, false
+		}
+		return taskPayload(e.Name(), e.Task, e.Doer, nil, map[string]any{
+			"form_id":         e.FormID,
+			"form_title":      e.FormTitle,
+			"submitter_name":  e.SubmitterName,
+			"submitter_email": e.SubmitterEmail,
+		}), true
 	case *models.TaskAttachmentCreatedEvent:
 		if e.Task == nil || e.Attachment == nil {
 			return nil, false

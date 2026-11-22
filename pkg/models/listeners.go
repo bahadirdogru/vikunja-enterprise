@@ -41,6 +41,7 @@ func RegisterListeners() {
 	events.RegisterListener((&TaskCommentCreatedEvent{}).Name(), &SendTaskCommentNotification{})
 	events.RegisterListener((&ApprovalRequestedEvent{}).Name(), &SendApprovalRequestedNotification{})
 	events.RegisterListener((&ApprovalResolvedEvent{}).Name(), &SendApprovalResolvedNotification{})
+	events.RegisterListener((&FormSubmittedEvent{}).Name(), &SendFormSubmittedNotification{})
 	events.RegisterListener((&TaskAssigneeCreatedEvent{}).Name(), &SendTaskAssignedNotification{})
 	events.RegisterListener((&TaskCreatedEvent{}).Name(), &SendTaskCreatedNotification{})
 	events.RegisterListener((&TaskDeletedEvent{}).Name(), &SendTaskDeletedNotification{})

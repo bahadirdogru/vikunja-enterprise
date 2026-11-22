@@ -91,6 +91,8 @@ func SetupTests() {
 		"task_status_history",
 		"approval_requests",
 		"approval_approvers",
+		"forms",
+		"form_submissions",
 		"team_projects",
 		"team_members",
 		"teams",

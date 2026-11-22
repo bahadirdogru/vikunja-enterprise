@@ -198,6 +198,11 @@ func deleteUserInViews(s *xorm.Session, u *user.User, views []*ProjectView) (err
 		return err
 	}
 
+	err = disableFormsOfOwner(s, u.ID)
+	if err != nil {
+		return err
+	}
+
 	// Delete all related entities
 	relatedEntities := []struct {
 		column string

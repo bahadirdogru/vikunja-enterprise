@@ -339,6 +339,12 @@ var unauthenticatedAPIPaths = map[string]bool{
 	"/api/v2/test/all":    true,
 	"/api/v2/test/:table": true,
 
+	// Public forms (Huma ops that opt out of the global auth). They are in optionalAuthAPIPaths too: a request that
+	// carries an Authorization header is authenticated, because forms for signed-in users use the same routes.
+	"/api/v2/forms/:token":                       true,
+	"/api/v2/forms/:token/submissions":           true,
+	"/api/v2/forms/:token/submissions/multipart": true,
+
 	// Public infra healthcheck (a Huma op that opts out of the global auth).
 	"/api/v2/health": true,
 
@@ -349,6 +355,13 @@ var unauthenticatedAPIPaths = map[string]bool{
 	// WebSocket upgrade (a raw echo route — OpenAPI can't model WebSockets);
 	// it authenticates via its first message, so the upgrade needs no JWT.
 	"/api/v2/ws": true,
+}
+
+// optionalAuthAPIPaths are the public paths that still authenticate a request which sends credentials.
+var optionalAuthAPIPaths = map[string]bool{
+	"/api/v2/forms/:token":                       true,
+	"/api/v2/forms/:token/submissions":           true,
+	"/api/v2/forms/:token/submissions/multipart": true,
 }
 
 // collectRoutesForAPITokens collects all routes for API token permission checking.
@@ -475,6 +488,8 @@ func registerAPIRoutesV2(e *echo.Echo, a *echo.Group, noAuthRateLimit, refreshRa
 	a.Use(SetupTokenMiddleware())
 	a.Use(pathScoped(v2SessionRenewalPaths.has, refreshRateLimit))
 	a.Use(pathScoped(v2CredentialPaths.has, noAuthRateLimit))
+	// A floor against floods on the public form endpoints; the per IP and per form submission limits are in the database.
+	a.Use(pathScoped(func(p string) bool { return optionalAuthAPIPaths[p] }, perMinuteIPRateLimit("forms", config.FormsPublicRequestRateLimit.GetInt64())))
 	// Match the authenticated v1 group: rate limiting and route metrics
 	// apply to v2 resource endpoints too.
 	setupRateLimit(a, config.RateLimitKind.GetString())

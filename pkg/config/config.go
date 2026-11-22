@@ -253,6 +253,16 @@ const (
 	AutomationCacheTTL            Key = `automation.cachettl`
 	AutomationRetention           Key = `automation.retention`
 
+	FormsEnabled                Key = `forms.enabled`
+	FormsMaxBodySize            Key = `forms.maxbodysize`
+	FormsMaxAttachments         Key = `forms.maxattachments`
+	FormsMaxAttachmentSize      Key = `forms.maxattachmentsize`
+	FormsPublicEnabled          Key = `forms.public.enabled`
+	FormsPublicAttachments      Key = `forms.public.attachments`
+	FormsPublicRateLimit        Key = `forms.public.ratelimit`
+	FormsPublicFormRateLimit    Key = `forms.public.formratelimit`
+	FormsPublicRequestRateLimit Key = `forms.public.requestratelimit`
+
 	ReportsCacheTTL                   Key = `reports.cachettl`
 	ReportsMaxGroups                  Key = `reports.maxgroups`
 	ReportsMaxBuckets                 Key = `reports.maxbuckets`
@@ -565,6 +575,16 @@ func initDefaultConfig() {
 	WebhooksEnabled.setDefault(true)
 	WebhooksTimeoutSeconds.setDefault(30)
 	WebhooksAllowNonRoutableIPs.setDefault(false)
+	// Forms
+	FormsEnabled.setDefault(true)
+	FormsMaxBodySize.setDefault(256 * 1024)
+	FormsMaxAttachments.setDefault(5)
+	FormsMaxAttachmentSize.setDefault("10MB")
+	FormsPublicEnabled.setDefault(true)
+	FormsPublicAttachments.setDefault(false)
+	FormsPublicRateLimit.setDefault(10)
+	FormsPublicFormRateLimit.setDefault(300)
+	FormsPublicRequestRateLimit.setDefault(60)
 	// Automation
 	AutomationEnabled.setDefault(true)
 	AutomationMaxDepth.setDefault(3)

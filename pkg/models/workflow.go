@@ -611,6 +611,9 @@ func (wf *Workflow) removeStatuses(s *xorm.Session, plan *workflowDocPlan, idMap
 	if err := disableAutomationRulesForStatuses(s, wf.ProjectID, removedIDs); err != nil {
 		return err
 	}
+	if err := disableFormsForStatuses(s, wf.ProjectID, removedIDs); err != nil {
+		return err
+	}
 	if err := cancelApprovalsForStatuses(s, removedIDs); err != nil {
 		return err
 	}
@@ -808,6 +811,9 @@ func deleteWorkflowByID(s *xorm.Session, workflowID int64) error {
 			return err
 		}
 		if err := disableAutomationRulesForStatuses(s, stored.ProjectID, statusIDs); err != nil {
+			return err
+		}
+		if err := disableFormsForStatuses(s, stored.ProjectID, statusIDs); err != nil {
 			return err
 		}
 	}

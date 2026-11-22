@@ -168,6 +168,11 @@ func hardDeleteProjectTree(s *xorm.Session, p *Project, doer *user.User, ancesto
 		return err
 	}
 
+	err = deleteFormsForProject(s, p.ID)
+	if err != nil {
+		return err
+	}
+
 	err = deleteAutomationForProject(s, p.ID)
 	if err != nil {
 		return err

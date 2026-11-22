@@ -94,6 +94,8 @@ func GetTables() []interface{} {
 		&TaskStatusHistory{},
 		&ApprovalRequest{},
 		&ApprovalApprover{},
+		&Form{},
+		&FormSubmission{},
 		&UserInviteLink{},
 		&UserInviteLinkTeam{},
 	}

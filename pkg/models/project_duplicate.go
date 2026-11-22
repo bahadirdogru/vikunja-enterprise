@@ -134,6 +134,11 @@ func (pd *ProjectDuplicate) Create(s *xorm.Session, doer web.Auth) (err error) {
 		return
 	}
 
+	err = duplicateFormsForProject(s, doer.GetID(), pd.ProjectID, pd.Project.ID, customFieldIDs, customFieldOptionIDs, workflowStatusIDs)
+	if err != nil {
+		return
+	}
+
 	err = duplicateDashboardsForProject(s, doer.GetID(), pd.ProjectID, pd.Project.ID, customFieldIDs, customFieldOptionIDs, workflowStatusIDs)
 	if err != nil {
 		return

@@ -47,7 +47,10 @@ func SetupTokenMiddleware() echo.MiddlewareFunc {
 			// Public routes (docs, spec, info, etc.) never need JWT even
 			// when their parent group has the middleware applied.
 			if unauthenticatedAPIPaths[c.Path()] {
-				return true
+				// Public routes that take optional auth still validate credentials when a request sends them.
+				if !optionalAuthAPIPaths[c.Path()] || c.Request().Header.Get(echo.HeaderAuthorization) == "" {
+					return true
+				}
 			}
 
 			authHeader, ok := models.APITokenAuthorization(c.Request().Header)

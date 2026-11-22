@@ -85,6 +85,7 @@ const (
 	TriggerTaskAttachmentAdded    = "task.attachment_added"
 	TriggerApprovalRequested      = "approval.requested"
 	TriggerApprovalResolved       = "approval.resolved"
+	TriggerFormSubmitted          = "form.submitted"
 )
 
 // The outcomes the approval.resolved trigger can wait for.
@@ -290,6 +291,9 @@ func Triggers() []*TriggerDef {
 		{Type: TriggerApprovalResolved, TitleKey: title("trigger", "approval_resolved"), Event: "approval.resolved", Options: []Param{
 			{Name: "outcome", Kind: KindEnum, Enum: append([]string{OutcomeAny}, ApprovalOutcomes...), TitleKey: title("option", "outcome"), Default: OutcomeAny},
 		}},
+		{Type: TriggerFormSubmitted, TitleKey: title("trigger", "form_submitted"), Event: "form.submitted", Options: []Param{
+			{Name: "form_id", Kind: KindNumber, TitleKey: title("option", "form_id")},
+		}},
 	}
 }
 
@@ -384,6 +388,10 @@ func Fields() []*FieldDef {
 		field("event.new.approvers", KindUsers, multiple),
 		field("event.new.outcome", KindEnum, enumOf(ApprovalOutcomes...)),
 		field("event.new.cancel_reason", KindString),
+		field("event.new.form_id", KindNumber),
+		field("event.new.form_title", KindString),
+		field("event.new.submitter_name", KindString),
+		field("event.new.submitter_email", KindString),
 	)
 	return fields
 }
@@ -424,6 +432,7 @@ func Placeholders() []string {
 		"task.id", "task.title", "task.description", "task.identifier", "task.cf.<id>",
 		"event.doer.name", "event.doer.username", "project.title",
 		"event.approval.id", "event.approval.title", "event.approval.outcome",
+		"event.form.title", "event.form.submitter_name", "event.form.submitter_email",
 	}
 }
 

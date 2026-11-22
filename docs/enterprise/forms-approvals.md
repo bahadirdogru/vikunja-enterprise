@@ -1,6 +1,6 @@
 # Forms and approvals — design
 
-Status: forms are design only; approvals (5a, backend) are implemented. Both build on custom fields, workflow and automation.
+Status: approvals (5a, backend) and forms (5c, backend) are implemented; the UIs (5b, 5d) are not. Both build on custom fields, workflow and automation.
 
 # Forms
 
@@ -66,6 +66,158 @@ created.
 - `GET /forms/{token}` — the public definition (title, description, visible
   fields with labels/options/validation); no auth for public forms.
 - `POST /forms/{token}/submissions` — submit.
+
+## Implementation (5c, backend)
+
+### Differences to the sketch above
+
+- `forms` has two more columns: `disabled_reason` (set when the system disables a form) and `max_submissions`
+  (a copy of `settings.max_submissions`, so the maximum can be enforced with one conditional `UPDATE`).
+  `form_submissions.created` is set by the code (not by xorm) so the rate limits can be tested with a clock.
+- `fields[].options` (only for a shown `labels` field) lists the label ids the submitter may pick. Not allowed on
+  public forms.
+- Attachments travel in **one multipart request** (`POST /forms/{token}/submissions/multipart`), not in a second
+  request with an upload token. One transaction, so a rejected file creates nothing and nothing has to be stored
+  between two requests. The JSON endpoint cannot carry files; a form that asks for attachments requires the
+  multipart one. The response has no `upload` member.
+- The owner of a form is the user who last saved it (like the owner of an automation rule).
+
+### API (`/api/v2`)
+
+Admin (project admin only, never link shares): `GET /projects/{project}/forms/options` (what a field can target,
+generated from the project; `public_visible` / `public_hidden` say what a public form may do with it),
+`GET|POST /projects/{project}/forms`, `GET|PUT|PATCH|DELETE /projects/{project}/forms/{form}`,
+`POST /projects/{project}/forms/{form}/token` (new token, the old link stops working),
+`GET /projects/{project}/forms/{form}/submissions` (task id, submitter, created; never the IP hash).
+
+Public (no `Security`, listed in `unauthenticatedAPIPaths` and `optionalAuthAPIPaths`): `GET /forms/{token}`,
+`POST /forms/{token}/submissions`, `POST /forms/{token}/submissions/multipart`.
+
+Public definition (`GET /forms/{token}`; Huma adds `$schema`):
+
+```json
+{
+  "title": "Cover request",
+  "description": "<p>Tell us what you need.</p>",
+  "fields": [
+    {"target": "title", "label": "What do you need?", "help": "", "required": true, "kind": "text", "max_length": 250},
+    {"target": "cf_12", "label": "Stage", "help": "", "required": false, "kind": "select",
+     "options": [{"id": 1, "title": "Open", "color": "#00aa00"}]},
+    {"target": "cf_13", "label": "Budget", "help": "", "required": false, "kind": "number",
+     "config": {"min": 0, "max": 1000, "precision": 2}}
+  ],
+  "success": {"message": "Thanks", "redirect_url": "", "submit_another": true},
+  "submitter": {"collect_name": true, "name_required": true, "collect_email": true, "email_required": false}
+}
+```
+
+A field may also carry `default` (the prefill; omitted when it contains a placeholder) and `max_length`; when a
+form asks for attachments there is a top-level `attachments: {max_files, max_file_size}`. Nothing else is exposed:
+no project, owner, count, hidden field or default, user or label list (labels only on non-public forms).
+
+Submission (`POST /forms/{token}/submissions`) and its answer:
+
+```json
+{"values": {"title": "Laptop", "cf_12": 1, "cf_13": 12.5}, "submitter": {"name": "Ada", "email": "ada@example.com"}, "honeypot": ""}
+```
+```json
+{"message": "Thanks", "redirect_url": "", "submit_another": true}
+```
+
+`task_id` is only added for signed-in submitters who can read the project, never for public submissions.
+Validation errors are `422`, code `25006`, one entry per field:
+
+```json
+{"status": 422, "code": 25006, "detail": "Some answers are not valid.",
+ "details": {"errors": [{"field": "cf_12", "code": "invalid", "message": "option does not belong to this field"},
+                        {"field": "title", "code": "required", "message": "This field is required."}]}}
+```
+
+Codes: `required`, `invalid`, `too_long`, `too_many`, `unknown_field` (also for hidden targets), `file_too_large`,
+`file_type_not_allowed`, `attachments_disabled`; submitter details are `submitter.name` / `submitter.email`.
+Definition errors on save are `400`, code `25002`, with `details.issues[] = {path, message}` (e.g. `fields[2].target`).
+
+Other typed errors: `25001` unknown token or form (404), `25003` form takes no submissions (410, `details`
+`{reason: disabled|closed|full, title}`), `25004` login required (401), `25005` not allowed (403: link share, or a
+user who cannot read the project of a members form), `25007` rate limited (429, `Retry-After` header),
+`25008` forms disabled on the instance (403, saving only).
+
+### Access modes on the public routes
+
+`public`: no authentication at all. `users`: any signed-in user; `members`: signed-in users who can read the
+project. Link shares are not users (403 for `users`/`members`, treated as anonymous for `public`). The routes are
+optional-auth: no `Authorization` header means anonymous; a header is validated like everywhere (an invalid or
+expired token is a `401` with code `11`, so the client can refresh). An anonymous request to a non-public form
+is `401` code `25004`, which the UI turns into a login redirect.
+
+### Protections and their config keys
+
+| Protection | Key (default) |
+|---|---|
+| Kill switch for all forms (public endpoints answer 410 `disabled`) | `forms.enabled` (true) |
+| Kill switch for public forms (cannot be saved, existing ones answer 410 `disabled`) | `forms.public.enabled` (true) |
+| Submissions per client IP and hour on public forms, counted in the database from the salted hash | `forms.public.ratelimit` (10) |
+| Submissions per public form and hour | `forms.public.formratelimit` (300) |
+| Request floor per IP and minute on the public routes (router middleware, `ratelimit.store`) | `forms.public.requestratelimit` (60) |
+| JSON body size, 413 above | `forms.maxbodysize` (262144 bytes) |
+| Attachments on public forms | `forms.public.attachments` (false) |
+| Files per submission | `forms.maxattachments` (5) |
+| Size per file (the smaller of this and `files.maxsize` applies) | `forms.maxattachmentsize` (10MB) |
+| Value caps | title 250, text/url/email 10000, long text 50000 characters (fixed) |
+| Honeypot | a non-empty `honeypot` is answered like a success and creates nothing |
+| Maximum submissions | `settings.max_submissions`, enforced by `UPDATE forms SET submission_count = submission_count + 1 WHERE id = ? AND (max_submissions = 0 OR submission_count < max_submissions)` in the submission transaction, after a lock write on the form row |
+| Close date, disabled flag | `settings.close_date`, `enabled` |
+
+Rate limits are 429 with `Retry-After`; the window is one hour and runs on the clock of the server. The client IP is
+the one the router determines (`service.ipextractionmethod`, `service.trustedproxies`); it is stored only as
+`HMAC-SHA256(key derived from service.secret, ip)`. Files are sniffed by content (not only by extension) and
+executable, script, HTML and SVG types are rejected.
+
+### Behaviour of a submission
+
+One transaction: lock the form row, check availability and access, honeypot, rate limits, load the owner and
+check that they can still write to the project (otherwise the form is disabled with `owner_not_writer` or
+`owner_unavailable`, that change is committed, nothing else is created, answer 410 `disabled`), validate every
+visible field, count the submission, create the task with `Task.Create` as the owner (workflow initial status,
+`task.created` and the automation outbox apply), write custom field values, labels, default assignees, the initial
+status override (a system transition without checks) and the attachments, record the submission, and dispatch
+`form.submitted` on commit. Hidden targets cannot be supplied by the client. A shown field that is missing from
+`values` takes its default. Title and description defaults (and text custom fields) accept the placeholders
+`{{submitter.name}}`, `{{submitter.email}}`, `{{form.title}}` and `{{date}}`; it is a plain substitution, answers
+are never substituted. Rich text is HTML sanitized by an allow-list (basic formatting, links with http, https
+and mailto, no images, styles or handlers); text that is not HTML is escaped into paragraphs. Titles and custom
+field text are stored as plain text without control characters. A "Submitted by name <email>" paragraph is added to
+the description when a name or an e-mail address is known.
+
+### Events, automation, notifications
+
+`form.submitted` (form id/title, submission id, task, doer = form owner, submitter id/name/email, no token, no IP)
+is an automation trigger with the option `form_id`, the condition fields `event.new.form_id`, `form_title`,
+`submitter_name`, `submitter_email`, and the placeholders `{{event.form.title}}`, `{{event.form.submitter_name}}`,
+`{{event.form.submitter_email}}`. Its task is the created task; `task.created` of the same submission is delivered
+too. Users in `settings.notify_user_ids` get the in-app (and mail) notification `form.submitted`
+(`form_id`, `form_title`, `submitter_name`, `submitter_email`, `task`, `project`), if they can read the project.
+
+### Lifecycle
+
+Purging a project deletes its forms and submissions; deleting a form keeps its tasks; duplicating a project copies
+forms disabled (`duplicated`, or `duplicated_unmapped_reference`) with a new token and remapped custom field, option
+and status ids; deleting a custom field, a workflow status or a label that a form uses disables the form
+(`custom_field_deleted`, `status_deleted`, `label_deleted`); deleting the owner disables their forms
+(`owner_unavailable`).
+
+### Security model
+
+An anonymous submitter can read the definition of one form (what is listed above) and create one task per
+accepted submission, as the form owner, in the one project of the form, with the fields the form asks for and the
+presets the admin chose. They cannot choose where the task goes, set hidden fields, see the task or its id, any
+other task, project, user or label, or learn how many submissions exist. They cannot upload unless the instance and
+the form allow it, and then only limited, non-executable files. Every text they send is escaped, sanitized or
+stored as plain text. They are limited per address and per form, cannot exceed the maximum number of submissions
+even in parallel, and a form silently stops when its owner loses write access. The routes use no cookies and
+no CSRF tokens (nothing depends on ambient credentials); the CORS policy is the global one (only the configured
+origins, nothing wider for these routes), and JSON `Content-Type` is required, so a cross-site HTML form cannot
+post to the JSON endpoint.
 
 ## UI
 
@@ -347,5 +499,5 @@ Dropped now and its history names user1 (the requester) with
 - 5a (done): approvals backend (requests, approvers, workflow integration,
   events, automation triggers and action, notifications, reminders).
 - 5b: approvals UI.
-- 5c: forms backend (definition, public submission path, limits, event).
+- 5c (done): forms backend (definition, public submission path, limits, event, notification, lifecycle).
 - 5d: forms UI (builder, public form page).

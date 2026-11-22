@@ -1102,6 +1102,63 @@
             ]
         },
         {
+            "key": "forms",
+            "comment": "Forms: a project admin publishes a request form; a submission becomes a task in the project, created as the form owner. A form can be public (anyone with the secret link, no account), open to every signed-in user, or open to project members only. Public forms are an unauthenticated write path: they are protected by the limits below, a honeypot field, size limits and an optional maximum number of submissions per form.",
+            "children": [
+                {
+                    "key": "enabled",
+                    "default_value": "true",
+                    "comment": "Kill switch for the whole instance. When false no form takes submissions: the public endpoints answer 410 (disabled) for every existing form. Forms stay untouched and can still be listed and deleted."
+                },
+                {
+                    "key": "maxbodysize",
+                    "default_value": "262144",
+                    "comment": "The maximum size of the JSON body of a submission, in bytes. Larger requests are rejected with 413. Multipart submissions with attachments may additionally carry the files, see maxattachments and maxattachmentsize."
+                },
+                {
+                    "key": "maxattachments",
+                    "default_value": "5",
+                    "comment": "The maximum number of files a single submission may attach."
+                },
+                {
+                    "key": "maxattachmentsize",
+                    "default_value": "10MB",
+                    "comment": "The maximum size of one attached file. The smaller of this and files.maxsize applies."
+                },
+                {
+                    "key": "public",
+                    "comment": "Forms that anyone with the link can submit, without an account.",
+                    "children": [
+                        {
+                            "key": "enabled",
+                            "default_value": "true",
+                            "comment": "Whether forms with public access exist. When false, a form with public access cannot be saved and existing ones answer 410 (disabled). Forms for signed-in users are not affected."
+                        },
+                        {
+                            "key": "attachments",
+                            "default_value": "false",
+                            "comment": "Whether public forms may ask for file attachments. Off by default: an anonymous upload is the riskiest thing a public form can offer. Files are size and type limited either way."
+                        },
+                        {
+                            "key": "ratelimit",
+                            "default_value": "10",
+                            "comment": "The maximum number of submissions per client IP address and hour on public forms. Counted in the database from the stored salted IP hash, so it holds across several replicas. The address is taken as service.ipextractionmethod and service.trustedproxies say. Excess submissions are answered with 429 and a Retry-After header."
+                        },
+                        {
+                            "key": "formratelimit",
+                            "default_value": "300",
+                            "comment": "The maximum number of submissions per public form and hour, whoever sends them. Excess submissions are answered with 429 and a Retry-After header."
+                        },
+                        {
+                            "key": "requestratelimit",
+                            "default_value": "60",
+                            "comment": "The maximum number of requests per client IP address and minute to the public form endpoints (definition and submissions together), counted by the same limiter store as ratelimit.store. A floor against floods; normal use never reaches it."
+                        }
+                    ]
+                }
+            ]
+        },
+        {
             "key": "automation",
             "comment": "Automation rules: when something happens to a task (trigger), check conditions and run actions. Events are written to a database outbox in the same transaction as the change and processed by workers inside the Vikunja process; several replicas may run, each event is claimed by exactly one worker. Delivery is at least once.",
             "children": [

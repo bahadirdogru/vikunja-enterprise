@@ -225,6 +225,8 @@ func isStandardCRUDRoute(routeGroupName string, routeParts []string, _ string) b
 	crudResources["projects_automations_runs"] = true
 	crudResources["dashboards"] = true
 	crudResources["approvals"] = true
+	crudResources["projects_forms"] = true
+	crudResources["projects_forms_submissions"] = true
 	crudResources["tasks_approvals"] = true
 
 	// Check if this is a standard CRUD resource

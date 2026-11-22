@@ -1,0 +1,387 @@
+// Vikunja is a to-do list application to facilitate your life.
+// Copyright 2018-present Vikunja and contributors. All rights reserved.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+package webtests
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"mime/multipart"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"code.vikunja.io/api/pkg/config"
+	"code.vikunja.io/api/pkg/models"
+	"code.vikunja.io/api/pkg/modules/auth"
+
+	"github.com/labstack/echo/v5"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func formsDecode(t *testing.T, rec *httptest.ResponseRecorder) map[string]any {
+	t.Helper()
+	out := map[string]any{}
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &out), rec.Body.String())
+	return out
+}
+
+func formsKeys(m map[string]any) []string {
+	out := []string{}
+	for k := range m {
+		if k != "$schema" { // the schema link Huma adds to every body
+			out = append(out, k)
+		}
+	}
+	return out
+}
+
+func TestHumaForms_Admin(t *testing.T) {
+	e, err := setupTestEnv()
+	require.NoError(t, err)
+	user1 := humaTokenFor(t, &testuser1)
+	user2 := humaTokenFor(t, &testuser2)
+	body := `{"title":"Cover request","access":"members","enabled":true,"fields":[{"target":"title","label":"Title","required":true},{"target":"cf_2","label":"Stage","required":true}],"settings":{"success_message":"Thanks"}}`
+
+	t.Run("create, read, list, update, token, submissions, delete", func(t *testing.T) {
+		rec := humaRequest(t, e, http.MethodPost, "/api/v2/projects/1/forms", body, user1, "")
+		require.Equal(t, http.StatusCreated, rec.Code, rec.Body.String())
+		created := formsDecode(t, rec)
+		id := int64(created["id"].(float64))
+		token := created["token"].(string)
+		assert.GreaterOrEqual(t, len(token), 32)
+		assert.EqualValues(t, 1, created["owner_id"])
+		assert.EqualValues(t, 1, created["project_id"])
+
+		rec = humaRequest(t, e, http.MethodGet, fmt.Sprintf("/api/v2/projects/1/forms/%d", id), "", user1, "")
+		require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+		assert.NotEmpty(t, rec.Header().Get("Etag"))
+		assert.EqualValues(t, 2, formsDecode(t, rec)["max_permission"])
+
+		rec = humaRequest(t, e, http.MethodGet, "/api/v2/projects/1/forms", "", user1, "")
+		require.Equal(t, http.StatusOK, rec.Code)
+		assert.EqualValues(t, 1, formsDecode(t, rec)["total"])
+
+		rec = humaRequest(t, e, http.MethodPatch, fmt.Sprintf("/api/v2/projects/1/forms/%d", id), `{"title":"Renamed"}`, user1, "application/merge-patch+json")
+		require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+		assert.Equal(t, "Renamed", formsDecode(t, rec)["title"])
+
+		rec = humaRequest(t, e, http.MethodGet, "/api/v2/projects/1/forms/options", "", user1, "")
+		require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+		assert.Contains(t, rec.Body.String(), `"cf_2"`)
+		assert.Contains(t, rec.Body.String(), `"public_visible"`)
+
+		// A submission, then the list of submissions without the hash.
+		rec = humaRequest(t, e, http.MethodPost, "/api/v2/forms/"+token+"/submissions", `{"values":{"title":"x","cf_2":1}}`, user1, "")
+		require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+		rec = humaRequest(t, e, http.MethodGet, fmt.Sprintf("/api/v2/projects/1/forms/%d/submissions", id), "", user1, "")
+		require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+		assert.NotContains(t, rec.Body.String(), "ip_hash")
+		assert.NotContains(t, rec.Body.String(), "IPHash")
+		assert.EqualValues(t, 1, formsDecode(t, rec)["total"])
+
+		rec = humaRequest(t, e, http.MethodPost, fmt.Sprintf("/api/v2/projects/1/forms/%d/token", id), "", user1, "")
+		require.Equal(t, http.StatusCreated, rec.Code, rec.Body.String())
+		newToken := formsDecode(t, rec)["token"].(string)
+		assert.NotEqual(t, token, newToken)
+		assert.Equal(t, http.StatusNotFound, humaRequest(t, e, http.MethodGet, "/api/v2/forms/"+token, "", user1, "").Code)
+		assert.Equal(t, http.StatusOK, humaRequest(t, e, http.MethodGet, "/api/v2/forms/"+newToken, "", user1, "").Code)
+
+		rec = humaRequest(t, e, http.MethodDelete, fmt.Sprintf("/api/v2/projects/1/forms/%d", id), "", user1, "")
+		assert.Equal(t, http.StatusNoContent, rec.Code, rec.Body.String())
+		assert.Equal(t, http.StatusNotFound, humaRequest(t, e, http.MethodGet, "/api/v2/forms/"+newToken, "", user1, "").Code)
+	})
+
+	t.Run("validation errors are typed with a path", func(t *testing.T) {
+		bad := `{"title":"x","access":"public","fields":[{"target":"title","label":"T","required":true},{"target":"cf_999","label":"x"}]}`
+		rec := humaRequest(t, e, http.MethodPost, "/api/v2/projects/1/forms", bad, user1, "")
+		require.Equal(t, http.StatusBadRequest, rec.Code, rec.Body.String())
+		out := formsDecode(t, rec)
+		assert.EqualValues(t, models.ErrCodeFormInvalid, out["code"])
+		assert.Contains(t, rec.Body.String(), "fields[1].target")
+	})
+
+	t.Run("only project admins", func(t *testing.T) {
+		for _, c := range []struct{ method, path, body string }{
+			{http.MethodGet, "/api/v2/projects/1/forms", ""},
+			{http.MethodPost, "/api/v2/projects/1/forms", body},
+			{http.MethodGet, "/api/v2/projects/1/forms/options", ""},
+			{http.MethodGet, "/api/v2/projects/1/forms/1", ""},
+			{http.MethodGet, "/api/v2/projects/1/forms/1/submissions", ""},
+			{http.MethodPost, "/api/v2/projects/1/forms/1/token", ""},
+			{http.MethodDelete, "/api/v2/projects/1/forms/1", ""},
+		} {
+			rec := humaRequest(t, e, c.method, c.path, c.body, user2, "")
+			assert.Equal(t, http.StatusForbidden, rec.Code, "%s %s: %s", c.method, c.path, rec.Body.String())
+			rec = humaRequest(t, e, c.method, c.path, c.body, "", "")
+			assert.Equal(t, http.StatusUnauthorized, rec.Code, "%s %s anonymous", c.method, c.path)
+		}
+		share, err := auth.NewLinkShareJWTAuthtoken(&models.LinkSharing{ID: 1, Hash: "test", ProjectID: 1, Permission: models.PermissionAdmin, SharingType: models.SharingTypeWithoutPassword, SharedByID: 1})
+		require.NoError(t, err)
+		rec := humaRequest(t, e, http.MethodGet, "/api/v2/projects/1/forms", "", share, "")
+		assert.Equal(t, http.StatusForbidden, rec.Code)
+	})
+}
+
+func newPublicForm(t *testing.T, e *echo.Echo, token, access, fields string, settings string) (id int64, formToken string) {
+	t.Helper()
+	body := fmt.Sprintf(`{"title":"Public form","access":%q,"enabled":true,"fields":%s,"settings":%s}`, access, fields, settings)
+	rec := humaRequest(t, e, http.MethodPost, "/api/v2/projects/1/forms", body, token, "")
+	require.Equal(t, http.StatusCreated, rec.Code, rec.Body.String())
+	out := formsDecode(t, rec)
+	return int64(out["id"].(float64)), out["token"].(string)
+}
+
+func TestHumaForms_PublicRoutes(t *testing.T) {
+	e, err := setupTestEnv()
+	require.NoError(t, err)
+	user1 := humaTokenFor(t, &testuser1)
+	user2 := humaTokenFor(t, &testuser2)
+	fields := `[{"target":"title","label":"Title","required":true},{"target":"cf_2","label":"Stage"},{"target":"cf_1","hidden":true,"default":"internal"}]`
+	_, pub := newPublicForm(t, e, user1, "public", fields, `{"success_message":"Thanks"}`)
+	_, usr := newPublicForm(t, e, user1, "users", fields, `{}`)
+	_, mem := newPublicForm(t, e, user1, "members", fields, `{}`)
+
+	t.Run("the public definition needs no auth, sets no cookie and is not cached", func(t *testing.T) {
+		rec := humaRequest(t, e, http.MethodGet, "/api/v2/forms/"+pub, "", "", "")
+		require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+		assert.Equal(t, "no-store", rec.Header().Get("Cache-Control"))
+		assert.Empty(t, rec.Header().Values("Set-Cookie"))
+		assert.Empty(t, rec.Header().Get("Access-Control-Allow-Origin"))
+		out := formsDecode(t, rec)
+		assert.ElementsMatch(t, []string{"title", "description", "fields", "success", "submitter"}, formsKeys(out))
+		assert.NotContains(t, rec.Body.String(), "internal")
+		assert.NotContains(t, rec.Body.String(), "project_id")
+		assert.Len(t, out["fields"], 2)
+	})
+
+	t.Run("an unknown token is 404", func(t *testing.T) {
+		rec := humaRequest(t, e, http.MethodGet, "/api/v2/forms/nope", "", "", "")
+		assert.Equal(t, http.StatusNotFound, rec.Code)
+		assert.EqualValues(t, models.ErrCodeFormDoesNotExist, formsDecode(t, rec)["code"])
+	})
+
+	t.Run("forms for signed-in users answer a typed 401 without credentials", func(t *testing.T) {
+		for _, token := range []string{usr, mem} {
+			rec := humaRequest(t, e, http.MethodGet, "/api/v2/forms/"+token, "", "", "")
+			assert.Equal(t, http.StatusUnauthorized, rec.Code)
+			assert.EqualValues(t, models.ErrCodeFormLoginRequired, formsDecode(t, rec)["code"])
+			rec = humaRequest(t, e, http.MethodPost, "/api/v2/forms/"+token+"/submissions", `{"values":{"title":"x"}}`, "", "")
+			assert.Equal(t, http.StatusUnauthorized, rec.Code)
+			assert.EqualValues(t, models.ErrCodeFormLoginRequired, formsDecode(t, rec)["code"])
+			assert.Empty(t, rec.Header().Values("Set-Cookie"))
+		}
+	})
+
+	t.Run("signed-in users and members", func(t *testing.T) {
+		assert.Equal(t, http.StatusOK, humaRequest(t, e, http.MethodGet, "/api/v2/forms/"+usr, "", user2, "").Code)
+		rec := humaRequest(t, e, http.MethodGet, "/api/v2/forms/"+mem, "", user2, "")
+		assert.Equal(t, http.StatusForbidden, rec.Code)
+		assert.EqualValues(t, models.ErrCodeFormNotAllowed, formsDecode(t, rec)["code"])
+		assert.Equal(t, http.StatusOK, humaRequest(t, e, http.MethodGet, "/api/v2/forms/"+mem, "", user1, "").Code)
+	})
+
+	t.Run("link shares are not users", func(t *testing.T) {
+		share, err := auth.NewLinkShareJWTAuthtoken(&models.LinkSharing{ID: 1, Hash: "test", ProjectID: 1, Permission: models.PermissionWrite, SharingType: models.SharingTypeWithoutPassword, SharedByID: 1})
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusForbidden, humaRequest(t, e, http.MethodGet, "/api/v2/forms/"+usr, "", share, "").Code)
+		assert.Equal(t, http.StatusForbidden, humaRequest(t, e, http.MethodGet, "/api/v2/forms/"+mem, "", share, "").Code)
+		assert.Equal(t, http.StatusOK, humaRequest(t, e, http.MethodGet, "/api/v2/forms/"+pub, "", share, "").Code)
+	})
+
+	t.Run("a bad token on a public form is a 401 with code 11, not an anonymous request", func(t *testing.T) {
+		rec := humaRequest(t, e, http.MethodGet, "/api/v2/forms/"+pub, "", "garbage", "")
+		assert.Equal(t, http.StatusUnauthorized, rec.Code)
+		assert.EqualValues(t, 11, formsDecode(t, rec)["code"])
+	})
+
+	t.Run("an anonymous submission", func(t *testing.T) {
+		rec := humaRequest(t, e, http.MethodPost, "/api/v2/forms/"+pub+"/submissions", `{"values":{"title":"Hello","cf_2":1},"submitter":{},"honeypot":""}`, "", "")
+		require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+		assert.Empty(t, rec.Header().Values("Set-Cookie"))
+		assert.Equal(t, "no-store", rec.Header().Get("Cache-Control"))
+		out := formsDecode(t, rec)
+		assert.ElementsMatch(t, []string{"message", "redirect_url", "submit_another"}, formsKeys(out))
+		assert.Equal(t, "Thanks", out["message"])
+	})
+
+	t.Run("a signed-in member gets the task id", func(t *testing.T) {
+		rec := humaRequest(t, e, http.MethodPost, "/api/v2/forms/"+mem+"/submissions", `{"values":{"title":"Hello"}}`, user1, "")
+		require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+		assert.NotZero(t, formsDecode(t, rec)["task_id"])
+	})
+
+	t.Run("validation errors are 422 with one entry per field", func(t *testing.T) {
+		rec := humaRequest(t, e, http.MethodPost, "/api/v2/forms/"+pub+"/submissions", `{"values":{"cf_2":"no","cf_1":"hidden"}}`, "", "")
+		require.Equal(t, http.StatusUnprocessableEntity, rec.Code, rec.Body.String())
+		out := formsDecode(t, rec)
+		assert.EqualValues(t, models.ErrCodeFormSubmissionInvalid, out["code"])
+		details := out["details"].(map[string]any)
+		errs := details["errors"].([]any)
+		byField := map[string]string{}
+		for _, e := range errs {
+			m := e.(map[string]any)
+			assert.Contains(t, formsKeys(m), "message")
+			byField[m["field"].(string)] = m["code"].(string)
+		}
+		assert.Equal(t, map[string]string{"title": "required", "cf_2": "invalid", "cf_1": "unknown_field"}, byField)
+	})
+
+	t.Run("a honeypot looks like a success and creates nothing", func(t *testing.T) {
+		rec := humaRequest(t, e, http.MethodPost, "/api/v2/forms/"+pub+"/submissions", `{"values":{"title":"bot"},"honeypot":"x"}`, "", "")
+		require.Equal(t, http.StatusOK, rec.Code)
+		assert.Equal(t, "Thanks", formsDecode(t, rec)["message"])
+	})
+
+	t.Run("form bodies and oversized bodies are refused", func(t *testing.T) {
+		rec := humaRequest(t, e, http.MethodPost, "/api/v2/forms/"+pub+"/submissions", "values=1", "", "application/x-www-form-urlencoded")
+		assert.Equal(t, http.StatusUnsupportedMediaType, rec.Code)
+		rec = humaRequest(t, e, http.MethodPost, "/api/v2/forms/"+pub+"/submissions", "title=1", "", "text/plain")
+		assert.Equal(t, http.StatusUnsupportedMediaType, rec.Code)
+		huge := `{"values":{"title":"` + strings.Repeat("a", 300*1024) + `"}}`
+		rec = humaRequest(t, e, http.MethodPost, "/api/v2/forms/"+pub+"/submissions", huge, "", "")
+		assert.Equal(t, http.StatusRequestEntityTooLarge, rec.Code, rec.Body.String())
+	})
+
+	t.Run("a long value is a per-field error", func(t *testing.T) {
+		long := `{"values":{"title":"` + strings.Repeat("a", 300) + `"}}`
+		rec := humaRequest(t, e, http.MethodPost, "/api/v2/forms/"+pub+"/submissions", long, "", "")
+		assert.Equal(t, http.StatusUnprocessableEntity, rec.Code)
+		assert.Contains(t, rec.Body.String(), "too_long")
+	})
+
+	t.Run("a cross-origin request gets no CORS grant", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodOptions, "/api/v2/forms/"+pub+"/submissions", nil)
+		req.Header.Set("Origin", "https://evil.example")
+		req.Header.Set("Access-Control-Request-Method", "POST")
+		rec := httptest.NewRecorder()
+		e.ServeHTTP(rec, req)
+		assert.Empty(t, rec.Header().Get("Access-Control-Allow-Origin"))
+		assert.Empty(t, rec.Header().Get("Access-Control-Allow-Credentials"))
+	})
+}
+
+func TestHumaForms_PublicLimitsAndAvailability(t *testing.T) {
+	e, err := setupTestEnv()
+	require.NoError(t, err)
+	user1 := humaTokenFor(t, &testuser1)
+	fields := `[{"target":"title","label":"Title","required":true}]`
+
+	t.Run("closed, full and disabled answer 410 with a reason", func(t *testing.T) {
+		_, full := newPublicForm(t, e, user1, "public", fields, `{"max_submissions":1}`)
+		rec := humaRequest(t, e, http.MethodPost, "/api/v2/forms/"+full+"/submissions", `{"values":{"title":"a"}}`, "", "")
+		require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+		for _, c := range []struct{ method, path, body string }{
+			{http.MethodGet, "/api/v2/forms/" + full, ""},
+			{http.MethodPost, "/api/v2/forms/" + full + "/submissions", `{"values":{"title":"b"}}`},
+		} {
+			rec = humaRequest(t, e, c.method, c.path, c.body, "", "")
+			require.Equal(t, http.StatusGone, rec.Code, rec.Body.String())
+			out := formsDecode(t, rec)
+			assert.EqualValues(t, models.ErrCodeFormUnavailable, out["code"])
+			assert.Equal(t, map[string]any{"reason": "full", "title": "Public form"}, out["details"])
+		}
+
+		_, closed := newPublicForm(t, e, user1, "public", fields, `{"close_date":"2020-01-01T00:00:00Z"}`)
+		rec = humaRequest(t, e, http.MethodGet, "/api/v2/forms/"+closed, "", "", "")
+		require.Equal(t, http.StatusGone, rec.Code)
+		assert.Contains(t, rec.Body.String(), `"reason":"closed"`)
+
+		id, off := newPublicForm(t, e, user1, "public", fields, `{}`)
+		rec = humaRequest(t, e, http.MethodPatch, fmt.Sprintf("/api/v2/projects/1/forms/%d", id), `{"enabled":false}`, user1, "application/merge-patch+json")
+		require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+		rec = humaRequest(t, e, http.MethodGet, "/api/v2/forms/"+off, "", "", "")
+		require.Equal(t, http.StatusGone, rec.Code)
+		assert.Contains(t, rec.Body.String(), `"reason":"disabled"`)
+	})
+
+	t.Run("the per address limit answers 429 with Retry-After", func(t *testing.T) {
+		config.FormsPublicRateLimit.Set(2)
+		defer config.FormsPublicRateLimit.Set(10)
+		e, err := setupTestEnv() // fresh fixtures: no earlier submissions from this address
+		require.NoError(t, err)
+		_, token := newPublicForm(t, e, user1, "public", fields, `{}`)
+		for i := 0; i < 2; i++ {
+			rec := humaRequest(t, e, http.MethodPost, "/api/v2/forms/"+token+"/submissions", `{"values":{"title":"a"}}`, "", "")
+			require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+		}
+		rec := humaRequest(t, e, http.MethodPost, "/api/v2/forms/"+token+"/submissions", `{"values":{"title":"a"}}`, "", "")
+		require.Equal(t, http.StatusTooManyRequests, rec.Code, rec.Body.String())
+		assert.NotEmpty(t, rec.Header().Get("Retry-After"))
+		assert.EqualValues(t, models.ErrCodeFormRateLimited, formsDecode(t, rec)["code"])
+	})
+
+	t.Run("the request floor of the router", func(t *testing.T) {
+		config.FormsPublicRequestRateLimit.Set(3)
+		defer config.FormsPublicRequestRateLimit.Set(60)
+		e2, err := setupTestEnv()
+		require.NoError(t, err)
+		last := 0
+		for i := 0; i < 6; i++ {
+			last = humaRequest(t, e2, http.MethodGet, "/api/v2/forms/nope", "", "", "").Code
+		}
+		assert.Equal(t, http.StatusTooManyRequests, last)
+	})
+}
+
+func TestHumaForms_PublicAttachments(t *testing.T) {
+	e, err := setupTestEnv()
+	require.NoError(t, err)
+	user1 := humaTokenFor(t, &testuser1)
+	fields := `[{"target":"title","label":"Title","required":true},{"target":"attachments","label":"Files"}]`
+
+	multipartBody := func(data string, files map[string]string) (string, string) {
+		var buf bytes.Buffer
+		w := multipart.NewWriter(&buf)
+		require.NoError(t, w.WriteField("data", data))
+		for name, content := range files {
+			part, err := w.CreateFormFile("files", name)
+			require.NoError(t, err)
+			_, _ = part.Write([]byte(content))
+		}
+		require.NoError(t, w.Close())
+		return buf.String(), w.FormDataContentType()
+	}
+
+	// Saving is refused while the switch is off.
+	rec := humaRequest(t, e, http.MethodPost, "/api/v2/projects/1/forms", `{"title":"x","access":"public","enabled":true,"fields":`+fields+`}`, user1, "")
+	require.Equal(t, http.StatusBadRequest, rec.Code)
+
+	config.FormsPublicAttachments.Set(true)
+	defer config.FormsPublicAttachments.Set(false)
+	_, token := newPublicForm(t, e, user1, "public", fields, `{}`)
+
+	rec = humaRequest(t, e, http.MethodGet, "/api/v2/forms/"+token, "", "", "")
+	require.Equal(t, http.StatusOK, rec.Code)
+	assert.Contains(t, rec.Body.String(), `"attachments":{"max_files":5`)
+
+	body, ct := multipartBody(`{"values":{"title":"with file"}}`, map[string]string{"notes.txt": "hello"})
+	rec = humaRequest(t, e, http.MethodPost, "/api/v2/forms/"+token+"/submissions/multipart", body, "", ct)
+	require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+	assert.Empty(t, rec.Header().Values("Set-Cookie"))
+
+	body, ct = multipartBody(`{"values":{"title":"with exe"}}`, map[string]string{"run.exe": "MZ"})
+	rec = humaRequest(t, e, http.MethodPost, "/api/v2/forms/"+token+"/submissions/multipart", body, "", ct)
+	require.Equal(t, http.StatusUnprocessableEntity, rec.Code, rec.Body.String())
+	assert.Contains(t, rec.Body.String(), "file_type_not_allowed")
+
+	body, ct = multipartBody(`not json`, nil)
+	rec = humaRequest(t, e, http.MethodPost, "/api/v2/forms/"+token+"/submissions/multipart", body, "", ct)
+	assert.Equal(t, http.StatusUnprocessableEntity, rec.Code)
+}
