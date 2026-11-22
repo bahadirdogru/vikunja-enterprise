@@ -33,7 +33,9 @@ import (
 	"xorm.io/xorm"
 )
 
-const claimBatchSize = 10
+// One event per claim: the lock of a claimed event covers one run timeout. Claiming a batch and working through it
+// in sequence could keep the later events locked past locked_until, and another worker would take them again.
+const claimBatchSize = 1
 
 // retryBase is the wait before the second attempt; it doubles with every further attempt. Tests shorten it.
 var retryBase = 10 * time.Second

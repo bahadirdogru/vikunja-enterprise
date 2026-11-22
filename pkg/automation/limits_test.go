@@ -310,3 +310,29 @@ func TestLimits_OwnerWhoCannotLogInAnymoreAbortsTheRule(t *testing.T) {
 	assert.Equal(t, models.AutomationRunAborted, runs[0].Status)
 	assert.Equal(t, models.AutomationDisabledOwnerUnavailable, getRule(t, r.ID).DisabledReason)
 }
+
+func TestLimits_ARuleDoesNotReactToTheTasksItCreated(t *testing.T) {
+	reset(t)
+	subtask := &spec.Action{Type: spec.ActionCreateSubtask, Params: map[string]any{"title": "child of {{task.title}}"}}
+	self := addRule(t, projectOwned, user1, rule(spec.TriggerTaskCreated, nil, nil, subtask))
+
+	s := newSession()
+	before, err := s.Where("project_id = ?", projectOwned).Count(&models.Task{})
+	_ = s.Close()
+	require.NoError(t, err)
+
+	newTask(t, projectOwned, "parent", user1)
+	drain(t)
+
+	s = newSession()
+	after, err := s.Where("project_id = ?", projectOwned).Count(&models.Task{})
+	_ = s.Close()
+	require.NoError(t, err)
+	assert.EqualValues(t, before+2, after, "the parent and exactly one subtask, no chain")
+
+	runs := allRuns(t, self.ID)
+	require.Len(t, runs, 2)
+	assert.Equal(t, models.AutomationRunSuccess, runs[0].Status)
+	assert.Equal(t, models.AutomationRunSkipped, runs[1].Status)
+	assert.Equal(t, SkipSelfTrigger, runs[1].SkipReason)
+}

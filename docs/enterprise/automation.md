@@ -165,9 +165,6 @@ Trigger types in the API: `task.created`, `task.updated` (option `fields`),
   configured. A real overdue / due-approaching trigger belongs to 3d.
 - Label changes only produce a generic `task.updated` without old state, so
   label triggers are not offered either.
-- A rule that creates tasks on `task.created` reacts to the tasks it created (the
-  self-trigger guard only covers the same task); `automation.maxdepth` bounds the
-  chain, but it is a way to create many tasks.
 
 ## Conditions
 
@@ -277,9 +274,9 @@ project admins can write scripts. Instances that do not trust their project
 admins should turn scripts off.
 
 A rule never reacts to an event whose chain of origin runs (`origin_run_id`,
-followed up to `maxdepth`) contains a run of the same rule for the same task; the
-event is recorded as a skipped run (`self_trigger`). A different task still
-triggers the rule.
+followed up to `maxdepth`) contains a run of the same rule, whichever task the
+event is about; the event is recorded as a skipped run (`self_trigger`). So a
+rule that creates tasks does not react to the tasks it created.
 
 ## API (`/api/v2`)
 

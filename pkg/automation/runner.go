@@ -296,7 +296,8 @@ func (rc *runContext) preChecks(s *xorm.Session) (done bool, err error) {
 }
 
 // causedByOwnRun follows the chain of runs that led to the event and reports whether one of them was a run of this
-// rule for the same task.
+// rule. The task does not matter: a rule that creates tasks must not react to the tasks it created itself, or one
+// event could fan out into a tree of runs.
 func (rc *runContext) causedByOwnRun(s *xorm.Session) (bool, error) {
 	originID := rc.ev.OriginRunID
 	for i := 0; originID != 0 && i <= config.AutomationMaxDepth.GetInt()+2; i++ {
@@ -308,7 +309,7 @@ func (rc *runContext) causedByOwnRun(s *xorm.Session) (bool, error) {
 		if !has {
 			return false, nil
 		}
-		if origin.RuleID == rc.rule.ID && origin.TaskID == rc.ev.TaskID {
+		if origin.RuleID == rc.rule.ID {
 			return true, nil
 		}
 		parent := &models.AutomationEvent{}
