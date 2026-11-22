@@ -1859,6 +1859,499 @@ export type File = {
     readonly size?: number;
 };
 
+export type Form = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * Who may submit: public (anyone with the link), users (every signed-in user) or members (users who can read the project).
+     */
+    access?: 'public' | 'users' | 'members';
+    /**
+     * A timestamp when this form was created. You cannot change this value.
+     */
+    readonly created?: string;
+    /**
+     * Rich text (HTML) shown above the form. It is sanitized when saved.
+     */
+    description?: string;
+    /**
+     * Set when the system disabled the form: owner_not_writer, owner_unavailable, custom_field_deleted, status_deleted, label_deleted, duplicated or duplicated_unmapped_reference.
+     */
+    readonly disabled_reason?: string;
+    /**
+     * Whether the form takes submissions. A form the system disabled has a disabled_reason; saving it with enabled=true clears the reason.
+     */
+    enabled?: boolean;
+    /**
+     * What the form asks, in order.
+     */
+    fields?: Array<FormField> | null;
+    /**
+     * The unique, numeric id of this form.
+     */
+    readonly id?: number;
+    /**
+     * The user the tasks are created as. Always the user who last saved the form. The form is disabled when this user can no longer write to the project.
+     */
+    readonly owner_id?: number;
+    /**
+     * The project the tasks of this form are created in. Taken from the URL.
+     */
+    readonly project_id?: number;
+    /**
+     * Settings of the form.
+     */
+    settings?: FormSettings;
+    /**
+     * How many submissions the form took.
+     */
+    readonly submission_count?: number;
+    /**
+     * The title of the form.
+     */
+    title?: string;
+    /**
+     * The secret in the link of the form. Regenerate it with POST .../token; the old link stops working.
+     */
+    readonly token?: string;
+    /**
+     * A timestamp when this form was last updated. You cannot change this value.
+     */
+    readonly updated?: string;
+};
+
+export type FormField = {
+    /**
+     * The prefilled value of a shown field and the value of a hidden one. Validated like a real answer. For title and description it may use the placeholders {{submitter.name}}, {{submitter.email}}, {{form.title}} and {{date}}; for labels it is a list of label ids.
+     */
+    default?: unknown;
+    /**
+     * Optional help text shown with the field.
+     */
+    help?: string;
+    /**
+     * Hidden fields are not shown and always take their default. This is how a form presets a label or custom field.
+     */
+    hidden?: boolean;
+    /**
+     * The question as the submitter sees it. Required for fields that are shown.
+     */
+    label?: string;
+    /**
+     * Only for a shown labels field: the ids of the labels the submitter may pick. Not allowed on public forms.
+     */
+    options?: Array<number> | null;
+    /**
+     * Whether the submitter has to answer. A required hidden field needs a default.
+     */
+    required?: boolean;
+    /**
+     * Where the answer goes: title, description, due_date, priority, labels, attachments or cf_<id> for a custom field of the project. A target can appear once.
+     */
+    target?: string;
+};
+
+export type FormOptions = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * Whether public forms may ask for attachments (forms.public.attachments).
+     */
+    readonly public_attachments?: boolean;
+    /**
+     * Whether public forms can be saved on this instance (forms.public.enabled).
+     */
+    readonly public_enabled?: boolean;
+    /**
+     * The built-in targets followed by the custom fields of the project, in their order.
+     */
+    readonly targets?: Array<FormTargetInfo> | null;
+};
+
+export type FormPublicAttachments = {
+    /**
+     * The maximum size of one file in bytes.
+     */
+    max_file_size?: number;
+    /**
+     * The maximum number of files.
+     */
+    max_files?: number;
+};
+
+export type FormPublicDefinition = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * The file limits. Only present when the form asks for attachments.
+     */
+    attachments?: FormPublicAttachments;
+    /**
+     * Sanitized rich text (HTML) shown above the form.
+     */
+    description?: string;
+    /**
+     * The fields to show, in order. Hidden fields are not part of it.
+     */
+    fields?: Array<FormPublicField> | null;
+    /**
+     * Which details of the submitter are asked.
+     */
+    submitter?: FormPublicSubmitter;
+    /**
+     * What to do after a submission.
+     */
+    success?: FormPublicSuccess;
+    /**
+     * The title of the form.
+     */
+    title?: string;
+};
+
+export type FormPublicField = {
+    /**
+     * Type specific settings of a custom field: min, max, precision, currency, max_rating.
+     */
+    config?: CustomFieldConfig;
+    /**
+     * The prefilled value.
+     */
+    default?: unknown;
+    /**
+     * Help text, may be empty.
+     */
+    help?: string;
+    /**
+     * How to render it: text, rich_text, date, priority, labels, files or the custom field type (text, long_text, number, currency, date, checkbox, select, multi_select, user, url, email, rating, progress).
+     */
+    kind?: string;
+    /**
+     * The question.
+     */
+    label?: string;
+    /**
+     * The maximum length in characters of a text answer.
+     */
+    max_length?: number;
+    /**
+     * The choices of a select, multi_select or labels field.
+     */
+    options?: Array<FormPublicOption> | null;
+    /**
+     * Whether an answer is required.
+     */
+    required?: boolean;
+    /**
+     * The key of the answer in values.
+     */
+    target?: string;
+};
+
+export type FormPublicOption = {
+    /**
+     * A hex color including the leading #, when there is one.
+     */
+    color?: string;
+    /**
+     * The id to submit.
+     */
+    id?: number;
+    /**
+     * The text to show.
+     */
+    title?: string;
+};
+
+export type FormPublicSubmitter = {
+    /**
+     * Whether to ask for an e-mail address (submitter.email).
+     */
+    collect_email?: boolean;
+    /**
+     * Whether to ask for a name (submitter.name).
+     */
+    collect_name?: boolean;
+    /**
+     * Whether the e-mail address is required.
+     */
+    email_required?: boolean;
+    /**
+     * Whether the name is required.
+     */
+    name_required?: boolean;
+};
+
+export type FormPublicSuccess = {
+    /**
+     * Text to show after the submission.
+     */
+    message?: string;
+    /**
+     * Where to send the submitter, empty for nowhere.
+     */
+    redirect_url?: string;
+    /**
+     * Whether to offer another submission.
+     */
+    submit_another?: boolean;
+};
+
+export type FormReadBody = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * Who may submit: public (anyone with the link), users (every signed-in user) or members (users who can read the project).
+     */
+    access?: 'public' | 'users' | 'members';
+    /**
+     * A timestamp when this form was created. You cannot change this value.
+     */
+    readonly created?: string;
+    /**
+     * Rich text (HTML) shown above the form. It is sanitized when saved.
+     */
+    description?: string;
+    /**
+     * Set when the system disabled the form: owner_not_writer, owner_unavailable, custom_field_deleted, status_deleted, label_deleted, duplicated or duplicated_unmapped_reference.
+     */
+    readonly disabled_reason?: string;
+    /**
+     * Whether the form takes submissions. A form the system disabled has a disabled_reason; saving it with enabled=true clears the reason.
+     */
+    enabled?: boolean;
+    /**
+     * What the form asks, in order.
+     */
+    fields?: Array<FormField> | null;
+    /**
+     * The unique, numeric id of this form.
+     */
+    readonly id?: number;
+    /**
+     * The maximum permission the requesting user has on the project of this form (always 2: only project admins can read forms).
+     */
+    readonly max_permission?: number;
+    /**
+     * The user the tasks are created as. Always the user who last saved the form. The form is disabled when this user can no longer write to the project.
+     */
+    readonly owner_id?: number;
+    /**
+     * The project the tasks of this form are created in. Taken from the URL.
+     */
+    readonly project_id?: number;
+    /**
+     * Settings of the form.
+     */
+    settings?: FormSettings;
+    /**
+     * How many submissions the form took.
+     */
+    readonly submission_count?: number;
+    /**
+     * The title of the form.
+     */
+    title?: string;
+    /**
+     * The secret in the link of the form. Regenerate it with POST .../token; the old link stops working.
+     */
+    readonly token?: string;
+    /**
+     * A timestamp when this form was last updated. You cannot change this value.
+     */
+    readonly updated?: string;
+};
+
+export type FormSettings = {
+    /**
+     * After this time the form takes no submissions. Null for never.
+     */
+    close_date?: string | null;
+    /**
+     * Ask the submitter for an e-mail address. It is stored on the submission and added to the task description.
+     */
+    collect_email?: boolean;
+    /**
+     * Ask the submitter for a name. It is stored on the submission and added to the task description.
+     */
+    collect_name?: boolean;
+    /**
+     * Users assigned to every created task. They have to be able to read the project.
+     */
+    default_assignee_ids?: Array<number> | null;
+    /**
+     * Whether the e-mail address has to be given. Needs collect_email.
+     */
+    email_required?: boolean;
+    /**
+     * The workflow status the created tasks start in. 0 keeps the initial status of the workflow.
+     */
+    initial_status_id?: number;
+    /**
+     * The form takes no submissions after this many. 0 for no limit.
+     */
+    max_submissions?: number;
+    /**
+     * Whether the name has to be given. Needs collect_name.
+     */
+    name_required?: boolean;
+    /**
+     * Users who get a notification for every submission. They have to be able to read the project.
+     */
+    notify_user_ids?: Array<number> | null;
+    /**
+     * An http or https address the submitter is sent to after a submission.
+     */
+    redirect_url?: string;
+    /**
+     * Whether the confirmation offers to submit the form again.
+     */
+    submit_another?: boolean;
+    /**
+     * Shown after a submission. Plain text.
+     */
+    success_message?: string;
+};
+
+export type FormSubmission = {
+    /**
+     * When the form was submitted.
+     */
+    readonly created?: string;
+    /**
+     * The form. Taken from the URL.
+     */
+    readonly form_id?: number;
+    /**
+     * The unique, numeric id of this submission.
+     */
+    readonly id?: number;
+    /**
+     * The e-mail address the submitter gave, or the one of the signed-in submitter.
+     */
+    readonly submitter_email?: string;
+    /**
+     * The user who submitted, null for anonymous submissions.
+     */
+    readonly submitter_id?: number | null;
+    /**
+     * The name the submitter gave, or the display name of the signed-in submitter.
+     */
+    readonly submitter_name?: string;
+    /**
+     * The task the submission created.
+     */
+    readonly task_id?: number;
+};
+
+export type FormSubmitInput = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * A field real submitters never fill: leave it empty. A non-empty value is answered like a success and nothing is created.
+     */
+    honeypot?: string;
+    /**
+     * Name and e-mail address of the submitter, as far as the form asks for them.
+     */
+    submitter?: FormSubmitter;
+    /**
+     * The answers keyed by the target of the field, e.g. {"title": "Laptop", "cf_12": 5}. Only the fields the definition lists may be sent; anything else is rejected.
+     */
+    values?: {
+        [key: string]: unknown;
+    };
+};
+
+export type FormSubmitResult = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * Text to show to the submitter.
+     */
+    message?: string;
+    /**
+     * Where to send the submitter, empty for nowhere.
+     */
+    redirect_url?: string;
+    /**
+     * Whether to offer another submission.
+     */
+    submit_another?: boolean;
+    /**
+     * The created task. Only sent to signed-in submitters who can read the project.
+     */
+    task_id?: number;
+};
+
+export type FormSubmitter = {
+    /**
+     * The e-mail address, when the form asks for it.
+     */
+    email?: string;
+    /**
+     * The name, when the form asks for it.
+     */
+    name?: string;
+};
+
+export type FormTargetInfo = {
+    /**
+     * The type specific settings of the custom field.
+     */
+    config?: CustomFieldConfig;
+    /**
+     * The id of the custom field, for cf_<id> targets.
+     */
+    custom_field_id?: number;
+    /**
+     * What kind of answer it takes: text, rich_text, date, priority, labels, files, or the custom field type.
+     */
+    kind?: string;
+    /**
+     * The choices of a select or multi_select custom field.
+     */
+    options?: Array<CustomFieldOption> | null;
+    /**
+     * Whether a public form may preset it as a hidden field.
+     */
+    public_hidden?: boolean;
+    /**
+     * Whether a public form may ask for it. False for labels and user fields, which would need project data pickers, and for attachments unless forms.public.attachments is enabled.
+     */
+    public_visible?: boolean;
+    /**
+     * The value of a field's target: title, description, due_date, priority, labels, attachments or cf_<id>.
+     */
+    target?: string;
+    /**
+     * The title of the custom field; empty for built-in targets.
+     */
+    title?: string;
+};
+
+export type FormToken = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * The new secret token. The old link stops working.
+     */
+    readonly token?: string;
+};
+
 export type HealthBodyBody = {
     /**
      * A URL to the JSON Schema for this object.
@@ -2621,6 +3114,30 @@ export type PaginatedDatabaseNotification = {
      */
     readonly $schema?: string;
     items?: Array<DatabaseNotification> | null;
+    page?: number;
+    per_page?: number;
+    total?: number;
+    total_pages?: number;
+};
+
+export type PaginatedForm = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    items?: Array<Form> | null;
+    page?: number;
+    per_page?: number;
+    total?: number;
+    total_pages?: number;
+};
+
+export type PaginatedFormSubmission = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    items?: Array<FormSubmission> | null;
     page?: number;
     per_page?: number;
     total?: number;
@@ -6782,6 +7299,162 @@ export type EmailConfirmWritable = {
     token?: string;
 };
 
+export type FormWritable = {
+    /**
+     * Who may submit: public (anyone with the link), users (every signed-in user) or members (users who can read the project).
+     */
+    access?: 'public' | 'users' | 'members';
+    /**
+     * Rich text (HTML) shown above the form. It is sanitized when saved.
+     */
+    description?: string;
+    /**
+     * Whether the form takes submissions. A form the system disabled has a disabled_reason; saving it with enabled=true clears the reason.
+     */
+    enabled?: boolean;
+    /**
+     * What the form asks, in order.
+     */
+    fields?: Array<FormField> | null;
+    /**
+     * Settings of the form.
+     */
+    settings?: FormSettings;
+    /**
+     * The title of the form.
+     */
+    title?: string;
+};
+
+export type FormOptionsWritable = {
+    [key: string]: never;
+};
+
+export type FormPublicDefinitionWritable = {
+    /**
+     * The file limits. Only present when the form asks for attachments.
+     */
+    attachments?: FormPublicAttachments;
+    /**
+     * Sanitized rich text (HTML) shown above the form.
+     */
+    description?: string;
+    /**
+     * The fields to show, in order. Hidden fields are not part of it.
+     */
+    fields?: Array<FormPublicField> | null;
+    /**
+     * Which details of the submitter are asked.
+     */
+    submitter?: FormPublicSubmitter;
+    /**
+     * What to do after a submission.
+     */
+    success?: FormPublicSuccess;
+    /**
+     * The title of the form.
+     */
+    title?: string;
+};
+
+export type FormReadBodyWritable = {
+    /**
+     * Who may submit: public (anyone with the link), users (every signed-in user) or members (users who can read the project).
+     */
+    access?: 'public' | 'users' | 'members';
+    /**
+     * Rich text (HTML) shown above the form. It is sanitized when saved.
+     */
+    description?: string;
+    /**
+     * Whether the form takes submissions. A form the system disabled has a disabled_reason; saving it with enabled=true clears the reason.
+     */
+    enabled?: boolean;
+    /**
+     * What the form asks, in order.
+     */
+    fields?: Array<FormField> | null;
+    /**
+     * Settings of the form.
+     */
+    settings?: FormSettings;
+    /**
+     * The title of the form.
+     */
+    title?: string;
+};
+
+export type FormSubmitInputWritable = {
+    /**
+     * A field real submitters never fill: leave it empty. A non-empty value is answered like a success and nothing is created.
+     */
+    honeypot?: string;
+    /**
+     * Name and e-mail address of the submitter, as far as the form asks for them.
+     */
+    submitter?: FormSubmitter;
+    /**
+     * The answers keyed by the target of the field, e.g. {"title": "Laptop", "cf_12": 5}. Only the fields the definition lists may be sent; anything else is rejected.
+     */
+    values?: {
+        [key: string]: unknown;
+    };
+};
+
+export type FormSubmitResultWritable = {
+    /**
+     * Text to show to the submitter.
+     */
+    message?: string;
+    /**
+     * Where to send the submitter, empty for nowhere.
+     */
+    redirect_url?: string;
+    /**
+     * Whether to offer another submission.
+     */
+    submit_another?: boolean;
+    /**
+     * The created task. Only sent to signed-in submitters who can read the project.
+     */
+    task_id?: number;
+};
+
+export type FormTargetInfoWritable = {
+    /**
+     * The type specific settings of the custom field.
+     */
+    config?: CustomFieldConfig;
+    /**
+     * The id of the custom field, for cf_<id> targets.
+     */
+    custom_field_id?: number;
+    /**
+     * What kind of answer it takes: text, rich_text, date, priority, labels, files, or the custom field type.
+     */
+    kind?: string;
+    /**
+     * The choices of a select or multi_select custom field.
+     */
+    options?: Array<CustomFieldOptionWritable> | null;
+    /**
+     * Whether a public form may preset it as a hidden field.
+     */
+    public_hidden?: boolean;
+    /**
+     * Whether a public form may ask for it. False for labels and user fields, which would need project data pickers, and for attachments unless forms.public.attachments is enabled.
+     */
+    public_visible?: boolean;
+    /**
+     * The value of a field's target: title, description, due_date, priority, labels, attachments or cf_<id>.
+     */
+    target?: string;
+    /**
+     * The title of the custom field; empty for built-in targets.
+     */
+    title?: string;
+};
+
 export type HealthBodyBodyWritable = {
     /**
      * Availability of each configured OpenID Connect provider, from cached state — this endpoint never contacts the providers. Omitted when OpenID Connect authentication is not configured or the providers have not been initialized yet right after startup.
@@ -7088,6 +7761,22 @@ export type PaginatedDashboardWritable = {
 };
 
 export type PaginatedDatabaseNotificationWritable = {
+    items?: Array<unknown> | null;
+    page?: number;
+    per_page?: number;
+    total?: number;
+    total_pages?: number;
+};
+
+export type PaginatedFormWritable = {
+    items?: Array<FormWritable> | null;
+    page?: number;
+    per_page?: number;
+    total?: number;
+    total_pages?: number;
+};
+
+export type PaginatedFormSubmissionWritable = {
     items?: Array<unknown> | null;
     page?: number;
     per_page?: number;
@@ -9756,6 +10445,102 @@ export type FiltersUpdateResponses = {
 
 export type FiltersUpdateResponse = FiltersUpdateResponses[keyof FiltersUpdateResponses];
 
+export type FormPublicReadData = {
+    body?: never;
+    path: {
+        /**
+         * The secret token of the form.
+         */
+        token: string;
+    };
+    query?: never;
+    url: '/forms/{token}';
+};
+
+export type FormPublicReadErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type FormPublicReadError = FormPublicReadErrors[keyof FormPublicReadErrors];
+
+export type FormPublicReadResponses = {
+    /**
+     * OK
+     */
+    200: FormPublicDefinition;
+};
+
+export type FormPublicReadResponse = FormPublicReadResponses[keyof FormPublicReadResponses];
+
+export type FormPublicSubmitData = {
+    body: FormSubmitInputWritable;
+    path: {
+        /**
+         * The secret token of the form.
+         */
+        token: string;
+    };
+    query?: never;
+    url: '/forms/{token}/submissions';
+};
+
+export type FormPublicSubmitErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type FormPublicSubmitError = FormPublicSubmitErrors[keyof FormPublicSubmitErrors];
+
+export type FormPublicSubmitResponses = {
+    /**
+     * OK
+     */
+    200: FormSubmitResult;
+};
+
+export type FormPublicSubmitResponse = FormPublicSubmitResponses[keyof FormPublicSubmitResponses];
+
+export type FormPublicSubmitMultipartData = {
+    body: {
+        /**
+         * The JSON of a plain submission as a string: {"values": {...}, "submitter": {...}, "honeypot": ""}.
+         */
+        data: string;
+        files?: Array<Blob | File>;
+    };
+    path: {
+        /**
+         * The secret token of the form.
+         */
+        token: string;
+    };
+    query?: never;
+    url: '/forms/{token}/submissions/multipart';
+};
+
+export type FormPublicSubmitMultipartErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type FormPublicSubmitMultipartError = FormPublicSubmitMultipartErrors[keyof FormPublicSubmitMultipartErrors];
+
+export type FormPublicSubmitMultipartResponses = {
+    /**
+     * OK
+     */
+    200: FormSubmitResult;
+};
+
+export type FormPublicSubmitMultipartResponse = FormPublicSubmitMultipartResponses[keyof FormPublicSubmitMultipartResponses];
+
 export type HealthData = {
     body?: never;
     path?: never;
@@ -12056,6 +12841,295 @@ export type CustomFieldsUpdateResponses = {
 };
 
 export type CustomFieldsUpdateResponse = CustomFieldsUpdateResponses[keyof CustomFieldsUpdateResponses];
+
+export type FormsListData = {
+    body?: never;
+    path: {
+        project: number;
+    };
+    query?: {
+        /**
+         * 1-based page number.
+         */
+        page?: number;
+        /**
+         * Items per page. Defaults to the instance's configured maximum (service.maxitemsperpage, reported as max_items_per_page by /info) and is silently capped at it; asking for more is not an error.
+         */
+        per_page?: number;
+        /**
+         * Search query; filters the list to items matching this string.
+         */
+        q?: string;
+    };
+    url: '/projects/{project}/forms';
+};
+
+export type FormsListErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type FormsListError = FormsListErrors[keyof FormsListErrors];
+
+export type FormsListResponses = {
+    /**
+     * OK
+     */
+    200: PaginatedForm;
+};
+
+export type FormsListResponse = FormsListResponses[keyof FormsListResponses];
+
+export type FormsCreateData = {
+    body: FormWritable;
+    path: {
+        project: number;
+    };
+    query?: never;
+    url: '/projects/{project}/forms';
+};
+
+export type FormsCreateErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type FormsCreateError = FormsCreateErrors[keyof FormsCreateErrors];
+
+export type FormsCreateResponses = {
+    /**
+     * Created
+     */
+    201: Form;
+};
+
+export type FormsCreateResponse = FormsCreateResponses[keyof FormsCreateResponses];
+
+export type FormsOptionsData = {
+    body?: never;
+    path: {
+        project: number;
+    };
+    query?: never;
+    url: '/projects/{project}/forms/options';
+};
+
+export type FormsOptionsErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type FormsOptionsError = FormsOptionsErrors[keyof FormsOptionsErrors];
+
+export type FormsOptionsResponses = {
+    /**
+     * OK
+     */
+    200: FormOptions;
+};
+
+export type FormsOptionsResponse = FormsOptionsResponses[keyof FormsOptionsResponses];
+
+export type FormsDeleteData = {
+    body?: never;
+    path: {
+        project: number;
+        form: number;
+    };
+    query?: never;
+    url: '/projects/{project}/forms/{form}';
+};
+
+export type FormsDeleteErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type FormsDeleteError = FormsDeleteErrors[keyof FormsDeleteErrors];
+
+export type FormsDeleteResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type FormsDeleteResponse = FormsDeleteResponses[keyof FormsDeleteResponses];
+
+export type FormsReadData = {
+    body?: never;
+    headers?: {
+        /**
+         * Succeeds if the server's resource matches one of the passed values.
+         */
+        'If-Match'?: Array<string> | null;
+        /**
+         * Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.
+         */
+        'If-None-Match'?: Array<string> | null;
+        /**
+         * Succeeds if the server's resource date is more recent than the passed date.
+         */
+        'If-Modified-Since'?: string;
+        /**
+         * Succeeds if the server's resource date is older or the same as the passed date.
+         */
+        'If-Unmodified-Since'?: string;
+    };
+    path: {
+        project: number;
+        form: number;
+    };
+    query?: never;
+    url: '/projects/{project}/forms/{form}';
+};
+
+export type FormsReadErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type FormsReadError = FormsReadErrors[keyof FormsReadErrors];
+
+export type FormsReadResponses = {
+    /**
+     * OK
+     */
+    200: FormReadBody;
+};
+
+export type FormsReadResponse = FormsReadResponses[keyof FormsReadResponses];
+
+export type PatchFormsReadData = {
+    body: Array<JsonPatchOp> | null;
+    path: {
+        project: number;
+        form: number;
+    };
+    query?: never;
+    url: '/projects/{project}/forms/{form}';
+};
+
+export type PatchFormsReadErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type PatchFormsReadError = PatchFormsReadErrors[keyof PatchFormsReadErrors];
+
+export type PatchFormsReadResponses = {
+    /**
+     * OK
+     */
+    200: Form;
+};
+
+export type PatchFormsReadResponse = PatchFormsReadResponses[keyof PatchFormsReadResponses];
+
+export type FormsUpdateData = {
+    body: FormReadBodyWritable;
+    path: {
+        project: number;
+        form: number;
+    };
+    query?: never;
+    url: '/projects/{project}/forms/{form}';
+};
+
+export type FormsUpdateErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type FormsUpdateError = FormsUpdateErrors[keyof FormsUpdateErrors];
+
+export type FormsUpdateResponses = {
+    /**
+     * OK
+     */
+    200: Form;
+};
+
+export type FormsUpdateResponse = FormsUpdateResponses[keyof FormsUpdateResponses];
+
+export type FormSubmissionsListData = {
+    body?: never;
+    path: {
+        project: number;
+        form: number;
+    };
+    query?: {
+        /**
+         * 1-based page number.
+         */
+        page?: number;
+        /**
+         * Items per page. Defaults to the instance's configured maximum (service.maxitemsperpage, reported as max_items_per_page by /info) and is silently capped at it; asking for more is not an error.
+         */
+        per_page?: number;
+    };
+    url: '/projects/{project}/forms/{form}/submissions';
+};
+
+export type FormSubmissionsListErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type FormSubmissionsListError = FormSubmissionsListErrors[keyof FormSubmissionsListErrors];
+
+export type FormSubmissionsListResponses = {
+    /**
+     * OK
+     */
+    200: PaginatedFormSubmission;
+};
+
+export type FormSubmissionsListResponse = FormSubmissionsListResponses[keyof FormSubmissionsListResponses];
+
+export type FormsTokenData = {
+    body?: never;
+    path: {
+        project: number;
+        form: number;
+    };
+    query?: never;
+    url: '/projects/{project}/forms/{form}/token';
+};
+
+export type FormsTokenErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type FormsTokenError = FormsTokenErrors[keyof FormsTokenErrors];
+
+export type FormsTokenResponses = {
+    /**
+     * Created
+     */
+    201: FormToken;
+};
+
+export type FormsTokenResponse = FormsTokenResponses[keyof FormsTokenResponses];
 
 export type SharesListData = {
     body?: never;
