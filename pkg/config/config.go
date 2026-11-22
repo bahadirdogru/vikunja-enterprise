@@ -253,10 +253,21 @@ const (
 	AutomationCacheTTL            Key = `automation.cachettl`
 	AutomationRetention           Key = `automation.retention`
 
-	ReportsCacheTTL   Key = `reports.cachettl`
-	ReportsMaxGroups  Key = `reports.maxgroups`
-	ReportsMaxBuckets Key = `reports.maxbuckets`
-	ReportsTimeout    Key = `reports.timeout`
+	ReportsCacheTTL                   Key = `reports.cachettl`
+	ReportsMaxGroups                  Key = `reports.maxgroups`
+	ReportsMaxBuckets                 Key = `reports.maxbuckets`
+	ReportsTimeout                    Key = `reports.timeout`
+	AutomationScriptsEnabled          Key = `automation.scripts.enabled`
+	AutomationScriptsTimeout          Key = `automation.scripts.timeout`
+	AutomationScriptsConditionTimeout Key = `automation.scripts.conditiontimeout`
+	AutomationScriptsMaxSource        Key = `automation.scripts.maxsource`
+	AutomationScriptsMaxAPICalls      Key = `automation.scripts.maxapicalls`
+	AutomationScriptsMaxHTTPRequests  Key = `automation.scripts.maxhttprequests`
+	AutomationScriptsMaxResponseSize  Key = `automation.scripts.maxresponsesize`
+	AutomationScriptsMaxLogSize       Key = `automation.scripts.maxlogsize`
+	AutomationScriptsMaxCallStack     Key = `automation.scripts.maxcallstack`
+	AutomationScriptsMaxResults       Key = `automation.scripts.maxresults`
+	AutomationHTTPTimeout             Key = `automation.scripts.httptimeout`
 
 	AuditEnabled           Key = `audit.enabled`
 	AuditLogfile           Key = `audit.logfile`
@@ -573,6 +584,17 @@ func initDefaultConfig() {
 	ReportsMaxGroups.setDefault(200)
 	ReportsMaxBuckets.setDefault(366)
 	ReportsTimeout.setDefault(20 * time.Second)
+	AutomationScriptsEnabled.setDefault(true)
+	AutomationScriptsTimeout.setDefault(5 * time.Second)
+	AutomationScriptsConditionTimeout.setDefault(time.Second)
+	AutomationScriptsMaxSource.setDefault(64 * 1024)
+	AutomationScriptsMaxAPICalls.setDefault(100)
+	AutomationScriptsMaxHTTPRequests.setDefault(5)
+	AutomationScriptsMaxResponseSize.setDefault(1024 * 1024)
+	AutomationScriptsMaxLogSize.setDefault(16 * 1024)
+	AutomationScriptsMaxCallStack.setDefault(512)
+	AutomationScriptsMaxResults.setDefault(200)
+	AutomationHTTPTimeout.setDefault(10 * time.Second)
 	// Audit
 	AuditEnabled.setDefault(false)
 	AuditLogfile.setDefault("") // empty means <log.path>/audit.log, resolved at init

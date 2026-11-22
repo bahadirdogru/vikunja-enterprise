@@ -39,6 +39,8 @@ require (
 	github.com/d4l3k/messagediff v1.2.1
 	github.com/danielgtaylor/huma/v2 v2.40.0
 	github.com/disintegration/imaging v1.6.2
+	github.com/dlclark/regexp2/v2 v2.11.0
+	github.com/dop251/goja v0.0.0-20261122121755-dcce7f63c23a
 	github.com/dustinkirkland/golang-petname v0.0.0-20240422154211-76c06c4bde6b
 	github.com/fatih/color v1.19.0
 	github.com/gabriel-vasile/mimetype v1.4.16
@@ -149,10 +151,12 @@ require (
 	github.com/go-openapi/jsonreference v0.20.3 // indirect
 	github.com/go-openapi/spec v0.20.4 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
+	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/goccy/go-json v0.11.2 // indirect
 	github.com/goccy/go-yaml v1.19.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
+	github.com/google/pprof v0.0.0-20230207041349-798e818bf904 // indirect
 	github.com/gorilla/css v1.0.1 // indirect
 	github.com/huandu/go-clone v1.7.3 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect

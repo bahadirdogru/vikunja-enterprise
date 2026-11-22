@@ -27,12 +27,13 @@ type Trigger struct {
 // Condition is the "if" of a rule: a tree of all / any / not groups over comparisons. Exactly one of all, any,
 // not or field is set on every node.
 type Condition struct {
-	All   []*Condition `json:"all,omitempty" doc:"True when every child is true."`
-	Any   []*Condition `json:"any,omitempty" doc:"True when at least one child is true."`
-	Not   []*Condition `json:"not,omitempty" doc:"True when none of the children is true."`
-	Field string       `json:"field,omitempty" doc:"The field to compare, see the catalog."`
-	Op    string       `json:"op,omitempty" doc:"The operator, see the catalog for the ones each field supports."`
-	Value any          `json:"value,omitempty" doc:"The value to compare with. A list for in and not in, absent for is_empty and is_not_empty. Dates are RFC 3339 timestamps, plain dates or relative: now, now+3d, now-12h."`
+	All    []*Condition `json:"all,omitempty" doc:"True when every child is true."`
+	Any    []*Condition `json:"any,omitempty" doc:"True when at least one child is true."`
+	Not    []*Condition `json:"not,omitempty" doc:"True when none of the children is true."`
+	Field  string       `json:"field,omitempty" doc:"The field to compare, see the catalog."`
+	Op     string       `json:"op,omitempty" doc:"The operator, see the catalog for the ones each field supports."`
+	Script string       `json:"script,omitempty" doc:"A JavaScript condition instead of a comparison: the body of a function that returns true or false (see the script reference of the catalog). Cannot be combined with field, op or value. Runs with a read-only API."`
+	Value  any          `json:"value,omitempty" doc:"The value to compare with. A list for in and not in, absent for is_empty and is_not_empty. Dates are RFC 3339 timestamps, plain dates or relative: now, now+3d, now-12h."`
 }
 
 // Action is one step of the "then" of a rule.
@@ -52,11 +53,13 @@ type Doc struct {
 type Issue struct {
 	Path    string `json:"path" doc:"The location of the problem, e.g. actions[1].params.status_id."`
 	Message string `json:"message" doc:"What is wrong."`
+	Line    int    `json:"line,omitempty" doc:"For a syntax error in a script: the line of the error, counted from 1 in the source of the script."`
+	Column  int    `json:"column,omitempty" doc:"For a syntax error in a script: the column of the error, counted from 1."`
 }
 
 // IsLeaf reports whether the node is a comparison.
 func (c *Condition) IsLeaf() bool {
-	return c.Field != ""
+	return c.Field != "" || c.Script != ""
 }
 
 // CloneDoc returns a deep copy of the document.

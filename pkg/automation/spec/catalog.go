@@ -43,6 +43,12 @@ const (
 	KindProject     = "project"
 	KindTemplate    = "template"
 	KindCondition   = "condition"
+	// KindCode is source code; Param.Language says which language (javascript).
+	KindCode = "code"
+	// KindSecret is the name of a project secret (never its value).
+	KindSecret = "secret"
+	// KindMap is an object whose values are strings (for example HTTP headers); the values are templates.
+	KindMap = "map"
 	// KindEnum is a string out of a fixed list (Enum).
 	KindEnum = "enum"
 	// KindAny is a value whose shape depends on another parameter (see KindBy) or on a custom field.
@@ -94,6 +100,8 @@ const (
 	ActionCreateRelated  = "task.create_related"
 	ActionMove           = "task.move"
 	ActionStopIf         = "flow.stop_if"
+	ActionScriptRun      = "script.run"
+	ActionHTTPRequest    = "http.request"
 )
 
 // The keywords the user kind accepts besides a user id.
@@ -105,12 +113,18 @@ const (
 // Param describes one option of a trigger or one parameter of an action.
 type Param struct {
 	Name     string   `json:"name" doc:"The key in options or params."`
-	Kind     string   `json:"kind" doc:"The kind of value: string, text, number, bool, date, duration, user, users, label, status, custom_field, project, template, condition, enum or any."`
+	Kind     string   `json:"kind" doc:"The kind of value: string, text, number, bool, date, duration, user, users, label, status, custom_field, project, template, condition, enum, code (source code, see language), secret (the name of a project secret), map (an object with string values, e.g. headers; the values are templates) or any."`
 	Required bool     `json:"required" doc:"Whether the key must be present."`
 	Multiple bool     `json:"multiple,omitempty" doc:"Whether the value is a list of values of this kind."`
 	Enum     []string `json:"enum,omitempty" doc:"The allowed values of an enum. For user and users these are the keywords accepted besides user ids."`
 	TitleKey string   `json:"title_key" doc:"Translation key of the label."`
 	KindBy   *KindBy  `json:"kind_by,omitempty" doc:"Set when the kind of the value depends on another parameter."`
+	// Language is the language of a code parameter.
+	Language string `json:"language,omitempty" doc:"For the kind code: the language of the source, so the editor can highlight it. Always javascript at the moment."`
+	// Description is plain English help text for the editor, shown next to the field.
+	Description string `json:"description,omitempty" doc:"Plain English help for the parameter, for the editor to show beside the field."`
+	// Default is the value that is used when the parameter is omitted.
+	Default any `json:"default,omitempty" doc:"The value used when the parameter is left out."`
 }
 
 // KindBy maps the value of a sibling parameter to the kind of this parameter's value.
@@ -154,6 +168,8 @@ type ActionDef struct {
 	Type     string  `json:"type" doc:"The stable identifier of the action."`
 	TitleKey string  `json:"title_key" doc:"Translation key of the label."`
 	Params   []Param `json:"params" doc:"The parameters of the action."`
+	// Description is plain English help text for the editor.
+	Description string `json:"description,omitempty" doc:"Plain English help for the action, for the editor to show."`
 }
 
 // Catalog is the machine-readable description of everything a rule can use.
@@ -163,6 +179,7 @@ type Catalog struct {
 	Operators    []*OperatorDef `json:"operators" doc:"All comparison operators."`
 	Actions      []*ActionDef   `json:"actions" doc:"All actions."`
 	Placeholders []string       `json:"placeholders" doc:"The placeholders text parameters of kind template may contain. cf.<id> stands for a custom field."`
+	Script       *ScriptDoc     `json:"script" doc:"Reference for the JavaScript of script actions and script conditions: conventions, limits and every global and function. The editor's help panel is generated from it."`
 }
 
 var allOps = []string{OpEq, OpNe, OpGt, OpGe, OpLt, OpLe, OpLike, OpIn, OpNotIn, OpIsEmpty, OpIsNotEmpty}
@@ -224,6 +241,9 @@ var updatedFieldKinds = map[string]string{
 var SetFieldFields = []string{"title", "description", "priority", "due_date", "start_date", "end_date", "percent_done", "hex_color"}
 
 // RelationKinds are the relation kinds task.create_related can use.
+// HTTPMethods are the methods of the http.request action.
+var HTTPMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE"}
+
 var RelationKinds = []string{"related", "blocking", "blocked", "precedes", "follows", "duplicates", "duplicateof"}
 
 func title(prefix, name string) string { return "automation." + prefix + "." + name }
@@ -433,6 +453,26 @@ func Actions() []*ActionDef {
 		{Type: ActionStopIf, TitleKey: title("action", "stop_if"), Params: []Param{
 			{Name: "condition", Kind: KindCondition, Required: true, TitleKey: title("param", "condition")},
 		}},
+		{Type: ActionScriptRun, TitleKey: title("action", "script_run"),
+			Description: "Runs JavaScript with the permissions of the rule owner. The source is the body of a function: use return to give a result, which is stored (as JSON) in the output of the step. A thrown error fails the step. See the script reference for the globals and the limits.",
+			Params: []Param{
+				{Name: "source", Kind: KindCode, Language: "javascript", Required: true, TitleKey: title("param", "source"),
+					Description: "The body of a function, for example: `const parent = vikunja.tasks.get(task.id); return parent.title;`. Statements run in strict mode. Not a template: {{placeholders}} are not replaced."},
+			}},
+		{Type: ActionHTTPRequest, TitleKey: title("action", "http_request"),
+			Description: "Sends an HTTP request to an external service, for example a chat webhook. Private, loopback and link-local addresses are blocked. A 5xx answer or a network error is retried like any temporary failure; a 4xx answer fails the run. The status and the first 2 KiB of the answer are stored in the step output.",
+			Params: []Param{
+				{Name: "url", Kind: KindTemplate, Required: true, TitleKey: title("param", "url"),
+					Description: "The address, http or https. Placeholders are replaced; {{secrets.NAME}} is not allowed here."},
+				{Name: "method", Kind: KindEnum, Enum: HTTPMethods, Default: "POST", TitleKey: title("param", "method"),
+					Description: "The HTTP method. Defaults to POST."},
+				{Name: "headers", Kind: KindMap, TitleKey: title("param", "headers"),
+					Description: "Request headers: header name to value. Values are templates and may contain {{secrets.NAME}}. Host, Content-Length, Transfer-Encoding, Connection and Upgrade cannot be set."},
+				{Name: "body", Kind: KindTemplate, TitleKey: title("param", "body"),
+					Description: "The request body. Placeholders and {{secrets.NAME}} are replaced. The Content-Type is application/json when the body is valid JSON and no Content-Type header is given, otherwise text/plain."},
+				{Name: "secret", Kind: KindSecret, TitleKey: title("param", "secret"),
+					Description: "The name of a project secret. When set, the request carries the header X-Vikunja-Signature: sha256=<hex HMAC-SHA256 of the body, keyed with the secret>."},
+			}},
 	}
 }
 
@@ -454,5 +494,6 @@ func GetCatalog() *Catalog {
 		Operators:    Operators(),
 		Actions:      Actions(),
 		Placeholders: Placeholders(),
+		Script:       ScriptReference(),
 	}
 }

@@ -57,6 +57,11 @@ type Env struct {
 	Sub *Subject
 	// Unknown collects the placeholders that did not resolve.
 	Unknown []string
+	// Literal turns off template rendering: text parameters are used as they are. Scripts set it, because the
+	// text they pass is data, not a template.
+	Literal bool
+
+	secrets *secretStore
 }
 
 // Reload refreshes the subject so an action sees what the previous ones did.
@@ -69,11 +74,15 @@ func (e *Env) Reload() error {
 	if err != nil {
 		return err
 	}
+	sub.Script = e.scriptCondition
 	e.Sub = sub
 	return nil
 }
 
 func (e *Env) render(text string) string {
+	if e.Literal {
+		return text
+	}
 	return Render(text, e.Sub, &e.Unknown)
 }
 
@@ -88,6 +97,9 @@ type Plan struct {
 	Stop bool
 
 	apply func() (string, error)
+	// preview, when set, is what a dry run does instead of only reading Summary: it runs the action against a
+	// host that records what it would do. Only the dry run calls it, only the runner calls apply.
+	preview func() (summary string, warnings []string, err error)
 }
 
 type action struct {
@@ -148,6 +160,8 @@ func init() {
 	register(spec.ActionCreateRelated, func(e *Env, p params) (*Plan, error) { return planCreateTask(e, p, false) })
 	register(spec.ActionMove, planMove)
 	register(spec.ActionStopIf, planStopIf)
+	register(spec.ActionScriptRun, planScript)
+	register(spec.ActionHTTPRequest, planHTTPRequest)
 }
 
 // requireWritableTask checks that the task exists and the owner of the rule may change it.

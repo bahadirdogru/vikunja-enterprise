@@ -40,6 +40,15 @@ func exampleValue(p Param, siblings map[string]any) any {
 	switch kind {
 	case KindString, KindText, KindTemplate:
 		v = "text {{task.title}}"
+		if p.Name == "url" {
+			v = "https://example.com/hook?t={{task.id}}"
+		}
+	case KindCode:
+		v = "return 1"
+	case KindSecret:
+		v = "API_KEY"
+	case KindMap:
+		v = map[string]any{"X-Token": "{{secrets.API_KEY}}"}
 	case KindNumber:
 		v = float64(1)
 	case KindBool:
@@ -120,6 +129,7 @@ func TestCatalog_IsConsistent(t *testing.T) {
 		KindString: true, KindText: true, KindNumber: true, KindBool: true, KindDate: true, KindDuration: true,
 		KindUser: true, KindUsers: true, KindLabel: true, KindStatus: true, KindCustomField: true,
 		KindProject: true, KindTemplate: true, KindCondition: true, KindEnum: true, KindAny: true,
+		KindCode: true, KindSecret: true, KindMap: true,
 	}
 	checkParams := func(owner string, params []Param) {
 		names := map[string]bool{}

@@ -17,8 +17,10 @@
 package models
 
 import (
+	"fmt"
 	"time"
 
+	"code.vikunja.io/api/pkg/automation/script"
 	"code.vikunja.io/api/pkg/automation/spec"
 	"code.vikunja.io/api/pkg/config"
 	"code.vikunja.io/api/pkg/db"
@@ -38,6 +40,9 @@ const (
 	AutomationDisabledStatusDeleted      = "status_deleted"
 	AutomationDisabledDuplicated         = "duplicated"
 	AutomationDisabledUnmappedReference  = "duplicated_unmapped_reference"
+	// AutomationDisabledSecretsMissing is the reason of a duplicated rule that uses secrets: secrets are not
+	// copied to the duplicate.
+	AutomationDisabledSecretsMissing = "duplicated_secrets_missing"
 )
 
 // The statuses of an automation event in the outbox.
@@ -184,6 +189,11 @@ func (r *AutomationRule) Validate(s *xorm.Session, a web.Auth) error {
 	if len(issues) > 0 {
 		return ErrAutomationRuleInvalid{AutomationRuleInvalidDetails{Issues: issues}}
 	}
+	if issues, err := validateAutomationScripts(s, r.ProjectID, r.Doc()); err != nil {
+		return err
+	} else if len(issues) > 0 {
+		return ErrAutomationRuleInvalid{AutomationRuleInvalidDetails{Issues: issues}}
+	}
 	issues, err := validateAutomationReferences(s, a, r.ProjectID, r.Doc())
 	if err != nil {
 		return err
@@ -192,6 +202,41 @@ func (r *AutomationRule) Validate(s *xorm.Session, a web.Auth) error {
 		return ErrAutomationRuleInvalid{AutomationRuleInvalidDetails{Issues: issues}}
 	}
 	return nil
+}
+
+// validateAutomationScripts checks the scripts (kill switch, size, syntax) and that the secrets the rule names
+// exist. A syntax error is reported with the path of the script and the line and column of the error.
+func validateAutomationScripts(s *xorm.Session, projectID int64, doc *spec.Doc) ([]spec.Issue, error) {
+	scripts := spec.Scripts(doc)
+	issues := []spec.Issue{}
+	if len(scripts) > 0 {
+		if !script.Enabled() {
+			return nil, ErrAutomationScriptsDisabled{}
+		}
+		maxSource := script.MaxSource()
+		for _, sc := range scripts {
+			if maxSource > 0 && len(sc.Source) > maxSource {
+				issues = append(issues, spec.Issue{Path: sc.Path, Message: fmt.Sprintf("the script is %d bytes long, at most %d are allowed", len(sc.Source), maxSource)})
+				continue
+			}
+			if synErr := script.Check(sc.Source); synErr != nil {
+				issues = append(issues, spec.Issue{Path: sc.Path, Message: "syntax error: " + synErr.Message, Line: synErr.Line, Column: synErr.Column})
+			}
+		}
+	}
+	refs := spec.SecretRefs(doc)
+	if len(refs) > 0 {
+		names, err := AutomationSecretNames(s, projectID)
+		if err != nil {
+			return nil, err
+		}
+		for _, ref := range refs {
+			if !names[ref.Name] {
+				issues = append(issues, spec.Issue{Path: ref.Path, Message: fmt.Sprintf("the secret %q does not exist in this project", ref.Name)})
+			}
+		}
+	}
+	return issues, nil
 }
 
 type automationRef struct {

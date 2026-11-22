@@ -71,6 +71,12 @@ func Evaluate(c *spec.Condition, sub *Subject) (bool, error) {
 }
 
 func evaluateLeaf(c *spec.Condition, sub *Subject) (bool, error) {
+	if c.Script != "" {
+		if sub.Script == nil {
+			return false, fmt.Errorf("script conditions cannot be evaluated here")
+		}
+		return sub.Script(c.Script)
+	}
 	left, ok := sub.Lookup(c.Field)
 	if !ok {
 		return false, fmt.Errorf("unknown field %q", c.Field)

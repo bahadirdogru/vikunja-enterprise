@@ -92,9 +92,14 @@ func DryRun(_ context.Context, rule *models.AutomationRule, taskID int64) (*DryR
 	}
 	result.ConditionsMet, err = Evaluate(rule.Conditions, env.Sub)
 	if err != nil {
-		return nil, err
-	}
-	if !result.ConditionsMet {
+		var actionErr *ActionError
+		if !errors.As(err, &actionErr) {
+			return nil, err
+		}
+		// A script condition that fails would fail the run; say so instead of failing the test.
+		result.ConditionsMet = false
+		result.Notes = append(result.Notes, "The conditions fail: "+err.Error())
+	} else if !result.ConditionsMet {
 		result.Notes = append(result.Notes, "The conditions do not hold, so a real run would stop before the first action.")
 	}
 
@@ -111,7 +116,7 @@ func DryRun(_ context.Context, rule *models.AutomationRule, taskID int64) (*DryR
 		}
 		plan, err := impl.plan(env, params(act.Params))
 		if err != nil {
-			step.Error = err.Error()
+			step.Error = env.maskOutput(err.Error())
 			if !isPermanent(err) {
 				var actionErr *ActionError
 				if !errors.As(err, &actionErr) {
@@ -124,6 +129,17 @@ func DryRun(_ context.Context, rule *models.AutomationRule, taskID int64) (*DryR
 		step.Stops = plan.Stop
 		if plan.Warnings != nil {
 			step.Warnings = plan.Warnings
+		}
+		if plan.preview != nil {
+			// Only the dry run calls preview, which runs against a host that records instead of writing.
+			summary, warnings, err := plan.preview()
+			if err != nil {
+				step.Summary = ""
+				step.Error = env.maskOutput(err.Error())
+				continue
+			}
+			step.Summary = summary
+			step.Warnings = append(step.Warnings, warnings...)
 		}
 	}
 	return result, nil

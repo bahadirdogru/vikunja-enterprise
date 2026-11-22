@@ -59,6 +59,17 @@ func reset(t *testing.T) {
 	config.AutomationMaxAttempts.Set(5)
 	config.AutomationMaxConsecutiveFails.Set(20)
 	config.AutomationCacheTTL.Set(0)
+	config.AutomationScriptsEnabled.Set(true)
+	config.AutomationScriptsTimeout.Set(5 * time.Second)
+	config.AutomationScriptsConditionTimeout.Set(time.Second)
+	config.AutomationScriptsMaxSource.Set(64 * 1024)
+	config.AutomationScriptsMaxAPICalls.Set(100)
+	config.AutomationScriptsMaxHTTPRequests.Set(5)
+	config.AutomationScriptsMaxResponseSize.Set(1024 * 1024)
+	config.AutomationScriptsMaxLogSize.Set(16 * 1024)
+	config.AutomationScriptsMaxCallStack.Set(512)
+	config.AutomationScriptsMaxResults.Set(200)
+	config.AutomationHTTPTimeout.Set(10 * time.Second)
 	retryBase = time.Millisecond
 	now = time.Now
 }

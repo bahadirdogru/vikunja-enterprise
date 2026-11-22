@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"regexp"
 	"slices"
 	"strings"
 )
@@ -29,6 +30,9 @@ const (
 	maxConditionNodes = 100
 	maxStringLength   = 20000
 	maxListLength     = 200
+	// maxCodeLength is a hard cap on the source of a script; the configured size limit is checked when saving.
+	maxCodeLength = 1 << 20
+	maxMapEntries = 50
 )
 
 // ToInt64 converts a decoded JSON number to an integer.
@@ -118,9 +122,86 @@ func Validate(d *Doc, maxActions int) []Issue {
 			v.add(path+".type", "unknown action %q", a.Type)
 		default:
 			v.params(path+".params", def.Params, a.Params)
+			v.actionRules(path+".params", a)
 		}
 	}
 	return v.issues
+}
+
+// forbiddenHeaders are set by the HTTP client itself.
+var forbiddenHeaders = map[string]bool{"host": true, "content-length": true, "transfer-encoding": true, "connection": true, "upgrade": true}
+
+// headerNamePattern is a valid header field name (RFC 9110 token).
+var headerNamePattern = regexp.MustCompile("^[!#$%&'*+.^_`|~0-9A-Za-z-]{1,128}$")
+
+// actionRules checks what the generic parameter validation cannot: the scripts and secrets rules of single actions.
+func (v *validator) actionRules(path string, a *Action) {
+	switch a.Type {
+	case ActionScriptRun:
+		if src, ok := a.Params["source"].(string); ok && strings.TrimSpace(src) == "" {
+			v.add(path+".source", "must not be empty")
+		}
+	case ActionHTTPRequest:
+		if u, ok := a.Params["url"].(string); ok {
+			trimmed := strings.TrimSpace(u)
+			lower := strings.ToLower(trimmed)
+			if !strings.HasPrefix(trimmed, "{{") && !strings.HasPrefix(lower, "http://") && !strings.HasPrefix(lower, "https://") {
+				v.add(path+".url", "must start with http:// or https://")
+			}
+			if len(SecretPlaceholders(u)) > 0 {
+				v.add(path+".url", "secrets can only be used in header values and the body")
+			}
+		}
+		if headers, ok := a.Params["headers"].(map[string]any); ok {
+			names := make([]string, 0, len(headers))
+			for name := range headers {
+				names = append(names, name)
+			}
+			slices.Sort(names)
+			for _, name := range names {
+				switch {
+				case !headerNamePattern.MatchString(name):
+					v.add(path+".headers."+name, "is not a valid header name")
+				case forbiddenHeaders[strings.ToLower(name)]:
+					v.add(path+".headers."+name, "this header cannot be set")
+				}
+			}
+		}
+		if name, ok := a.Params["secret"].(string); ok && !SecretNamePattern.MatchString(name) {
+			v.add(path+".secret", "is not a valid secret name")
+		}
+		for _, ref := range SecretRefs(&Doc{Actions: []*Action{a}}) {
+			if !SecretNamePattern.MatchString(ref.Name) {
+				// Paths of the single-action doc start at actions[0]; report under the real path.
+				v.add(path+strings.TrimPrefix(ref.Path, "actions[0].params"), "%q is not a valid secret name", ref.Name)
+			}
+		}
+		return
+	}
+	// Everywhere else {{secrets.NAME}} is refused, so a secret cannot end up in a title, a comment or a field.
+	if mentionsSecret(a.Params) {
+		v.add(path, "{{secrets.NAME}} can only be used in the headers and the body of an http.request action")
+	}
+}
+
+func mentionsSecret(v any) bool {
+	switch val := v.(type) {
+	case string:
+		return len(secretPlaceholderPattern.FindStringIndex(val)) > 0
+	case []any:
+		for _, item := range val {
+			if mentionsSecret(item) {
+				return true
+			}
+		}
+	case map[string]any:
+		for _, item := range val {
+			if mentionsSecret(item) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (v *validator) params(path string, defs []Param, values map[string]any) {
@@ -186,6 +267,41 @@ func (v *validator) value(path, kind string, multiple bool, enum []string, val a
 			v.add(path, "must be a string")
 		case len(s) > maxStringLength:
 			v.add(path, "must be at most %d characters long", maxStringLength)
+		}
+	case KindCode:
+		s, ok := val.(string)
+		switch {
+		case !ok:
+			v.add(path, "must be a string")
+		case len(s) > maxCodeLength:
+			v.add(path, "must be at most %d characters long", maxCodeLength)
+		}
+	case KindSecret:
+		s, ok := val.(string)
+		if !ok || !SecretNamePattern.MatchString(s) {
+			v.add(path, "must be the name of a secret (letters, digits and underscores, not starting with a digit, at most 64 characters)")
+		}
+	case KindMap:
+		m, ok := val.(map[string]any)
+		if !ok {
+			v.add(path, "must be an object with string values")
+			return
+		}
+		if len(m) > maxMapEntries {
+			v.add(path, "must have at most %d entries", maxMapEntries)
+			return
+		}
+		keys := make([]string, 0, len(m))
+		for k := range m {
+			keys = append(keys, k)
+		}
+		slices.Sort(keys)
+		for _, k := range keys {
+			if s, isString := m[k].(string); !isString {
+				v.add(path+"."+k, "must be a string")
+			} else if len(s) > maxStringLength {
+				v.add(path+"."+k, "must be at most %d characters long", maxStringLength)
+			}
 		}
 	case KindNumber:
 		if _, ok := ToFloat64(val); !ok {
@@ -347,6 +463,18 @@ func FieldKind(name string) (def *FieldDef, ok bool) {
 }
 
 func (v *validator) leaf(path string, c *Condition) {
+	if c.Script != "" {
+		if c.Field != "" || c.Op != "" || c.Value != nil {
+			v.add(path, "a script condition cannot have field, op or value")
+		}
+		if strings.TrimSpace(c.Script) == "" {
+			v.add(path+".script", "must not be empty")
+		}
+		if len(c.Script) > maxCodeLength {
+			v.add(path+".script", "must be at most %d characters long", maxCodeLength)
+		}
+		return
+	}
 	def, ok := FieldKind(c.Field)
 	if !ok {
 		v.add(path+".field", "unknown field %q", c.Field)

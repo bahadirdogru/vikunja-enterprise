@@ -28,8 +28,19 @@ var placeholderPattern = regexp.MustCompile(`\{\{\s*([A-Za-z0-9_.]+)\s*\}\}`)
 // Render replaces the placeholders of a text parameter with values of the subject. It is a plain substitution: there
 // is no logic, no loop and nothing is executed. Unknown placeholders render empty and are added to unknown.
 func Render(text string, sub *Subject, unknown *[]string) string {
+	return renderWith(text, sub, unknown, nil)
+}
+
+// renderWith is Render with an additional resolver that is asked first. The http.request action uses it for
+// {{secrets.NAME}}, which no other text can use.
+func renderWith(text string, sub *Subject, unknown *[]string, extra func(name string) (string, bool)) string {
 	return placeholderPattern.ReplaceAllStringFunc(text, func(match string) string {
 		name := placeholderPattern.FindStringSubmatch(match)[1]
+		if extra != nil {
+			if value, ok := extra(name); ok {
+				return value
+			}
+		}
 		value, ok := placeholderValue(name, sub)
 		if !ok {
 			if unknown != nil {

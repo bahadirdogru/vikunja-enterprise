@@ -41,6 +41,9 @@ func deleteAutomationForProject(s *xorm.Session, projectID int64) error {
 	if _, err := s.Where("project_id = ?", projectID).Delete(&AutomationRule{}); err != nil {
 		return err
 	}
+	if err := deleteAutomationSecretsForProject(s, projectID); err != nil {
+		return err
+	}
 	invalidateAutomationRules(s, projectID)
 	return nil
 }
@@ -158,6 +161,11 @@ func duplicateAutomationRulesForProject(s *xorm.Session, doerID, sourceProjectID
 				return id
 			},
 		})
+
+		// Secrets are never copied to the duplicate; a rule that uses them cannot work until they are set again.
+		if reason == AutomationDisabledDuplicated && spec.UsesSecrets(doc) {
+			reason = AutomationDisabledSecretsMissing
+		}
 
 		clone := &AutomationRule{
 			ProjectID:      targetProjectID,

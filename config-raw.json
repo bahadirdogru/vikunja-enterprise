@@ -1164,6 +1164,67 @@
                     "key": "retention",
                     "default_value": "30",
                     "comment": "Finished automation events, runs and run steps are deleted after this many days. Set to 0 to keep them forever."
+                },
+                {
+                    "key": "scripts",
+                    "comment": "JavaScript in automation rules (script action, script condition, http.fetch inside scripts) and the outgoing `http.request` action. Scripts run in an embedded pure-Go interpreter with a small API; see docs/enterprise/automation.md for the API and the security model. There is no hard memory cap: allocation inside the interpreter is bounded only by the timeout.",
+                    "children": [
+                        {
+                            "key": "enabled",
+                            "default_value": "true",
+                            "comment": "Kill switch for scripts. When false, rules that contain a script cannot be saved and existing ones fail their step without executing anything. Turn this off on instances that do not trust their project admins."
+                        },
+                        {
+                            "key": "timeout",
+                            "default_value": "5s",
+                            "comment": "The maximum wall-clock time of one script action. The interpreter is interrupted when it is exceeded; blocking calls (HTTP) are cancelled."
+                        },
+                        {
+                            "key": "conditiontimeout",
+                            "default_value": "1s",
+                            "comment": "The maximum wall-clock time of one script condition."
+                        },
+                        {
+                            "key": "maxsource",
+                            "default_value": "65536",
+                            "comment": "The maximum size of one script in bytes. Larger scripts are rejected when the rule is saved."
+                        },
+                        {
+                            "key": "maxapicalls",
+                            "default_value": "100",
+                            "comment": "The maximum number of `vikunja.*` calls (reads and writes) one script run may make. Further calls throw an error."
+                        },
+                        {
+                            "key": "maxhttprequests",
+                            "default_value": "5",
+                            "comment": "The maximum number of HTTP requests (`http.fetch`) one script run may make."
+                        },
+                        {
+                            "key": "maxresponsesize",
+                            "default_value": "1048576",
+                            "comment": "The maximum size in bytes of an outgoing HTTP request body and of the response body that is read. Larger responses are cut off (`truncated` is true)."
+                        },
+                        {
+                            "key": "maxlogsize",
+                            "default_value": "16384",
+                            "comment": "The maximum total size in bytes of everything a script writes with `log()` in one step. The rest is dropped and a marker is added."
+                        },
+                        {
+                            "key": "maxcallstack",
+                            "default_value": "512",
+                            "comment": "The maximum call stack depth inside the interpreter. Deeper recursion fails the script."
+                        },
+                        {
+                            "key": "maxresults",
+                            "default_value": "200",
+                            "comment": "The maximum number of tasks `vikunja.tasks.find` returns."
+                        },
+                        {
+                            "key": "httptimeout",
+                            "default_value": "10s",
+                            "comment": "The maximum duration of one outgoing HTTP request of the `http.request` action or `http.fetch`, whatever a script asks for. Outgoing requests use the same SSRF protection as webhooks (`outgoingrequests.allownonroutableips`, `outgoingrequests.proxyurl`)."
+                        }
+                    ]
                 }
             ]
         },

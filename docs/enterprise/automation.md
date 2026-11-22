@@ -1,11 +1,12 @@
 # Automation and scripting — design
 
-Status: **3a implemented** (outbox, workers, rules, conditions, the non-script
-actions, run history, limits, API v2, catalog, dry run). 3b-3d are still
-design. Builds on custom fields and workflow (their events are the most useful
-triggers). Where this document describes something that 3a does not do yet it
-says so; the section "What 3a does and does not do" lists the differences in one
-place.
+Status: **3a and 3b implemented.** 3a: outbox, workers, rules, conditions, the
+non-script actions, run history, limits, API v2, catalog, dry run. 3b: JavaScript
+script actions and script conditions, the `http.request` action, `http.fetch` in
+scripts and project secrets. 3c-3d are still design. Builds on custom fields and
+workflow (their events are the most useful triggers). Where this document
+describes something that is not implemented yet it says so; the section "What 3a
+and 3b do and do not do" lists the differences in one place.
 
 ## Goals
 
@@ -71,10 +72,12 @@ step row of a successful step is written in the same transaction as the work of
 the step, so a step recorded as successful has been applied exactly once; a run
 that is resumed starts at the first step that is not recorded as successful.
 
-### `automation_secrets` (3b, not implemented)
-id, project_id, name, value (encrypted with a key derived from
-`service.secret`), created / updated. Values are write-only in the API and
-are masked in run output.
+### `automation_secrets` (3b)
+id, project_id, name (unique per project, `^[A-Za-z_][A-Za-z0-9_]{0,63}$`),
+value, created_by_id, created / updated. A secret is a named value of a project
+(a signing key, a token, a list of user ids) that rules may use without it being
+shown anywhere. Values are write-only in the API and are masked in everything a
+run stores (see "Secrets" below).
 
 Old events and runs are deleted by a daily job (`automation.retention`,
 default 30 days; 0 keeps everything). Runs that are still running are never
@@ -91,7 +94,13 @@ deleted.
   `automation_runs`, `automation_run_steps`), the CRUD of rules, runs and retry,
   permissions (project admin), the subscription cache and the lifecycle hooks.
 - `pkg/automation` - the engine: the outbox hook, workers and claiming, the
-  runner, conditions, templates, actions (plan / apply) and the dry run.
+  runner, conditions, templates, actions (plan / apply) and the dry run; for 3b
+  `script_*.go` (the script action and condition, the three hosts, snapshots),
+  `secrets.go` (secret store and masker).
+- `pkg/automation/script` - the JavaScript runtime (goja): sandbox, limits,
+  the `Host` interface. It knows nothing of the database.
+- `pkg/automation/outbound` - the one HTTP client path for `http.request` and
+  `http.fetch` (SSRF protection, redirects, size caps, signing).
 - `pkg/routes/api/v2/automation.go` - the routes.
 
 ### How the outbox works
@@ -199,9 +208,9 @@ script that returns a boolean (3b).
 | People | assign / unassign (a user id, the event's doer, the task creator) *(3a)*, round robin over a team |
 | Content | add comment *(3a)*, add / remove label *(3a)*, create subtask or related task from a template *(3a)*, add checklist to description |
 | Notify | in-app notification, e-mail to users / assignees / a team (not in 3a: a persisted notification type needs a frontend renderer and a mail template) |
-| Integrate | call a webhook (signed, SSRF-protected, with retry) |
+| Integrate | call a webhook: `http.request` (signed, SSRF-protected, with retry) *(3b)* |
 | Flow | stop if a condition holds *(3a)*, wait (delay — stored as a scheduled event, never a sleeping goroutine) |
-| Script | run JavaScript |
+| Script | run JavaScript: `script.run` *(3b)* |
 
 Text parameters are templates: `{{task.title}}`, `{{task.identifier}}`,
 `{{task.cf.12}}`, `{{event.doer.name}}`, `{{project.title}}` (plus `task.id`,
@@ -218,60 +227,312 @@ output "nothing to do" and writes nothing, so it causes no event. Every action
 exists as a *plan* (reads, checks, resolves templates; used by the dry run) and an
 *apply* (writes); a real run is plan followed by apply in one transaction.
 
-## Scripting
+## Scripting (3b)
 
-Scripts run in an embedded pure-Go JavaScript interpreter inside the Vikunja
-process. There is no `require`, no file system, no process, no timers and no
-network except the API below.
+Scripts run in an embedded, pure-Go JavaScript interpreter
+([goja](https://github.com/dop251/goja): ECMAScript 5.1 and most of ES6 - `let`,
+`const`, arrow functions, template strings, `for...of`, destructuring, `Map`, `Set`,
+`Promise` objects exist, but there is no event loop). Every run gets a **fresh
+interpreter** that is thrown away afterwards; nothing is shared between runs. There
+is no `require`, no file system, no process, no environment, no timers (`setTimeout`
+and friends do not exist) and no network except `http.fetch`.
+
+A script is used in two places:
+
+- **Script action** `{"type": "script.run", "params": {"source": "..."}}`. The
+  source is the **body of a function** in strict mode. Use `return` to give a
+  result; it is stored as JSON in the output of the step (cut off after 16 KiB). A
+  thrown error fails the step; the error text carries the JavaScript stack with
+  line and column of the source (`at explode (line 3, column 9)`).
+- **Script condition** `{"script": "..."}` as a node of the condition tree (also
+  inside `flow.stop_if`). Same convention - the body of a function - and the result
+  of `return` is converted to true or false. The other convention (the value of the
+  last expression, as in `task.priority > 3` without `return`) is **refused**: a
+  condition script that returns nothing fails the run with "the condition script
+  returned nothing: end it with `return true` or `return false`". Condition scripts
+  always get a **read-only** API, even in a real run, and a shorter timeout (1 s).
+  `vikunja.*` calls that change something, `http.fetch` and `secrets.get` throw
+  "... is not available in a condition script".
+
+### Globals
 
 ```js
-// available globals
-event            // trigger payload (read-only)
-task             // the task the rule runs for, including custom field values
-vikunja.tasks.get(id) / .update(id, patch) / .create(projectId, data) / .comment(id, text)
-vikunja.tasks.find(filter)             // same filter syntax as the task list
-vikunja.fields.get(taskId, fieldId) / .set(taskId, fieldId, value)
-vikunja.status.set(taskId, statusId, comment)
-vikunja.notify(userIds, text)
-http.fetch(url, {method, headers, body})   // SSRF-protected, counted
-secrets.get(name)
-log(...)                               // goes to the run step output
+event      // the trigger event: {name, task_id, project_id, doer: {id, username, name}, old, new, changed, field_id}. Frozen.
+task       // the task the rule runs for, as it is when the script starts. Frozen. null for task.deleted.
+           //   {id, title, description, done, priority, percent_done, due_date, start_date, end_date, done_at,
+           //    created, updated, hex_color, identifier, project_id, created_by, assignees: [userId],
+           //    labels: [labelId], status: {id, title, category} | null, custom_fields: {"<fieldId>": value},
+           //    relations: {"subtask": [taskId], "parenttask": [taskId], "related": [...], ...}}
+           //   Dates are RFC 3339 strings or null.
+project    // {id, title}. Frozen.
+
+vikunja.tasks.get(id)                       // -> task (same shape as the global)
+vikunja.tasks.find(filter, {project_id}?)   // -> task[]; filter syntax of the task list, e.g. "done = false && cf_12 > 5"
+vikunja.tasks.update(id, patch)             // -> task. patch: title, description, priority (0-5), percent_done (0-1),
+                                            //    hex_color, done, due_date / start_date / end_date ("2026-12-24T09:00:00Z",
+                                            //    "2026-12-24", "+3d", "now-12h", "none" or null to clear, or a Date)
+vikunja.tasks.create(projectId, data)       // -> task. data: title (required), description, priority, percent_done,
+                                            //    hex_color, due_date, start_date, end_date, assignees: [userId],
+                                            //    parent_id (makes it a subtask of that task)
+vikunja.tasks.comment(id, text)             // plain text, escaped like the add_comment action
+vikunja.fields.get(taskId, fieldId)         // -> value
+vikunja.fields.set(taskId, fieldId, value)  // like task.set_custom_field; null clears
+vikunja.status.set(taskId, statusId, comment?)   // through the workflow transition checks
+vikunja.assignees.add(taskId, userId) / .remove(taskId, userId)
+vikunja.labels.add(taskId, labelId) / .remove(taskId, labelId)
+
+http.fetch(url, {method, headers, body, timeout})
+           // -> {status, ok, headers (lower-case names), body, truncated, json()}
+secrets.get(name)                           // -> string
+log(...args)                                // goes to the step output; console.log is the same function
 ```
 
-Every `vikunja.*` call is executed with the rule owner's permissions through
-the same model functions the API uses.
+Nothing else is a global beyond the standard built-ins (`Object`, `Array`, `JSON`,
+`Math`, `Date`, `RegExp`, ...). `console` has only `log`.
+
+- `event`, `task`, `project` and the namespaces are **frozen** plain objects:
+  assigning to them throws a `TypeError` in the script and cannot change anything in
+  Vikunja. Values returned by `vikunja.*` are fresh plain objects that a script may
+  change freely - they are copies.
+- Every `vikunja.*` call runs through **the same model functions and permission
+  checks the built-in actions use** (it literally builds the plans of
+  `task.set_field`, `task.set_custom_field`, `task.set_status`, `task.assign`,
+  `task.add_label`, `task.add_comment`), **as the rule owner**, in the transaction of
+  the step. So events caused by a script carry the origin run and depth like those of
+  any action: the depth limit and the self-trigger guard apply. Text passed to
+  `vikunja.*` is data: `{{placeholders}}` are **not** replaced.
+- Errors surface as thrown `Error`s with the typed message ("Forbidden", "Workflow
+  requirements not met ..."), so they can be caught with `try/catch`. An uncaught
+  error fails the step. A failing script is a failure of the rule and is not retried;
+  a temporary failure (a cancelled step timeout, a database error) is retried like
+  for any action.
+- `vikunja.tasks.find` returns only tasks the rule owner can read, at most
+  `automation.scripts.maxresults`. Each result has the shape of `task`.
+- A database error (as opposed to a permission or validation error) inside a script
+  should not be caught and ignored: on PostgreSQL the transaction of the step is
+  unusable after it.
+
+### Examples
+
+When the status of a subtask becomes a done status, sum a number custom field (here
+field 12, "Hours") over all subtasks into the parent. Trigger `task.status_changed`
+with `to_category: done`:
+
+```js
+const FIELD = 12;
+const parentId = (task.relations.parenttask || [])[0];
+if (!parentId) return "no parent";
+let sum = 0;
+for (const id of vikunja.tasks.get(parentId).relations.subtask || []) {
+  const value = vikunja.fields.get(id, FIELD);
+  if (typeof value === "number") sum += value;
+}
+vikunja.fields.set(parentId, FIELD, sum);
+return {parent: parentId, sum: sum};
+```
+
+Post to a chat webhook with a signed body - no script needed, the `http.request`
+action does it (`CHAT_TOKEN` and `CHAT_SIGNING_KEY` are project secrets):
+
+```json
+{"type": "http.request", "params": {
+  "url": "https://chat.example.com/hooks/vikunja",
+  "method": "POST",
+  "headers": {"Authorization": "Bearer {{secrets.CHAT_TOKEN}}"},
+  "body": "{\"text\": \"{{event.doer.name}} created {{task.identifier}}: {{task.title}}\"}",
+  "secret": "CHAT_SIGNING_KEY"
+}}
+```
+
+Assign from a list of user ids stored in the secret `ASSIGNEES` (a JSON array such as
+`[4, 7, 9]`), spread over the tasks by their id (there is no counter that survives
+between runs, so this is an even spread, not a strict rotation):
+
+```js
+const team = JSON.parse(secrets.get("ASSIGNEES"));
+const pick = team[task.id % team.length];
+vikunja.assignees.add(task.id, pick);
+log("assigned", pick);
+return pick;
+```
+
+### Test run (dry run)
+
+`POST .../automations/{rule}/test` runs scripts with a **read-only** host: `get`,
+`find`, `fields.get` and `log` work against the real data; every mutating call
+(`update`, `create`, `comment`, `fields.set`, `status.set`, `assignees.*`,
+`labels.*`) is checked exactly like a real call - permissions, workflow transitions,
+validation - and then only **recorded** as `would call vikunja.tasks.update(12,
+{"priority":5}): set priority to 5` in the step summary, returning a stub (`update`
+returns the task with the patch applied, `create` a task with the id -1);
+`http.fetch` is recorded and returns `{status: 200, body: "{}"}` without sending
+anything; `secrets.get` checks that the secret exists and can be read and returns the
+placeholder `[secret NAME]`, never the value. This is structural: the runner builds
+one of three implementations of the same `Host` interface (`liveHost`, `dryHost`,
+`readOnlyHost`) and the script cannot choose; all three share the code that builds
+the changes (`hostBase`), and only `liveHost` ever applies them. A script condition
+gets the read-only host in every mode.
+
+### HTTP (`http.request` and `http.fetch`)
+
+Both use one code path (`pkg/automation/outbound`) and the SSRF-protected client the
+webhooks use (`utils.NewSSRFSafeHTTPClient`, built on `code.dny.dev/ssrf`): requests
+to loopback, private, link-local and cloud-metadata addresses, and to anything not
+globally routable, are refused unless the administrator set
+`outgoingrequests.allownonroutableips` (the same switch as for webhooks;
+`outgoingrequests.proxyurl` is honoured too, and connections through a proxy are
+the proxy's business as it is for webhooks). The check is made when the connection is
+**dialled** (a `net.Dialer` control function on the address that is actually
+connected to), not on a pre-resolved name, so DNS rebinding does not help, and it runs
+again for every redirect because each redirect dials. Only `http` and `https`; at
+most 3 redirects, a redirect to another host drops the headers the rule set; no
+credentials in the URL; the default `User-Agent` is `Vikunja-Automation`; no
+Vikunja credential is ever sent. Timeout: the request's own (`timeout` in
+`http.fetch`) but at most `automation.scripts.httptimeout` (10 s), and the context of
+the step. Response bodies are read up to `automation.scripts.maxresponsesize` (1 MiB;
+`truncated` is true when more was cut off); request bodies larger than that are
+refused.
+
+`http.request` action: `url` (template; the values of placeholders are
+URL-escaped), `method` (default `POST`), `headers` (name to template; `Host`,
+`Content-Length`, `Transfer-Encoding`, `Connection`, `Upgrade` cannot be set),
+`body` (template) and optionally `secret`, the name of a project secret that signs
+the body: the request gets `X-Vikunja-Signature: sha256=<hex>` with the hex
+HMAC-SHA256 of the exact body, keyed with the secret. This mirrors the signature of
+the user webhooks (`pkg/models/webhooks.go`: the same header name, the same
+HMAC-SHA256 of the exact payload, hex encoded); the difference is the `sha256=`
+prefix, which names the algorithm. Without a `Content-Type` header the body is sent
+as `application/json` when it is valid JSON, otherwise as `text/plain`. The step
+output is `METHOD url: status text` plus the first 2 KiB of the answer, with secrets
+masked.
+
+Retry semantics are those of the engine: a network error, a timeout or a **5xx**
+answer is a temporary failure (the step is retried with backoff up to
+`automation.maxattempts`); a **4xx** answer, a refused address, an invalid URL or
+header fail the run at once. The call happens inside the transaction of the step, so
+it is delivered **at least once**: when the commit fails after the request went out,
+the retry sends it again.
+
+### Secrets
+
+Project secrets are managed with API v2, **project admin only**:
+`GET /projects/{project}/automation-secrets` (names, timestamps, `unreadable`; never
+values), `PUT /projects/{project}/automation-secrets/{name}` with `{"value": "..."}`
+(creates or replaces; at most 8 KiB) and `DELETE .../{name}`. There is no endpoint
+that returns a value.
+
+- **At rest**: AES-256-GCM, key derived with HKDF-SHA256 from `service.secret` (info
+  string `vikunja automation secrets v1`), a random 96-bit nonce per value, the
+  project id and name authenticated as additional data (a stored value cannot be moved
+  to another secret), and a version prefix (`v1:`) so the scheme can change later. If
+  `service.secret` changes - note that Vikunja generates a random one at every start
+  when none is configured, so **set `service.secret` explicitly** - the values cannot
+  be decrypted any more: the API lists the secret as `unreadable: true`,
+  `secrets.get` throws "the secret "X" cannot be decrypted (service.secret changed
+  since it was stored): set it again", and setting it again fixes it.
+- **Where they can be used**: `secrets.get(name)` in scripts (not in condition scripts),
+  and `{{secrets.NAME}}` **only** in `http.request` header values and body, plus the
+  `secret` parameter. A rule that uses `{{secrets.NAME}}` anywhere else (a comment, a
+  title, a field value, the URL, a script source) is rejected when it is saved, and a
+  rule that names a secret that does not exist in the project is rejected too (`actions[1].params.secret`).
+- **Masking**: before anything is stored - step output, step error, run error, the
+  last error of the event, the dry-run result - the engine replaces every secret value
+  the step read **and every other readable secret value of the project** (values
+  shorter than 4 characters only when the step read them) by `***`, in plain,
+  URL-encoded, base64 and JSON-escaped form. A script that does `log(secrets.get("X"))`
+  or throws it, or an answer that echoes it, shows `***`. The error type is kept, so
+  masking does not change the retry classification.
+- **Lifecycle**: purging a project deletes its secrets; **duplicating a project copies
+  none**: the rules of the copy are disabled as before, with the reason
+  `duplicated_secrets_missing` when they use secrets, and enabling one fails until the
+  secrets exist in the new project.
+
+### Security model
+
+*Who can write scripts*: only project admins (creating or changing a rule needs admin
+on the project), and `automation.scripts.enabled = false` turns scripts off for the
+whole instance: rules with scripts cannot be saved (typed 400, code 22005) and
+existing ones fail their step with "scripts are disabled on this instance" without
+executing anything (`http.request` is not a script and is not affected). Instances
+that do not trust their project admins should turn scripts off.
+
+*What a script can reach*: only what the rule owner could do by hand - every
+`vikunja.*` call is permission-checked as the owner with the code the API uses - plus
+public HTTP(S) destinations through the SSRF guard, plus the secrets of **its own
+project**. It cannot reach the file system, the process, the environment, the
+database directly, other users' data beyond the owner's permissions, other projects'
+secrets, or any Go object: everything handed to the interpreter is built as plain
+JavaScript objects, never as wrapped Go values with methods or pointers; what comes
+back is converted to plain data with a size and depth cap. A `constructor.constructor`
+escape yields the interpreter's own global object and nothing else. Secrets are
+protected from *display*, not from the script author: a project admin who can write
+scripts can make a script send a secret to a server of their choice. That is why
+writing scripts needs project admin and why the kill switch exists.
+
+*What is not protected*: (1) **memory inside the interpreter**. goja has no memory
+cap, and the interrupt is only checked between JavaScript instructions, so a single
+native call such as `"x".repeat(2 ** 29)` runs to completion first. The mitigations
+are the timeout, the boundary caps (`find` is limited to `maxresults` tasks, strings
+and values handed to the host are size-capped, log arguments are cut), and the regexp
+engine has a 2 s match timeout - but pure in-VM allocation is only bounded by the
+timeout, and a malicious script can use gigabytes of memory in 5 seconds and get the
+whole Vikunja process killed. (2) **CPU**: up to `timeout` of one core per script,
+times the number of concurrent workers (`automation.workers`, 4): 20 CPU-seconds in
+a 5-second window with the defaults. (3) **Database locks**: a script runs inside the
+transaction of its step, so a script (or `http.request`) that waits for the network
+holds that transaction open, and on SQLite the write lock, for up to the step
+timeout (10 s). (4) **External effects are not rolled back** when the step fails
+afterwards, and are delivered at least once. (5) The 2 s regexp match timeout is a
+process-wide setting of the regexp engine the interpreter uses (it is used for
+nothing else in Vikunja).
 
 ## Safety limits
 
 | Limit | Default | Config |
 |---|---|---|
 | Kill switch (whole instance) | on | `automation.enabled` |
-| Scripts allowed | on | `automation.scripts.enabled` |
+| Scripts allowed (kill switch for scripts) | on | `automation.scripts.enabled` |
 | Chain depth (a rule's action triggering further rules) | 3 | `automation.maxdepth` |
 | Actions per run | 25 | `automation.maxactions` |
 | Step timeout | 10 s | `automation.steptimeout` |
 | Run timeout | 60 s | `automation.runtimeout` |
-| Script: API calls per run / HTTP requests per run | 100 / 5 | `automation.scripts.*` |
+| Script wall-clock timeout (action / condition) | 5 s / 1 s | `automation.scripts.timeout`, `automation.scripts.conditiontimeout` |
+| Script source size (checked when saving) | 64 KiB | `automation.scripts.maxsource` |
+| Script `vikunja.*` calls per run | 100 | `automation.scripts.maxapicalls` |
+| Script `http.fetch` requests per run | 5 | `automation.scripts.maxhttprequests` |
+| HTTP request body and response body read (`http.request`, `http.fetch`) | 1 MiB | `automation.scripts.maxresponsesize` |
+| Duration of one HTTP request, whatever a script asks for | 10 s | `automation.scripts.httptimeout` |
+| Script log output per step (then a truncation marker) | 16 KiB | `automation.scripts.maxlogsize` |
+| Script call stack depth | 512 | `automation.scripts.maxcallstack` |
+| Tasks returned by `vikunja.tasks.find` | 200 | `automation.scripts.maxresults` |
 | Runs per rule per minute (excess is skipped and recorded) | 60 | `automation.ratelimit` |
 | Concurrent workers | 4 | `automation.workers` |
 | Retries with exponential backoff, then `dead` | 5 | `automation.maxattempts` |
 | Consecutive failed runs before a rule is disabled | 20 | `automation.maxconsecutivefailures` |
 | Poll interval / cache TTL / retention (days) | 1 s / 30 s / 30 | `automation.pollinterval`, `automation.cachettl`, `automation.retention` |
 
-`automation.scripts.*` does not exist yet (3b). Chain depth: events caused by
-the actions of a run have depth + 1; an event deeper than `maxdepth` is recorded
-as a skipped run (`max_depth`), so with the default a person's change can start a
-chain of four rules (depths 0 to 3). The step timeout cancels the database work
-of the step (the session context); the run timeout cancels the whole run. Both
-count as temporary failures. A rule with more actions than `maxactions` (the
-limit was lowered after it was saved) fails its run without executing anything.
+Chain depth: events caused by the actions of a run (and by the `vikunja.*` calls of
+scripts) have depth + 1; an event deeper than `maxdepth` is recorded as a skipped run
+(`max_depth`), so with the default a person's change can start a chain of four rules
+(depths 0 to 3). The step timeout cancels the database work of the step (the session
+context); the run timeout cancels the whole run. Both count as temporary failures. A
+rule with more actions than `maxactions` (the limit was lowered after it was saved)
+fails its run without executing anything.
+
+The script timeout is enforced twice: a timer interrupts the interpreter
+(`vm.Interrupt`; an interrupt cannot be caught by the script, not even in a `finally`)
+and the same deadline is the context of every blocking host call (HTTP), which is
+cancelled. A script that runs into its own timeout fails its step for good ("the
+script ran longer than 5s and was stopped"); when the step or run timeout ends it
+first, it is the temporary failure those are. The interrupt is only seen between
+JavaScript instructions: a single long native call (a huge `repeat`, a very large
+`JSON.parse`) finishes first, and regular expressions are stopped by the regexp
+engine's own 2 s match timeout instead. There is **no memory cap** in the interpreter
+(see "Security model"); what is bounded is what crosses the boundary to Vikunja.
 
 A rule that fails 20 times in a row is disabled automatically with the reason
-`too_many_failures` (visible on the rule). The owner is not notified in 3a: that
-needs a new notification type with a frontend renderer. The interpreter has no hard memory cap; the mitigations are the
-timeouts (the interpreter is interrupted), the call limits, and that only
-project admins can write scripts. Instances that do not trust their project
-admins should turn scripts off.
+`too_many_failures` (visible on the rule). The owner is not notified in 3a/3b: that
+needs a new notification type with a frontend renderer.
 
 A rule never reacts to an event whose chain of origin runs (`origin_run_id`,
 followed up to `maxdepth`) contains a run of the same rule, whichever task the
@@ -287,7 +548,8 @@ rule that creates tasks does not react to the tasks it created.
   the owner of the rule (templates, permissions, workflow transitions) and
   returns the plan, warnings and what would fail. Nothing is written; the event
   is simulated (you are the doer, `event.old.*` / `event.new.*` are empty).
-  Scripts will run with a read-only API (3b).
+  Scripts run with a recording, read-only host (see "Test run" under Scripting):
+  nothing is written, no HTTP request is sent, secrets are placeholders.
 - `POST /tasks/{task}/automations/{rule}/run` — manual trigger.
 - `GET /projects/{project}/automations/{rule}/runs`, `GET .../runs/{run}`
   (with steps), `POST .../runs/{run}/retry`.
@@ -295,11 +557,27 @@ rule that creates tasks does not react to the tasks it created.
   condition fields/operators and actions with their parameter schemas (name,
   kind, required, enum, `title_key`). With `project_id` the custom fields of the
   project are added as `cf_<id>` fields. The visual
-  editor is generated from this, so a new action needs no frontend change.
-- `GET|PUT|DELETE /projects/{project}/automation-secrets/{name}` (3b).
+  editor is generated from this, so a new action needs no frontend change. Params have a
+  `kind` (3b adds `code` with `language: "javascript"`, `secret` - the name of a project
+  secret - and `map` - an object of templates, for headers), an optional `description`
+  (plain English help for the editor) and a `default`. The response has a `script`
+  object: the language, the convention of script actions and conditions, the limits
+  with their configured values and config keys, and `api`, the list of every global and
+  function with its signature, description, whether it is `mutating` and whether it is
+  available in a condition (`in_condition`), from which the editor's help panel is
+  generated.
+- `GET /projects/{project}/automation-secrets` (names, timestamps, `unreadable`; never
+  values), `PUT /projects/{project}/automation-secrets/{name}` with `{"value"}`
+  (create or replace), `DELETE /projects/{project}/automation-secrets/{name}` (3b;
+  project admin only).
 
 Errors: an invalid rule is `400` with code 22002 and `details.issues`, a list of
-`{path, message}` for every problem (`actions[1].params.status_id`, ...). 22001
+`{path, message}` for every problem (`actions[1].params.status_id`, ...); a script
+that does not compile is reported with its path and the `line` and `column` of the
+syntax error in the source (`actions[2].params.source`, `conditions.all[1].script`).
+22005 scripts are disabled on this instance (400, on saving a rule with a script),
+22006 invalid secret name or value (400), 22007 secret not found (404), 22008 secret
+cannot be decrypted (409). 22001
 rule not found, 22003 run not found, 22004 run cannot be retried (409; only runs
 with the status `failed`). Retrying a run puts its event back in the queue; steps
 that succeeded are not executed again. Manual trigger (`/tasks/{task}/automations/
@@ -343,29 +621,47 @@ Known limits / deferred:
 - No drag-and-drop reordering (buttons only), no manual-trigger button on the
   task (3d).
 
-## What 3a does and does not do
+## What 3a and 3b do and do not do
 
-Implemented: everything marked *(3a)* above, rules CRUD with validation against
+Implemented: everything marked *(3a)* or *(3b)* above, rules CRUD with validation against
 the catalog (`pkg/automation/spec`) and the project (ids must exist, labels and
-move targets must be usable by the saving user), the dry run, run history with
+move targets must be usable by the saving user, scripts must compile, named secrets
+must exist), the dry run, run history with
 steps, retry of failed runs, the outbox with its hook, the workers, all limits of
-the table above except the script ones, the retention job, project purge (deletes
-rules, events, runs), project duplicate (rules are copied **disabled**; ids of
-custom fields, options and statuses are remapped, labels and projects are kept),
-deleting a custom field or removing / deleting a workflow status (the rules that
+the table above, the retention job, project purge (deletes
+rules, events, runs and secrets), project duplicate (rules are copied **disabled**; ids of
+custom fields, options and statuses are remapped, labels and projects are kept;
+secrets are not copied), deleting a custom field or removing / deleting a workflow status (the rules that
 reference it are disabled with a reason, the delete is not blocked) and the
 Prometheus metrics `vikunja_automation_runs_total{status}` and
 `vikunja_automation_events{status}` (only with `metrics.enabled`).
 
-Not implemented: `notify.in_app` and e-mail actions, the owner notification on
-auto-disable, task overdue / label / relation / move triggers, scripts, `http`,
-secrets, schedule, manual, incoming webhook and due-approaching triggers, the
-wait action, the frontend (3c), the generated frontend client for the new routes.
+3b: JavaScript script action and script condition, `http.request`, `http.fetch`,
+project secrets with masking, the script reference in the catalog.
 
-Test coverage: the automation, model and web tests run on SQLite (a file in WAL
+Not implemented: `notify.in_app` and e-mail actions, the owner notification on
+auto-disable, task overdue / label / relation / move triggers, schedule, manual,
+incoming webhook and due-approaching triggers, the
+wait action, the frontend (3c), the generated frontend client for the new routes.
+`vikunja.notify(userIds, text)` of the first design is not part of the script API: it
+needs the notification type of 3a. Scripts cannot create or delete relations, labels,
+or projects, move tasks between projects or delete tasks. Secrets are not rotated or
+versioned; changing `service.secret` makes all of them unreadable until they are set
+again.
+
+Test coverage: the sandbox (no `require`, `process`, timers, Go objects; escapes through
+`constructor.constructor`; frozen globals), every limit, every `vikunja.*` function with
+its permission failure as the rule owner, origin and depth of script-caused events,
+the dry run (nothing written, no request sent), conditions, the HTTP paths against
+`httptest` servers (the SSRF guard is replaced in tests only through
+`outbound.SetClientFactory`, with a guard that allows the single test listener
+`127.0.0.1/32` and keeps everything else blocked at dial time, so redirects to
+private addresses are still stopped by the real check), secrets (round trip, wrong
+key, masking) and the API are covered by the tests of `pkg/automation/...`,
+`pkg/models` and `pkg/webtests`. The automation, model and web tests run on SQLite (a file in WAL
 mode, like a real installation; the shared-cache in-memory database of the other
 tests cannot run concurrent workers) and the automation, model and automation web
-tests were also run against PostgreSQL 17. MySQL was **not** run; the SQL is plain
+tests (including all of 3b: scripts, HTTP, secrets) were also run against PostgreSQL 17. MySQL was **not** run; the SQL is plain
 xorm builder code (conditional update, no `SKIP LOCKED`), times in conditions are
 formatted as UTC text like the existing reminder code does.
 
@@ -384,7 +680,7 @@ guessing. Editing the action that failed and retrying works.
 
 - 3a: outbox + transactional hook, workers, rules, conditions, the non-script
   actions, run history, limits, API, catalog. **Done.**
-- 3b: script condition/action, `http.fetch`, secrets.
+- 3b: script condition/action, `http.request`, `http.fetch`, secrets. **Done.**
 - 3c: UI.
 - 3d: schedule, due-date-approaching, manual and incoming webhook triggers;
   wait action; templates gallery.

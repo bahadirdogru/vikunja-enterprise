@@ -396,6 +396,9 @@ func (rc *runContext) execute(ctx context.Context, s *xorm.Session, fresh bool) 
 			}
 			return err
 		}
+		// The environment lets script conditions read as the owner; they never get a host that can write.
+		condEnv := &Env{Ctx: runCtx, S: s, Auth: rc.owner, Rule: rc.rule, Event: rc.payload, Now: now(), Sub: subject}
+		subject.Script = condEnv.scriptCondition
 		holds, err := Evaluate(rc.rule.Conditions, subject)
 		if err != nil {
 			return rc.finish(s, models.AutomationRunFailed, "", err)
@@ -494,14 +497,16 @@ func (rc *runContext) applyStep(ctx context.Context, s *xorm.Session, impl *acti
 	if err = env.Reload(); err != nil {
 		return "", false, err
 	}
+	// Errors and output are checked against the secrets of the project when the step used any: a secret value
+	// must not reach the run history.
 	plan, err := impl.plan(env, params(act.Params))
 	if err != nil {
-		return "", false, err
+		return "", false, env.maskErr(err)
 	}
 	output = plan.Summary
 	if plan.apply != nil {
 		if output, err = plan.apply(); err != nil {
-			return "", false, err
+			return "", false, env.maskErr(err)
 		}
 	}
 	for _, w := range plan.Warnings {
@@ -510,7 +515,7 @@ func (rc *runContext) applyStep(ctx context.Context, s *xorm.Session, impl *acti
 	if plan.Stop {
 		output = stopOutput + output
 	}
-	return truncate(output, maxOutputBytes), plan.Stop, ctx.Err()
+	return truncate(env.maskOutput(output), maxOutputBytes), plan.Stop, ctx.Err()
 }
 
 // storeStep inserts or updates the row of the step. Position is unique per run.

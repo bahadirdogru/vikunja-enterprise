@@ -86,6 +86,7 @@ func SetupTests() {
 		"automation_run_steps",
 		"dashboards",
 		"dashboard_widgets",
+		"automation_secrets",
 		"task_statuses",
 		"task_status_history",
 		"team_projects",

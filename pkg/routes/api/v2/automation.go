@@ -179,6 +179,7 @@ func automationCatalog(ctx context.Context, in *struct {
 		return nil, err
 	}
 	catalog := spec.GetCatalog()
+	catalog.Script.Limits = automation.ScriptLimitDocs()
 	if in.ProjectID == 0 {
 		return &automationCatalogBody{Body: catalog}, nil
 	}

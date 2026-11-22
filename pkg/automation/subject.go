@@ -50,6 +50,9 @@ type Subject struct {
 	CreatedBy int64
 	// Gone is set when the task does not exist any more and Fields come from the event payload.
 	Gone bool
+	// Script evaluates the source of a script condition. It is set by whoever owns the session the conditions are
+	// evaluated in (the runner, the dry run); a subject without it cannot evaluate script conditions.
+	Script func(source string) (bool, error)
 }
 
 // canon converts any stored or decoded value to the canonical form.
