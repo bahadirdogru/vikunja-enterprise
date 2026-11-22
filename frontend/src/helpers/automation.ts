@@ -74,6 +74,20 @@ function params(value: unknown): CatalogParam[] {
 
 function normalizeScriptReference(raw: Json): ScriptReferenceEntry[] {
 	const entries: ScriptReferenceEntry[] = []
+	// The backend sends `script: {language, action_convention, condition_convention, limits, api: [...]}`.
+	const doc = raw.script
+	if (doc && typeof doc === 'object' && !Array.isArray(doc)) {
+		const api = (doc as Json).api
+		if (Array.isArray(api)) {
+			for (const item of api as Json[]) {
+				if (!item || typeof item !== 'object') continue
+				entries.push({
+					name: str(item.signature) || str(item.name),
+					description: str(item.description),
+				})
+			}
+		}
+	}
 	for (const [key, value] of Object.entries(raw)) {
 		if (!key.startsWith('script') || !Array.isArray(value)) continue
 		for (const item of value) {
@@ -129,7 +143,8 @@ export function normalizeCatalog(raw: Json): CatalogResponse {
 		actions,
 		placeholders: strList(raw.placeholders),
 		scriptReference: normalizeScriptReference(raw),
-		supportsScriptCondition: raw.script_condition === true
+		supportsScriptCondition: (!!raw.script && typeof raw.script === 'object')
+			|| raw.script_condition === true
 			|| raw.supports_script_condition === true
 			|| (Array.isArray(raw.condition_nodes) && raw.condition_nodes.includes('script'))
 			|| hasCodeParam,

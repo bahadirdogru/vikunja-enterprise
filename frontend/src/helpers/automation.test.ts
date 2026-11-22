@@ -360,3 +360,29 @@ describe('template presets', () => {
 		expect(tpl.draft.trigger.options).toEqual({to_status_id: 3})
 	})
 })
+
+describe('script reference from the catalog', () => {
+	it('reads the api list of the script object and offers script conditions', () => {
+		const catalog = normalizeCatalog({
+			triggers: [], fields: [], operators: [], actions: [],
+			script: {
+				language: 'javascript',
+				api: [
+					{name: 'vikunja.tasks.get', signature: 'vikunja.tasks.get(id) -> task', description: 'Loads a task.'},
+					{name: 'log', signature: '', description: 'Writes to the step output.'},
+				],
+			},
+		})
+		expect(catalog.scriptReference).toEqual([
+			{name: 'vikunja.tasks.get(id) -> task', description: 'Loads a task.'},
+			{name: 'log', description: 'Writes to the step output.'},
+		])
+		expect(catalog.supportsScriptCondition).toBe(true)
+	})
+
+	it('offers no script condition without a script object', () => {
+		const catalog = normalizeCatalog({triggers: [], fields: [], operators: [], actions: []})
+		expect(catalog.scriptReference).toEqual([])
+		expect(catalog.supportsScriptCondition).toBe(false)
+	})
+})
