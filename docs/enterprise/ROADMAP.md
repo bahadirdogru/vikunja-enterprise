@@ -27,9 +27,12 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
 | 1d | Custom fields: values in task lists (`expand=custom_fields`), table columns, kanban card fields | Done |
 | 1e | Custom fields: filter UI with field names instead of `cf_<id>` | Planned |
 | 2a | Workflow backend: statuses, transitions, required fields, teams, history, done sync, `/api/v2` ([workflow.md](workflow.md)) | Done |
-| 2b | Workflow UI: editor in project settings, status picker + history on the task, missing-requirements dialog | Next |
-| 2c | Workflow: kanban status mode, table column, filter/sort by status | Planned |
-| 3 | Automation + scripting (trigger → condition → action, run history, safety limits) | Designed, see [automation.md](automation.md) |
+| 2b | Workflow UI: editor (list + matrix) in project settings, status menu, requirements dialog and history on the task | Done |
+| 2c | Workflow: kanban status mode, table column, filter/sort by status | Next |
+| 3a | Automation core: outbox, workers, rules, conditions, non-script actions, run history, limits ([automation.md](automation.md)) | In progress |
+| 3b | Automation: script condition/action, http, secrets | Planned |
+| 3c | Automation UI | Planned |
+| 3d | Automation: schedule / manual / incoming webhook triggers, wait action, templates | Planned |
 | 4 | Dashboards and reports | Planned |
 | 5 | Forms and approvals | Planned |
 | – | Organisation / tenant layer, AI features | Deferred |
@@ -63,3 +66,9 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   not exposed through MCP. Notes: a transition that requires a comment cannot
   be done through the done checkbox; enabling a workflow on an existing
   project assigns statuses in bulk without history rows.
+- Workflow UI added (en + tr). Exercised in a browser: enable default
+  workflow, add a transition with required fields and comment, perform it
+  through the dialog, history, done button, removing a status with tasks,
+  dark mode. Not exercised in a browser: forbidden (403) and team-restricted
+  transitions, inline server validation errors. In workflow projects the done
+  button posts a status change instead of a task update.
