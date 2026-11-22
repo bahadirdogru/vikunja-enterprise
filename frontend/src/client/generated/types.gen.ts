@@ -41,6 +41,34 @@ export type ApiToken = {
     readonly token?: string;
 };
 
+export type Action = {
+    /**
+     * The parameters of the action, see the catalog for the ones each action accepts.
+     */
+    params?: {
+        [key: string]: unknown;
+    };
+    /**
+     * The action type from the catalog, e.g. task.set_field.
+     */
+    type?: string;
+};
+
+export type ActionDef = {
+    /**
+     * The parameters of the action.
+     */
+    params?: Array<Param> | null;
+    /**
+     * Translation key of the label.
+     */
+    title_key?: string;
+    /**
+     * The stable identifier of the action.
+     */
+    type?: string;
+};
+
 export type AdminIsAdminPatchBody = {
     /**
      * A URL to the JSON Schema for this object.
@@ -308,6 +336,276 @@ export type AuthorizeResponse = {
     state?: string;
 };
 
+export type AutomationRule = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * What the rule does, in order. A failing action stops the run.
+     */
+    actions?: Array<Action> | null;
+    /**
+     * Optional conditions that have to hold, evaluated against the task as it is when the rule runs.
+     */
+    conditions?: Condition;
+    /**
+     * How many runs failed in a row. The rule is disabled when this reaches automation.maxconsecutivefailures.
+     */
+    readonly consecutive_failures?: number;
+    /**
+     * A timestamp when this rule was created. You cannot change this value.
+     */
+    readonly created?: string;
+    /**
+     * What the rule is for.
+     */
+    description?: string;
+    /**
+     * Set when the system disabled the rule: owner_not_admin, owner_unavailable, too_many_failures, custom_field_deleted, status_deleted, duplicated or duplicated_unmapped_reference.
+     */
+    readonly disabled_reason?: string;
+    /**
+     * Whether the rule reacts to events. A rule the system disabled has a disabled_reason; enabling it clears the reason.
+     */
+    enabled?: boolean;
+    /**
+     * The unique, numeric id of this rule.
+     */
+    readonly id?: number;
+    /**
+     * When the rule last ran.
+     */
+    readonly last_run_at?: string;
+    /**
+     * The status of the last run.
+     */
+    readonly last_run_status?: string;
+    /**
+     * The user the rule runs as. Always the user who last saved the rule: actions can never do more than this user could do by hand. The rule is disabled when the owner stops being admin of the project.
+     */
+    readonly owner_id?: number;
+    /**
+     * The project this rule belongs to. Taken from the URL.
+     */
+    readonly project_id?: number;
+    /**
+     * Increases with every change of the rule. Runs record the revision they ran with.
+     */
+    readonly revision?: number;
+    /**
+     * The title of the rule.
+     */
+    title?: string;
+    /**
+     * When the rule runs.
+     */
+    trigger?: Trigger;
+    /**
+     * A timestamp when this rule was last updated. You cannot change this value.
+     */
+    readonly updated?: string;
+};
+
+export type AutomationRuleReadBody = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * What the rule does, in order. A failing action stops the run.
+     */
+    actions?: Array<Action> | null;
+    /**
+     * Optional conditions that have to hold, evaluated against the task as it is when the rule runs.
+     */
+    conditions?: Condition;
+    /**
+     * How many runs failed in a row. The rule is disabled when this reaches automation.maxconsecutivefailures.
+     */
+    readonly consecutive_failures?: number;
+    /**
+     * A timestamp when this rule was created. You cannot change this value.
+     */
+    readonly created?: string;
+    /**
+     * What the rule is for.
+     */
+    description?: string;
+    /**
+     * Set when the system disabled the rule: owner_not_admin, owner_unavailable, too_many_failures, custom_field_deleted, status_deleted, duplicated or duplicated_unmapped_reference.
+     */
+    readonly disabled_reason?: string;
+    /**
+     * Whether the rule reacts to events. A rule the system disabled has a disabled_reason; enabling it clears the reason.
+     */
+    enabled?: boolean;
+    /**
+     * The unique, numeric id of this rule.
+     */
+    readonly id?: number;
+    /**
+     * When the rule last ran.
+     */
+    readonly last_run_at?: string;
+    /**
+     * The status of the last run.
+     */
+    readonly last_run_status?: string;
+    /**
+     * The maximum permission the requesting user has on the project of this rule (always 2: only project admins can read rules).
+     */
+    readonly max_permission?: number;
+    /**
+     * The user the rule runs as. Always the user who last saved the rule: actions can never do more than this user could do by hand. The rule is disabled when the owner stops being admin of the project.
+     */
+    readonly owner_id?: number;
+    /**
+     * The project this rule belongs to. Taken from the URL.
+     */
+    readonly project_id?: number;
+    /**
+     * Increases with every change of the rule. Runs record the revision they ran with.
+     */
+    readonly revision?: number;
+    /**
+     * The title of the rule.
+     */
+    title?: string;
+    /**
+     * When the rule runs.
+     */
+    trigger?: Trigger;
+    /**
+     * A timestamp when this rule was last updated. You cannot change this value.
+     */
+    readonly updated?: string;
+};
+
+export type AutomationRun = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * How many rules triggered each other before this run; 0 for a change made by a person.
+     */
+    readonly depth?: number;
+    /**
+     * Why the run failed.
+     */
+    readonly error?: string;
+    /**
+     * The outbox event that caused the run.
+     */
+    readonly event_id?: number;
+    /**
+     * The internal event that caused the run.
+     */
+    readonly event_name?: string;
+    /**
+     * When the run finished; zero while running.
+     */
+    readonly finished?: string;
+    /**
+     * The unique, numeric id of this run.
+     */
+    readonly id?: number;
+    /**
+     * The project of the rule. Taken from the URL.
+     */
+    readonly project_id?: number;
+    /**
+     * The rule that ran. Taken from the URL.
+     */
+    readonly rule_id?: number;
+    /**
+     * The revision of the rule the run executed.
+     */
+    readonly rule_revision?: number;
+    /**
+     * Why the run was skipped or aborted, e.g. max_depth, rate_limit, self_trigger, conditions_not_met, flow_stopped, owner_not_admin.
+     */
+    readonly skip_reason?: string;
+    /**
+     * When the run started.
+     */
+    readonly started?: string;
+    /**
+     * running while the run is executing or waits for a retry, then success, failed, skipped (a limit or the conditions stopped it) or aborted (the owner may no longer run the rule).
+     */
+    readonly status?: 'running' | 'success' | 'failed' | 'skipped' | 'aborted';
+    /**
+     * The executed actions. Only included when reading a single run.
+     */
+    readonly steps?: Array<AutomationRunStep> | null;
+    /**
+     * The task the event was about, 0 when none.
+     */
+    readonly task_id?: number;
+};
+
+export type AutomationRunRetry = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * The run, now waiting to be executed again.
+     */
+    readonly run?: AutomationRun;
+};
+
+export type AutomationRunStep = {
+    /**
+     * The type of the action.
+     */
+    readonly action_type?: string;
+    /**
+     * When the step was recorded.
+     */
+    readonly created?: string;
+    /**
+     * How long the step took.
+     */
+    readonly duration_ms?: number;
+    /**
+     * Why the step failed.
+     */
+    readonly error?: string;
+    /**
+     * The unique, numeric id of this step.
+     */
+    readonly id?: number;
+    /**
+     * What the step did, truncated to 16 KiB.
+     */
+    readonly output?: string;
+    /**
+     * The index of the action in the rule, starting at 0.
+     */
+    readonly position?: number;
+    /**
+     * The run the step belongs to.
+     */
+    readonly run_id?: number;
+    /**
+     * success, failed or skipped.
+     */
+    readonly status?: 'success' | 'failed' | 'skipped';
+};
+
+export type AutomationTestRequest = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * The task to test the rule with. It has to belong to the project of the rule.
+     */
+    task_id: number;
+};
+
 export type AvailableTransition = {
     /**
      * The required fields the task does not have yet. The change is rejected until they are set.
@@ -547,6 +845,33 @@ export type Callback = {
     totp_passcode?: string;
 };
 
+export type Catalog = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * All actions.
+     */
+    actions?: Array<ActionDef> | null;
+    /**
+     * All fields conditions can compare. Custom fields are added for a project when requested with project_id.
+     */
+    fields?: Array<FieldDef> | null;
+    /**
+     * All comparison operators.
+     */
+    operators?: Array<OperatorDef> | null;
+    /**
+     * The placeholders text parameters of kind template may contain. cf.<id> stands for a custom field.
+     */
+    placeholders?: Array<string> | null;
+    /**
+     * All triggers.
+     */
+    triggers?: Array<TriggerDef> | null;
+};
+
 export type ColumnMapping = {
     /**
      * The task attribute the column maps to. Use "ignore" to drop the column.
@@ -560,6 +885,33 @@ export type ColumnMapping = {
      * The header name of the CSV column, for display.
      */
     column_name?: string;
+};
+
+export type Condition = {
+    /**
+     * True when every child is true.
+     */
+    all?: Array<Condition> | null;
+    /**
+     * True when at least one child is true.
+     */
+    any?: Array<Condition> | null;
+    /**
+     * The field to compare, see the catalog.
+     */
+    field?: string;
+    /**
+     * True when none of the children is true.
+     */
+    not?: Array<Condition> | null;
+    /**
+     * The operator, see the catalog for the ones each field supports.
+     */
+    op?: string;
+    /**
+     * The value to compare with. A list for in and not in, absent for is_empty and is_not_empty. Dates are RFC 3339 timestamps, plain dates or relative: now, now+3d, now-12h.
+     */
+    value?: unknown;
 };
 
 export type ConnectionSettings = {
@@ -903,6 +1255,56 @@ export type DetectionResult = {
     suggested_mapping?: Array<ColumnMapping> | null;
 };
 
+export type DryRunResult = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * Whether the conditions hold for the task as it is now. Conditions on event.* fields see no event in a test and are evaluated as empty.
+     */
+    conditions_met?: boolean;
+    /**
+     * General remarks about the test.
+     */
+    notes?: Array<string> | null;
+    /**
+     * The planned actions in order. Every action is planned against the current state of the task, so an action that depends on the result of an earlier one is judged as if the earlier one had not run.
+     */
+    steps?: Array<DryRunStep> | null;
+    /**
+     * The task the rule was tested with.
+     */
+    task_id?: number;
+};
+
+export type DryRunStep = {
+    /**
+     * Why the action would fail right now, e.g. a workflow transition that is not allowed.
+     */
+    error?: string;
+    /**
+     * The index of the action in the rule.
+     */
+    position?: number;
+    /**
+     * Whether the run would end here (flow.stop_if).
+     */
+    stops?: boolean;
+    /**
+     * What the action would do. Empty when it would fail.
+     */
+    summary?: string;
+    /**
+     * The type of the action.
+     */
+    type?: string;
+    /**
+     * Problems that would not stop the action, e.g. a placeholder that renders empty.
+     */
+    warnings?: Array<string> | null;
+};
+
 export type EmailConfirm = {
     /**
      * A URL to the JSON Schema for this object.
@@ -924,6 +1326,45 @@ export type ErrorDetail = {
      * The value at the given location
      */
     value?: unknown;
+};
+
+export type FieldDef = {
+    /**
+     * The type of the custom field, set for cf_<id> fields of a project. select and multi_select compare option ids, user compares user ids.
+     */
+    custom_field_type?: string;
+    /**
+     * The allowed values of an enum field.
+     */
+    enum?: Array<string> | null;
+    /**
+     * The kind of value the field has.
+     */
+    kind?: string;
+    /**
+     * Whether the field holds a list of values.
+     */
+    multiple?: boolean;
+    /**
+     * The field name. Fields with a pattern (cf_<id>, event.old.<key>) are described by Pattern.
+     */
+    name?: string;
+    /**
+     * The operators that can be used with this field.
+     */
+    operators?: Array<string> | null;
+    /**
+     * Set for families of fields, e.g. cf_<id>.
+     */
+    pattern?: string;
+    /**
+     * The title of the custom field, set for cf_<id> fields of a project.
+     */
+    title?: string;
+    /**
+     * Translation key of the label.
+     */
+    title_key?: string;
 };
 
 export type File = {
@@ -1051,6 +1492,19 @@ export type JsonPatchOp = {
      * The value to set
      */
     value?: unknown;
+};
+
+export type KindBy = {
+    /**
+     * The kind of the value for each value of that parameter.
+     */
+    kinds?: {
+        [key: string]: string;
+    };
+    /**
+     * The sibling parameter that decides the kind.
+     */
+    param?: string;
 };
 
 export type Label = {
@@ -1510,6 +1964,25 @@ export type OpenIdAuthInfo = {
     providers?: Array<Provider> | null;
 };
 
+export type OperatorDef = {
+    /**
+     * Set when the value is a list.
+     */
+    list?: boolean;
+    /**
+     * Set when the comparison takes no value.
+     */
+    no_value?: boolean;
+    /**
+     * Translation key of the label.
+     */
+    title_key?: string;
+    /**
+     * The stable identifier of the operator.
+     */
+    type?: string;
+};
+
 export type Overview = {
     /**
      * A URL to the JSON Schema for this object.
@@ -1559,6 +2032,30 @@ export type PaginatedAdminUser = {
      */
     readonly $schema?: string;
     items?: Array<AdminUser> | null;
+    page?: number;
+    per_page?: number;
+    total?: number;
+    total_pages?: number;
+};
+
+export type PaginatedAutomationRule = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    items?: Array<AutomationRule> | null;
+    page?: number;
+    per_page?: number;
+    total?: number;
+    total_pages?: number;
+};
+
+export type PaginatedAutomationRun = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    items?: Array<AutomationRun> | null;
     page?: number;
     per_page?: number;
     total?: number;
@@ -1887,6 +2384,37 @@ export type PaginatedWebhook = {
     per_page?: number;
     total?: number;
     total_pages?: number;
+};
+
+export type Param = {
+    /**
+     * The allowed values of an enum. For user and users these are the keywords accepted besides user ids.
+     */
+    enum?: Array<string> | null;
+    /**
+     * The kind of value: string, text, number, bool, date, duration, user, users, label, status, custom_field, project, template, condition, enum or any.
+     */
+    kind?: string;
+    /**
+     * Set when the kind of the value depends on another parameter.
+     */
+    kind_by?: KindBy;
+    /**
+     * Whether the value is a list of values of this kind.
+     */
+    multiple?: boolean;
+    /**
+     * The key in options or params.
+     */
+    name?: string;
+    /**
+     * Whether the key must be present.
+     */
+    required?: boolean;
+    /**
+     * Translation key of the label.
+     */
+    title_key?: string;
 };
 
 export type PasswordReset = {
@@ -3944,6 +4472,38 @@ export type TrashedTask = {
     readonly updated?: string;
 };
 
+export type Trigger = {
+    /**
+     * The options of the trigger, see the catalog for the ones each trigger accepts.
+     */
+    options?: {
+        [key: string]: unknown;
+    };
+    /**
+     * The trigger type from the catalog, e.g. task.status_changed.
+     */
+    type?: string;
+};
+
+export type TriggerDef = {
+    /**
+     * The internal event the trigger listens to. Several triggers can share one.
+     */
+    event?: string;
+    /**
+     * The options of the trigger.
+     */
+    options?: Array<Param> | null;
+    /**
+     * Translation key of the label.
+     */
+    title_key?: string;
+    /**
+     * The stable identifier of the trigger.
+     */
+    type?: string;
+};
+
 export type User = {
     /**
      * A URL to the JSON Schema for this object.
@@ -4771,6 +5331,67 @@ export type AuthorizeResponseWritable = {
     state?: string;
 };
 
+export type AutomationRuleWritable = {
+    /**
+     * What the rule does, in order. A failing action stops the run.
+     */
+    actions?: Array<Action> | null;
+    /**
+     * Optional conditions that have to hold, evaluated against the task as it is when the rule runs.
+     */
+    conditions?: Condition;
+    /**
+     * What the rule is for.
+     */
+    description?: string;
+    /**
+     * Whether the rule reacts to events. A rule the system disabled has a disabled_reason; enabling it clears the reason.
+     */
+    enabled?: boolean;
+    /**
+     * The title of the rule.
+     */
+    title?: string;
+    /**
+     * When the rule runs.
+     */
+    trigger?: Trigger;
+};
+
+export type AutomationRuleReadBodyWritable = {
+    /**
+     * What the rule does, in order. A failing action stops the run.
+     */
+    actions?: Array<Action> | null;
+    /**
+     * Optional conditions that have to hold, evaluated against the task as it is when the rule runs.
+     */
+    conditions?: Condition;
+    /**
+     * What the rule is for.
+     */
+    description?: string;
+    /**
+     * Whether the rule reacts to events. A rule the system disabled has a disabled_reason; enabling it clears the reason.
+     */
+    enabled?: boolean;
+    /**
+     * The title of the rule.
+     */
+    title?: string;
+    /**
+     * When the rule runs.
+     */
+    trigger?: Trigger;
+};
+
+export type AutomationTestRequestWritable = {
+    /**
+     * The task to test the rule with. It has to belong to the project of the rule.
+     */
+    task_id: number;
+};
+
 export type AvailableTransitionWritable = {
     [key: string]: never;
 };
@@ -4887,6 +5508,29 @@ export type CallbackWritable = {
     redirect_url?: string;
     scope?: string;
     totp_passcode?: string;
+};
+
+export type CatalogWritable = {
+    /**
+     * All actions.
+     */
+    actions?: Array<ActionDef> | null;
+    /**
+     * All fields conditions can compare. Custom fields are added for a project when requested with project_id.
+     */
+    fields?: Array<FieldDef> | null;
+    /**
+     * All comparison operators.
+     */
+    operators?: Array<OperatorDef> | null;
+    /**
+     * The placeholders text parameters of kind template may contain. cf.<id> stands for a custom field.
+     */
+    placeholders?: Array<string> | null;
+    /**
+     * All triggers.
+     */
+    triggers?: Array<TriggerDef> | null;
 };
 
 export type ConnectionSettingsWritable = {
@@ -5070,6 +5714,25 @@ export type DetectionResultWritable = {
      * A best-guess column-to-attribute mapping; the client may edit it before previewing or migrating.
      */
     suggested_mapping?: Array<ColumnMapping> | null;
+};
+
+export type DryRunResultWritable = {
+    /**
+     * Whether the conditions hold for the task as it is now. Conditions on event.* fields see no event in a test and are evaluated as empty.
+     */
+    conditions_met?: boolean;
+    /**
+     * General remarks about the test.
+     */
+    notes?: Array<string> | null;
+    /**
+     * The planned actions in order. Every action is planned against the current state of the task, so an action that depends on the result of an earlier one is judged as if the earlier one had not run.
+     */
+    steps?: Array<DryRunStep> | null;
+    /**
+     * The task the rule was tested with.
+     */
+    task_id?: number;
 };
 
 export type EmailConfirmWritable = {
@@ -5303,6 +5966,22 @@ export type PaginatedApiTokenWritable = {
 
 export type PaginatedAdminUserWritable = {
     items?: Array<AdminUserWritable> | null;
+    page?: number;
+    per_page?: number;
+    total?: number;
+    total_pages?: number;
+};
+
+export type PaginatedAutomationRuleWritable = {
+    items?: Array<AutomationRuleWritable> | null;
+    page?: number;
+    per_page?: number;
+    total?: number;
+    total_pages?: number;
+};
+
+export type PaginatedAutomationRunWritable = {
+    items?: Array<unknown> | null;
     page?: number;
     per_page?: number;
     total?: number;
@@ -7237,6 +7916,36 @@ export type AuthOpenidCallbackResponses = {
 
 export type AuthOpenidCallbackResponse = AuthOpenidCallbackResponses[keyof AuthOpenidCallbackResponses];
 
+export type AutomationCatalogData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Add the custom fields of this project as condition fields.
+         */
+        project_id?: number;
+    };
+    url: '/automations/catalog';
+};
+
+export type AutomationCatalogErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type AutomationCatalogError = AutomationCatalogErrors[keyof AutomationCatalogErrors];
+
+export type AutomationCatalogResponses = {
+    /**
+     * OK
+     */
+    200: Catalog;
+};
+
+export type AutomationCatalogResponse = AutomationCatalogResponses[keyof AutomationCatalogResponses];
+
 export type AvatarGetData = {
     body?: never;
     path: {
@@ -9098,6 +9807,326 @@ export type ProjectsDuplicateResponses = {
 };
 
 export type ProjectsDuplicateResponse = ProjectsDuplicateResponses[keyof ProjectsDuplicateResponses];
+
+export type AutomationsListData = {
+    body?: never;
+    path: {
+        project: number;
+    };
+    query?: {
+        /**
+         * 1-based page number.
+         */
+        page?: number;
+        /**
+         * Items per page. Defaults to the instance's configured maximum (service.maxitemsperpage, reported as max_items_per_page by /info) and is silently capped at it; asking for more is not an error.
+         */
+        per_page?: number;
+        /**
+         * Search query; filters the list to items matching this string.
+         */
+        q?: string;
+    };
+    url: '/projects/{project}/automations';
+};
+
+export type AutomationsListErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type AutomationsListError = AutomationsListErrors[keyof AutomationsListErrors];
+
+export type AutomationsListResponses = {
+    /**
+     * OK
+     */
+    200: PaginatedAutomationRule;
+};
+
+export type AutomationsListResponse = AutomationsListResponses[keyof AutomationsListResponses];
+
+export type AutomationsCreateData = {
+    body: AutomationRuleWritable;
+    path: {
+        project: number;
+    };
+    query?: never;
+    url: '/projects/{project}/automations';
+};
+
+export type AutomationsCreateErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type AutomationsCreateError = AutomationsCreateErrors[keyof AutomationsCreateErrors];
+
+export type AutomationsCreateResponses = {
+    /**
+     * Created
+     */
+    201: AutomationRule;
+};
+
+export type AutomationsCreateResponse = AutomationsCreateResponses[keyof AutomationsCreateResponses];
+
+export type AutomationsDeleteData = {
+    body?: never;
+    path: {
+        project: number;
+        rule: number;
+    };
+    query?: never;
+    url: '/projects/{project}/automations/{rule}';
+};
+
+export type AutomationsDeleteErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type AutomationsDeleteError = AutomationsDeleteErrors[keyof AutomationsDeleteErrors];
+
+export type AutomationsDeleteResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type AutomationsDeleteResponse = AutomationsDeleteResponses[keyof AutomationsDeleteResponses];
+
+export type AutomationsReadData = {
+    body?: never;
+    headers?: {
+        /**
+         * Succeeds if the server's resource matches one of the passed values.
+         */
+        'If-Match'?: Array<string> | null;
+        /**
+         * Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.
+         */
+        'If-None-Match'?: Array<string> | null;
+        /**
+         * Succeeds if the server's resource date is more recent than the passed date.
+         */
+        'If-Modified-Since'?: string;
+        /**
+         * Succeeds if the server's resource date is older or the same as the passed date.
+         */
+        'If-Unmodified-Since'?: string;
+    };
+    path: {
+        project: number;
+        rule: number;
+    };
+    query?: never;
+    url: '/projects/{project}/automations/{rule}';
+};
+
+export type AutomationsReadErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type AutomationsReadError = AutomationsReadErrors[keyof AutomationsReadErrors];
+
+export type AutomationsReadResponses = {
+    /**
+     * OK
+     */
+    200: AutomationRuleReadBody;
+};
+
+export type AutomationsReadResponse = AutomationsReadResponses[keyof AutomationsReadResponses];
+
+export type PatchAutomationsReadData = {
+    body: Array<JsonPatchOp> | null;
+    path: {
+        project: number;
+        rule: number;
+    };
+    query?: never;
+    url: '/projects/{project}/automations/{rule}';
+};
+
+export type PatchAutomationsReadErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type PatchAutomationsReadError = PatchAutomationsReadErrors[keyof PatchAutomationsReadErrors];
+
+export type PatchAutomationsReadResponses = {
+    /**
+     * OK
+     */
+    200: AutomationRule;
+};
+
+export type PatchAutomationsReadResponse = PatchAutomationsReadResponses[keyof PatchAutomationsReadResponses];
+
+export type AutomationsUpdateData = {
+    body: AutomationRuleReadBodyWritable;
+    path: {
+        project: number;
+        rule: number;
+    };
+    query?: never;
+    url: '/projects/{project}/automations/{rule}';
+};
+
+export type AutomationsUpdateErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type AutomationsUpdateError = AutomationsUpdateErrors[keyof AutomationsUpdateErrors];
+
+export type AutomationsUpdateResponses = {
+    /**
+     * OK
+     */
+    200: AutomationRule;
+};
+
+export type AutomationsUpdateResponse = AutomationsUpdateResponses[keyof AutomationsUpdateResponses];
+
+export type AutomationRunsListData = {
+    body?: never;
+    path: {
+        project: number;
+        rule: number;
+    };
+    query?: {
+        /**
+         * 1-based page number.
+         */
+        page?: number;
+        /**
+         * Items per page. Defaults to the instance's configured maximum (service.maxitemsperpage, reported as max_items_per_page by /info) and is silently capped at it; asking for more is not an error.
+         */
+        per_page?: number;
+    };
+    url: '/projects/{project}/automations/{rule}/runs';
+};
+
+export type AutomationRunsListErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type AutomationRunsListError = AutomationRunsListErrors[keyof AutomationRunsListErrors];
+
+export type AutomationRunsListResponses = {
+    /**
+     * OK
+     */
+    200: PaginatedAutomationRun;
+};
+
+export type AutomationRunsListResponse = AutomationRunsListResponses[keyof AutomationRunsListResponses];
+
+export type AutomationRunsReadData = {
+    body?: never;
+    path: {
+        project: number;
+        rule: number;
+        run: number;
+    };
+    query?: never;
+    url: '/projects/{project}/automations/{rule}/runs/{run}';
+};
+
+export type AutomationRunsReadErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type AutomationRunsReadError = AutomationRunsReadErrors[keyof AutomationRunsReadErrors];
+
+export type AutomationRunsReadResponses = {
+    /**
+     * OK
+     */
+    200: AutomationRun;
+};
+
+export type AutomationRunsReadResponse = AutomationRunsReadResponses[keyof AutomationRunsReadResponses];
+
+export type AutomationRunsRetryData = {
+    body?: never;
+    path: {
+        project: number;
+        rule: number;
+        run: number;
+    };
+    query?: never;
+    url: '/projects/{project}/automations/{rule}/runs/{run}/retry';
+};
+
+export type AutomationRunsRetryErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type AutomationRunsRetryError = AutomationRunsRetryErrors[keyof AutomationRunsRetryErrors];
+
+export type AutomationRunsRetryResponses = {
+    /**
+     * OK
+     */
+    200: AutomationRunRetry;
+};
+
+export type AutomationRunsRetryResponse = AutomationRunsRetryResponses[keyof AutomationRunsRetryResponses];
+
+export type AutomationsTestData = {
+    body: AutomationTestRequestWritable;
+    path: {
+        project: number;
+        rule: number;
+    };
+    query?: never;
+    url: '/projects/{project}/automations/{rule}/test';
+};
+
+export type AutomationsTestErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type AutomationsTestError = AutomationsTestErrors[keyof AutomationsTestErrors];
+
+export type AutomationsTestResponses = {
+    /**
+     * OK
+     */
+    200: DryRunResult;
+};
+
+export type AutomationsTestResponse = AutomationsTestResponses[keyof AutomationsTestResponses];
 
 export type ProjectsBackgroundDeleteData = {
     body?: never;
