@@ -26,7 +26,7 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
 | 1c | Custom fields: filter (`cf_<id>`) and sort in the API, values removed when a task changes project | Done |
 | 1d | Custom fields: filter/sort UI (field names instead of ids), table columns, kanban card fields | Planned |
 | 2 | Workflow (statuses, allowed transitions, required fields, transition history) | Designed, see [workflow.md](workflow.md) |
-| 3 | Automation + scripting (trigger → condition → action, run history, safety limits) | Planned |
+| 3 | Automation + scripting (trigger → condition → action, run history, safety limits) | Designed, see [automation.md](automation.md) |
 | 4 | Dashboards and reports | Planned |
 | 5 | Forms and approvals | Planned |
 | – | Organisation / tenant layer, AI features | Deferred |
