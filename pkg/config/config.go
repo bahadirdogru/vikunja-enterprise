@@ -253,6 +253,11 @@ const (
 	AutomationCacheTTL            Key = `automation.cachettl`
 	AutomationRetention           Key = `automation.retention`
 
+	ReportsCacheTTL   Key = `reports.cachettl`
+	ReportsMaxGroups  Key = `reports.maxgroups`
+	ReportsMaxBuckets Key = `reports.maxbuckets`
+	ReportsTimeout    Key = `reports.timeout`
+
 	AuditEnabled           Key = `audit.enabled`
 	AuditLogfile           Key = `audit.logfile`
 	AuditRotationMaxSizeMB Key = `audit.rotation.maxsizemb`
@@ -562,6 +567,12 @@ func initDefaultConfig() {
 	AutomationPollInterval.setDefault(time.Second)
 	AutomationCacheTTL.setDefault(30 * time.Second)
 	AutomationRetention.setDefault(30)
+
+	// Reports
+	ReportsCacheTTL.setDefault(30 * time.Second)
+	ReportsMaxGroups.setDefault(200)
+	ReportsMaxBuckets.setDefault(366)
+	ReportsTimeout.setDefault(20 * time.Second)
 	// Audit
 	AuditEnabled.setDefault(false)
 	AuditLogfile.setDefault("") // empty means <log.path>/audit.log, resolved at init

@@ -537,6 +537,97 @@ func buildParentSearchCondition(search string) builder.Cond {
 	return cond
 }
 
+// buildScopeConds returns the two arms of the set of tasks a request may see: the tasks of the projects in
+// opts.projectIDs and, when the favorites pseudo project is part of the scope, the favorited tasks of projects the
+// auth can still read. Both are nil when the scope is empty. Task lists and reports share it, so a report can never
+// reach tasks the list would not show.
+func (d *dbTaskSearcher) buildScopeConds(opts *taskSearchOptions, wantsRelevanceRanking bool) (projectIDCond, favoritesCond builder.Cond, err error) {
+	if len(opts.projectIDs) > 0 {
+		projectIDCond = builder.In("tasks.project_id", opts.projectIDs)
+	}
+
+	if d.hasFavoritesProject {
+		// Favorites outlive project access, so this arm needs its own access check.
+		favoritesAccessible, err := accessibleProjectIDsCond(d.s, d.a, "tasks.project_id")
+		if err != nil {
+			return nil, nil, err
+		}
+
+		addFavoritesCond := true
+		if wantsRelevanceRanking && len(opts.projectIDs) > 0 {
+			// pdb.score also rejects the favorites arm (`OR tasks.id IN (<subquery>)`).
+			// On an all-projects scope that arm is usually redundant — every favorited
+			// task already lives in one of the user's projects — so drop it and keep
+			// relevance ranking. Only favorites outside the scope (e.g. in projects the
+			// user lost access to) need the arm and keep the default, unranked ordering.
+			var hasOutOfScopeFavorites bool
+			hasOutOfScopeFavorites, err = d.s.
+				Table("favorites").
+				Join("INNER", "tasks", "tasks.id = favorites.entity_id").
+				Where(builder.And(
+					builder.Eq{"favorites.user_id": d.a.GetID()},
+					builder.Eq{"favorites.kind": FavoriteKindTask},
+					builder.NotIn("tasks.project_id", opts.projectIDs),
+					taskNotDeletedCond("tasks"),
+					favoritesAccessible,
+				)).
+				Exist()
+			if err != nil {
+				return nil, nil, err
+			}
+			addFavoritesCond = hasOutOfScopeFavorites
+		}
+
+		if addFavoritesCond {
+			// All favorite tasks for that user
+			favCond := builder.
+				Select("entity_id").
+				From("favorites").
+				Where(
+					builder.And(
+						builder.Eq{"user_id": d.a.GetID()},
+						builder.Eq{"kind": FavoriteKindTask},
+					))
+
+			favoritesCond = builder.And(
+				builder.In("tasks.id", favCond),
+				favoritesAccessible,
+			)
+		}
+	}
+
+	return projectIDCond, favoritesCond, nil
+}
+
+// readableTasksQuery selects the ids of the tasks the auth can read in the scope of opts, narrowed by the parsed
+// filters, using exactly the conditions Search uses. It is the base of every report.
+func (d *dbTaskSearcher) readableTasksQuery(opts *taskSearchOptions) (*builder.Builder, error) {
+	if err := resolveCustomFieldFilters(d.s, d.a, opts.parsedFilters); err != nil {
+		return nil, err
+	}
+
+	filterCond, err := convertFiltersToDBFilterCond(opts.parsedFilters, opts.filterIncludeNulls)
+	if err != nil {
+		return nil, err
+	}
+
+	projectIDCond, favoritesCond, err := d.buildScopeConds(opts, false)
+	if err != nil {
+		return nil, err
+	}
+
+	var scope builder.Cond = builder.In("tasks.id", []int64{})
+	if projectIDCond != nil || favoritesCond != nil {
+		scope = builder.Or(projectIDCond, favoritesCond)
+	}
+
+	query := builder.Select("tasks.id").From("tasks")
+	if hasBucketIDInParsedFilter(opts.parsedFilters) {
+		query = query.LeftJoin("task_buckets", "task_buckets.task_id = tasks.id")
+	}
+	return query.Where(builder.And(scope, filterCond, taskNotDeletedCond("tasks"))), nil
+}
+
 //nolint:gocyclo
 func (d *dbTaskSearcher) Search(opts *taskSearchOptions) (tasks []*Task, totalCount int64, err error) {
 
@@ -620,60 +711,9 @@ func (d *dbTaskSearcher) Search(opts *taskSearchOptions) (tasks []*Task, totalCo
 		searchID == 0 &&
 		(!opts.userProvidedSort || relevanceSortRequested)
 
-	var projectIDCond builder.Cond
-	var favoritesCond builder.Cond
-	if len(opts.projectIDs) > 0 {
-		projectIDCond = builder.In("tasks.project_id", opts.projectIDs)
-	}
-
-	if d.hasFavoritesProject {
-		// Favorites outlive project access, so this arm needs its own access check.
-		favoritesAccessible, err := accessibleProjectIDsCond(d.s, d.a, "tasks.project_id")
-		if err != nil {
-			return nil, 0, err
-		}
-
-		addFavoritesCond := true
-		if wantsRelevanceRanking && len(opts.projectIDs) > 0 {
-			// pdb.score also rejects the favorites arm (`OR tasks.id IN (<subquery>)`).
-			// On an all-projects scope that arm is usually redundant — every favorited
-			// task already lives in one of the user's projects — so drop it and keep
-			// relevance ranking. Only favorites outside the scope (e.g. in projects the
-			// user lost access to) need the arm and keep the default, unranked ordering.
-			var hasOutOfScopeFavorites bool
-			hasOutOfScopeFavorites, err = d.s.
-				Table("favorites").
-				Join("INNER", "tasks", "tasks.id = favorites.entity_id").
-				Where(builder.And(
-					builder.Eq{"favorites.user_id": d.a.GetID()},
-					builder.Eq{"favorites.kind": FavoriteKindTask},
-					builder.NotIn("tasks.project_id", opts.projectIDs),
-					taskNotDeletedCond("tasks"),
-					favoritesAccessible,
-				)).
-				Exist()
-			if err != nil {
-				return nil, 0, err
-			}
-			addFavoritesCond = hasOutOfScopeFavorites
-		}
-
-		if addFavoritesCond {
-			// All favorite tasks for that user
-			favCond := builder.
-				Select("entity_id").
-				From("favorites").
-				Where(
-					builder.And(
-						builder.Eq{"user_id": d.a.GetID()},
-						builder.Eq{"kind": FavoriteKindTask},
-					))
-
-			favoritesCond = builder.And(
-				builder.In("tasks.id", favCond),
-				favoritesAccessible,
-			)
-		}
+	projectIDCond, favoritesCond, err := d.buildScopeConds(opts, wantsRelevanceRanking)
+	if err != nil {
+		return nil, 0, err
 	}
 
 	// xorm drops nil conds, so without either arm the query would span every task.

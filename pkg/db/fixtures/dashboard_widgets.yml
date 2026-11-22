@@ -1,0 +1,55 @@
+- id: 1
+  dashboard_id: 1
+  type: number
+  title: Open tasks
+  config: '{"request":{"filter":"done = false"}}'
+  x: 0
+  y: 0
+  w: 4
+  h: 3
+  created: 2018-12-01 15:13:12
+  updated: 2018-12-02 15:13:12
+- id: 2
+  dashboard_id: 1
+  type: text
+  title: Note
+  config: '{"text":"hello"}'
+  x: 4
+  y: 0
+  w: 4
+  h: 3
+  created: 2018-12-01 15:13:12
+  updated: 2018-12-02 15:13:12
+- id: 3
+  dashboard_id: 3
+  type: bar
+  title: By priority
+  config: '{"request":{"project_id":1,"group_by":"priority"}}'
+  x: 0
+  y: 0
+  w: 6
+  h: 4
+  created: 2018-12-01 15:13:12
+  updated: 2018-12-02 15:13:12
+- id: 4
+  dashboard_id: 4
+  type: text
+  title: Project 3 note
+  config: '{"text":"project 3"}'
+  x: 0
+  y: 0
+  w: 12
+  h: 2
+  created: 2018-12-01 15:13:12
+  updated: 2018-12-02 15:13:12
+- id: 5
+  dashboard_id: 5
+  type: text
+  title: Project 11 note
+  config: '{"text":"project 11"}'
+  x: 0
+  y: 0
+  w: 12
+  h: 2
+  created: 2018-12-01 15:13:12
+  updated: 2018-12-02 15:13:12

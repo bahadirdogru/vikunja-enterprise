@@ -522,3 +522,41 @@ func (tf *TaskCollection) pinToLinkShareProject(a web.Auth) {
 		tf.ProjectID = shareAuth.ProjectID
 	}
 }
+
+// readableTasksQuery selects the ids of the tasks the auth can read for this collection's project scope and filter.
+// It follows ReadAll without the view and saved filter handling and builds its conditions with the same functions
+// as the task search, so what it selects is what the task list shows.
+func (tf *TaskCollection) readableTasksQuery(s *xorm.Session, a web.Auth) (*builder.Builder, error) {
+	tf.pinToLinkShareProject(a)
+	if tf.ProjectID < -1 {
+		return nil, ErrProjectDoesNotExist{ID: tf.ProjectID}
+	}
+
+	opts, err := getTaskFilterOptsFromCollection(tf, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var projects []*Project
+	if shareAuth, is := a.(*LinkSharing); is {
+		project, err := GetProjectSimpleByID(s, shareAuth.ProjectID)
+		if err != nil {
+			return nil, err
+		}
+		projects = []*Project{project}
+	} else {
+		projects, err = getRelevantProjectsFromCollection(s, a, tf)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	var hasFavoritesProject bool
+	opts.projectIDs, hasFavoritesProject = getProjectIDsFromProjects(projects)
+	searcher := &dbTaskSearcher{
+		s:                   s,
+		a:                   a,
+		hasFavoritesProject: hasFavoritesProject,
+	}
+	return searcher.readableTasksQuery(opts)
+}

@@ -1,6 +1,6 @@
 # Dashboards and reports — design
 
-Status: design.
+Status: step 4a (aggregation API and dashboard CRUD) is implemented, 4b and 4c are open. The sections below describe what is built; "Deferred" lists what is not.
 
 ## Goals
 
@@ -31,44 +31,105 @@ project admins.
 
 ## Aggregation API
 
-One endpoint does all the counting, so widgets, future exports and scripts
-share it.
+One endpoint does all the counting, so widgets, future exports and scripts share it.
+`GET /api/v2/reports/tasks/options?project_id=` lists what a request may use in a scope (dimensions incl. the
+`cf_<id>` fields of that project, measures with their numeric fields, time fields, whether a workflow exists, limits);
+the widget editor is generated from it.
 
 `POST /api/v2/reports/tasks`
 
 ```json
 {
-  "project_id": 2,              // optional scope; else all readable projects
-  "filter": "done = false && due_date < now",
-  "group_by": "status",         // optional
-  "then_by": "assignee",        // optional second dimension
-  "measure": "count",           // count | sum | avg | min | max
-  "field": "cf_12",             // numeric field for sum/avg/min/max
+  "project_id": 1,              // optional scope; 0/absent = all readable projects, -1 = favorites
+  "filter": "done = false",     // same syntax as views, incl. status, status_category, cf_<id>
+  "filter_include_nulls": false,
+  "group_by": "done",           // optional dimension
+  "then_by": "assignee",        // optional second dimension (needs group_by)
+  "measure": "count",           // count (default) | sum | avg | min | max
+  "field": "percent_done",      // sum/avg/min/max: percent_done | time_spent | cf_<id> (number, currency, rating, progress)
   "time": {                     // optional: makes it a time series
     "field": "created",         // created | done_at | due_date | status_entered
-    "bucket": "week",           // day | week | month
-    "from": "now-90d", "to": "now"
+    "bucket": "month",          // day (default) | week (starts Monday) | month
+    "from": "2018-11-01",       // RFC 3339, YYYY-MM-DD, now, now-90d, date math; default now-90d
+    "to": "2018-12-31",         // default now
+    "timezone": "Europe/Istanbul" // IANA; default: the user's time zone setting, else the instance time zone
   },
-  "limit": 20                   // top N groups, rest folded into "other"
+  "limit": 20                   // groups kept per level (default 20, max reports.maxgroups); the rest becomes "other"
 }
 ```
 
-`group_by` / `then_by`: `status`, `status_category`, `assignee`, `label`,
-`project`, `priority`, `done`, `created_by`, `cf_<id>` (select, multi select,
-user, checkbox, rating). Measures on `percent_done`, numeric custom fields and
-**tracked time** (`time_spent`, summed from time entries).
+Dimensions: `status`, `status_category` (only meaningful where a workflow exists), `assignee`, `label`, `project`,
+`priority`, `done`, `created_by`, `cf_<id>` of a select, multi select, user, checkbox or rating field. Any other
+field kind is a typed 400 (`23004`). A `cf_<id>` of a project the viewer cannot read (or that does not exist) gives the
+same `4016` error the filter gives, so field ids cannot be probed.
 
-Response: `{groups: [{key, label, color, value, series?: [{bucket, value}],
-children?: [...]}], total}`. Labels and colours are resolved server side
-(status title/colour, user name, option title/colour) so widgets stay dumb.
+Real response of `{"project_id":1,"group_by":"done","time":{"field":"created","bucket":"month","from":"2018-11-01","to":"2018-12-31","timezone":"Europe/Istanbul"}}`
+on the test fixtures:
 
-Tasks that appear in several groups (several assignees, labels, multi select
-options) are counted in each; the response says so (`multi_valued: true`) and
-`total` is the number of distinct tasks.
+```json
+{
+  "groups": [
+    {"key": false, "label": "Open", "color": "#94a3b8", "value": 19,
+     "series": [
+       {"bucket": "2018-11-01", "start": "2018-11-01T00:00:00+03:00", "end": "2018-12-01T00:00:00+03:00", "value": 0},
+       {"bucket": "2018-12-01", "start": "2018-12-01T00:00:00+03:00", "end": "2019-01-01T00:00:00+03:00", "value": 19}]},
+    {"key": true, "label": "Done", "color": "#22c55e", "value": 1, "series": ["..."]}
+  ],
+  "total": 20, "value": 20, "measure": "count", "unit": "tasks", "multi_valued": false,
+  "time": {"field": "created", "bucket": "month", "from": "2018-11-01T00:00:00+03:00",
+           "to": "2019-01-01T00:00:00+03:00", "timezone": "Europe/Istanbul", "buckets": 2}
+}
+```
 
-Limits: at most 2 dimensions plus time, 366 time buckets, 200 groups; a
-statement timeout where the database supports one; results cached per
-(viewer, request hash) for 30 s in memory.
+Response fields: `groups` (largest value first; each has `key`, `label`, `color`, `value`, and `series` on leaf
+groups of a time series, `children` for `then_by`), `series` (the series of all tasks when there is no `group_by`),
+`total` (distinct tasks counted), `value` (the measure over all of them: this is what a `number` widget shows),
+`measure`, `field`, `unit` (`tasks`, `seconds` or empty), `multi_valued`, `excluded` (time series: tasks whose date
+field is empty), `time` (the resolved range), `truncated`.
+
+Semantics:
+
+- **Permissions.** The set of tasks is built by the code of the task list (`TaskCollection.readableTasksQuery`, which
+  uses `dbTaskSearcher.buildScopeConds` and the filter conversion shared with `Search`), for the requesting auth:
+  project access, shares, teams, favorites, link shares pinned to their project. There is no separate permission
+  logic. Group labels (users, labels, options, statuses) are looked up only for keys that occur on those tasks.
+- **Groups.** A task with several values (assignee, label, multi select, user field) counts in each group;
+  `multi_valued` says so and `total` stays the number of distinct tasks. Tasks without a value form the `none`
+  group (`key: null`, `none: true`). `priority` 0 counts as no value; `done` and checkbox fields have no none group
+  (an unset checkbox is "not checked", as in the filter). The folded rest is one group with `other: true` and
+  `key: null`. For a multi valued first level `other` is the number of distinct tasks that have any folded value
+  (one extra statement); on the second level it is the sum of the folded children. `other` groups have no children
+  and, on a nested time series, no series.
+- **Measures.** Tasks without a value are ignored by sum/avg/min/max. `time_spent` is the sum of finished time
+  entries (`end_time` set) per task in seconds; running timers are ignored, not counted up to now. It is not
+  available to link shares (they have no time tracking access): typed 403 `23005`.
+- **Time series.** Empty buckets inside the range come back with `0`. The first bucket is the one containing
+  `from`, the last the one containing `to`; the range is half open at its end. Tasks whose date is empty are not in
+  the series and counted in `excluded`; `total` counts the tasks inside the range. `status_entered` is the time the
+  task entered its current status.
+- **Limits.** At most two dimensions plus time, `reports.maxbuckets` (366) buckets (`23002`), `reports.maxgroups`
+  (200) groups (`23003`), a timeout (`reports.timeout`, 20 s) that cancels the database queries (`23009`, 503),
+  a 30 s in-memory cache (`reports.cachettl`) per auth identity and normalized request, at most 256 entries, no
+  invalidation.
+- **Errors.** Request problems are 400 with code `23001` and `details.param` naming the parameter (`group_by`,
+  `time.from`, ...). Enum and range violations of the schema are 422 from the schema validation.
+
+### Time bucketing and time zones
+
+The database is never asked to truncate dates. The buckets are computed in Go in the requested IANA time zone
+(`time.LoadLocation`, so daylight saving is exact: a day can be 23 or 25 hours long and always starts at local
+midnight; weeks start Monday; months on the 1st) and the boundaries are passed to the query as a balanced tree of
+`CASE WHEN column < 'boundary'` expressions (depth log2(buckets), at most 9). That is plain SQL on SQLite, PostgreSQL
+and MySQL, with no per-dialect date function and no time zone support tables. The only dialect specific expression
+is the length of a time entry in seconds (`time_spent`). Limits: the boundaries are formatted as UTC literals
+`YYYY-MM-DD HH:MM:SS`, so second precision; the time zone is one per request (a user whose setting changes sees old
+data re-bucketed, nothing is stored); the week start is not configurable.
+
+### Statements per request
+
+Without `group_by`: 1 (totals) plus 1 for a time series (plus 1 to count `excluded`). Each dimension level is one
+grouped statement, a time series on groups one more, a folded multi valued first level one more. The count never
+depends on the number of groups or tasks.
 
 ## Widgets
 
@@ -86,6 +147,32 @@ statement timeout where the database supports one; results cached per
 
 Clicking a group or a bar opens the task list filtered to exactly those
 tasks.
+
+### Dashboards API
+
+- `GET /api/v2/dashboards` (own personal dashboards plus those of every readable project, no widgets, `widget_count`;
+  filter `project_id`, `q`), `POST`, `GET/PUT/PATCH/DELETE /api/v2/dashboards/{dashboard}`.
+- The widgets are part of the dashboard document: they come with a read and a `PUT` with `widgets: [...]` replaces
+  them as a whole (an id of this dashboard keeps and updates the widget, no id creates, missing ones are deleted;
+  `null` or no `widgets` keeps them; an id of another dashboard is 404 `23007`).
+- `PUT /api/v2/dashboards/{dashboard}/layout` with `{"items":[{"id","x","y","w","h"}]}` only moves and resizes
+  (12 columns, `x + w <= 12`); same permission as a change; bumps the dashboard's `updated`/ETag.
+- Widget `type` is one of `number, bar, donut, line, created_vs_done, task_list, workload, status_time,
+  time_tracking, text`. `config` is strictly decoded per type (unknown keys are an error): `number` `{request,
+  compare}`, `bar`/`donut`/`line` `{request}` (a report request; `number` cannot group, `bar` needs `group_by`, `donut`
+  one level, `line` needs `time`), `created_vs_done` `{project_id, filter, bucket, from, to}`, `task_list`
+  `{project_id, filter, sort_by, order_by, columns, limit<=100}`, `workload` `{project_id, filter, estimate_field}`,
+  `status_time` `{project_id, from, to}`, `time_tracking` `{from, to, group_by: user|project|day}`, `text`
+  `{text}`. A report inside a config is validated like `POST /reports/tasks` validates it (so cf fields have to be
+  readable by the author) but is not run on save. Problems are `23008` with the path (`widgets[1].config.request.group_by`).
+  On a project dashboard every `project_id` is pinned to the project (another one is an error).
+- Permissions: a personal dashboard is read and changed by its owner only; a project dashboard is read by everyone
+  who can read the project (link shares of that project included) and changed, created and deleted by project admins.
+  Link shares never change dashboards. `max_permission` is 2 for those who may change it.
+- Lifecycle: purging a project deletes its dashboards; deleting a user deletes their personal dashboards (project
+  dashboards they created stay); duplicating a project copies its dashboards (owner = the duplicating user) and remaps
+  `cf_<id>`, option ids compared to select fields and `status` ids in `filter` strings and `group_by`/`then_by`/
+  `field`/`estimate_field`/`sort_by` values, and `project_id` (`dashboards_lifecycle.go`).
 
 ## Pages
 
@@ -109,9 +196,17 @@ tasks.
 - Scheduled e-mail of a dashboard (weekly summary) once the mailer is in use;
   implemented as an automation action later, not as a separate scheduler.
 
+## Deferred
+
+- Not in 4a: `status_time`, `workload` and `time_tracking` have a validated config but no data endpoint (4c); CSV
+  export; `created_vs_done` has no server side running open count (the client combines two reports: `created` and
+  `done_at`); the `compare` period of a `number` widget is only validated (the client asks twice); saved filters
+  (project ids below -1) are not a report scope; `include_subprojects` is not offered.
+- Nested time series carry series on leaf groups only; `other` leaves have none.
+
 ## Steps
 
-- 4a: aggregation endpoint (all dimensions/measures/time, permission scoping,
+- 4a (done): aggregation endpoint (all dimensions/measures/time, permission scoping,
   limits, cache) + dashboards/widgets CRUD + tests.
 - 4b: dashboard pages, SVG chart components, widget gallery and editor,
   drill-down.

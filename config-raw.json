@@ -1168,6 +1168,32 @@
             ]
         },
         {
+            "key": "reports",
+            "comment": "Reports and dashboards: aggregated task numbers (counts, sums, time series) over the tasks a user can read.",
+            "children": [
+                {
+                    "key": "cachettl",
+                    "default_value": "30s",
+                    "comment": "How long the result of a report is cached in memory, per user and request. Set to 0 to disable the cache."
+                },
+                {
+                    "key": "maxgroups",
+                    "default_value": "200",
+                    "comment": "The maximum number of groups a report returns per level. Requests asking for more are rejected; groups beyond a request's limit are folded into one \"other\" group."
+                },
+                {
+                    "key": "maxbuckets",
+                    "default_value": "366",
+                    "comment": "The maximum number of time buckets (days, weeks or months) of a time series report."
+                },
+                {
+                    "key": "timeout",
+                    "default_value": "20s",
+                    "comment": "The maximum duration of the database queries of one report. The queries are cancelled when it is exceeded."
+                }
+            ]
+        },
+        {
             "key": "audit",
             "comment": "Audit logging writes structured JSONL records of authentication, authorization and data lifecycle events. Requires the licensed `audit_logs` feature — with `audit.enabled: true` but no active license, listeners are registered but nothing is written until a license with the feature becomes active.",
             "children": [

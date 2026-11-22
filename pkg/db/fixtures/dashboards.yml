@@ -1,0 +1,46 @@
+# Personal dashboards of user1 (1) and user2 (2); project dashboards of
+# project 1 (user1 owner), 3 (user1 and user2 read), 11 (user1 admin) and 10 (user1 write).
+- id: 1
+  title: My overview
+  description: Personal dashboard of user1
+  owner_id: 1
+  project_id: 0
+  position: 1
+  created: 2018-12-01 15:13:12
+  updated: 2018-12-02 15:13:12
+- id: 2
+  title: User2 overview
+  description: Personal dashboard of user2
+  owner_id: 2
+  project_id: 0
+  position: 1
+  created: 2018-12-01 15:13:12
+  updated: 2018-12-02 15:13:12
+- id: 3
+  title: Project 1 dashboard
+  owner_id: 1
+  project_id: 1
+  position: 1
+  created: 2018-12-01 15:13:12
+  updated: 2018-12-02 15:13:12
+- id: 4
+  title: Project 3 dashboard
+  owner_id: 3
+  project_id: 3
+  position: 1
+  created: 2018-12-01 15:13:12
+  updated: 2018-12-02 15:13:12
+- id: 5
+  title: Project 11 dashboard
+  owner_id: 6
+  project_id: 11
+  position: 1
+  created: 2018-12-01 15:13:12
+  updated: 2018-12-02 15:13:12
+- id: 6
+  title: Project 10 dashboard
+  owner_id: 6
+  project_id: 10
+  position: 1
+  created: 2018-12-01 15:13:12
+  updated: 2018-12-02 15:13:12

@@ -87,6 +87,8 @@ func GetTables() []interface{} {
 		&AutomationEvent{},
 		&AutomationRun{},
 		&AutomationRunStep{},
+		&Dashboard{},
+		&DashboardWidget{},
 		&TaskStatus{},
 		&TaskStatusHistory{},
 		&UserInviteLink{},

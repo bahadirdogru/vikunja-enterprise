@@ -53,6 +53,7 @@ func SetupTests() {
 
 	// Rules come and go with the fixtures; a cached subscription set of a previous test would be stale.
 	ResetAutomationCache()
+	ResetReportCache()
 	config.AutomationCacheTTL.Set(0)
 
 	err = db.InitTestFixtures(
@@ -83,6 +84,8 @@ func SetupTests() {
 		"automation_events",
 		"automation_runs",
 		"automation_run_steps",
+		"dashboards",
+		"dashboard_widgets",
 		"task_statuses",
 		"task_status_history",
 		"team_projects",
