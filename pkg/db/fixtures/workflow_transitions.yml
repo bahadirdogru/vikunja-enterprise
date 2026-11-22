@@ -1,0 +1,20 @@
+- id: 1
+  workflow_id: 1
+  from_status_id: 2
+  to_status_id: 3
+  title: Send to review
+  min_permission: write
+  require_comment: false
+- id: 2
+  workflow_id: 1
+  from_status_id: 3
+  to_status_id: 4
+  title: Approve
+  min_permission: admin
+  require_comment: true
+- id: 3
+  workflow_id: 1
+  from_status_id: 1
+  to_status_id: 5
+  min_permission: write
+  require_comment: false

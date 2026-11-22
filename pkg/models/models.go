@@ -78,6 +78,13 @@ func GetTables() []interface{} {
 		&CustomField{},
 		&CustomFieldOption{},
 		&TaskCustomFieldValue{},
+		&Workflow{},
+		&WorkflowStatus{},
+		&WorkflowTransition{},
+		&WorkflowTransitionRequiredField{},
+		&WorkflowTransitionTeam{},
+		&TaskStatus{},
+		&TaskStatusHistory{},
 		&UserInviteLink{},
 		&UserInviteLinkTeam{},
 	}

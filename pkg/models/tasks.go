@@ -1227,6 +1227,10 @@ func createTasksInViews(s *xorm.Session, projectID int64, tasks []*Task, a web.A
 		return err
 	}
 
+	if err = assignStatusesToNewTasks(s, projectID, tasks, a); err != nil {
+		return err
+	}
+
 	// Link shares can't have subscriptions
 	_, creatorIsUser := a.(*user.User)
 
@@ -1614,6 +1618,8 @@ func (t *Task) updateSingleTaskInViews(s *xorm.Session, a web.Auth, fields []str
 				TaskID:        t.ID,
 				ProjectViewID: view.ID,
 				ProjectID:     t.ProjectID,
+
+				skipWorkflowSync: true,
 			}
 			err = updateTaskBucket(s, a, tb)
 			if err != nil {
@@ -1649,6 +1655,8 @@ func (t *Task) updateSingleTaskInViews(s *xorm.Session, a web.Auth, fields []str
 			return
 		}
 	}
+
+	wfOldProjectID, wfWasDone, wfWantsDone := ot.ProjectID, ot.Done, t.Done
 
 	preRepeatDueDate, preRepeatStartDate, preRepeatEndDate := t.DueDate, t.StartDate, t.EndDate
 	preRepeatDescription := t.Description
@@ -1814,6 +1822,10 @@ func (t *Task) updateSingleTaskInViews(s *xorm.Session, a web.Auth, fields []str
 	}
 	t.Updated = nt.Updated
 
+	if err = syncWorkflowAfterTaskUpdate(s, a, t, wfOldProjectID, wfWasDone, wfWantsDone); err != nil {
+		return err
+	}
+
 	events.DispatchOnCommit(s, &TaskUpdatedEvent{
 		Task: t,
 		Doer: doerFromAuth(s, a),
@@ -1891,6 +1903,8 @@ func (t *Task) moveTaskToDoneBuckets(s *xorm.Session, a web.Auth, views []*Proje
 			TaskID:        t.ID,
 			ProjectViewID: view.ID,
 			ProjectID:     t.ProjectID,
+
+			skipWorkflowSync: true,
 		}
 		err = updateTaskBucket(s, a, tb)
 		if err != nil {
@@ -1925,6 +1939,8 @@ func (t *Task) moveTaskToDefaultBuckets(s *xorm.Session, a web.Auth, views []*Pr
 				TaskID:        t.ID,
 				ProjectViewID: view.ID,
 				ProjectID:     t.ProjectID,
+
+				skipWorkflowSync: true,
 			}
 			if err := updateTaskBucket(s, a, tb); err != nil {
 				return err
@@ -2444,6 +2460,11 @@ func hardDeleteTask(s *xorm.Session, t *Task) (err error) {
 	}
 
 	err = deleteCustomFieldValuesForTask(s, t.ID)
+	if err != nil {
+		return err
+	}
+
+	err = deleteTaskStatusData(s, t.ID)
 	if err != nil {
 		return err
 	}

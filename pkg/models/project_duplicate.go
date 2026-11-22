@@ -120,6 +120,15 @@ func (pd *ProjectDuplicate) Create(s *xorm.Session, doer web.Auth) (err error) {
 		return
 	}
 
+	workflowStatusIDs, newWorkflowID, err := duplicateWorkflowForProject(s, pd.ProjectID, pd.Project.ID, customFieldIDs)
+	if err != nil {
+		return
+	}
+	err = copyTaskStatuses(s, newTaskIDs, workflowStatusIDs, newWorkflowID)
+	if err != nil {
+		return
+	}
+
 	err = duplicateViews(s, pd, doer, newTaskIDs)
 	if err != nil {
 		return

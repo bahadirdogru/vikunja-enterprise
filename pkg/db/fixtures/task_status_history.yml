@@ -1,0 +1,16 @@
+- id: 1
+  task_id: 20
+  to_status_id: 6
+  to_title: Legacy
+  doer_id: 6
+  comment: ''
+  created: 2018-12-01 14:13:12
+- id: 2
+  task_id: 20
+  from_status_id: 6
+  to_status_id: 1
+  from_title: Legacy
+  to_title: Todo
+  doer_id: 6
+  comment: first triage
+  created: 2018-12-01 15:13:12

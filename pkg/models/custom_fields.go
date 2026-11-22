@@ -467,6 +467,9 @@ func deleteCustomFieldsByCond(s *xorm.Session, cond builder.Cond) error {
 	if len(ids) == 0 {
 		return nil
 	}
+	if err := removeCustomFieldFromWorkflows(s, ids); err != nil {
+		return err
+	}
 	if _, err := s.Where(builder.In("custom_field_id", ids)).Delete(&TaskCustomFieldValue{}); err != nil {
 		return err
 	}

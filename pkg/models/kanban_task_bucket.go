@@ -42,6 +42,9 @@ type TaskBucket struct {
 	ProjectID     int64 `xorm:"-" json:"-" param:"project"`
 	Task          *Task `xorm:"-" json:"task" readOnly:"true" doc:"The task as it stands after the move, reflecting any done-state change."`
 
+	// Set by task updates and creates, which run the workflow checks themselves once the task is written.
+	skipWorkflowSync bool
+
 	web.Permissions `xorm:"-" json:"-"`
 	web.CRUDable    `xorm:"-" json:"-"`
 }
@@ -147,9 +150,11 @@ func updateTaskBucket(s *xorm.Session, a web.Auth, b *TaskBucket) (err error) {
 	// mark task done if moved into or out of the done bucket
 	// Only change the done state if the task's done value actually changes
 	var doneChanged bool
+	wfWasDone, wfWantsDone := task.Done, task.Done
 	if view.DoneBucketID != 0 {
 		if view.DoneBucketID == b.BucketID && !task.Done {
 			doneChanged = true
+			wfWantsDone = true
 			task.Done = true
 			if task.isRepeating() {
 				oldTask := *task
@@ -173,6 +178,7 @@ func updateTaskBucket(s *xorm.Session, a web.Auth, b *TaskBucket) (err error) {
 
 		if oldTaskBucket.BucketID == view.DoneBucketID && task.Done && b.BucketID != view.DoneBucketID {
 			doneChanged = true
+			wfWantsDone = false
 			task.Done = false
 		}
 	}
@@ -199,6 +205,13 @@ func updateTaskBucket(s *xorm.Session, a web.Auth, b *TaskBucket) (err error) {
 		err = task.updateReminders(s, task)
 		if err != nil {
 			return
+		}
+
+		if !b.skipWorkflowSync {
+			err = syncWorkflowAfterTaskUpdate(s, a, task, task.ProjectID, wfWasDone, wfWantsDone)
+			if err != nil {
+				return
+			}
 		}
 
 		// Since the done state of the task was changed, we need to move the task into all done buckets everywhere

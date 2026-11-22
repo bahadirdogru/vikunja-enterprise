@@ -158,6 +158,11 @@ func hardDeleteProjectTree(s *xorm.Session, p *Project, doer *user.User, ancesto
 		return err
 	}
 
+	err = deleteWorkflowForProject(s, p.ID)
+	if err != nil {
+		return err
+	}
+
 	_, err = s.Table("time_entries").
 		Where("project_id = ?", p.ID).
 		Update(map[string]any{
