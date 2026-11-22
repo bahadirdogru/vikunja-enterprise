@@ -252,6 +252,224 @@ export type AdminUserSettingsBody = {
     week_start?: number;
 };
 
+export type ApprovalApprover = {
+    /**
+     * The comment sent with the decision.
+     */
+    readonly comment?: string;
+    /**
+     * When the approver decided.
+     */
+    readonly decided?: string | null;
+    /**
+     * What the approver decided, null while undecided.
+     */
+    readonly decision?: 'approved' | 'rejected';
+    /**
+     * The unique, numeric id of this entry.
+     */
+    readonly id?: number;
+    /**
+     * The request this approver belongs to.
+     */
+    readonly request_id?: number;
+    /**
+     * The approver.
+     */
+    readonly user?: User;
+    /**
+     * The approver.
+     */
+    readonly user_id?: number;
+};
+
+export type ApprovalCancel = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * Optional text stored as cancel_message.
+     */
+    message?: string;
+    /**
+     * The cancelled request.
+     */
+    readonly request?: ApprovalRequest;
+    /**
+     * The request. Taken from the URL.
+     */
+    readonly request_id?: number;
+};
+
+export type ApprovalDecision = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * Why. Required when rejecting; it is added to the task as a comment.
+     */
+    comment?: string;
+    /**
+     * approved or rejected.
+     */
+    decision?: 'approved' | 'rejected';
+    /**
+     * The request after the decision: still pending, or resolved by it.
+     */
+    readonly request?: ApprovalRequest;
+    /**
+     * The request. Taken from the URL.
+     */
+    readonly request_id?: number;
+};
+
+export type ApprovalRequest = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * Whether the requester may approve their own request.
+     */
+    readonly allow_self?: boolean;
+    /**
+     * The approvers with their decisions. Approvers who lost access to the project are removed.
+     */
+    readonly approvers?: Array<ApprovalApprover> | null;
+    /**
+     * A human readable text for cancel_reason, with the details of a failed re-check.
+     */
+    readonly cancel_message?: string;
+    /**
+     * Why the request was cancelled, machine readable: cancelled_by_requester, task_deleted, task_moved, workflow_removed, status_removed, transition_removed, approval_disabled, status_changed, target_archived, requirements_not_met, requester_lost_access, requester_not_in_team, requester_deleted or no_approvers. Empty unless cancelled.
+     */
+    readonly cancel_reason?: string;
+    /**
+     * The comment sent with the status change that created the request. It is stored in the history when the change happens.
+     */
+    readonly comment?: string;
+    /**
+     * When the request was made.
+     */
+    readonly created?: string;
+    /**
+     * Optional details for the approvers.
+     */
+    description?: string;
+    /**
+     * When the approvers should have decided. Optional.
+     */
+    due?: string | null;
+    /**
+     * The status the task has to be in.
+     */
+    readonly from_status?: TaskStatusSummary;
+    /**
+     * The status the task has to be in, null for ad-hoc requests.
+     */
+    readonly from_status_id?: number | null;
+    /**
+     * The unique, numeric id of this request.
+     */
+    readonly id?: number;
+    /**
+     * any: the first decision resolves the request. all: every approver has to approve, one rejection rejects. any when omitted.
+     */
+    mode?: 'any' | 'all';
+    /**
+     * The project of the task when the request was made.
+     */
+    readonly project_id?: number;
+    /**
+     * The status the task enters when rejected.
+     */
+    readonly rejected_status?: TaskStatusSummary;
+    /**
+     * The status the task moves to when the request is rejected, null when it stays.
+     */
+    readonly rejected_status_id?: number | null;
+    /**
+     * Who asked.
+     */
+    readonly requested_by?: User;
+    /**
+     * When the request was approved, rejected or cancelled.
+     */
+    readonly resolved?: string | null;
+    /**
+     * Who resolved or cancelled the request, null when the system did.
+     */
+    readonly resolved_by?: User;
+    /**
+     * The state of the request.
+     */
+    readonly status?: 'pending' | 'approved' | 'rejected' | 'cancelled';
+    /**
+     * The task in short.
+     */
+    readonly task?: ApprovalTaskSummary;
+    /**
+     * The task the request is about. Taken from the URL on create.
+     */
+    readonly task_id?: number;
+    /**
+     * What is asked. Required for ad-hoc requests; for transitions it is the title of the transition or built from the status titles.
+     */
+    title?: string;
+    /**
+     * The status the task enters when approved.
+     */
+    readonly to_status?: TaskStatusSummary;
+    /**
+     * The status the task enters when the request is approved, null for ad-hoc requests.
+     */
+    readonly to_status_id?: number | null;
+    /**
+     * The workflow transition that asked for the approval, null for ad-hoc requests.
+     */
+    readonly transition_id?: number | null;
+    /**
+     * When the request was last changed.
+     */
+    readonly updated?: string;
+};
+
+export type ApprovalTaskSummary = {
+    /**
+     * The id of the task.
+     */
+    id?: number;
+    /**
+     * The human readable identifier of the task, e.g. PRJ-12 or #12.
+     */
+    identifier?: string;
+    /**
+     * The project of the task.
+     */
+    project_id?: number;
+    /**
+     * The title of the project.
+     */
+    project_title?: string;
+    /**
+     * The title of the task.
+     */
+    title?: string;
+};
+
+export type ApproverSource = {
+    /**
+     * The user, team or custom field id. Not used by assignees.
+     */
+    id?: number;
+    /**
+     * user: the user with this id. team: the members of the team with this id, expanded when the request is created. assignees: the assignees of the task. custom_field: the users in the user custom field with this id on the task.
+     */
+    type?: 'user' | 'team' | 'assignees' | 'custom_field';
+};
+
 export type AttachmentUploadError = {
     /**
      * Vikunja numeric error code, when the failure carries one.
@@ -658,6 +876,14 @@ export type AutomationTestRequest = {
 
 export type AvailableTransition = {
     /**
+     * any or all, set when the change needs an approval.
+     */
+    readonly approval_mode?: string;
+    /**
+     * Who would be asked if the requesting user asked now: the approver sources resolved to users, without the requester unless the transition allows it. Empty when the change needs no approval, or when nobody could be asked, in which case the request fails with 24006.
+     */
+    readonly approvers?: Array<User> | null;
+    /**
      * The required fields the task does not have yet. The change is rejected until they are set.
      */
     readonly missing_fields?: Array<string> | null;
@@ -665,6 +891,10 @@ export type AvailableTransition = {
      * Whether a comment has to be sent with the change.
      */
     readonly require_comment?: boolean;
+    /**
+     * Whether performing the change only asks for an approval (HTTP 202); the task does not move until the approvers agreed.
+     */
+    readonly requires_approval?: boolean;
     /**
      * The button label of the transition, empty for plain changes.
      */
@@ -2277,6 +2507,18 @@ export type PaginatedAdminUser = {
     total_pages?: number;
 };
 
+export type PaginatedApprovalRequest = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    items?: Array<ApprovalRequest> | null;
+    page?: number;
+    per_page?: number;
+    total?: number;
+    total_pages?: number;
+};
+
 export type PaginatedAutomationRule = {
     /**
      * A URL to the JSON Schema for this object.
@@ -3666,6 +3908,10 @@ export type Task = {
      */
     readonly $schema?: string;
     /**
+     * Whether the task has pending approval requests. Only present when requested via the approvals expand option; never for link shares.
+     */
+    readonly approvals?: TaskApprovalsSummary;
+    /**
      * The users assigned to this task. Read-only here; use the task-assignee endpoints to change assignments.
      */
     readonly assignees?: Array<User> | null;
@@ -3810,6 +4056,17 @@ export type Task = {
     readonly updated?: string;
 };
 
+export type TaskApprovalsSummary = {
+    /**
+     * Whether the task has a pending approval request.
+     */
+    has_pending?: boolean;
+    /**
+     * The number of pending approval requests of the task.
+     */
+    pending_count?: number;
+};
+
 export type TaskAssginee = {
     /**
      * A URL to the JSON Schema for this object.
@@ -3853,6 +4110,10 @@ export type TaskBucket = {
      * A URL to the JSON Schema for this object.
      */
     readonly $schema?: string;
+    /**
+     * Set, with HTTP status 202, when moving the task into the column of a status view needs an approval: the pending request. The task did not move and bucket is the column it is still in.
+     */
+    readonly approval?: ApprovalRequest;
     /**
      * The resolved target bucket, including its updated task count.
      */
@@ -4030,6 +4291,10 @@ export type TaskReadOneBody = {
      * A URL to the JSON Schema for this object.
      */
     readonly $schema?: string;
+    /**
+     * Whether the task has pending approval requests. Only present when requested via the approvals expand option; never for link shares.
+     */
+    readonly approvals?: TaskApprovalsSummary;
     /**
      * The users assigned to this task. Read-only here; use the task-assignee endpoints to change assignments.
      */
@@ -4260,6 +4525,10 @@ export type TaskStatusChange = {
      */
     readonly $schema?: string;
     /**
+     * Set, with HTTP status 202, when the transition needs an approval: the pending request. The task did not move. Asking again for the same status returns the same request.
+     */
+    readonly approval?: ApprovalRequest;
+    /**
      * A comment that is stored in the history of the task. Required when the transition says so.
      */
     comment?: string;
@@ -4272,7 +4541,7 @@ export type TaskStatusChange = {
      */
     readonly from_status_id?: number | null;
     /**
-     * The status the task is in after the change.
+     * The status the task is in after the change. When the change needs an approval this is the status the task is still in.
      */
     readonly status?: WorkflowStatus;
     /**
@@ -4286,6 +4555,10 @@ export type TaskStatusChange = {
 };
 
 export type TaskStatusHistory = {
+    /**
+     * The approval request behind the change, null for changes without one.
+     */
+    readonly approval_request_id?: number | null;
     /**
      * The comment left with the change.
      */
@@ -4352,6 +4625,10 @@ export type TaskWorkflowStatus = {
      * When the task entered its current status.
      */
     readonly entered?: string | null;
+    /**
+     * The pending approval requests of the task, ad-hoc ones included. Empty for link shares.
+     */
+    readonly pending_approvals?: Array<ApprovalRequest> | null;
     /**
      * The current status, null when the task has none.
      */
@@ -4794,6 +5071,29 @@ export type TotpEnrollBodyBody = {
     password?: string;
 };
 
+export type TransitionApproval = {
+    /**
+     * Whether the requester may be one of the approvers and approve their own request.
+     */
+    allow_self?: boolean;
+    /**
+     * Where the approvers come from. They are resolved to concrete users when the request is created, de-duplicated and without anyone who cannot read the task. At least one source is required.
+     */
+    approvers?: Array<ApproverSource> | null;
+    /**
+     * Optional time the approvers get to decide, like 12h, 3d or 2w. The approvers are reminded once when it has passed.
+     */
+    due_in?: string;
+    /**
+     * any: the first decision resolves the request. all: every approver has to approve, one rejection rejects. any when omitted.
+     */
+    mode?: 'any' | 'all';
+    /**
+     * The status a rejected task moves to, by id or by the negative id of a new status of the same document. 0 or omitted: the task stays where it is.
+     */
+    rejected_status_id?: number;
+};
+
 export type TrashCount = {
     /**
      * A URL to the JSON Schema for this object.
@@ -4912,6 +5212,10 @@ export type TrashedSubProject = {
 };
 
 export type TrashedTask = {
+    /**
+     * Whether the task has pending approval requests. Only present when requested via the approvals expand option; never for link shares.
+     */
+    readonly approvals?: TaskApprovalsSummary;
     /**
      * The users assigned to this task. Read-only here; use the task-assignee endpoints to change assignments.
      */
@@ -5739,6 +6043,10 @@ export type WorkflowStatus = {
 
 export type WorkflowTransition = {
     /**
+     * The approval configuration, required when requires_approval is set and ignored (stored as null) otherwise.
+     */
+    approval?: TransitionApproval;
+    /**
      * The status tasks leave. A negative id refers to a new status of the same document.
      */
     from_status_id?: number;
@@ -5758,6 +6066,10 @@ export type WorkflowTransition = {
      * Fields that must be set on the task before the transition: assignees, due_date, start_date, end_date, description, attachments, labels or cf_<id> for a custom field of the project.
      */
     required_fields?: Array<string> | null;
+    /**
+     * Whether performing the transition only asks for an approval: the task does not move until the approvers agreed (see approval). The permission, team, required field and comment checks run first.
+     */
+    requires_approval?: boolean;
     /**
      * When not empty, only members of one of these teams, or project admins, may perform the transition.
      */
@@ -5885,6 +6197,51 @@ export type AdminUserSettingsBodyWritable = {
      * The day the week starts on: 0=sunday, 1=monday, … 6=saturday.
      */
     week_start?: number;
+};
+
+export type ApprovalApproverWritable = {
+    [key: string]: never;
+};
+
+export type ApprovalCancelWritable = {
+    /**
+     * Optional text stored as cancel_message.
+     */
+    message?: string;
+};
+
+export type ApprovalDecisionWritable = {
+    /**
+     * Why. Required when rejecting; it is added to the task as a comment.
+     */
+    comment?: string;
+    /**
+     * approved or rejected.
+     */
+    decision?: 'approved' | 'rejected';
+};
+
+export type ApprovalRequestWritable = {
+    /**
+     * Ad-hoc requests only: the users who are asked. They need read access to the task; the requester cannot be one of them.
+     */
+    approver_ids?: Array<number> | null;
+    /**
+     * Optional details for the approvers.
+     */
+    description?: string;
+    /**
+     * When the approvers should have decided. Optional.
+     */
+    due?: string | null;
+    /**
+     * any: the first decision resolves the request. all: every approver has to approve, one rejection rejects. any when omitted.
+     */
+    mode?: 'any' | 'all';
+    /**
+     * What is asked. Required for ad-hoc requests; for transitions it is the title of the transition or built from the status titles.
+     */
+    title?: string;
 };
 
 export type AttachmentUploadResultWritable = {
@@ -6652,6 +7009,14 @@ export type PaginatedApiTokenWritable = {
 
 export type PaginatedAdminUserWritable = {
     items?: Array<AdminUserWritable> | null;
+    page?: number;
+    per_page?: number;
+    total?: number;
+    total_pages?: number;
+};
+
+export type PaginatedApprovalRequestWritable = {
+    items?: Array<ApprovalRequestWritable> | null;
     page?: number;
     per_page?: number;
     total?: number;
@@ -8097,6 +8462,10 @@ export type WorkflowStatusWritable = {
 
 export type WorkflowTransitionWritable = {
     /**
+     * The approval configuration, required when requires_approval is set and ignored (stored as null) otherwise.
+     */
+    approval?: TransitionApproval;
+    /**
      * The status tasks leave. A negative id refers to a new status of the same document.
      */
     from_status_id?: number;
@@ -8116,6 +8485,10 @@ export type WorkflowTransitionWritable = {
      * Fields that must be set on the task before the transition: assignees, due_date, start_date, end_date, description, attachments, labels or cf_<id> for a custom field of the project.
      */
     required_fields?: Array<string> | null;
+    /**
+     * Whether performing the transition only asks for an approval: the task does not move until the approvers agreed (see approval). The permission, team, required field and comment checks run first.
+     */
+    requires_approval?: boolean;
     /**
      * When not empty, only members of one of these teams, or project admins, may perform the transition.
      */
@@ -8677,6 +9050,133 @@ export type AdminUsersPatchStatusResponses = {
 };
 
 export type AdminUsersPatchStatusResponse = AdminUsersPatchStatusResponses[keyof AdminUsersPatchStatusResponses];
+
+export type ApprovalsListData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Only requests in this state.
+         */
+        status?: 'pending' | 'approved' | 'rejected' | 'cancelled';
+        /**
+         * approver: requests you have to decide on. requester: requests you made. Both when omitted.
+         */
+        role?: 'approver' | 'requester';
+        /**
+         * Only requests of this project.
+         */
+        project_id?: number;
+        /**
+         * 1-based page number.
+         */
+        page?: number;
+        /**
+         * Items per page. Defaults to the instance's configured maximum (service.maxitemsperpage, reported as max_items_per_page by /info) and is silently capped at it; asking for more is not an error.
+         */
+        per_page?: number;
+    };
+    url: '/approvals';
+};
+
+export type ApprovalsListErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type ApprovalsListError = ApprovalsListErrors[keyof ApprovalsListErrors];
+
+export type ApprovalsListResponses = {
+    /**
+     * OK
+     */
+    200: PaginatedApprovalRequest;
+};
+
+export type ApprovalsListResponse = ApprovalsListResponses[keyof ApprovalsListResponses];
+
+export type ApprovalsReadData = {
+    body?: never;
+    path: {
+        request: number;
+    };
+    query?: never;
+    url: '/approvals/{request}';
+};
+
+export type ApprovalsReadErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type ApprovalsReadError = ApprovalsReadErrors[keyof ApprovalsReadErrors];
+
+export type ApprovalsReadResponses = {
+    /**
+     * OK
+     */
+    200: ApprovalRequest;
+};
+
+export type ApprovalsReadResponse = ApprovalsReadResponses[keyof ApprovalsReadResponses];
+
+export type ApprovalsCancelData = {
+    body: ApprovalCancelWritable;
+    path: {
+        request: number;
+    };
+    query?: never;
+    url: '/approvals/{request}/cancel';
+};
+
+export type ApprovalsCancelErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type ApprovalsCancelError = ApprovalsCancelErrors[keyof ApprovalsCancelErrors];
+
+export type ApprovalsCancelResponses = {
+    /**
+     * OK
+     */
+    200: ApprovalCancel;
+};
+
+export type ApprovalsCancelResponse = ApprovalsCancelResponses[keyof ApprovalsCancelResponses];
+
+export type ApprovalsDecideData = {
+    body: ApprovalDecisionWritable;
+    path: {
+        request: number;
+    };
+    query?: never;
+    url: '/approvals/{request}/decision';
+};
+
+export type ApprovalsDecideErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type ApprovalsDecideError = ApprovalsDecideErrors[keyof ApprovalsDecideErrors];
+
+export type ApprovalsDecideResponses = {
+    /**
+     * OK
+     */
+    200: ApprovalDecision;
+};
+
+export type ApprovalsDecideResponse = ApprovalsDecideResponses[keyof ApprovalsDecideResponses];
 
 export type AuthOpenidCallbackData = {
     /**
@@ -11746,7 +12246,7 @@ export type ProjectTasksListData = {
         /**
          * Embed extra, more expensive data per task. Repeatable.
          */
-        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread' | 'custom_fields' | 'status'> | null;
+        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread' | 'custom_fields' | 'status' | 'approvals'> | null;
         /**
          * How rich-text fields are exchanged. See the API description.
          */
@@ -11877,7 +12377,7 @@ export type TasksReadByIndexData = {
         /**
          * Embed extra data per task. Repeatable.
          */
-        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread' | 'custom_fields' | 'status'> | null;
+        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread' | 'custom_fields' | 'status' | 'approvals'> | null;
         /**
          * How rich-text fields are exchanged. See the API description.
          */
@@ -12500,7 +13000,7 @@ export type ProjectViewBucketsTasksListData = {
         /**
          * Embed extra, more expensive data per task. Repeatable.
          */
-        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread' | 'custom_fields' | 'status'> | null;
+        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread' | 'custom_fields' | 'status' | 'approvals'> | null;
         /**
          * How rich-text fields are exchanged. See the API description.
          */
@@ -12666,7 +13166,7 @@ export type ProjectViewTasksListData = {
         /**
          * Embed extra, more expensive data per task. Repeatable.
          */
-        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread' | 'custom_fields' | 'status'> | null;
+        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread' | 'custom_fields' | 'status' | 'approvals'> | null;
         /**
          * How rich-text fields are exchanged. See the API description.
          */
@@ -13192,7 +13692,7 @@ export type TasksListData = {
         /**
          * Embed extra, more expensive data per task. Repeatable.
          */
-        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread' | 'custom_fields' | 'status'> | null;
+        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread' | 'custom_fields' | 'status' | 'approvals'> | null;
         /**
          * How rich-text fields are exchanged. See the API description.
          */
@@ -13439,7 +13939,7 @@ export type TasksReadData = {
         /**
          * Embed extra data per task. Repeatable.
          */
-        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread' | 'custom_fields' | 'status'> | null;
+        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread' | 'custom_fields' | 'status' | 'approvals'> | null;
         /**
          * How rich-text fields are exchanged. See the API description.
          */
@@ -13524,6 +14024,73 @@ export type TasksUpdateResponses = {
 };
 
 export type TasksUpdateResponse = TasksUpdateResponses[keyof TasksUpdateResponses];
+
+export type TaskApprovalsListData = {
+    body?: never;
+    path: {
+        task: number;
+    };
+    query?: {
+        /**
+         * Only requests in this state.
+         */
+        status?: 'pending' | 'approved' | 'rejected' | 'cancelled';
+        /**
+         * 1-based page number.
+         */
+        page?: number;
+        /**
+         * Items per page. Defaults to the instance's configured maximum (service.maxitemsperpage, reported as max_items_per_page by /info) and is silently capped at it; asking for more is not an error.
+         */
+        per_page?: number;
+    };
+    url: '/tasks/{task}/approvals';
+};
+
+export type TaskApprovalsListErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type TaskApprovalsListError = TaskApprovalsListErrors[keyof TaskApprovalsListErrors];
+
+export type TaskApprovalsListResponses = {
+    /**
+     * OK
+     */
+    200: PaginatedApprovalRequest;
+};
+
+export type TaskApprovalsListResponse = TaskApprovalsListResponses[keyof TaskApprovalsListResponses];
+
+export type TaskApprovalsCreateData = {
+    body: ApprovalRequestWritable;
+    path: {
+        task: number;
+    };
+    query?: never;
+    url: '/tasks/{task}/approvals';
+};
+
+export type TaskApprovalsCreateErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type TaskApprovalsCreateError = TaskApprovalsCreateErrors[keyof TaskApprovalsCreateErrors];
+
+export type TaskApprovalsCreateResponses = {
+    /**
+     * Created
+     */
+    201: ApprovalRequest;
+};
+
+export type TaskApprovalsCreateResponse = TaskApprovalsCreateResponses[keyof TaskApprovalsCreateResponses];
 
 export type TaskAssigneesListData = {
     body?: never;
