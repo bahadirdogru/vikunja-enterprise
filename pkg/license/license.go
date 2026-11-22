@@ -39,11 +39,9 @@ import (
 	"sync"
 	"time"
 
-	"code.vikunja.io/api/pkg/config"
 	"code.vikunja.io/api/pkg/db"
 	"code.vikunja.io/api/pkg/log"
 	"code.vikunja.io/api/pkg/modules/keyvalue"
-	"code.vikunja.io/api/pkg/user"
 
 	"github.com/google/uuid"
 )
@@ -146,76 +144,52 @@ var (
 // Init initializes the license system. It must be called after the database
 // is ready and before the web server starts.
 func Init() {
-	key := config.LicenseKey.GetString()
-
-	// Load or generate instance ID
+	// vikunja-enterprise: every feature is always enabled. No license key is
+	// read and no license server is contacted.
 	var err error
 	instanceID, err = loadOrCreateInstanceID()
 	if err != nil {
-		log.Fatalf("Could not initialize license system: %s", err)
+		log.Fatalf("Could not initialize instance id: %s", err)
 	}
-
-	// No license key configured — free mode. Clear any state persisted by a
-	// previous run (e.g. via Redis) so a removed key can't leave stale
-	// Licensed=true entitlements behind.
-	if key == "" {
-		log.Debugf("No license key configured.")
-		degradeToFree("No license key configured.")
-		return
-	}
-
-	// Check for cached validation
-	cached, err := loadCachedStatus()
-	if err != nil {
-		log.Errorf("Error loading cached license status: %s", err)
-	}
-
-	log.Debugf("Performing initial license check...")
-
-	// Perform initial license check
-	resp, err := checkLicense(key)
-	switch {
-	case err != nil:
-		// Servers unreachable — check cache
-		if cached != nil && time.Since(cached.ValidatedAt) < 72*time.Hour {
-			log.Warningf("License check failed, using cached validation from %s.", cached.ValidatedAt.Format(time.RFC3339))
-			if err := applyFromCache(cached); err != nil {
-				log.Fatalf("Could not apply cached license: %s", err)
-			}
-		} else {
-			// Clear any persisted Licensed=true state from a previous run
-			// (e.g. via Redis keyvalue) so a now-unreachable server can't
-			// leave stale entitlements active.
-			degradeToFree("Could not reach any license server and no cached validation exists. Pro features will not be available.")
-		}
-	case !resp.Valid:
-		degradeToFree(fmt.Sprintf("License key is invalid: %s.", resp.Message))
-	default:
-		applyResponse(resp)
-		if err := cacheResponse(resp); err != nil {
-			log.Errorf("Error caching license response: %s", err)
-		}
-		log.Infof("License valid. Pro features enabled.")
-	}
-
-	// Start background goroutine
-	stopCh = make(chan struct{})
-	go backgroundLoop(key)
+	log.Infof("All features enabled (vikunja-enterprise).")
 }
 
-// SetForTests enables the given features. Pair with ResetForTests to avoid bleeding state between tests.
-func SetForTests(features []Feature) {
-	feats := make([]Feature, 0, len(features))
-	feats = append(feats, features...)
-	applyResponse(&Response{
-		Valid:     true,
-		Features:  feats,
-		ExpiresAt: time.Now().Add(365 * 24 * time.Hour),
+// allFeatures returns every known feature.
+func allFeatures() []Feature {
+	stateMu.Lock()
+	defer stateMu.Unlock()
+	out := make([]Feature, 0, len(featureToString))
+	for f := range featureToString {
+		if testFeatures != nil && !testFeatures[f] {
+			continue
+		}
+		out = append(out, f)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].String() < out[j].String()
 	})
+	return out
 }
 
+// testFeatures is only set by the test helpers below. nil (the default, and
+// always the case outside of tests) means every feature is enabled.
+var testFeatures map[Feature]bool
+
+// SetForTests restricts the enabled features to the given set. Pair with ResetForTests to avoid bleeding state between tests.
+func SetForTests(features []Feature) {
+	stateMu.Lock()
+	defer stateMu.Unlock()
+	testFeatures = make(map[Feature]bool, len(features))
+	for _, f := range features {
+		testFeatures[f] = true
+	}
+}
+
+// ResetForTests disables every feature, so tests can assert the gated-off behaviour.
 func ResetForTests() {
-	degradeToFree("reset for tests")
+	stateMu.Lock()
+	defer stateMu.Unlock()
+	testFeatures = map[Feature]bool{}
 }
 
 // ReloadFromCache applies the cached license_status row; empty or missing cache degrades to free mode.
@@ -243,75 +217,38 @@ type Info struct {
 
 // CurrentInfo returns a snapshot of the current license state; on DB errors it omits the cache-backed fields rather than failing.
 func CurrentInfo() Info {
-	st := loadState()
+	features := allFeatures()
 	info := Info{
-		Licensed:        st.Licensed,
-		InstanceID:      instanceID,
-		Features:        make([]string, 0, len(st.Features)),
-		MaxUsers:        st.MaxUsers,
-		ExpiresAt:       st.ExpiresAt,
-		LastCheckFailed: st.LastCheckFailed,
+		Licensed:   len(features) > 0,
+		InstanceID: instanceID,
+		Features:   make([]string, 0, len(features)),
 	}
-	for f, on := range st.Features {
-		if !on {
-			continue
-		}
+	for _, f := range features {
 		info.Features = append(info.Features, f.String())
-	}
-	sort.Strings(info.Features)
-
-	if cached, err := loadCachedStatus(); err == nil && cached != nil {
-		info.ValidatedAt = cached.ValidatedAt
 	}
 	return info
 }
 
 // EnabledProFeatures returns enabled features (empty slice in free mode); Feature values marshal to their JSON string key.
 func EnabledProFeatures() []Feature {
-	st := loadState()
-	if !st.Licensed {
-		return []Feature{}
-	}
-	out := make([]Feature, 0, len(st.Features))
-	for f, on := range st.Features {
-		if !on {
-			continue
-		}
-		out = append(out, f)
-	}
-	sort.Slice(out, func(i, j int) bool {
-		return out[i].String() < out[j].String()
-	})
-	return out
+	return allFeatures()
 }
 
-// IsFeatureEnabled returns whether a specific licensed feature is enabled.
+// IsFeatureEnabled returns whether a specific feature is enabled. In
+// vikunja-enterprise every known feature is.
 func IsFeatureEnabled(feature Feature) bool {
-	st := loadState()
-	if !st.Licensed {
-		return false
+	stateMu.Lock()
+	defer stateMu.Unlock()
+	if testFeatures != nil {
+		return testFeatures[feature]
 	}
-	return st.Features[feature]
+	_, ok := featureToString[feature]
+	return ok
 }
 
-// MaxUsersReached returns whether the licensed user limit has been reached.
-// Returns false in free mode (no limit).
+// MaxUsersReached always returns false: there is no user limit.
 func MaxUsersReached() bool {
-	st := loadState()
-	if !st.Licensed || st.MaxUsers <= 0 {
-		return false
-	}
-
-	s := db.NewSession()
-	defer s.Close()
-
-	count, err := s.Table("users").Where("status = ?", user.StatusActive).Count()
-	if err != nil {
-		log.Errorf("Error counting users for license check: %s", err)
-		return false
-	}
-
-	return count >= st.MaxUsers
+	return false
 }
 
 // Shutdown stops the background license check goroutine.
