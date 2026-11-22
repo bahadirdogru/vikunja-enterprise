@@ -23,7 +23,8 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
 | 0b | Multi-arch image (amd64 + arm64) published to GHCR | Done |
 | 1a | Custom fields: backend (models, migration, `/api/v2` routes, events) | Done |
 | 1b | Custom fields: frontend (project settings page, task detail editors, en + tr) | Done |
-| 1c | Custom fields: filter/sort, table and kanban display, values follow task moves | Next |
+| 1c | Custom fields: filter (`cf_<id>`) and sort in the API, values removed when a task changes project | Done |
+| 1d | Custom fields: filter/sort UI (field names instead of ids), table columns, kanban card fields | Planned |
 | 2 | Workflow (statuses, allowed transitions, required fields, transition history) | Designed, see [workflow.md](workflow.md) |
 | 3 | Automation + scripting (trigger → condition → action, run history, safety limits) | Planned |
 | 4 | Dashboards and reports | Planned |
@@ -38,8 +39,7 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   (linux/amd64, linux/arm64). Inherited upstream workflows are disabled on the
   fork; only `enterprise-docker.yml` runs.
 - Custom fields backend added, see [custom-fields.md](custom-fields.md).
-  Known gaps: values of a task moved to another project stay behind as
-  orphans (ignored on read); not exposed through MCP yet; golangci-lint has
+  Known gaps: not exposed through MCP yet; golangci-lint has
   not been run on the new code.
 - Custom fields UI added: project settings page and per-type editors in the
   task detail view. Checked in a real browser against the API for number,
@@ -47,3 +47,8 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   (invalid input rejected), text and long text. Not yet exercised in a
   browser: picking a date, picking a user, hover/focus styling, read-only
   users. Long text shows a single clipped line until focused.
+- Custom field filtering and sorting added to the task list API. Full models
+  and webtests suites pass on SQLite; the custom field tests also pass on
+  PostgreSQL 17. MySQL not exercised. Date `=` compares exact instants, use a
+  range. Picking a date and a user in the task detail view checked in a
+  browser.
