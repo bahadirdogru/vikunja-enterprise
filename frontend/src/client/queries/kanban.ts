@@ -8,6 +8,14 @@ export const BUCKET_TASK_PARAMS = {
 	expand: ['comment_count', 'is_unread'],
 } satisfies TaskFilterParams
 
+// The bucket defaults, plus any expand the caller asked for (e.g. custom_fields for card fields).
+export function bucketTaskParams(params: TaskFilterParams = {}) {
+	return {
+		...BUCKET_TASK_PARAMS,
+		expand: [...new Set([...BUCKET_TASK_PARAMS.expand, ...(params.expand ?? [])])],
+	} satisfies TaskFilterParams
+}
+
 export type BucketResponse = Omit<Bucket,
 	'id' |
 	'title' |
@@ -77,7 +85,7 @@ export function kanbanQuery(project: number, view: number, params: TaskFilterPar
 		queryFn: async ({signal}): Promise<BoardData> => {
 			const {data} = await projectViewBucketsTasksList({
 				path: {project, view},
-				query: {...params, ...BUCKET_TASK_PARAMS},
+				query: {...params, ...bucketTaskParams(params)},
 				signal,
 			})
 			const buckets = (data.items ?? []).map(normalizeBucket)

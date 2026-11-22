@@ -2595,6 +2595,10 @@ export type Task = {
      */
     readonly created_by?: User;
     /**
+     * The custom field values of this task, only fields that have a value. Only present when requested via the custom_fields expand option.
+     */
+    readonly custom_fields?: Array<TaskCustomFieldSummary> | null;
+    /**
      * When this task was soft-deleted. Soft-deleted tasks are kept for 30 days before they are removed permanently.
      */
     readonly deleted_at?: string;
@@ -2854,6 +2858,21 @@ export type TaskCommentReadBody = {
     readonly updated?: string;
 };
 
+export type TaskCustomFieldSummary = {
+    /**
+     * The custom field the value belongs to.
+     */
+    custom_field_id?: number;
+    /**
+     * The type of the field, which decides the shape of value.
+     */
+    type?: string;
+    /**
+     * The value in the same shape as the per-task custom field values endpoint.
+     */
+    value?: unknown;
+};
+
 export type TaskDuplicate = {
     /**
      * A URL to the JSON Schema for this object.
@@ -2936,6 +2955,10 @@ export type TaskReadOneBody = {
      * The user who created this task. Set by the server.
      */
     readonly created_by?: User;
+    /**
+     * The custom field values of this task, only fields that have a value. Only present when requested via the custom_fields expand option.
+     */
+    readonly custom_fields?: Array<TaskCustomFieldSummary> | null;
     /**
      * When this task was soft-deleted. Soft-deleted tasks are kept for 30 days before they are removed permanently.
      */
@@ -3656,6 +3679,10 @@ export type TrashedTask = {
      * The user who created this task. Set by the server.
      */
     readonly created_by?: User;
+    /**
+     * The custom field values of this task, only fields that have a value. Only present when requested via the custom_fields expand option.
+     */
+    readonly custom_fields?: Array<TaskCustomFieldSummary> | null;
     /**
      * When this task was soft-deleted. Soft-deleted tasks are kept for 30 days before they are removed permanently.
      */
@@ -9192,7 +9219,7 @@ export type ProjectTasksListData = {
         /**
          * Embed extra, more expensive data per task. Repeatable.
          */
-        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread'> | null;
+        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread' | 'custom_fields'> | null;
         /**
          * How rich-text fields are exchanged. See the API description.
          */
@@ -9323,7 +9350,7 @@ export type TasksReadByIndexData = {
         /**
          * Embed extra data per task. Repeatable.
          */
-        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread'> | null;
+        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread' | 'custom_fields'> | null;
         /**
          * How rich-text fields are exchanged. See the API description.
          */
@@ -9946,7 +9973,7 @@ export type ProjectViewBucketsTasksListData = {
         /**
          * Embed extra, more expensive data per task. Repeatable.
          */
-        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread'> | null;
+        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread' | 'custom_fields'> | null;
         /**
          * How rich-text fields are exchanged. See the API description.
          */
@@ -10112,7 +10139,7 @@ export type ProjectViewTasksListData = {
         /**
          * Embed extra, more expensive data per task. Repeatable.
          */
-        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread'> | null;
+        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread' | 'custom_fields'> | null;
         /**
          * How rich-text fields are exchanged. See the API description.
          */
@@ -10457,7 +10484,7 @@ export type TasksListData = {
         /**
          * Embed extra, more expensive data per task. Repeatable.
          */
-        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread'> | null;
+        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread' | 'custom_fields'> | null;
         /**
          * How rich-text fields are exchanged. See the API description.
          */
@@ -10704,7 +10731,7 @@ export type TasksReadData = {
         /**
          * Embed extra data per task. Repeatable.
          */
-        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread'> | null;
+        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread' | 'custom_fields'> | null;
         /**
          * How rich-text fields are exchanged. See the API description.
          */

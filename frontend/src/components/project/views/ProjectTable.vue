@@ -75,6 +75,16 @@
 							<FancyCheckbox v-model="activeColumns.createdBy">
 								{{ $t('task.attributes.createdBy') }}
 							</FancyCheckbox>
+							<template v-if="customFields.length > 0">
+								<p class="columns-filter__divider">
+									{{ $t('customFields.display.columnsHeading') }}
+								</p>
+								<CustomFieldPicker
+									:fields="customFields"
+									:is-selected="isCustomColumnActive"
+									@toggle="setCustomColumn"
+								/>
+							</template>
 						</Card>
 					</template>
 				</Popup>
@@ -236,6 +246,19 @@
 									<th v-if="activeColumns.createdBy">
 										{{ $t('task.attributes.createdBy') }}
 									</th>
+									<th
+										v-for="field in customColumns"
+										:key="`cf-${field.id}`"
+										:aria-sort="isSortableCustomFieldType(field.type) ? ariaSort(customFieldSortKey(field.id)) : undefined"
+									>
+										{{ field.title }}
+										<Sort
+											v-if="isSortableCustomFieldType(field.type)"
+											:order="sortBy[customFieldSortKey(field.id)]"
+											:label="field.title"
+											@click="sort(customFieldSortKey(field.id), $event)"
+										/>
+									</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -324,6 +347,16 @@
 											:user="t.created_by ?? {}"
 										/>
 									</td>
+									<td
+										v-for="field in customColumns"
+										:key="`cf-${field.id}`"
+									>
+										<CustomFieldValueDisplay
+											:field="field"
+											:value="valueOfCustomField(t.custom_fields, field.id)"
+											:project-id="t.project_id"
+										/>
+									</td>
 								</tr>
 							</tbody>
 						</table>
@@ -363,6 +396,8 @@ import Sort from '@/components/tasks/partials/Sort.vue'
 import FilterPopup from '@/components/project/partials/FilterPopup.vue'
 import Pagination from '@/components/misc/Pagination.vue'
 import Popup from '@/components/misc/Popup.vue'
+import CustomFieldPicker from '@/components/custom-fields/CustomFieldPicker.vue'
+import CustomFieldValueDisplay from '@/components/custom-fields/CustomFieldValueDisplay.vue'
 import AddTask from '@/components/tasks/AddTask.vue'
 
 import type {SortBy} from '@/composables/useTaskList'
@@ -378,6 +413,15 @@ import {isSavedFilterProject} from '@/client/queries/projects'
 import {useProjects} from '@/composables/useProjects'
 import {useCurrentProject} from '@/composables/useCurrentProject'
 import {PERMISSIONS as Permissions} from '@/constants/permissions'
+import {useCustomFieldSelection} from '@/composables/useCustomFieldSelection'
+import {
+	customFieldSortKey,
+	isSortableCustomFieldType,
+	omitCustomSortKeys,
+	parseCustomFieldSortKey,
+	valueOfCustomField,
+	withCustomFieldsExpand,
+} from '@/helpers/customFieldDisplay'
 
 const props = defineProps<{
 	isLoadingProject: boolean,
@@ -423,11 +467,21 @@ const SORT_BY_DEFAULT: SortBy = {
 const activeColumns = useStorage('tableViewColumns', {...ACTIVE_COLUMNS_DEFAULT})
 const sortBy = useStorage<SortBy>('tableViewSortBy', {...SORT_BY_DEFAULT})
 
+// Custom fields are optional columns, remembered per project. Their values are only requested
+// when at least one of them is shown.
+const {
+	fields: customFields,
+	selectedFields: customColumns,
+	isSelected: isCustomColumnActive,
+	setSelected: setCustomColumn,
+} = useCustomFieldSelection('tableViewCustomColumns', () => props.projectId, () => props.projectId)
+
 const taskList = useTaskList(
 	() => props.projectId, 
 	() => props.viewId, 
-	sortBy.value,
-	() => ['comment_count', 'is_unread'],
+	// A custom field sort left in storage may belong to another project.
+	omitCustomSortKeys(sortBy.value),
+	() => withCustomFieldsExpand(['comment_count', 'is_unread'], customColumns.value.length > 0),
 	() => props.view,
 )
 
@@ -441,7 +495,7 @@ const loading = useDelayedLoading(taskList.loading)
 const tasks: Ref<TaskResponse[]> = taskList.tasks
 
 watch(
-	() => activeColumns.value,
+	[() => activeColumns.value, () => customColumns.value],
 	() => setActiveColumnsSortParam(),
 	{deep: true},
 )
@@ -450,9 +504,18 @@ const {sort, ariaSort} = useTableSort<keyof SortBy>(sortBy, setActiveColumnsSort
 
 function setActiveColumnsSortParam() {
 	sortByParam.value = (Object.keys(sortBy.value) as (keyof SortBy)[])
-		.filter(prop => activeColumns.value[camelCase(prop) as keyof typeof activeColumns.value])
+		.filter(prop => {
+			const customFieldId = parseCustomFieldSortKey(prop)
+			if (customFieldId !== null) {
+				return customColumns.value.some(field => field.id === customFieldId && isSortableCustomFieldType(field.type))
+			}
+			return activeColumns.value[camelCase(prop) as keyof typeof activeColumns.value]
+		})
 		.reduce<SortBy>((obj, key) => {
-			obj[key] = sortBy.value[key]
+			const order = sortBy.value[key]
+			if (order) {
+				obj[key] = order
+			}
 			return obj
 		}, {})
 }
@@ -496,6 +559,16 @@ const taskDetailRoutes = computed(() => Object.fromEntries(
 	:deep(.card-content .content) {
 		display: flex;
 		flex-direction: column;
+	}
+
+	&__divider {
+		margin-block: .5rem .25rem;
+		padding-block-start: .5rem;
+		border-block-start: 1px solid var(--grey-200);
+		font-size: .75rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		color: var(--grey-500);
 	}
 
 }

@@ -10,6 +10,7 @@ import {normalizeTask, type TaskResponse} from '@/client/queries/tasks'
 import {ApiError} from '@/client/problem'
 import {formatDateLong} from '@/helpers/time/formatDate'
 import langEN from '@/i18n/lang/en.json'
+import type {CustomFieldResponse} from '@/client/queries/customFields'
 
 const sdk = vi.hoisted(() => ({
 	patchTasksRead: vi.fn(),
@@ -105,13 +106,13 @@ const tooltip: Directive<HTMLElement, string | {content: string}> = {
 	},
 }
 
-function mountCard(task: TaskResponse) {
+function mountCard(task: TaskResponse, customFields: CustomFieldResponse[] = []) {
 	const router = createRouter({
 		history: createMemoryHistory(),
 		routes: [{path: '/tasks/:id', name: 'task.detail', component: {render: () => null}}],
 	})
 	return shallowMount(KanbanCard, {
-		props: {task, projectId: 1},
+		props: {task, projectId: 1, customFields},
 		global: {
 			plugins: [
 				createPinia(),
@@ -369,5 +370,19 @@ describe('KanbanCard', () => {
 
 		expect(observer.observing).toBe(false)
 		expect(attachments.fetchAttachmentUrl).not.toHaveBeenCalled()
+	})
+
+	it('shows only the selected custom fields that have a value', () => {
+		const field = (id: number, title: string): CustomFieldResponse =>
+			({id, project_id: 1, title, description: '', type: 'text', required: false, position: id, options: []})
+		const task = normalizeTask({
+			...neverChangedTask,
+			custom_fields: [{custom_field_id: 1, type: 'text', value: 'REF-1'}, {custom_field_id: 3, type: 'checkbox', value: false}],
+		})
+
+		const wrapper = mountCard(task, [field(1, 'Reference'), field(2, 'Empty'), field(3, 'Flag')])
+
+		expect(wrapper.findAll('.custom-field dt').map(dt => dt.text())).toEqual(['Reference', 'Flag'])
+		expect(mountCard(task).find('.custom-fields').exists()).toBe(false)
 	})
 })

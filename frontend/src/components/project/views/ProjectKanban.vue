@@ -7,6 +7,35 @@
 	>
 		<template #header>
 			<div class="filter-container">
+				<Popup
+					v-if="cardFieldOptions.length > 0"
+					placement="bottom-start"
+					:anchor="cardFieldsTriggerEl"
+				>
+					<template #trigger="{toggle}">
+						<XButton
+							ref="cardFieldsTrigger"
+							icon="list"
+							variant="secondary"
+							class="mie-2"
+							@click.prevent.stop="toggle()"
+						>
+							{{ $t('customFields.display.cardFields') }}
+						</XButton>
+					</template>
+					<template #content="{isOpen}">
+						<Card
+							class="card-fields-filter"
+							:class="{'is-open': isOpen}"
+						>
+							<CustomFieldPicker
+								:fields="cardFieldOptions"
+								:is-selected="isCardFieldSelected"
+								@toggle="setCardField"
+							/>
+						</Card>
+					</template>
+				</Popup>
 				<FilterPopup
 					v-if="!isSavedFilterProject(project)"
 					v-model="params"
@@ -240,6 +269,7 @@
 												class="kanban-card"
 												:task="task"
 												:project-id="projectId"
+												:custom-fields="cardFields"
 												@taskCompletedRecurring="handleRecurringTaskCompletion"
 											/>
 										</li>
@@ -311,7 +341,7 @@ import {
 	useUpdateBucketMutation,
 	useLoadBucketPageMutation,
 } from '@/client/queries/kanbanMutations'
-import {computed, nextTick, ref, watch, toRef} from 'vue'
+import {computed, nextTick, ref, watch, toRef, type ComponentPublicInstance} from 'vue'
 import {useQuery, useQueryClient} from '@tanstack/vue-query'
 import {useRouter} from 'vue-router'
 import {useRouteQuery} from '@vueuse/router'
@@ -325,11 +355,14 @@ import {useQuickAddTask} from '@/composables/useQuickAddTask'
 import {useDelayedLoading} from '@/composables/useDelayedLoading'
 import {useTaskDragState} from '@/composables/useTaskDragState'
 import {useAuthStore} from '@/stores/auth'
+import {useCustomFieldSelection} from '@/composables/useCustomFieldSelection'
 
 import ProjectWrapper from '@/components/project/ProjectWrapper.vue'
 import FilterPopup from '@/components/project/partials/FilterPopup.vue'
 import KanbanCard from '@/components/tasks/partials/KanbanCard.vue'
 import Dropdown from '@/components/misc/Dropdown.vue'
+import Popup from '@/components/misc/Popup.vue'
+import CustomFieldPicker from '@/components/custom-fields/CustomFieldPicker.vue'
 import DropdownItem from '@/components/misc/DropdownItem.vue'
 
 import {
@@ -499,7 +532,21 @@ function onHandleTouchMove(e: TouchEvent) {
 	}
 }
 
-const boardParams = computed(() => ({...params.value, filter_timezone: authStore.settings.timezone}))
+// Custom fields shown on the cards, remembered per kanban view. Values are only requested when one is selected.
+const {
+	fields: cardFieldOptions,
+	selectedFields: cardFields,
+	isSelected: isCardFieldSelected,
+	setSelected: setCardField,
+} = useCustomFieldSelection('kanbanCardFields', () => props.viewId, projectId)
+const cardFieldsTrigger = ref<ComponentPublicInstance | null>(null)
+const cardFieldsTriggerEl = computed<HTMLElement | null>(() => (cardFieldsTrigger.value?.$el as HTMLElement) ?? null)
+
+const boardParams = computed(() => ({
+	...params.value,
+	filter_timezone: authStore.settings.timezone,
+	...(cardFields.value.length > 0 ? {expand: ['custom_fields' as const]} : {}),
+}))
 const board = useKanban(projectId, () => props.viewId, boardParams)
 const queryClient = useQueryClient()
 const buckets = board.buckets
@@ -884,6 +931,10 @@ function unCollapseBucket(bucket: BucketResponse) {
 </script>
 
 <style lang="scss" scoped>
+.card-fields-filter {
+	margin: 0;
+}
+
 .control.is-loading {
   &::after {
     inset-block-start: 30%;

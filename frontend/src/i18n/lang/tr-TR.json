@@ -1864,6 +1864,12 @@
 			"userSearch": "Proje üyelerinde ara",
 			"chooseDate": "Tarih seç",
 			"clear": "{title} değerini temizle"
+		},
+		"display": {
+			"columnsHeading": "Özel alanlar",
+			"cardFields": "Kart alanları",
+			"yes": "Evet",
+			"no": "Hayır"
 		}
 	}
 }

@@ -80,6 +80,25 @@
 				class="task-progress"
 				:value="task.percent_done * 100"
 			/>
+			<dl
+				v-if="visibleCustomFields.length > 0"
+				class="custom-fields"
+			>
+				<div
+					v-for="field in visibleCustomFields"
+					:key="field.id"
+					class="custom-field"
+				>
+					<dt>{{ field.title }}</dt>
+					<dd>
+						<CustomFieldValueDisplay
+							:field="field"
+							:value="valueOfCustomField(task.custom_fields, field.id)"
+							:project-id="task.project_id"
+						/>
+					</dd>
+				</div>
+			</dl>
 			<div class="footer">
 				<Labels :labels="task.labels" />
 				<PriorityLabel
@@ -149,12 +168,15 @@ import ProgressBar from '@/components/misc/ProgressBar.vue'
 import Done from '@/components/misc/Done.vue'
 import Labels from '@/components/tasks/partials/Labels.vue'
 import ChecklistSummary from './ChecklistSummary.vue'
+import CustomFieldValueDisplay from '@/components/custom-fields/CustomFieldValueDisplay.vue'
 import CommentCount from './CommentCount.vue'
 
 import {getHexColor, getTaskIdentifier} from '@/helpers/task'
 import {getDisplayName} from '@/helpers/user'
 import type {Task as ITask} from '@/client/generated'
 import type {TaskResponse} from '@/client/queries/tasks'
+import type {CustomFieldResponse} from '@/client/queries/customFields'
+import {hasCustomFieldValue, valueOfCustomField} from '@/helpers/customFieldDisplay'
 import {canPreviewImage} from '@/helpers/attachmentPreview'
 import {fetchAttachmentUrl, releaseAttachmentUrl} from '@/helpers/attachments'
 import {ApiError} from '@/client/problem'
@@ -170,10 +192,14 @@ import {useDelayedLoading} from '@/composables/useDelayedLoading'
 import {TASK_REPEAT_MODES} from '@/types/IRepeatMode'
 import {useAuthStore} from '@/stores/auth'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
 	task: TaskResponse,
 	projectId: number,
-}>()
+	// Custom fields to show on the card; fields without a value are left out.
+	customFields?: CustomFieldResponse[],
+}>(), {
+	customFields: () => [],
+})
 
 const emit = defineEmits<{
 	'taskCompletedRecurring': [task: ITask]
@@ -188,6 +214,9 @@ const loadingInternal = ref(false)
 const showLoading = useDelayedLoading(loadingInternal)
 
 const color = computed(() => getHexColor(props.task.hex_color))
+
+const visibleCustomFields = computed(() => props.customFields
+	.filter(field => hasCustomFieldValue(props.task.custom_fields, field.id)))
 
 const projectList = useProjects()
 
@@ -365,6 +394,35 @@ $task-background: var(--white);
 		font-family: $family-sans-serif;
 		font-size: .85rem;
 		word-break: break-word;
+	}
+
+	.custom-fields {
+		margin-block: .25rem;
+		display: flex;
+		flex-direction: column;
+		gap: .125rem;
+		font-size: .8rem;
+	}
+
+	.custom-field {
+		display: flex;
+		align-items: center;
+		gap: .5rem;
+		min-inline-size: 0;
+
+		dt {
+			flex: none;
+			max-inline-size: 40%;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			color: var(--grey-500);
+		}
+
+		dd {
+			min-inline-size: 0;
+			margin: 0;
+		}
 	}
 
 	.kanban-card__title-link {

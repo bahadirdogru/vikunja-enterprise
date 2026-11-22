@@ -34,6 +34,8 @@ export interface SortBy {
 	updated?: Order
 	done_at?: Order,
 	position?: Order,
+	// Custom fields are sorted as cf_<fieldId>.
+	[customField: `cf_${number}`]: Order
 }
 
 const VALID_SORT_FIELDS = new Set<string>(
@@ -45,7 +47,7 @@ function parseSortQuery(raw: string, fallback: SortBy): SortBy {
 	const result: Record<string, Order> = {}
 	for (const part of raw.split(',')) {
 		const [field, order] = part.split(':')
-		if (!VALID_SORT_FIELDS.has(field)) continue
+		if (!VALID_SORT_FIELDS.has(field) && !/^cf_\d+$/.test(field)) continue
 		if (order !== 'asc' && order !== 'desc') continue
 		result[field] = order
 	}

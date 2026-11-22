@@ -1,7 +1,7 @@
 import {useMutation} from '@tanstack/vue-query'
 import {bucketsCreate, bucketsUpdate, bucketsDelete, projectViewTasksList, type Bucket} from '@/client/generated'
 import {contextMutationOptions} from './contextMutation'
-import {BUCKET_TASK_PARAMS, bucketKeys, kanbanKeys, normalizeBucket, type BoardData} from './kanban'
+import {bucketTaskParams, bucketKeys, kanbanKeys, normalizeBucket, type BoardData} from './kanban'
 import {normalizeTask, type TaskFilterParams} from './tasks'
 import {invalidateTaskMembership} from './taskCache'
 import {projectKeys} from './projects'
@@ -106,7 +106,7 @@ export function loadBucketPageMutationOptions() {
 			path: {project, view},
 			query: {
 				...params,
-				...BUCKET_TASK_PARAMS,
+				...bucketTaskParams(params),
 				page,
 				sort_by: ['position'],
 				order_by: ['asc'],

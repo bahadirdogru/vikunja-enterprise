@@ -2050,6 +2050,12 @@
       "userSearch": "Search project members",
       "chooseDate": "Choose a date",
       "clear": "Clear {title}"
+    },
+    "display": {
+      "columnsHeading": "Custom fields",
+      "cardFields": "Card fields",
+      "yes": "Yes",
+      "no": "No"
     }
   }
 }
