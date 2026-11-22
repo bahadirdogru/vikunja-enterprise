@@ -53,6 +53,14 @@
 					</RouterLink>
 				</li>
 				<li>
+					<RouterLink :to="{ name: 'dashboards.index'}">
+						<span class="menu-item-icon icon">
+							<Icon icon="chart-simple" />
+						</span>
+						{{ $t('dashboards.title') }}
+					</RouterLink>
+				</li>
+				<li>
 					<RouterLink
 						v-shortcut="SHORTCUTS.navigation.labels"
 						:to="{ name: 'labels.index'}"

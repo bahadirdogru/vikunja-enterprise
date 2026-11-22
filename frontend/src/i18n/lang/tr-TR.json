@@ -1593,6 +1593,15 @@
 		"22006": "Gizli anahtar geçerli değil: adda harf, rakam ve alt çizgi kullanın, rakamla başlamasın (en çok 64 karakter); değer en çok 8 KiB olabilir.",
 		"22007": "Bu gizli anahtar bulunamadı.",
 		"22008": "Gizli anahtarın şifresi artık çözülemiyor. Yeniden girin.",
+		"23001": "Rapor ayarlarından biri geçerli değil.",
+		"23002": "Bu grafik çok fazla zaman aralığına sahip olurdu. Daha kısa bir dönem veya daha büyük adımlar seçin.",
+		"23003": "Bu grafik çok fazla gruba sahip olurdu. Daha az grup gösterin.",
+		"23004": "Bu alan görevleri gruplamak için kullanılamaz.",
+		"23005": "Bu ayar, paylaşım bağlantısı üzerinden raporlanamaz.",
+		"23006": "Pano mevcut değil.",
+		"23007": "Bileşen bu panoya ait değil.",
+		"23008": "Pano veya bileşenlerinden biri geçerli değil.",
+		"23009": "Rapor çok uzun sürdü. Filtreyi veya dönemi daraltın.",
 		"4016": "Geçersiz görev alanı.",
 		"4017": "Geçersiz filtre karşılaştırıcısı.",
 		"4018": "Geçersiz filtre bağlayıcısı.",
@@ -2042,6 +2051,249 @@
 			"modeHint": "Projenin iş akışındaki her durum için bir sütun. Bir kartı taşımak görevin durumunu değiştirir ve iş akışının kurallarına uyar.",
 			"managed": "Bu panonun sütunları projenin iş akışındaki durumlardır. Bunları iş akışı ayarlarından düzenleyin.",
 			"noWorkflow": "Bu projenin artık bir iş akışı olmadığı için bu panoda sütun yok. İş akışını yeniden etkinleştirin ya da görünümü el ile sütunlara geçirin."
+		}
+	},
+	"charts": {
+		"loading": "Grafik yükleniyor",
+		"noData": "Bu filtre için veri yok",
+		"error": "Grafik yüklenemedi.",
+		"multiValued": "Bir görev birden fazla grupta sayılabilir; bu yüzden gruplar görev sayısından büyük bir toplam verir.",
+		"total": "Toplam",
+		"group": "Grup",
+		"subgroup": "Alt grup",
+		"value": "Değer",
+		"date": "Tarih",
+		"legend": "Gösterge",
+		"dataTable": "Grafik verisi",
+		"bar": "Çubuk grafik",
+		"donut": "Halka grafik",
+		"line": "Çizgi grafik",
+		"lineHelp": "Noktalar arasında gezinmek için ok tuşlarını, görevleri göstermek için Enter'ı kullanın.",
+		"tasks": "görev yok | {count} görev | {count} görev",
+		"tasksUnit": "görev | görev | görev",
+		"deltaPrevious": "önceki dönemle karşılaştırıldığında"
+	},
+	"dashboards": {
+		"title": "Panolar",
+		"projectTitle": "{project} panoları",
+		"personal": "Panolarım",
+		"unknownProject": "Proje",
+		"new": "Yeni pano",
+		"nameLabel": "Ad",
+		"scopeLabel": "Kimin için",
+		"createHint": "Yeni pano, değiştirebileceğiniz birkaç bileşenle başlar. Proje panosunu projeyi okuyabilen herkes görür.",
+		"titleRequired": "Panoya bir ad verin.",
+		"empty": "Henüz pano yok. İşlerin nerede durduğunu görmek için bir pano oluşturun.",
+		"loadError": "Pano yüklenemedi.",
+		"widgetCount": "bileşen yok | {count} bileşen | {count} bileşen",
+		"rename": "{title} panosunu yeniden adlandır",
+		"delete": "{title} panosunu sil",
+		"deleteTitle": "Bu pano silinsin mi?",
+		"deleteText": "\"{title}\" ve tüm bileşenleri silinecek. Görevler etkilenmez.",
+		"deleted": "Pano silindi.",
+		"defaultTitle": "{project} özeti",
+		"projectEmpty": "Bu projenin henüz panosu yok. Proje yöneticisi bir pano oluşturabilir.",
+		"projectEmptyAdmin": "Bu projenin henüz panosu yok. Varsayılan panoyla başlayın: açık görevler, durum, zaman içindeki ilerleme, iş yükü ve geciken görevler.",
+		"createDefault": "Varsayılan panoyu oluştur",
+		"allDashboards": "Tüm panolar",
+		"edit": "Panoyu düzenle",
+		"doneEditing": "Bitti",
+		"addWidget": "Bileşen ekle",
+		"undo": "Geri al",
+		"editHint": "Bileşeni taşımak için başlığından sürükleyin, yeniden boyutlandırmak için köşesini kullanın. Klavyede başlığa odaklanıp ok tuşlarıyla taşıyın, Shift ile ok tuşlarıyla yeniden boyutlandırın.",
+		"noWidgets": "Bu panoda henüz bileşen yok.",
+		"unsupportedType": "Bu bileşen türü henüz desteklenmiyor.",
+		"createdSeries": "Oluşturulan",
+		"doneSeries": "Tamamlanan",
+		"allTasks": "Görevler",
+		"save": {
+			"unsaved": "Kaydedilmemiş değişiklikler",
+			"saving": "Kaydediliyor…",
+			"saved": "Tüm değişiklikler kaydedildi",
+			"failed": "Yerleşim kaydedilemedi.",
+			"retry": "Yeniden dene"
+		},
+		"grid": {
+			"draggable": "taşınabilir bileşen",
+			"moveLabel": "{title}. Ok tuşları bileşeni taşır, Shift ve ok tuşları yeniden boyutlandırır.",
+			"moved": "{title}, {column}. sütun {row}. satıra taşındı.",
+			"resized": "{title} artık {w} sütun genişliğinde ve {h} satır yüksekliğinde."
+		},
+		"widget": {
+			"refresh": "Yenile",
+			"menu": "{title} seçenekleri",
+			"toggleOrientation": "Çubuk yönünü değiştir",
+			"toggleStacked": "Yığılmış ve gruplu görünümü değiştir",
+			"toggleLegend": "Göstergeyi göster veya gizle",
+			"edit": "Düzenle",
+			"duplicate": "Çoğalt",
+			"remove": "Kaldır",
+			"removeTitle": "Bu bileşen kaldırılsın mı?",
+			"removeText": "Bileşen panodan kaldırılır. Görevler etkilenmez.",
+			"copySuffix": "(kopya)"
+		},
+		"types": {
+			"number": {
+				"name": "Sayı",
+				"description": "Tek bir rakam, örneğin açık görev sayısı."
+			},
+			"bar": {
+				"name": "Çubuk grafik",
+				"description": "Grupları karşılaştırın, istenirse ikinci bir özelliğe göre yığın halinde."
+			},
+			"donut": {
+				"name": "Halka grafik",
+				"description": "Görevlerin gruplara nasıl dağıldığını gösterin."
+			},
+			"line": {
+				"name": "Çizgi grafik",
+				"description": "Görevleri zaman içinde izleyin, her grup için bir çizgi."
+			},
+			"created_vs_done": {
+				"name": "Oluşturulan ve tamamlanan",
+				"description": "Gün, hafta veya ay başına oluşturulan ve tamamlanan görevler."
+			},
+			"task_list": {
+				"name": "Görev listesi",
+				"description": "Görevlerin kendisi, örneğin gecikenler."
+			},
+			"text": {
+				"name": "Not",
+				"description": "Bu panoyu okuyanlar için bir metin."
+			}
+		},
+		"taskList": {
+			"empty": "Bu filtreyle eşleşen görev yok.",
+			"due": "Bitiş",
+			"showAll": "Tüm {count} görevi göster"
+		},
+		"text": {
+			"empty": "Bu not boş."
+		},
+		"drilldown": {
+			"title": "{title} görevleri",
+			"empty": "Eşleşen görev yok.",
+			"pages": "Sayfalar",
+			"previous": "Önceki",
+			"next": "Sonraki",
+			"blocked": {
+				"other": "Katlanmış \"diğer\" grubu listelenemez: \"ilk gruplardan biri olmayan\" için bir filtre yok.",
+				"null_filter": "\"Değeri yok\" bu filtreyle birlikte listelenemez: değeri olmayan görevleri de katan seçeneği gerektirir, bu da diğer koşulları değiştirirdi.",
+				"include_nulls": "Bu bileşenin filtresi değeri olmayan görevleri de içerdiği için tek bir grup listelenemez.",
+				"status_entered": "Bir görevin duruma girdiği an bir filtre alanı değildir; bu dönemin görevleri listelenemez.",
+				"needs_username": "Kişi bulunamadı, bu yüzden görevleri listelenemiyor.",
+				"needs_options": "Bu alanın seçenekleri yüklenemedi.",
+				"unknown_dimension": "Bu grup bir filtreye çevrilemiyor."
+			}
+		},
+		"defaults": {
+			"open": "Açık görevler",
+			"status": "Duruma göre görevler",
+			"done": "Açık ve tamamlanan",
+			"createdVsDone": "Oluşturulan ve tamamlanan, 30 gün",
+			"assignee": "Atanan kişiye göre açık görevler",
+			"overdue": "Geciken görevler"
+		},
+		"buckets": {
+			"day": "Gün",
+			"week": "Hafta",
+			"month": "Ay"
+		},
+		"ranges": {
+			"last7": "Son 7 gün",
+			"last30": "Son 30 gün",
+			"last90": "Son 90 gün",
+			"thisMonth": "Bu ay",
+			"thisYear": "Bu yıl",
+			"custom": "Özel aralık"
+		},
+		"sort": {
+			"due_date": "Bitiş tarihi",
+			"priority": "Öncelik",
+			"created": "Oluşturulma",
+			"updated": "Güncellenme",
+			"title": "Başlık",
+			"id": "Numara",
+			"done_at": "Tamamlanma",
+			"percent_done": "İlerleme"
+		},
+		"editor": {
+			"addTitle": "Bileşen ekle",
+			"editTitle": "Bileşeni düzenle",
+			"chooseType": "Bileşen türleri",
+			"changeType": "Türü değiştir",
+			"title": "Başlık",
+			"scope": "Görevlerin kaynağı",
+			"thisProject": "Bu proje",
+			"allProjects": "Tüm projelerim",
+			"filter": "Filtre",
+			"groupBy": "Grupla",
+			"seriesBy": "Her biri için bir çizgi",
+			"thenBy": "Sonra grupla",
+			"none": "Yok",
+			"choose": "Seçin…",
+			"measure": "Değer",
+			"field": "Alan",
+			"timeField": "Zaman şuna göre",
+			"bucket": "Zamanı grupla",
+			"range": "Dönem",
+			"from": "Başlangıç",
+			"to": "Bitiş",
+			"limit": "Gösterilen grup sayısı",
+			"sortBy": "Sırala",
+			"order": "Sıra",
+			"ascending": "Artan",
+			"descending": "Azalan",
+			"listLimit": "Görev sayısı",
+			"text": "Metin",
+			"textPlaceholder": "Bir not yazın…",
+			"display": "Görünüm",
+			"orientation": "Çubuk yönü",
+			"orientationAuto": "Otomatik",
+			"vertical": "Dikey",
+			"horizontal": "Yatay",
+			"stacked": "İkinci özelliği üst üste yığ",
+			"showLegend": "Göstergeyi göster",
+			"displayHint": "Görünüm seçenekleri bu tarayıcıda saklanır, panonun parçası değildir.",
+			"preview": "Önizleme",
+			"previewIdle": "Önizlemeyi görmek için formu tamamlayın.",
+			"problems": {
+				"groupByRequired": "Neye göre gruplanacağını seçin.",
+				"timeFieldRequired": "Grafiğin izleyeceği tarihi seçin.",
+				"fieldRequired": "Hesaplanacak alanı seçin.",
+				"dateRequired": "Bir tarih girin.",
+				"listLimitRange": "1 ile 100 arasında bir sayı girin."
+			}
+		}
+	},
+	"reports": {
+		"dimension": {
+			"status": "Durum",
+			"status_category": "Durum kategorisi",
+			"assignee": "Atanan kişi",
+			"label": "Etiket",
+			"project": "Proje",
+			"priority": "Öncelik",
+			"done": "Tamamlandı",
+			"created_by": "Oluşturan"
+		},
+		"measure": {
+			"count": "Görev sayısı",
+			"sum": "Toplam",
+			"avg": "Ortalama",
+			"min": "En az",
+			"max": "En çok"
+		},
+		"field": {
+			"percent_done": "Tamamlanma yüzdesi",
+			"time_spent": "Harcanan süre",
+			"custom_field": "Özel alan"
+		},
+		"time_field": {
+			"created": "Oluşturulma",
+			"done_at": "Tamamlanma",
+			"due_date": "Bitiş tarihi",
+			"status_entered": "Mevcut duruma giriş"
 		}
 	},
 	"automation": {

@@ -1,6 +1,6 @@
 # Dashboards and reports — design
 
-Status: step 4a (aggregation API and dashboard CRUD) is implemented, 4b and 4c are open. The sections below describe what is built; "Deferred" lists what is not.
+Status: step 4a (aggregation API and dashboard CRUD) and 4b (the UI) are implemented, 4c is open. The sections below describe what is built; "Deferred" lists what is not.
 
 ## Goals
 
@@ -204,11 +204,46 @@ tasks.
   (project ids below -1) are not a report scope; `include_subprojects` is not offered.
 - Nested time series carry series on leaf groups only; `other` leaves have none.
 
+## UI status (4b)
+
+What exists (`frontend/src/components/{charts,dashboards}`, `frontend/src/views/dashboards`):
+
+- Pages: `/dashboards` (personal and project dashboards grouped, create, rename, delete), `/dashboards/:id` (view and
+  edit), `/projects/:id/dashboards` (project menu entry; opens the only dashboard, lists several, lets a project admin
+  create the default one) and a "Dashboards" sidebar link. A new dashboard starts with: open tasks number, tasks by
+  status (or done, without a workflow), created vs completed over 30 days, open tasks by assignee, overdue task list.
+- Charts are hand-written SVG (bar incl. stacked and grouped, donut, line, number tile), no dependency: viewBox from a
+  ResizeObserver, nice ticks, tooltip on hover and focus, `aria-label` per mark, a visually hidden data table, empty
+  state, loading skeleton, a note for `multi_valued` reports, a neutral colour for the folded "other" group.
+- Grid: 12 columns, CSS grid, one column under 768px. Edit mode: drag by the header, resize from the corner, keyboard
+  (arrows move, Shift+arrows resize), vertical compaction (`helpers/dashboardLayout.ts`), debounced layout save with a
+  visible unsaved / saving / failed state and retry, undo of the last layout changes. Widgets are added, changed and
+  removed through the document `PUT`.
+- Widget editor: type gallery, then a form built from `GET /reports/tasks/options` (labels from `title_key`, custom
+  fields by title), the task filter editor of views, relative period presets, live preview of the unsaved config,
+  typed validation errors (`details.param`, 23xxx and the filter errors) shown on the matching control.
+- Drill-down (`helpers/dashboardDrilldown.ts`): a click on a bar, slice, point or number lists exactly the tasks behind
+  it by AND-ing the widget filter with the group and bucket. Not expressible in the filter syntax, so the mark is inert
+  with an explanation: the folded "other" group; the `status_entered` time field; "no value" of assignee, label and
+  user fields together with a widget filter that touches nullable columns (it needs `filter_include_nulls`, which
+  would widen the whole filter; the filter may only use `done`, `project`, `created`), and two such groups at once; any
+  group when the widget itself sets `filter_include_nulls`. "No value" of status, priority and select fields is
+  expressed without the flag. Assignees and creators are filtered by username, which the report does not return: the
+  panel looks the user up by the label shown.
+
+Deferred or different from the plan:
+
+- Display options (bar direction, stacked, legend) are not stored: widget configs are decoded strictly and have no room
+  for them, so they are a per-viewer setting in the browser.
+- `number` has no compare period; `created_vs_done` has no running open count; `status_time`, `workload` and
+  `time_tracking` are not offered (4c); no CSV export; a `text` widget stores the editor's HTML (sanitized on render).
+- The `line` chart does not offer a second dimension.
+
 ## Steps
 
 - 4a (done): aggregation endpoint (all dimensions/measures/time, permission scoping,
   limits, cache) + dashboards/widgets CRUD + tests.
-- 4b: dashboard pages, SVG chart components, widget gallery and editor,
+- 4b (done): dashboard pages, SVG chart components, widget gallery and editor,
   drill-down.
 - 4c: `status_time`, `workload`, `time_tracking` widgets, CSV export, default
   dashboards created for new projects with a workflow.

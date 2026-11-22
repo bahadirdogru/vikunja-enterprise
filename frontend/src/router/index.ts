@@ -451,6 +451,26 @@ const router = createRouter({
 			component: () => import('@/views/teams/EditTeam.vue'),
 		},
 		{
+			path: '/dashboards',
+			name: 'dashboards.index',
+			component: () => import('@/views/dashboards/DashboardList.vue'),
+			meta: {
+				title: 'dashboards.title',
+			},
+		},
+		{
+			path: '/dashboards/:id(\\d+)',
+			name: 'dashboards.view',
+			component: () => import('@/views/dashboards/DashboardView.vue'),
+			props: route => ({dashboardId: Number(route.params.id as string)}),
+		},
+		{
+			path: '/projects/:projectId(\\d+)/dashboards',
+			name: 'project.dashboards',
+			component: () => import('@/views/dashboards/ProjectDashboards.vue'),
+			props: route => ({projectId: Number(route.params.projectId as string)}),
+		},
+		{
 			path: '/labels',
 			name: 'labels.index',
 			component: () => import('@/views/labels/ListLabels.vue'),

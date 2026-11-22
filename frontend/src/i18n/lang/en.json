@@ -1711,6 +1711,15 @@
     "22006": "The secret is not valid: use letters, digits and underscores in the name, not starting with a digit (at most 64 characters), and a value of at most 8 KiB.",
     "22007": "This secret does not exist.",
     "22008": "The secret cannot be decrypted any more. Set it again.",
+    "23001": "A report setting is not valid.",
+    "23002": "This chart would have too many time buckets. Choose a shorter period or larger steps.",
+    "23003": "This chart would have too many groups. Show fewer groups.",
+    "23004": "This field cannot be used to group tasks.",
+    "23005": "Reports are not available through a share link for this setting.",
+    "23006": "The dashboard does not exist.",
+    "23007": "The widget does not belong to this dashboard.",
+    "23008": "The dashboard or one of its widgets is not valid.",
+    "23009": "The report took too long. Narrow the filter or the period.",
     "4016": "Invalid task field.",
     "4017": "Invalid task filter comparator.",
     "4018": "Invalid task filter concatenator.",
@@ -2228,6 +2237,249 @@
       "modeHint": "One column per status of the project workflow. Moving a card changes the status of the task and follows the rules of the workflow.",
       "managed": "The columns of this board are the statuses of the project workflow. Edit them in the workflow settings.",
       "noWorkflow": "This project no longer has a workflow, so this board has no columns. Enable a workflow again or switch the view to manual columns."
+    }
+  },
+  "charts": {
+    "loading": "Loading chart",
+    "noData": "No data for this filter",
+    "error": "The chart could not be loaded.",
+    "multiValued": "A task can count in several groups, so the groups add up to more than the number of tasks.",
+    "total": "Total",
+    "group": "Group",
+    "subgroup": "Then by",
+    "value": "Value",
+    "date": "Date",
+    "legend": "Legend",
+    "dataTable": "Chart data",
+    "bar": "Bar chart",
+    "donut": "Donut chart",
+    "line": "Line chart",
+    "lineHelp": "Use the arrow keys to move between points, Enter to show the tasks.",
+    "tasks": "no tasks | {count} task | {count} tasks",
+    "tasksUnit": "tasks | task | tasks",
+    "deltaPrevious": "compared with the previous period"
+  },
+  "dashboards": {
+    "title": "Dashboards",
+    "projectTitle": "Dashboards of {project}",
+    "personal": "My dashboards",
+    "unknownProject": "Project",
+    "new": "New dashboard",
+    "nameLabel": "Name",
+    "scopeLabel": "For",
+    "createHint": "A new dashboard starts with a few widgets that you can change. A project dashboard is seen by everyone who can read the project.",
+    "titleRequired": "Give the dashboard a name.",
+    "empty": "No dashboards yet. Create one to see where work stands.",
+    "loadError": "The dashboard could not be loaded.",
+    "widgetCount": "no widgets | {count} widget | {count} widgets",
+    "rename": "Rename {title}",
+    "delete": "Delete {title}",
+    "deleteTitle": "Delete this dashboard?",
+    "deleteText": "\"{title}\" and all its widgets will be deleted. The tasks are not affected.",
+    "deleted": "The dashboard was deleted.",
+    "defaultTitle": "{project} overview",
+    "projectEmpty": "This project has no dashboard yet. A project admin can create one.",
+    "projectEmptyAdmin": "This project has no dashboard yet. Start with the default one: open tasks, status, progress over time, workload and overdue tasks.",
+    "createDefault": "Create the default dashboard",
+    "allDashboards": "All dashboards",
+    "edit": "Edit dashboard",
+    "doneEditing": "Done",
+    "addWidget": "Add widget",
+    "undo": "Undo",
+    "editHint": "Drag a widget by its title to move it and use the corner to resize it. With the keyboard, focus a title and use the arrow keys to move, Shift and the arrow keys to resize.",
+    "noWidgets": "This dashboard has no widgets yet.",
+    "unsupportedType": "This widget type is not supported yet.",
+    "createdSeries": "Created",
+    "doneSeries": "Completed",
+    "allTasks": "Tasks",
+    "save": {
+      "unsaved": "Unsaved changes",
+      "saving": "Saving…",
+      "saved": "All changes saved",
+      "failed": "Saving the layout failed.",
+      "retry": "Try again"
+    },
+    "grid": {
+      "draggable": "movable widget",
+      "moveLabel": "{title}. Arrow keys move the widget, Shift and arrow keys resize it.",
+      "moved": "{title} moved to column {column}, row {row}.",
+      "resized": "{title} is now {w} columns wide and {h} rows high."
+    },
+    "widget": {
+      "refresh": "Refresh",
+      "menu": "Options for {title}",
+      "toggleOrientation": "Switch bar direction",
+      "toggleStacked": "Switch stacked and grouped",
+      "toggleLegend": "Show or hide the legend",
+      "edit": "Edit",
+      "duplicate": "Duplicate",
+      "remove": "Remove",
+      "removeTitle": "Remove this widget?",
+      "removeText": "The widget is removed from the dashboard. The tasks are not affected.",
+      "copySuffix": "(copy)"
+    },
+    "types": {
+      "number": {
+        "name": "Number",
+        "description": "One figure, like the number of open tasks."
+      },
+      "bar": {
+        "name": "Bar chart",
+        "description": "Compare groups, optionally stacked by a second property."
+      },
+      "donut": {
+        "name": "Donut chart",
+        "description": "Show how tasks are split between groups."
+      },
+      "line": {
+        "name": "Line chart",
+        "description": "Follow tasks over time, one line per group."
+      },
+      "created_vs_done": {
+        "name": "Created vs completed",
+        "description": "Tasks created and completed per day, week or month."
+      },
+      "task_list": {
+        "name": "Task list",
+        "description": "The tasks themselves, for example what is overdue."
+      },
+      "text": {
+        "name": "Note",
+        "description": "Some text for the people who read this dashboard."
+      }
+    },
+    "taskList": {
+      "empty": "No tasks match this filter.",
+      "due": "Due",
+      "showAll": "Show all {count} tasks"
+    },
+    "text": {
+      "empty": "This note is empty."
+    },
+    "drilldown": {
+      "title": "Tasks in {title}",
+      "empty": "No tasks match.",
+      "pages": "Pages",
+      "previous": "Previous",
+      "next": "Next",
+      "blocked": {
+        "other": "The folded \"other\" group cannot be listed: there is no filter for \"not one of the first groups\".",
+        "null_filter": "\"No value\" cannot be listed together with this filter: it needs the option to include tasks without a value, which would also change the other conditions.",
+        "include_nulls": "This widget includes tasks without a value in its filter, so a single group cannot be listed.",
+        "status_entered": "The time a task entered its status is not a filter field, so the tasks of this period cannot be listed.",
+        "needs_username": "The person could not be found, so their tasks cannot be listed.",
+        "needs_options": "The options of this field could not be loaded.",
+        "unknown_dimension": "This group cannot be turned into a filter."
+      }
+    },
+    "defaults": {
+      "open": "Open tasks",
+      "status": "Tasks by status",
+      "done": "Open and done",
+      "createdVsDone": "Created vs completed, 30 days",
+      "assignee": "Open tasks by assignee",
+      "overdue": "Overdue tasks"
+    },
+    "buckets": {
+      "day": "Day",
+      "week": "Week",
+      "month": "Month"
+    },
+    "ranges": {
+      "last7": "Last 7 days",
+      "last30": "Last 30 days",
+      "last90": "Last 90 days",
+      "thisMonth": "This month",
+      "thisYear": "This year",
+      "custom": "Custom range"
+    },
+    "sort": {
+      "due_date": "Due date",
+      "priority": "Priority",
+      "created": "Created",
+      "updated": "Updated",
+      "title": "Title",
+      "id": "Number",
+      "done_at": "Completed",
+      "percent_done": "Progress"
+    },
+    "editor": {
+      "addTitle": "Add a widget",
+      "editTitle": "Edit widget",
+      "chooseType": "Widget types",
+      "changeType": "Change type",
+      "title": "Title",
+      "scope": "Tasks from",
+      "thisProject": "This project",
+      "allProjects": "All my projects",
+      "filter": "Filter",
+      "groupBy": "Group by",
+      "seriesBy": "One line per",
+      "thenBy": "Then by",
+      "none": "None",
+      "choose": "Choose…",
+      "measure": "Value",
+      "field": "Field",
+      "timeField": "Time based on",
+      "bucket": "Group time by",
+      "range": "Period",
+      "from": "From",
+      "to": "To",
+      "limit": "Groups shown",
+      "sortBy": "Sort by",
+      "order": "Order",
+      "ascending": "Ascending",
+      "descending": "Descending",
+      "listLimit": "Number of tasks",
+      "text": "Text",
+      "textPlaceholder": "Write a note…",
+      "display": "Display",
+      "orientation": "Bar direction",
+      "orientationAuto": "Automatic",
+      "vertical": "Vertical",
+      "horizontal": "Horizontal",
+      "stacked": "Stack the second property",
+      "showLegend": "Show the legend",
+      "displayHint": "Display options are kept in this browser, they are not part of the dashboard.",
+      "preview": "Preview",
+      "previewIdle": "Complete the form to see a preview.",
+      "problems": {
+        "groupByRequired": "Choose what to group by.",
+        "timeFieldRequired": "Choose the date this chart follows.",
+        "fieldRequired": "Choose the field to calculate with.",
+        "dateRequired": "Enter a date.",
+        "listLimitRange": "Enter a number between 1 and 100."
+      }
+    }
+  },
+  "reports": {
+    "dimension": {
+      "status": "Status",
+      "status_category": "Status category",
+      "assignee": "Assignee",
+      "label": "Label",
+      "project": "Project",
+      "priority": "Priority",
+      "done": "Done",
+      "created_by": "Created by"
+    },
+    "measure": {
+      "count": "Number of tasks",
+      "sum": "Sum",
+      "avg": "Average",
+      "min": "Minimum",
+      "max": "Maximum"
+    },
+    "field": {
+      "percent_done": "Percent done",
+      "time_spent": "Time spent",
+      "custom_field": "Custom field"
+    },
+    "time_field": {
+      "created": "Created",
+      "done_at": "Completed",
+      "due_date": "Due date",
+      "status_entered": "Entered current status"
     }
   },
   "automation": {

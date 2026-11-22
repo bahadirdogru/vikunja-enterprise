@@ -99,6 +99,12 @@
 				@toggle="subscribed => subscriptionMutation.mutateAsync({projectId: project.id, subscribed})"
 			/>
 			<DropdownItem
+				:to="{ name: 'project.dashboards', params: { projectId: project.id } }"
+				icon="chart-simple"
+			>
+				{{ $t('dashboards.title') }}
+			</DropdownItem>
+			<DropdownItem
 				:to="{ name: 'project.settings.webhooks', params: { projectId: project.id } }"
 				icon="bolt"
 			>

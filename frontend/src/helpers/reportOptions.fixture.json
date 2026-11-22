@@ -1,0 +1,197 @@
+{
+  "project_id": 3,
+  "has_workflow": true,
+  "dimensions": [
+    {
+      "name": "status",
+      "title_key": "reports.dimension.status",
+      "label": "Status"
+    },
+    {
+      "name": "status_category",
+      "title_key": "reports.dimension.status_category",
+      "label": "Status category"
+    },
+    {
+      "name": "assignee",
+      "title_key": "reports.dimension.assignee",
+      "label": "Assignee",
+      "multi_valued": true
+    },
+    {
+      "name": "label",
+      "title_key": "reports.dimension.label",
+      "label": "Label",
+      "multi_valued": true
+    },
+    {
+      "name": "project",
+      "title_key": "reports.dimension.project",
+      "label": "Project"
+    },
+    {
+      "name": "priority",
+      "title_key": "reports.dimension.priority",
+      "label": "Priority"
+    },
+    {
+      "name": "done",
+      "title_key": "reports.dimension.done",
+      "label": "Done"
+    },
+    {
+      "name": "created_by",
+      "title_key": "reports.dimension.created_by",
+      "label": "Created by"
+    },
+    {
+      "name": "cf_1",
+      "title_key": "reports.field.custom_field",
+      "label": "Aşama",
+      "custom_field_id": 1,
+      "project_id": 3,
+      "field_type": "select"
+    }
+  ],
+  "measures": [
+    {
+      "name": "count",
+      "title_key": "reports.measure.count",
+      "label": "Count",
+      "unit": "tasks"
+    },
+    {
+      "name": "sum",
+      "title_key": "reports.measure.sum",
+      "label": "Sum",
+      "fields": [
+        {
+          "name": "percent_done",
+          "title_key": "reports.field.percent_done",
+          "label": "Percent done"
+        },
+        {
+          "name": "time_spent",
+          "title_key": "reports.field.time_spent",
+          "label": "Time spent (seconds)"
+        },
+        {
+          "name": "cf_2",
+          "title_key": "reports.field.custom_field",
+          "label": "Baskı adedi",
+          "custom_field_id": 2,
+          "project_id": 3,
+          "field_type": "number"
+        }
+      ]
+    },
+    {
+      "name": "avg",
+      "title_key": "reports.measure.avg",
+      "label": "Average",
+      "fields": [
+        {
+          "name": "percent_done",
+          "title_key": "reports.field.percent_done",
+          "label": "Percent done"
+        },
+        {
+          "name": "time_spent",
+          "title_key": "reports.field.time_spent",
+          "label": "Time spent (seconds)"
+        },
+        {
+          "name": "cf_2",
+          "title_key": "reports.field.custom_field",
+          "label": "Baskı adedi",
+          "custom_field_id": 2,
+          "project_id": 3,
+          "field_type": "number"
+        }
+      ]
+    },
+    {
+      "name": "min",
+      "title_key": "reports.measure.min",
+      "label": "Minimum",
+      "fields": [
+        {
+          "name": "percent_done",
+          "title_key": "reports.field.percent_done",
+          "label": "Percent done"
+        },
+        {
+          "name": "time_spent",
+          "title_key": "reports.field.time_spent",
+          "label": "Time spent (seconds)"
+        },
+        {
+          "name": "cf_2",
+          "title_key": "reports.field.custom_field",
+          "label": "Baskı adedi",
+          "custom_field_id": 2,
+          "project_id": 3,
+          "field_type": "number"
+        }
+      ]
+    },
+    {
+      "name": "max",
+      "title_key": "reports.measure.max",
+      "label": "Maximum",
+      "fields": [
+        {
+          "name": "percent_done",
+          "title_key": "reports.field.percent_done",
+          "label": "Percent done"
+        },
+        {
+          "name": "time_spent",
+          "title_key": "reports.field.time_spent",
+          "label": "Time spent (seconds)"
+        },
+        {
+          "name": "cf_2",
+          "title_key": "reports.field.custom_field",
+          "label": "Baskı adedi",
+          "custom_field_id": 2,
+          "project_id": 3,
+          "field_type": "number"
+        }
+      ]
+    }
+  ],
+  "time_fields": [
+    {
+      "name": "created",
+      "title_key": "reports.time_field.created",
+      "label": "Created"
+    },
+    {
+      "name": "done_at",
+      "title_key": "reports.time_field.done_at",
+      "label": "Completed"
+    },
+    {
+      "name": "due_date",
+      "title_key": "reports.time_field.due_date",
+      "label": "Due date"
+    },
+    {
+      "name": "status_entered",
+      "title_key": "reports.time_field.status_entered",
+      "label": "Entered current status"
+    }
+  ],
+  "buckets": [
+    "day",
+    "week",
+    "month"
+  ],
+  "limits": {
+    "max_dimensions": 2,
+    "max_groups": 200,
+    "max_buckets": 366,
+    "default_limit": 20
+  }
+}
