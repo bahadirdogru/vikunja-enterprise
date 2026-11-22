@@ -1102,6 +1102,72 @@
             ]
         },
         {
+            "key": "automation",
+            "comment": "Automation rules: when something happens to a task (trigger), check conditions and run actions. Events are written to a database outbox in the same transaction as the change and processed by workers inside the Vikunja process; several replicas may run, each event is claimed by exactly one worker. Delivery is at least once.",
+            "children": [
+                {
+                    "key": "enabled",
+                    "default_value": "true",
+                    "comment": "Kill switch for the whole instance. When false no automation events are recorded and no rule runs. Rules and their history stay untouched."
+                },
+                {
+                    "key": "maxdepth",
+                    "default_value": "3",
+                    "comment": "How deep a chain of rules may go: an action of a rule can trigger another rule, whose action triggers a third one, and so on. Events caused by a chain longer than this are recorded as skipped runs and not executed."
+                },
+                {
+                    "key": "maxactions",
+                    "default_value": "25",
+                    "comment": "The maximum number of actions a single rule may have and a single run executes."
+                },
+                {
+                    "key": "steptimeout",
+                    "default_value": "10s",
+                    "comment": "The maximum duration of one action of a run. The database work of the step is cancelled when it is exceeded."
+                },
+                {
+                    "key": "runtimeout",
+                    "default_value": "60s",
+                    "comment": "The maximum duration of a whole run (all its actions)."
+                },
+                {
+                    "key": "ratelimit",
+                    "default_value": "60",
+                    "comment": "The maximum number of runs per rule per minute. Runs above the limit are recorded as skipped and not executed."
+                },
+                {
+                    "key": "workers",
+                    "default_value": "4",
+                    "comment": "The number of concurrent workers that process automation events in this process."
+                },
+                {
+                    "key": "maxattempts",
+                    "default_value": "5",
+                    "comment": "How often an event is processed before it is marked dead. Failed attempts are retried with exponential backoff (starting at 10 seconds). Only temporary failures are retried; a rejected action (permission, workflow rule) fails the run right away."
+                },
+                {
+                    "key": "maxconsecutivefailures",
+                    "default_value": "20",
+                    "comment": "A rule whose runs failed this many times in a row is disabled automatically. The reason is stored on the rule."
+                },
+                {
+                    "key": "pollinterval",
+                    "default_value": "1s",
+                    "comment": "How often the workers look for events written by other replicas. Events written by this process wake the workers immediately."
+                },
+                {
+                    "key": "cachettl",
+                    "default_value": "30s",
+                    "comment": "How long the set of subscribed events of a project is cached in memory. A rule change is visible to this process immediately; other replicas notice it after at most this duration."
+                },
+                {
+                    "key": "retention",
+                    "default_value": "30",
+                    "comment": "Finished automation events, runs and run steps are deleted after this many days. Set to 0 to keep them forever."
+                }
+            ]
+        },
+        {
             "key": "audit",
             "comment": "Audit logging writes structured JSONL records of authentication, authorization and data lifecycle events. Requires the licensed `audit_logs` feature — with `audit.enabled: true` but no active license, listeners are registered but nothing is written until a license with the feature becomes active.",
             "children": [

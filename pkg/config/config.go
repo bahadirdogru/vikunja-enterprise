@@ -240,6 +240,19 @@ const (
 	WebhooksProxyPassword       Key = `webhooks.proxypassword`
 	WebhooksAllowNonRoutableIPs Key = `webhooks.allownonroutableips`
 
+	AutomationEnabled             Key = `automation.enabled`
+	AutomationMaxDepth            Key = `automation.maxdepth`
+	AutomationMaxActions          Key = `automation.maxactions`
+	AutomationStepTimeout         Key = `automation.steptimeout`
+	AutomationRunTimeout          Key = `automation.runtimeout`
+	AutomationRateLimit           Key = `automation.ratelimit`
+	AutomationWorkers             Key = `automation.workers`
+	AutomationMaxAttempts         Key = `automation.maxattempts`
+	AutomationMaxConsecutiveFails Key = `automation.maxconsecutivefailures`
+	AutomationPollInterval        Key = `automation.pollinterval`
+	AutomationCacheTTL            Key = `automation.cachettl`
+	AutomationRetention           Key = `automation.retention`
+
 	AuditEnabled           Key = `audit.enabled`
 	AuditLogfile           Key = `audit.logfile`
 	AuditRotationMaxSizeMB Key = `audit.rotation.maxsizemb`
@@ -536,6 +549,19 @@ func initDefaultConfig() {
 	WebhooksEnabled.setDefault(true)
 	WebhooksTimeoutSeconds.setDefault(30)
 	WebhooksAllowNonRoutableIPs.setDefault(false)
+	// Automation
+	AutomationEnabled.setDefault(true)
+	AutomationMaxDepth.setDefault(3)
+	AutomationMaxActions.setDefault(25)
+	AutomationStepTimeout.setDefault(10 * time.Second)
+	AutomationRunTimeout.setDefault(60 * time.Second)
+	AutomationRateLimit.setDefault(60)
+	AutomationWorkers.setDefault(4)
+	AutomationMaxAttempts.setDefault(5)
+	AutomationMaxConsecutiveFails.setDefault(20)
+	AutomationPollInterval.setDefault(time.Second)
+	AutomationCacheTTL.setDefault(30 * time.Second)
+	AutomationRetention.setDefault(30)
 	// Audit
 	AuditEnabled.setDefault(false)
 	AuditLogfile.setDefault("") // empty means <log.path>/audit.log, resolved at init

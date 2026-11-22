@@ -1444,6 +1444,7 @@ func (t *Task) updateSingleTaskInViews(s *xorm.Session, a web.Auth, fields []str
 
 	// Old task has the stored reminders
 	ot.Reminders = reminders
+	taskBeforeUpdate := ot
 
 	// All columns to update in a separate variable to be able to add to them
 	colsToUpdate := []string{
@@ -1827,8 +1828,9 @@ func (t *Task) updateSingleTaskInViews(s *xorm.Session, a web.Auth, fields []str
 	}
 
 	events.DispatchOnCommit(s, &TaskUpdatedEvent{
-		Task: t,
-		Doer: doerFromAuth(s, a),
+		Task:    t,
+		Doer:    doerFromAuth(s, a),
+		OldTask: &taskBeforeUpdate,
 	})
 
 	return updateProjectLastUpdated(s, &Project{ID: t.ProjectID})

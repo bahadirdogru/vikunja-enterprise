@@ -31,17 +31,21 @@ func init() {
 		"MetadataKeyUserAgent":       reflect.ValueOf(constant.MakeFromLiteral("\"request_user_agent\"", token.STRING, 0)),
 		"MetadataSkipErrorReporting": reflect.ValueOf(constant.MakeFromLiteral("\"skip_error_reporting\"", token.STRING, 0)),
 		"OnCommit":                   reflect.ValueOf(events.OnCommit),
+		"PendingHookError":           reflect.ValueOf(events.PendingHookError),
 		"RegisterListener":           reflect.ValueOf(events.RegisterListener),
+		"RegisterTransactionalHook":  reflect.ValueOf(events.RegisterTransactionalHook),
 		"RequestMetaFromContext":     reflect.ValueOf(events.RequestMetaFromContext),
+		"ResetTransactionalHooks":    reflect.ValueOf(events.ResetTransactionalHooks),
 		"TestListener":               reflect.ValueOf(events.TestListener),
 		"Unfake":                     reflect.ValueOf(events.Unfake),
 		"WaitForPendingHandlers":     reflect.ValueOf(events.WaitForPendingHandlers),
 		"WithRequestMeta":            reflect.ValueOf(events.WithRequestMeta),
 
 		// type definitions
-		"Event":       reflect.ValueOf((*events.Event)(nil)),
-		"Listener":    reflect.ValueOf((*events.Listener)(nil)),
-		"RequestMeta": reflect.ValueOf((*events.RequestMeta)(nil)),
+		"Event":             reflect.ValueOf((*events.Event)(nil)),
+		"Listener":          reflect.ValueOf((*events.Listener)(nil)),
+		"RequestMeta":       reflect.ValueOf((*events.RequestMeta)(nil)),
+		"TransactionalHook": reflect.ValueOf((*events.TransactionalHook)(nil)),
 
 		// interface wrapper definitions
 		"_Event":    reflect.ValueOf((*_code_vikunja_io_api_pkg_events_Event)(nil)),

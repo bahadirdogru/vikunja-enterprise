@@ -173,7 +173,12 @@ func (c *TaskStatusChange) Create(s *xorm.Session, a web.Auth) error {
 			return err
 		}
 		if result.DoneChanged || reopens {
-			events.DispatchOnCommit(s, &TaskUpdatedEvent{Task: t, Doer: doerFromAuth(s, a)})
+			// The done flag is what changed, so consumers can tell completing from reopening.
+			oldTask := *t
+			if result.DoneChanged {
+				oldTask.Done = !t.Done
+			}
+			events.DispatchOnCommit(s, &TaskUpdatedEvent{Task: t, Doer: doerFromAuth(s, a), OldTask: &oldTask})
 		}
 	}
 	return nil

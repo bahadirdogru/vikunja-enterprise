@@ -50,6 +50,9 @@ func (t *TasksBatchCreatedEvent) Name() string {
 type TaskUpdatedEvent struct {
 	Task *Task      `json:"task"`
 	Doer *user.User `json:"doer"`
+	// OldTask is the task as it was before the update, set when the dispatcher knows it. It is only available to
+	// in-process consumers (transactional hooks) and is not part of the serialized event.
+	OldTask *Task `json:"-"`
 }
 
 // Name defines the name for TaskUpdatedEvent

@@ -19,7 +19,7 @@ package models
 import (
 	"sync"
 
-	_ "code.vikunja.io/api/pkg/config" // To trigger its init() which initializes the config
+	"code.vikunja.io/api/pkg/config"
 	"code.vikunja.io/api/pkg/db"
 	"code.vikunja.io/api/pkg/log"
 	"code.vikunja.io/api/pkg/mail"
@@ -51,6 +51,10 @@ func SetupTests() {
 		}
 	})
 
+	// Rules come and go with the fixtures; a cached subscription set of a previous test would be stale.
+	ResetAutomationCache()
+	config.AutomationCacheTTL.Set(0)
+
 	err = db.InitTestFixtures(
 		"files",
 		"label_tasks",
@@ -75,6 +79,10 @@ func SetupTests() {
 		"workflow_transitions",
 		"workflow_transition_required_fields",
 		"workflow_transition_teams",
+		"automation_rules",
+		"automation_events",
+		"automation_runs",
+		"automation_run_steps",
 		"task_statuses",
 		"task_status_history",
 		"team_projects",

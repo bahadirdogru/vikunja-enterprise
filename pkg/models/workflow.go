@@ -598,6 +598,14 @@ func (wf *Workflow) removeStatuses(s *xorm.Session, plan *workflowDocPlan, idMap
 		target.ID = idMap[plan.moveTempID]
 	}
 
+	removedIDs := make([]int64, 0, len(plan.removed))
+	for _, st := range plan.removed {
+		removedIDs = append(removedIDs, st.ID)
+	}
+	if err := disableAutomationRulesForStatuses(s, wf.ProjectID, removedIDs); err != nil {
+		return err
+	}
+
 	for _, st := range plan.removed {
 		if target != nil {
 			if err := moveTasksBetweenStatuses(s, st, target); err != nil {
@@ -763,6 +771,19 @@ func (wf *Workflow) Delete(s *xorm.Session, a web.Auth) error {
 }
 
 func deleteWorkflowByID(s *xorm.Session, workflowID int64) error {
+	stored := &Workflow{}
+	if has, err := s.ID(workflowID).Get(stored); err != nil {
+		return err
+	} else if has {
+		statusIDs := []int64{}
+		if err := s.Table("workflow_statuses").Where("workflow_id = ?", workflowID).Cols("id").Find(&statusIDs); err != nil {
+			return err
+		}
+		if err := disableAutomationRulesForStatuses(s, stored.ProjectID, statusIDs); err != nil {
+			return err
+		}
+	}
+
 	transitionIDs := []int64{}
 	if err := s.Table("workflow_transitions").Where("workflow_id = ?", workflowID).Cols("id").Find(&transitionIDs); err != nil {
 		return err
