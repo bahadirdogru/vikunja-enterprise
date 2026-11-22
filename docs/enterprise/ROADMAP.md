@@ -36,8 +36,8 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
 | 4a | Dashboards: task aggregation API (`POST /api/v2/reports/tasks`), options endpoint, dashboards/widgets CRUD ([dashboards.md](dashboards.md)) | Done |
 | 4b | Dashboards UI: SVG charts, dashboard pages with drag/resize grid, widget editor with live preview, drill-down | Done |
 | 4c | Dashboards: status time, workload, time tracking widgets, CSV export | Planned |
-| 5a | Approvals backend ([forms-approvals.md](forms-approvals.md)) | In progress |
-| 5b | Approvals UI | Planned |
+| 5a | Approvals backend: requests and decisions, approval on workflow transitions, ad-hoc approvals, automation triggers/action, notifications ([forms-approvals.md](forms-approvals.md)) | Done |
+| 5b | Approvals UI (banner on the task, my approvals page, workflow editor settings, notification rendering, catalog translations) | Next |
 | 5c | Forms backend | Designed |
 | 5d | Forms UI (builder, public form page) | Planned |
 | – | Organisation / tenant layer, AI features | Deferred |
@@ -121,3 +121,11 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   Display options (bar direction, stacked, legend) are stored in the browser.
   Note for test runs: delete `frontend/node_modules/.vitest-cache` after
   translation changes, a stale cache makes new keys render as raw key names.
+- Approvals backend added. Full models and webtests pass on SQLite; approval
+  tests incl. concurrency pass on PostgreSQL 17 and MySQL 8; automation tests
+  pass with the race detector. A plain `done: true` update on a task whose
+  done transition needs approval is rejected with 409 (24007) and creates no
+  request; the status route and kanban moves create it (202).
+  Open: one `./pkg/models/` run failed once and did not reproduce in ten
+  further runs (failing test not captured); approvers' Turkish backend
+  strings not added; new catalog keys have no UI translations until 5b.
