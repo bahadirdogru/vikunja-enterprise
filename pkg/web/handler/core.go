@@ -55,6 +55,12 @@ func DoCreate(ctx context.Context, obj CObject, a web.Auth) error {
 		return err
 	}
 
+	if err := events.PendingHookError(s); err != nil {
+		_ = s.Rollback()
+		events.CleanupPending(s)
+		return err
+	}
+
 	if err := s.Commit(); err != nil {
 		events.CleanupPending(s)
 		return err
@@ -162,6 +168,12 @@ func DoUpdate(ctx context.Context, obj CObject, a web.Auth) error {
 		return err
 	}
 
+	if err := events.PendingHookError(s); err != nil {
+		_ = s.Rollback()
+		events.CleanupPending(s)
+		return err
+	}
+
 	if err := s.Commit(); err != nil {
 		events.CleanupPending(s)
 		return err
@@ -196,6 +208,12 @@ func DoDelete(ctx context.Context, obj CObject, a web.Auth) error {
 	}
 
 	if err := obj.Delete(s, a); err != nil {
+		_ = s.Rollback()
+		events.CleanupPending(s)
+		return err
+	}
+
+	if err := events.PendingHookError(s); err != nil {
 		_ = s.Rollback()
 		events.CleanupPending(s)
 		return err

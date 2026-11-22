@@ -19,6 +19,7 @@ package events
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -34,6 +35,7 @@ import (
 	"github.com/ThreeDotsLabs/watermill/message"
 	"github.com/ThreeDotsLabs/watermill/message/router/middleware"
 	"github.com/ThreeDotsLabs/watermill/pubsub/gochannel"
+	"xorm.io/xorm"
 )
 
 var pubsub *gochannel.GoChannel
@@ -278,6 +280,57 @@ type pendingEventQueue struct {
 	mu        sync.Mutex
 	events    []Event
 	callbacks []func() error
+	hookErr   error
+}
+
+// TransactionalHook runs synchronously inside DispatchOnCommit with the session of the surrounding
+// transaction, before that transaction commits. Writes it makes therefore commit or roll back together
+// with the change that caused the event. A returned error is kept for PendingHookError.
+type TransactionalHook func(s *xorm.Session, event Event) error
+
+var (
+	transactionalHooksMu sync.RWMutex
+	transactionalHooks   []TransactionalHook
+)
+
+// RegisterTransactionalHook adds a hook that sees every event passed to DispatchOnCommit with an
+// *xorm.Session key.
+func RegisterTransactionalHook(hook TransactionalHook) {
+	transactionalHooksMu.Lock()
+	defer transactionalHooksMu.Unlock()
+	transactionalHooks = append(transactionalHooks, hook)
+}
+
+// ResetTransactionalHooks removes all hooks. For tests.
+func ResetTransactionalHooks() {
+	transactionalHooksMu.Lock()
+	defer transactionalHooksMu.Unlock()
+	transactionalHooks = nil
+}
+
+func runTransactionalHook(hook TransactionalHook, s *xorm.Session, event Event) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("transactional event hook panicked: %v", r)
+			log.Errorf("%v", err)
+			// A panic is a bug in the hook, not a failed write: do not fail the transaction.
+			err = nil
+		}
+	}()
+	return hook(s, event)
+}
+
+// PendingHookError returns the errors transactional hooks reported for the events dispatched with this key.
+// Check it before committing: a non-nil error means a hook could not write its part of the transaction.
+func PendingHookError(key any) error {
+	val, ok := pendingEvents.Load(key)
+	if !ok {
+		return nil
+	}
+	queue := val.(*pendingEventQueue)
+	queue.mu.Lock()
+	defer queue.mu.Unlock()
+	return queue.hookErr
 }
 
 var pendingEvents sync.Map // map[any]*pendingEventQueue
@@ -296,6 +349,22 @@ func DispatchOnCommit(key any, event Event) {
 	queue.mu.Lock()
 	queue.events = append(queue.events, event)
 	queue.mu.Unlock()
+
+	s, isSession := key.(*xorm.Session)
+	if !isSession {
+		return
+	}
+	transactionalHooksMu.RLock()
+	hooks := transactionalHooks
+	transactionalHooksMu.RUnlock()
+	for _, hook := range hooks {
+		if err := runTransactionalHook(hook, s, event); err != nil {
+			log.Errorf("Transactional hook failed for event %s: %v", event.Name(), err)
+			queue.mu.Lock()
+			queue.hookErr = errors.Join(queue.hookErr, err)
+			queue.mu.Unlock()
+		}
+	}
 }
 
 // OnCommit registers fn to run synchronously in DispatchPending(key), before the pending
