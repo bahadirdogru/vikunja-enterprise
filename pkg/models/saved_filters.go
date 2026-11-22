@@ -338,7 +338,7 @@ func dropFiltersWithInactiveOwners(s *xorm.Session, filters map[int64]*SavedFilt
 	return timezoneByOwner, nil
 }
 
-func parseFilterCond(filter, timezone string, includeNulls bool) (cond builder.Cond, joinTaskBuckets bool, err error) {
+func parseFilterCond(s *xorm.Session, a web.Auth, filter, timezone string, includeNulls bool) (cond builder.Cond, joinTaskBuckets bool, err error) {
 	parsedFilters, err := getTaskFiltersFromFilterString(filter, timezone)
 	if err != nil {
 		return nil, false, err
@@ -347,6 +347,10 @@ func parseFilterCond(filter, timezone string, includeNulls bool) (cond builder.C
 	// convertFiltersToDBFilterCond rewrites the field names in place, so this has
 	// to be answered before it runs.
 	joinTaskBuckets = hasBucketIDInParsedFilter(parsedFilters)
+
+	if err = resolveCustomFieldFilters(s, a, parsedFilters); err != nil {
+		return nil, false, err
+	}
 
 	cond, err = convertFiltersToDBFilterCond(parsedFilters, includeNulls)
 	return cond, joinTaskBuckets, err
@@ -556,7 +560,7 @@ func matchTasksToViewsOfFilter(s *xorm.Session, tasks []*Task, filter *SavedFilt
 		timezone = fallbackTimezone
 	}
 
-	cond, joinTaskBuckets, err := parseFilterCond(filter.Filters.Filter, timezone, filter.Filters.FilterIncludeNulls)
+	cond, joinTaskBuckets, err := parseFilterCond(s, &user.User{ID: filter.OwnerID}, filter.Filters.Filter, timezone, filter.Filters.FilterIncludeNulls)
 	if err != nil {
 		if !isErrInvalidFilter(err) {
 			return nil, err

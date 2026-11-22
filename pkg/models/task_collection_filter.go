@@ -58,6 +58,8 @@ type taskFilter struct {
 	comparator taskFilterComparator
 	isNumeric  bool
 	join       taskFilterConcatinator
+	// Set for cf_<id> filters, see custom_field_filter.go.
+	customField *customFieldFilter
 	// Only set on nested groups: include nulls for this group even if the rest of the filter doesn't.
 	includeNulls bool
 }
@@ -155,6 +157,12 @@ func parseFilterFromExpression(f fexpr.ExprGroup, loc *time.Location, budget *bu
 	var reflectValue *reflect.StructField
 	if filter.field == "project" {
 		filter.field = "project_id"
+	}
+
+	if id, is := parseCustomFieldIdentifier(filter.field); is {
+		filter.customField = &customFieldFilter{fieldID: id, raw: value, loc: loc, budget: budget}
+		filter.value = value
+		return filter, nil
 	}
 
 	err = validateTaskField(filter.field)

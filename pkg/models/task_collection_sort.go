@@ -21,6 +21,8 @@ type (
 		sortBy        string
 		orderBy       sortOrder // asc or desc
 		projectViewID int64
+		// Set for cf_<id> sorts once the field is loaded, see custom_field_filter.go.
+		customField *CustomField
 	}
 
 	sortOrder string
@@ -89,6 +91,10 @@ func (sp *sortParam) validate() error {
 	// Deliberately not part of validateTaskFieldForSorting: that list doubles as
 	// the filterable-field list via validateTaskField, and relevance is not filterable.
 	if sp.sortBy == taskPropertyRelevance {
+		return nil
+	}
+
+	if _, isCustomField := parseCustomFieldIdentifier(sp.sortBy); isCustomField {
 		return nil
 	}
 

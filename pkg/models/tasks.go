@@ -1586,6 +1586,11 @@ func (t *Task) updateSingleTaskInViews(s *xorm.Session, a web.Auth, fields []str
 		if err != nil {
 			return err
 		}
+		// Custom field values belong to fields of the old project.
+		err = deleteCustomFieldValuesOfProject(s, t.ID, ot.ProjectID)
+		if err != nil {
+			return err
+		}
 
 		for _, view := range views {
 			var bucketID = view.DoneBucketID

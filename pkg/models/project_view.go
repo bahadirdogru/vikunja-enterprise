@@ -577,7 +577,7 @@ func tasksWithoutBucketInView(s *xorm.Session, pv *ProjectView) (taskIDs []int64
 // Saved filter views have no project of their own, their task set only exists
 // once the filter is evaluated.
 func filteredTasksWithoutBucketInView(s *xorm.Session, viewID int64, sf *SavedFilter) (taskIDs []int64, err error) {
-	filterCond, joinTaskBuckets, err := parseFilterCond(sf.Filters.Filter, sf.Filters.FilterTimezone, sf.Filters.FilterIncludeNulls)
+	filterCond, joinTaskBuckets, err := parseFilterCond(s, &user.User{ID: sf.OwnerID}, sf.Filters.Filter, sf.Filters.FilterTimezone, sf.Filters.FilterIncludeNulls)
 	if err != nil {
 		return nil, err
 	}

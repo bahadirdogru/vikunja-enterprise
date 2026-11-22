@@ -1,13 +1,13 @@
 # Custom fields — design
 
-Status: backend done (step 1a). Frontend, filtering and table/kanban
-display follow in later steps.
+Status: backend done (step 1a), filtering and sorting done. Frontend
+filter/sort UI and table/kanban display follow in later steps.
 
 ## Model
 
 Field **definitions** belong to a project. Field **values** belong to a task.
 Definition and value are separate tables; values are stored in typed columns
-(not one JSON blob) so they can be filtered and sorted in SQL later.
+(not one JSON blob) so they can be filtered and sorted in SQL.
 
 ### `custom_fields`
 
@@ -95,3 +95,43 @@ deletes the values / definitions that belong to it. Duplicating a project
 copies the definitions and the values of the copied tasks (ids remapped);
 duplicating a task inside the same project copies the values. Values are
 removed when a task is purged, not when it is moved to the trash.
+
+When a task is moved to another project (single or bulk update that changes
+`project_id`), its values for fields of the old project are deleted, since
+those fields do not exist in the new project. Values of the new project's
+fields are kept.
+
+## Filtering and sorting
+
+A field is addressed as `cf_<fieldID>` in the normal task `filter` and
+`sort_by` parameters, for example
+`cf_12 > 100 && cf_3 = 5 && done = false`. Filters work everywhere the filter
+syntax does (task lists, views, saved filters) and combine freely with
+built-in fields, `&&`, `||` and groups.
+
+| Field type | Comparators | Value |
+|---|---|---|
+| number, currency, rating, progress | `=` `!=` `>` `>=` `<` `<=` | number |
+| date | `=` `!=` `>` `>=` `<` `<=` | same formats, date math and `filter_timezone` handling as `due_date` |
+| checkbox | `=` `!=` | `true` / `false`; a task without a value counts as `false` |
+| text, long_text, url, email | `=` `!=` `like` | text (`like` is a substring match) |
+| select, multi_select | `=` `!=` `in` `not in` | option ids, e.g. `cf_4 in 3,4`; multi_select matches if any selected option matches |
+| user | `=` `!=` `in` `not in` | user ids or usernames, e.g. `cf_9 in 1,alice` |
+
+- `!=` and `not in` also match tasks that have no value for the field.
+  With `filter_include_nulls`, positive comparators match them too.
+- Date `=` compares the exact stored instant, like `due_date =`; use a range
+  (`>` and `<`) to match a whole day.
+- An unknown field id, a field the user cannot read (its project is not
+  readable) and a malformed identifier all return the same `400` as an
+  unknown built-in field, so field ids of other projects cannot be probed. A
+  comparator or value that does not fit the field type returns the usual
+  invalid comparator / invalid value `400`.
+- The check happens when the query runs, so a saved filter is accepted as long
+  as it parses; it fails (and is skipped when matching tasks to views) if the
+  field was deleted.
+
+Sorting: `sort_by=cf_<fieldID>` with `order_by=asc|desc` works for all
+single-value types. Select fields sort by option position, not option id.
+`multi_select` and `user` fields cannot be sorted by (`400`). Tasks without a
+value sort last in both directions, like the built-in nullable columns.

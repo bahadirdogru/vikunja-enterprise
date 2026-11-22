@@ -151,6 +151,14 @@ func getOrderByDBStatement(opts *taskSearchOptions) (orderby string, err error) 
 			continue
 		}
 
+		if _, isCustomField := parseCustomFieldIdentifier(param.sortBy); isCustomField {
+			if param.customField == nil {
+				return "", ErrInvalidTaskField{TaskField: param.sortBy}
+			}
+			parts = append(parts, customFieldOrderPart(param))
+			continue
+		}
+
 		var prefix string
 		switch param.sortBy {
 		case taskPropertyPosition:
@@ -207,6 +215,16 @@ func convertFiltersToDBFilterCondWithAlias(rawFilters []*taskFilter, includeNull
 				return nil, err
 			}
 			dbFilters = append(dbFilters, nestedDBFilters)
+			dbFilterJoins = append(dbFilterJoins, f.join)
+			continue
+		}
+
+		if f.customField != nil {
+			cond, err := customFieldFilterCond(f, includeNulls, taskAlias)
+			if err != nil {
+				return nil, err
+			}
+			dbFilters = append(dbFilters, cond)
 			dbFilterJoins = append(dbFilterJoins, f.join)
 			continue
 		}
@@ -513,6 +531,13 @@ func (d *dbTaskSearcher) Search(opts *taskSearchOptions) (tasks []*Task, totalCo
 
 	joinTaskBuckets := hasBucketIDInParsedFilter(opts.parsedFilters)
 
+	if err = resolveCustomFieldFilters(d.s, d.a, opts.parsedFilters); err != nil {
+		return nil, 0, err
+	}
+	if err = resolveCustomFieldSorts(d.s, d.a, opts.sortby); err != nil {
+		return nil, 0, err
+	}
+
 	var expandSubtasks = false
 	for _, expandable := range opts.expand {
 		if expandable == TaskCollectionExpandSubtasks {
@@ -683,6 +708,17 @@ func (d *dbTaskSearcher) Search(opts *taskSearchOptions) (tasks []*Task, totalCo
 		selectCols += ", task_positions.position"
 	}
 
+	// Postgres wants the ORDER BY expressions of a DISTINCT query in the select list.
+	hasCustomFieldSort := false
+	if needsDistinct {
+		for _, param := range opts.sortby {
+			if param.customField != nil {
+				selectCols += ", " + customFieldSortExpr(param.customField)
+				hasCustomFieldSort = true
+			}
+		}
+	}
+
 	if expandSubtasks {
 		cond = builder.And(cond, subtaskRootCond)
 	}
@@ -697,6 +733,8 @@ func (d *dbTaskSearcher) Search(opts *taskSearchOptions) (tasks []*Task, totalCo
 		if needsDistinct {
 			query = query.Distinct()
 		}
+	case needsDistinct && hasCustomFieldSort:
+		query = query.Select(selectCols).Distinct()
 	case needsDistinct:
 		query = query.Distinct(selectCols)
 	default:

@@ -820,7 +820,7 @@ func ensureTaskPositionsForView(s *xorm.Session, a web.Auth, projects []*Project
 	// Parse a fresh copy of the filters because convertFiltersToDBFilterCond mutates the
 	// field names in place — reusing opts.parsedFilters would double-prefix them for the
 	// subsequent fetch query.
-	filterCond, joinTaskBuckets, err := parseFilterCond(opts.filter, opts.filterTimezone, opts.filterIncludeNulls)
+	filterCond, joinTaskBuckets, err := parseFilterCond(s, a, opts.filter, opts.filterTimezone, opts.filterIncludeNulls)
 	if err != nil {
 		return err
 	}
