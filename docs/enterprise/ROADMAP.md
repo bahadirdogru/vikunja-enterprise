@@ -28,7 +28,7 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
 | 1e | Custom fields: filter UI with field names instead of `cf_<id>` | Planned |
 | 2a | Workflow backend: statuses, transitions, required fields, teams, history, done sync, `/api/v2` ([workflow.md](workflow.md)) | Done |
 | 2b | Workflow UI: editor (list + matrix) in project settings, status menu, requirements dialog and history on the task | Done |
-| 2c | Workflow: kanban status mode, table column, filter/sort by status | Next |
+| 2c | Workflow in views: kanban status mode (columns = statuses, drag = transition), table column, list/card badges, filter and sort by `status` / `status_category` | Done |
 | 3a | Automation core: transactional outbox, workers, rules, conditions, non-script actions, run history, limits, dry run, catalog ([automation.md](automation.md)) | Done |
 | 3b | Automation: script condition/action, http, secrets | Planned |
 | 3c | Automation UI | Planned |
@@ -79,3 +79,10 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   paths that commit their own sessions (cron, CalDAV, importers) only log a
   failed outbox insert; a rule enabled on one replica can miss another
   replica's events for up to `automation.cachettl` (30 s).
+- Workflow views added. Full models and webtests suites pass on SQLite; the
+  new model tests pass on PostgreSQL 17. Exercised in a browser: status-mode
+  board, allowed drag, drag into a gated column completed through the dialog,
+  rejected drop snapping back, create in column, table sort, badges, filter
+  suggestions. Not exercised in a browser: forbidden moves, create-in-column
+  that needs input, a status board after its workflow is deleted. In status
+  mode a column's bucket id is the negated status id.
