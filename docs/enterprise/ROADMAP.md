@@ -24,7 +24,7 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
 | 1a | Custom fields: backend (models, migration, `/api/v2` routes, events) | Done |
 | 1b | Custom fields: frontend (project settings page, task detail editors, en + tr) | Done |
 | 1c | Custom fields: filter/sort, table and kanban display, values follow task moves | Next |
-| 2 | Workflow (statuses, allowed transitions, required fields, transition history) | Planned |
+| 2 | Workflow (statuses, allowed transitions, required fields, transition history) | Designed, see [workflow.md](workflow.md) |
 | 3 | Automation + scripting (trigger → condition → action, run history, safety limits) | Planned |
 | 4 | Dashboards and reports | Planned |
 | 5 | Forms and approvals | Planned |
