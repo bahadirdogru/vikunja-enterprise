@@ -1767,5 +1767,103 @@
 			"futureExpiry": "Gelecekteki bir tarih seçmelisin.",
 			"creatorDeleted": "Silinmiş kullanıcı"
 		}
+	},
+	"customFields": {
+		"title": "Özel alanlar",
+		"intro": "Bu alanlar projedeki her görevde görünür.",
+		"onlyAdminsCanEdit": "Özel alanları yalnızca proje yöneticileri yönetebilir.",
+		"add": "Alan ekle",
+		"createSuccess": "Özel alan başarıyla oluşturuldu.",
+		"updateSuccess": "Özel alan başarıyla güncellendi.",
+		"deleteSuccess": "Özel alan başarıyla silindi.",
+		"deleteTitle": "\"{title}\" alanı silinsin mi?",
+		"deleteText": "Bu projedeki tüm görevlerde bu alan için girilmiş bütün değerler silinecek. Görevlerin kendisi silinmez. Bu işlem geri alınamaz!",
+		"editField": "\"{title}\" alanını düzenle",
+		"deleteField": "\"{title}\" alanını sil",
+		"requiredBadge": "Zorunlu",
+		"empty": {
+			"title": "Henüz özel alan yok",
+			"text": "Özel alanlarla bu projedeki her görev için bütçe, müşteri, puan veya bağlantı gibi ek bilgiler tutabilirsiniz. Bir alan ekleyin; görev ayrıntılarında görünür."
+		},
+		"columns": {
+			"title": "Başlık",
+			"type": "Tür",
+			"actions": "İşlemler"
+		},
+		"types": {
+			"text": "Metin",
+			"long_text": "Uzun metin",
+			"number": "Sayı",
+			"currency": "Para birimi",
+			"date": "Tarih",
+			"checkbox": "Onay kutusu",
+			"select": "Seçim",
+			"multi_select": "Çoklu seçim",
+			"user": "Kullanıcı",
+			"url": "Bağlantı (URL)",
+			"email": "E-posta",
+			"rating": "Puan",
+			"progress": "İlerleme"
+		},
+		"form": {
+			"title": "Başlık",
+			"titlePlaceholder": "örn. Bütçe",
+			"type": "Tür",
+			"typeLocked": "Alan oluşturulduktan sonra türü değiştirilemez.",
+			"description": "Açıklama",
+			"descriptionPlaceholder": "Alanı dolduran kişilere gösterilir (isteğe bağlı)",
+			"required": "Zorunlu",
+			"requiredHint": "Zorunlu alanı boş olan görevler işaretlenir, ancak yine de kaydedilebilir.",
+			"min": "En az",
+			"max": "En çok",
+			"precision": "Ondalık basamak",
+			"currency": "Para birimi kodu",
+			"maxRating": "En yüksek puan",
+			"options": "Seçenekler",
+			"optionPlaceholder": "Seçenek adı",
+			"optionTitle": "{n}. seçeneğin adı",
+			"optionColor": "{n}. seçeneğin rengi",
+			"optionClearColor": "{n}. seçeneğin rengini kaldır",
+			"optionMoveUp": "{n}. seçeneği yukarı taşı",
+			"optionMoveDown": "{n}. seçeneği aşağı taşı",
+			"optionRemove": "{n}. seçeneği kaldır",
+			"addOption": "Seçenek ekle"
+		},
+		"errors": {
+			"titleRequired": "Lütfen bir başlık girin.",
+			"titleTooLong": "Başlık en fazla 250 karakter olabilir.",
+			"notANumber": "Lütfen bir sayı girin.",
+			"minGreaterThanMax": "En az değer, en çok değerden büyük olamaz.",
+			"precision": "Ondalık basamak 0 ile {max} arasında bir tam sayı olmalıdır.",
+			"currency": "Üç harfli bir para birimi kodu kullanın, örneğin TRY.",
+			"maxRating": "En yüksek puan 1 ile {max} arasında bir tam sayı olmalıdır.",
+			"optionsRequired": "En az bir seçenek ekleyin.",
+			"optionTitle": "Her seçeneğin en fazla 250 karakterlik bir adı olmalıdır.",
+			"optionColor": "Seçenek renkleri #aabbcc biçiminde olmalıdır.",
+			"value": {
+				"string": "Lütfen metin girin.",
+				"url": "http:// veya https:// ile başlayan geçerli bir web adresi girin.",
+				"email": "Geçerli bir e-posta adresi girin.",
+				"number": "Lütfen bir sayı girin.",
+				"min": "Değer en az {min} olmalıdır.",
+				"max": "Değer en fazla {max} olmalıdır.",
+				"progress": "İlerleme 0 ile 100 arasında olmalıdır.",
+				"rating": "Puan 1 ile {max} arasında bir tam sayı olmalıdır.",
+				"boolean": "Geçersiz değer.",
+				"date": "Lütfen geçerli bir tarih seçin.",
+				"option": "Lütfen mevcut seçeneklerden birini seçin.",
+				"user": "Lütfen geçerli kullanıcılar seçin."
+			}
+		},
+		"value": {
+			"saved": "Değer kaydedildi.",
+			"required": "Zorunlu",
+			"openLink": "Bağlantıyı aç",
+			"writeMail": "E-posta yaz",
+			"ratingStar": "{n} / {max}",
+			"userSearch": "Proje üyelerinde ara",
+			"chooseDate": "Tarih seç",
+			"clear": "{title} değerini temizle"
+		}
 	}
 }

@@ -105,6 +105,13 @@
 				{{ $t('project.webhooks.title') }}
 			</DropdownItem>
 			<DropdownItem
+				v-if="forceAllActions || project.max_permission === PERMISSIONS.ADMIN"
+				:to="{ name: 'project.settings.custom-fields', params: { projectId: project.id } }"
+				icon="sliders"
+			>
+				{{ $t('customFields.title') }}
+			</DropdownItem>
+			<DropdownItem
 				:to="{ name: 'project.createFromParent', params: { parentProjectId: project.id } }"
 				icon="layer-group"
 			>

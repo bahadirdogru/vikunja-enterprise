@@ -6,7 +6,9 @@
 	>
 		<dt :id="`task-property-${name}-label`">
 			<Icon :icon="icon" />
-			{{ label }}
+			<span class="label-text">
+				{{ label }}<slot name="label-extra" />
+			</span>
 		</dt>
 		<dd>
 			<slot />
@@ -55,10 +57,12 @@ const emit = defineEmits<{
 
 	dt {
 		display: flex;
-		align-items: center;
+		// The icon stays with the first line when a long label wraps.
+		align-items: flex-start;
 		gap: .5rem;
 		// Line up the label with the value's first line, whose control has its own vertical padding.
 		min-block-size: 2rem;
+		padding-block-start: calc((2rem - 1lh) / 2);
 		color: var(--grey-600);
 		font-weight: 500;
 		transition: color $transition;
@@ -66,6 +70,7 @@ const emit = defineEmits<{
 		svg {
 			inline-size: .875rem;
 			flex-shrink: 0;
+			margin-block-start: calc((1lh - .875rem) / 2);
 			color: var(--grey-400);
 			transition: color $transition;
 		}
@@ -89,6 +94,7 @@ const emit = defineEmits<{
 
 		dt {
 			min-block-size: 1.5rem;
+			padding-block-start: 0;
 		}
 	}
 

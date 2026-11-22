@@ -289,7 +289,7 @@
 					</div>
 
 					<dl
-						v-if="canWrite || hasAnyProperty"
+						v-if="canWrite || hasAnyProperty || hasCustomFields"
 						class="property-list"
 					>
 						<TaskPropertyRow
@@ -496,6 +496,11 @@
 								:color="color"
 							/>
 						</TaskPropertyRow>
+						<TaskCustomFields
+							:task-id="task.id"
+							:project-id="task.project_id"
+							:can-write="canWrite"
+						/>
 					</dl>
 
 					<!-- Created / Updated [by] -->
@@ -556,6 +561,9 @@ import PrioritySelect from '@/components/tasks/partials/PrioritySelect.vue'
 import RelatedTasks from '@/components/tasks/partials/RelatedTasks.vue'
 import Reminders from '@/components/tasks/partials/Reminders.vue'
 import RepeatAfter from '@/components/tasks/partials/RepeatAfter.vue'
+import TaskCustomFields from '@/components/tasks/partials/TaskCustomFields.vue'
+import {customFieldsQuery} from '@/client/queries/customFields'
+import {useQuery} from '@tanstack/vue-query'
 import TaskPropertyRow from '@/components/tasks/partials/TaskPropertyRow.vue'
 import TaskSubscription from '@/components/misc/Subscription.vue'
 import Dropdown from '@/components/misc/Dropdown.vue'
@@ -912,6 +920,14 @@ const isSet = computed(() => ({
 	color: Boolean(color.value),
 }))
 const hasAnyProperty = computed(() => Object.values(isSet.value).some(Boolean))
+
+// Custom fields render inside the property list, so the list has to show for
+// read-only users too when the project defines any.
+const customFieldsForVisibility = useQuery(computed(() => ({
+	...customFieldsQuery(task.value?.project_id ?? 0),
+	enabled: (task.value?.project_id ?? 0) > 0,
+})))
+const hasCustomFields = computed(() => (customFieldsForVisibility.data.value?.length ?? 0) > 0)
 
 const favoriteLabel = computed(() => task.value.is_favorite
 	? t('task.detail.actions.unfavorite')

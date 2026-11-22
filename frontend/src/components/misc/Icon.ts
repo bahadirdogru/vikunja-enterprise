@@ -3,6 +3,11 @@ import {
 	faAlignLeft,
 	faAngleLeft,
 	faAngleRight,
+	faArrowDown,
+	faArrowUp,
+	faDollarSign,
+	faEnvelope,
+	faHashtag,
 	faAnglesUp,
 	faArchive,
 	faArrowLeft,
@@ -63,6 +68,7 @@ import {
 	faPowerOff,
 	faRss,
 	faSearch,
+	faSliders,
 	faShareAlt,
 	faSignOutAlt,
 	faSitemap,
@@ -112,6 +118,12 @@ import {FontAwesomeIcon} from '@fortawesome/vue-fontawesome'
 
 import type {FontAwesomeIcon as FontAwesomeIconFixedTypes} from '@/types/vue-fontawesome'
 
+library.add(faArrowDown)
+library.add(faArrowUp)
+library.add(faDollarSign)
+library.add(faEnvelope)
+library.add(faHashtag)
+library.add(faSliders)
 library.add(faBold)
 library.add(faUndo)
 library.add(faRedo)

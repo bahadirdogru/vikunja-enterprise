@@ -615,6 +615,189 @@ export type CreateUserBody = {
     username?: string;
 };
 
+export type CustomField = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * Type specific settings, e.g. min/max for number, max_rating for rating.
+     */
+    config?: CustomFieldConfig;
+    /**
+     * A timestamp when this field was created. You cannot change this value.
+     */
+    readonly created?: string;
+    /**
+     * The user who created the field.
+     */
+    readonly created_by?: User;
+    /**
+     * An optional description shown to people filling in the field.
+     */
+    description?: string;
+    /**
+     * The unique, numeric id of this custom field.
+     */
+    readonly id?: number;
+    /**
+     * The choices of a select or multi_select field. On update the submitted list replaces the stored one: entries with an id are updated, entries without one are created and missing ones are deleted together with every value that uses them.
+     */
+    options?: Array<CustomFieldOption> | null;
+    /**
+     * The position of the field inside the project. New fields go last when it is 0.
+     */
+    position?: number;
+    /**
+     * The project this field belongs to. Taken from the URL.
+     */
+    readonly project_id?: number;
+    /**
+     * Whether the field must be filled in. Not enforced on every save; workflow transitions use it later.
+     */
+    required?: boolean;
+    /**
+     * The title of the field.
+     */
+    title?: string;
+    /**
+     * The data type of the field. It cannot be changed after the field was created.
+     */
+    type?: 'text' | 'long_text' | 'number' | 'currency' | 'date' | 'checkbox' | 'select' | 'multi_select' | 'user' | 'url' | 'email' | 'rating' | 'progress';
+    /**
+     * A timestamp when this field was last updated. You cannot change this value.
+     */
+    readonly updated?: string;
+};
+
+export type CustomFieldConfig = {
+    /**
+     * ISO 4217 currency code, e.g. TRY. Applies to currency.
+     */
+    currency?: string;
+    /**
+     * Highest allowed value. Applies to number and currency.
+     */
+    max?: number;
+    /**
+     * Highest allowed rating, 5 when unset. Applies to rating.
+     */
+    max_rating?: number;
+    /**
+     * Lowest allowed value. Applies to number and currency.
+     */
+    min?: number;
+    /**
+     * Number of decimal places clients should show. Applies to number and currency.
+     */
+    precision?: number;
+};
+
+export type CustomFieldOption = {
+    /**
+     * Optional hex color including the leading #, e.g. #ff8800.
+     */
+    color?: string;
+    /**
+     * The field this option belongs to.
+     */
+    readonly custom_field_id?: number;
+    /**
+     * The unique, numeric id of this option. Omit it to create a new option.
+     */
+    id?: number;
+    /**
+     * The position of the option inside the field. Options go in the submitted order when it is 0.
+     */
+    position?: number;
+    /**
+     * The title of the option.
+     */
+    title?: string;
+};
+
+export type CustomFieldReadBody = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * Type specific settings, e.g. min/max for number, max_rating for rating.
+     */
+    config?: CustomFieldConfig;
+    /**
+     * A timestamp when this field was created. You cannot change this value.
+     */
+    readonly created?: string;
+    /**
+     * The user who created the field.
+     */
+    readonly created_by?: User;
+    /**
+     * An optional description shown to people filling in the field.
+     */
+    description?: string;
+    /**
+     * The unique, numeric id of this custom field.
+     */
+    readonly id?: number;
+    /**
+     * The maximum permission the requesting user has on the project of this field (0=read, 1=read/write, 2=admin).
+     */
+    readonly max_permission?: number;
+    /**
+     * The choices of a select or multi_select field. On update the submitted list replaces the stored one: entries with an id are updated, entries without one are created and missing ones are deleted together with every value that uses them.
+     */
+    options?: Array<CustomFieldOption> | null;
+    /**
+     * The position of the field inside the project. New fields go last when it is 0.
+     */
+    position?: number;
+    /**
+     * The project this field belongs to. Taken from the URL.
+     */
+    readonly project_id?: number;
+    /**
+     * Whether the field must be filled in. Not enforced on every save; workflow transitions use it later.
+     */
+    required?: boolean;
+    /**
+     * The title of the field.
+     */
+    title?: string;
+    /**
+     * The data type of the field. It cannot be changed after the field was created.
+     */
+    type?: 'text' | 'long_text' | 'number' | 'currency' | 'date' | 'checkbox' | 'select' | 'multi_select' | 'user' | 'url' | 'email' | 'rating' | 'progress';
+    /**
+     * A timestamp when this field was last updated. You cannot change this value.
+     */
+    readonly updated?: string;
+};
+
+export type CustomFieldValue = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * The custom field the value belongs to. Taken from the URL.
+     */
+    readonly custom_field_id?: number;
+    /**
+     * The task the value belongs to. Taken from the URL.
+     */
+    readonly task_id?: number;
+    /**
+     * The type of the field, which decides the shape of value.
+     */
+    readonly type?: string;
+    /**
+     * The value, null when unset. A string for text, long_text, url and email, a number for number, currency, rating and progress, an RFC 3339 string for date, a boolean for checkbox, an option id for select, an array of option ids for multi_select and an array of user ids for user. Sending null or, for multi_select and user, an empty array clears the value.
+     */
+    value?: unknown;
+};
+
 export type DatabaseNotification = {
     /**
      * A timestamp when this notification was created. You cannot change this value.
@@ -1380,6 +1563,30 @@ export type PaginatedBucket = {
      */
     readonly $schema?: string;
     items?: Array<Bucket> | null;
+    page?: number;
+    per_page?: number;
+    total?: number;
+    total_pages?: number;
+};
+
+export type PaginatedCustomField = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    items?: Array<CustomField> | null;
+    page?: number;
+    per_page?: number;
+    total?: number;
+    total_pages?: number;
+};
+
+export type PaginatedCustomFieldValue = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    items?: Array<CustomFieldValue> | null;
     page?: number;
     per_page?: number;
     total?: number;
@@ -4439,6 +4646,94 @@ export type CreateUserBodyWritable = {
     username?: string;
 };
 
+export type CustomFieldWritable = {
+    /**
+     * Type specific settings, e.g. min/max for number, max_rating for rating.
+     */
+    config?: CustomFieldConfig;
+    /**
+     * An optional description shown to people filling in the field.
+     */
+    description?: string;
+    /**
+     * The choices of a select or multi_select field. On update the submitted list replaces the stored one: entries with an id are updated, entries without one are created and missing ones are deleted together with every value that uses them.
+     */
+    options?: Array<CustomFieldOptionWritable> | null;
+    /**
+     * The position of the field inside the project. New fields go last when it is 0.
+     */
+    position?: number;
+    /**
+     * Whether the field must be filled in. Not enforced on every save; workflow transitions use it later.
+     */
+    required?: boolean;
+    /**
+     * The title of the field.
+     */
+    title?: string;
+    /**
+     * The data type of the field. It cannot be changed after the field was created.
+     */
+    type?: 'text' | 'long_text' | 'number' | 'currency' | 'date' | 'checkbox' | 'select' | 'multi_select' | 'user' | 'url' | 'email' | 'rating' | 'progress';
+};
+
+export type CustomFieldOptionWritable = {
+    /**
+     * Optional hex color including the leading #, e.g. #ff8800.
+     */
+    color?: string;
+    /**
+     * The unique, numeric id of this option. Omit it to create a new option.
+     */
+    id?: number;
+    /**
+     * The position of the option inside the field. Options go in the submitted order when it is 0.
+     */
+    position?: number;
+    /**
+     * The title of the option.
+     */
+    title?: string;
+};
+
+export type CustomFieldReadBodyWritable = {
+    /**
+     * Type specific settings, e.g. min/max for number, max_rating for rating.
+     */
+    config?: CustomFieldConfig;
+    /**
+     * An optional description shown to people filling in the field.
+     */
+    description?: string;
+    /**
+     * The choices of a select or multi_select field. On update the submitted list replaces the stored one: entries with an id are updated, entries without one are created and missing ones are deleted together with every value that uses them.
+     */
+    options?: Array<CustomFieldOptionWritable> | null;
+    /**
+     * The position of the field inside the project. New fields go last when it is 0.
+     */
+    position?: number;
+    /**
+     * Whether the field must be filled in. Not enforced on every save; workflow transitions use it later.
+     */
+    required?: boolean;
+    /**
+     * The title of the field.
+     */
+    title?: string;
+    /**
+     * The data type of the field. It cannot be changed after the field was created.
+     */
+    type?: 'text' | 'long_text' | 'number' | 'currency' | 'date' | 'checkbox' | 'select' | 'multi_select' | 'user' | 'url' | 'email' | 'rating' | 'progress';
+};
+
+export type CustomFieldValueWritable = {
+    /**
+     * The value, null when unset. A string for text, long_text, url and email, a number for number, currency, rating and progress, an RFC 3339 string for date, a boolean for checkbox, an option id for select, an array of option ids for multi_select and an array of user ids for user. Sending null or, for multi_select and user, an empty array clears the value.
+     */
+    value?: unknown;
+};
+
 export type DatabaseNotificationsWritable = {
     /**
      * Set true to mark the notification read, false to mark it unread.
@@ -4720,6 +5015,22 @@ export type PaginatedBotUserWritable = {
 
 export type PaginatedBucketWritable = {
     items?: Array<BucketWritable> | null;
+    page?: number;
+    per_page?: number;
+    total?: number;
+    total_pages?: number;
+};
+
+export type PaginatedCustomFieldWritable = {
+    items?: Array<CustomFieldWritable> | null;
+    page?: number;
+    per_page?: number;
+    total?: number;
+    total_pages?: number;
+};
+
+export type PaginatedCustomFieldValueWritable = {
+    items?: Array<CustomFieldValueWritable> | null;
     page?: number;
     per_page?: number;
     total?: number;
@@ -8495,6 +8806,203 @@ export type ProjectsBackgroundUploadResponses = {
 
 export type ProjectsBackgroundUploadResponse = ProjectsBackgroundUploadResponses[keyof ProjectsBackgroundUploadResponses];
 
+export type CustomFieldsListData = {
+    body?: never;
+    path: {
+        project: number;
+    };
+    query?: {
+        /**
+         * 1-based page number.
+         */
+        page?: number;
+        /**
+         * Items per page. Defaults to the instance's configured maximum (service.maxitemsperpage, reported as max_items_per_page by /info) and is silently capped at it; asking for more is not an error.
+         */
+        per_page?: number;
+        /**
+         * Search query; filters the list to items matching this string.
+         */
+        q?: string;
+    };
+    url: '/projects/{project}/custom-fields';
+};
+
+export type CustomFieldsListErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type CustomFieldsListError = CustomFieldsListErrors[keyof CustomFieldsListErrors];
+
+export type CustomFieldsListResponses = {
+    /**
+     * OK
+     */
+    200: PaginatedCustomField;
+};
+
+export type CustomFieldsListResponse = CustomFieldsListResponses[keyof CustomFieldsListResponses];
+
+export type CustomFieldsCreateData = {
+    body: CustomFieldWritable;
+    path: {
+        project: number;
+    };
+    query?: never;
+    url: '/projects/{project}/custom-fields';
+};
+
+export type CustomFieldsCreateErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type CustomFieldsCreateError = CustomFieldsCreateErrors[keyof CustomFieldsCreateErrors];
+
+export type CustomFieldsCreateResponses = {
+    /**
+     * Created
+     */
+    201: CustomField;
+};
+
+export type CustomFieldsCreateResponse = CustomFieldsCreateResponses[keyof CustomFieldsCreateResponses];
+
+export type CustomFieldsDeleteData = {
+    body?: never;
+    path: {
+        project: number;
+        field: number;
+    };
+    query?: never;
+    url: '/projects/{project}/custom-fields/{field}';
+};
+
+export type CustomFieldsDeleteErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type CustomFieldsDeleteError = CustomFieldsDeleteErrors[keyof CustomFieldsDeleteErrors];
+
+export type CustomFieldsDeleteResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type CustomFieldsDeleteResponse = CustomFieldsDeleteResponses[keyof CustomFieldsDeleteResponses];
+
+export type CustomFieldsReadData = {
+    body?: never;
+    headers?: {
+        /**
+         * Succeeds if the server's resource matches one of the passed values.
+         */
+        'If-Match'?: Array<string> | null;
+        /**
+         * Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.
+         */
+        'If-None-Match'?: Array<string> | null;
+        /**
+         * Succeeds if the server's resource date is more recent than the passed date.
+         */
+        'If-Modified-Since'?: string;
+        /**
+         * Succeeds if the server's resource date is older or the same as the passed date.
+         */
+        'If-Unmodified-Since'?: string;
+    };
+    path: {
+        project: number;
+        field: number;
+    };
+    query?: never;
+    url: '/projects/{project}/custom-fields/{field}';
+};
+
+export type CustomFieldsReadErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type CustomFieldsReadError = CustomFieldsReadErrors[keyof CustomFieldsReadErrors];
+
+export type CustomFieldsReadResponses = {
+    /**
+     * OK
+     */
+    200: CustomFieldReadBody;
+};
+
+export type CustomFieldsReadResponse = CustomFieldsReadResponses[keyof CustomFieldsReadResponses];
+
+export type PatchCustomFieldsReadData = {
+    body: Array<JsonPatchOp> | null;
+    path: {
+        project: number;
+        field: number;
+    };
+    query?: never;
+    url: '/projects/{project}/custom-fields/{field}';
+};
+
+export type PatchCustomFieldsReadErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type PatchCustomFieldsReadError = PatchCustomFieldsReadErrors[keyof PatchCustomFieldsReadErrors];
+
+export type PatchCustomFieldsReadResponses = {
+    /**
+     * OK
+     */
+    200: CustomField;
+};
+
+export type PatchCustomFieldsReadResponse = PatchCustomFieldsReadResponses[keyof PatchCustomFieldsReadResponses];
+
+export type CustomFieldsUpdateData = {
+    body: CustomFieldReadBodyWritable;
+    path: {
+        project: number;
+        field: number;
+    };
+    query?: never;
+    url: '/projects/{project}/custom-fields/{field}';
+};
+
+export type CustomFieldsUpdateErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type CustomFieldsUpdateError = CustomFieldsUpdateErrors[keyof CustomFieldsUpdateErrors];
+
+export type CustomFieldsUpdateResponses = {
+    /**
+     * OK
+     */
+    200: CustomField;
+};
+
+export type CustomFieldsUpdateResponse = CustomFieldsUpdateResponses[keyof CustomFieldsUpdateResponses];
+
 export type SharesListData = {
     body?: never;
     path: {
@@ -10809,6 +11317,98 @@ export type TaskCommentsUpdateResponses = {
 };
 
 export type TaskCommentsUpdateResponse = TaskCommentsUpdateResponses[keyof TaskCommentsUpdateResponses];
+
+export type TaskCustomFieldValuesListData = {
+    body?: never;
+    path: {
+        task: number;
+    };
+    query?: {
+        /**
+         * 1-based page number.
+         */
+        page?: number;
+        /**
+         * Items per page. Defaults to the instance's configured maximum (service.maxitemsperpage, reported as max_items_per_page by /info) and is silently capped at it; asking for more is not an error.
+         */
+        per_page?: number;
+    };
+    url: '/tasks/{task}/custom-field-values';
+};
+
+export type TaskCustomFieldValuesListErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type TaskCustomFieldValuesListError = TaskCustomFieldValuesListErrors[keyof TaskCustomFieldValuesListErrors];
+
+export type TaskCustomFieldValuesListResponses = {
+    /**
+     * OK
+     */
+    200: PaginatedCustomFieldValue;
+};
+
+export type TaskCustomFieldValuesListResponse = TaskCustomFieldValuesListResponses[keyof TaskCustomFieldValuesListResponses];
+
+export type TaskCustomFieldValuesClearData = {
+    body?: never;
+    path: {
+        task: number;
+        field: number;
+    };
+    query?: never;
+    url: '/tasks/{task}/custom-field-values/{field}';
+};
+
+export type TaskCustomFieldValuesClearErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type TaskCustomFieldValuesClearError = TaskCustomFieldValuesClearErrors[keyof TaskCustomFieldValuesClearErrors];
+
+export type TaskCustomFieldValuesClearResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type TaskCustomFieldValuesClearResponse = TaskCustomFieldValuesClearResponses[keyof TaskCustomFieldValuesClearResponses];
+
+export type TaskCustomFieldValuesSetData = {
+    body: CustomFieldValueWritable;
+    path: {
+        task: number;
+        field: number;
+    };
+    query?: never;
+    url: '/tasks/{task}/custom-field-values/{field}';
+};
+
+export type TaskCustomFieldValuesSetErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type TaskCustomFieldValuesSetError = TaskCustomFieldValuesSetErrors[keyof TaskCustomFieldValuesSetErrors];
+
+export type TaskCustomFieldValuesSetResponses = {
+    /**
+     * OK
+     */
+    200: CustomFieldValue;
+};
+
+export type TaskCustomFieldValuesSetResponse = TaskCustomFieldValuesSetResponses[keyof TaskCustomFieldValuesSetResponses];
 
 export type TasksDuplicateData = {
     body?: never;

@@ -1953,5 +1953,103 @@
     "projectInTrash": "This project is in the trash. It was deleted {since}.",
     "projectInTrashBy": "This project is in the trash. {user} deleted it {since}.",
     "projectInTrashByYou": "This project is in the trash. You deleted it {since}."
+  },
+  "customFields": {
+    "title": "Custom fields",
+    "intro": "These fields appear on every task in this project.",
+    "onlyAdminsCanEdit": "Only project admins can manage custom fields.",
+    "add": "Add field",
+    "createSuccess": "The custom field was created successfully.",
+    "updateSuccess": "The custom field was updated successfully.",
+    "deleteSuccess": "The custom field was deleted successfully.",
+    "deleteTitle": "Delete the field \"{title}\"?",
+    "deleteText": "All values entered for this field on every task in this project will be removed. Tasks themselves are not deleted. This cannot be undone!",
+    "editField": "Edit the field \"{title}\"",
+    "deleteField": "Delete the field \"{title}\"",
+    "requiredBadge": "Required",
+    "empty": {
+      "title": "No custom fields yet",
+      "text": "Custom fields let you record extra information on every task in this project, such as a budget, a customer, a rating or a link. Add a field and it shows up in the task details."
+    },
+    "columns": {
+      "title": "Title",
+      "type": "Type",
+      "actions": "Actions"
+    },
+    "types": {
+      "text": "Text",
+      "long_text": "Long text",
+      "number": "Number",
+      "currency": "Currency",
+      "date": "Date",
+      "checkbox": "Checkbox",
+      "select": "Select",
+      "multi_select": "Multi-select",
+      "user": "User",
+      "url": "URL",
+      "email": "Email",
+      "rating": "Rating",
+      "progress": "Progress"
+    },
+    "form": {
+      "title": "Title",
+      "titlePlaceholder": "e.g. Budget",
+      "type": "Type",
+      "typeLocked": "The type cannot be changed after the field was created.",
+      "description": "Description",
+      "descriptionPlaceholder": "Shown to people filling in the field (optional)",
+      "required": "Required",
+      "requiredHint": "Tasks with an empty required field are marked, but can still be saved.",
+      "min": "Minimum",
+      "max": "Maximum",
+      "precision": "Decimal places",
+      "currency": "Currency code",
+      "maxRating": "Maximum rating",
+      "options": "Options",
+      "optionPlaceholder": "Option name",
+      "optionTitle": "Name of option {n}",
+      "optionColor": "Color of option {n}",
+      "optionClearColor": "Remove the color of option {n}",
+      "optionMoveUp": "Move option {n} up",
+      "optionMoveDown": "Move option {n} down",
+      "optionRemove": "Remove option {n}",
+      "addOption": "Add option"
+    },
+    "errors": {
+      "titleRequired": "Please provide a title.",
+      "titleTooLong": "The title must not be longer than 250 characters.",
+      "notANumber": "Please enter a number.",
+      "minGreaterThanMax": "The minimum must not be greater than the maximum.",
+      "precision": "Decimal places must be a whole number from 0 to {max}.",
+      "currency": "Use a three-letter currency code, for example TRY.",
+      "maxRating": "The maximum rating must be a whole number from 1 to {max}.",
+      "optionsRequired": "Add at least one option.",
+      "optionTitle": "Every option needs a name of up to 250 characters.",
+      "optionColor": "Option colors must look like #aabbcc.",
+      "value": {
+        "string": "Please enter text.",
+        "url": "Enter a valid web address starting with http:// or https://.",
+        "email": "Enter a valid email address.",
+        "number": "Please enter a number.",
+        "min": "The value must be at least {min}.",
+        "max": "The value must be at most {max}.",
+        "progress": "Progress must be between 0 and 100.",
+        "rating": "The rating must be a whole number from 1 to {max}.",
+        "boolean": "Invalid value.",
+        "date": "Please choose a valid date.",
+        "option": "Please choose one of the available options.",
+        "user": "Please choose valid users."
+      }
+    },
+    "value": {
+      "saved": "The value was saved.",
+      "required": "Required",
+      "openLink": "Open link",
+      "writeMail": "Write an email",
+      "ratingStar": "{n} of {max}",
+      "userSearch": "Search project members",
+      "chooseDate": "Choose a date",
+      "clear": "Clear {title}"
+    }
   }
 }
