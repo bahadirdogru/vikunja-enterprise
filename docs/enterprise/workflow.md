@@ -102,11 +102,45 @@ order), and dragging a card performs the transition with the same checks; a
 rejected drop snaps back and shows what is missing. Manual buckets keep
 working unchanged.
 
+## UI
+
+Workflow editor: project settings, "Workflow" (project admins only, route
+`project.settings.workflow`). A project without a workflow shows what a
+workflow is and an "Enable workflow" button that pre-fills To do (initial) →
+In progress → Done in the user's language. Everything is edited as one draft
+and saved with one PUT; leaving with unsaved changes asks first.
+
+- Statuses: colour, title, category (own icon and colour), initial radio,
+  up/down, remove. New statuses carry negative temporary ids. Removing a status
+  that still has tasks gets a 409 (21008); the editor asks where the tasks go
+  and retries with `move_tasks_to`. Statuses with history show up as archived.
+- Transitions: "Only allow listed transitions", then a list or a matrix (rows =
+  from, columns = to; a ticked cell opens that transition's rules). Each
+  transition has an optional button label, minimum permission, comment
+  requirement, required fields (built-in names plus the project's custom
+  fields) and allowed teams.
+- Client-side checks mirror the server (one initial status, a done status,
+  unique titles, no self or duplicate transitions); a 400 (21002) is shown
+  inline.
+
+Task detail: when the project has a workflow, a Status row sits at the top of
+the property list. Its menu lists the transitions from `GET /tasks/{task}/status`
+with their button label or target status; ones with unmet requirements say
+what is missing. A transition that needs fields or a comment opens a dialog
+with editors for the missing fields and a comment box; "Change status" saves
+the fields first and then posts the change. A 422 (21007) re-lists what is
+still missing, 400 (21005) and 403 (21006) become plain messages. The done
+button of a task in a workflow project moves it to the first done status (or
+back to the initial one) through the same path, so its rules and dialog apply.
+A collapsible status history (who, from → to, when, comment) sits under the
+Status row. A project without a workflow answers 404 (21001) once; the UI
+treats it as "no workflow" and renders nothing extra.
+
 ## Steps
 
 - 2a: tables, the transition function, API, events, done sync, tests.
-- 2b: workflow editor in project settings; status picker and history in the
-  task detail view; missing-requirements dialog.
+- 2b (done): workflow editor in project settings; status picker and history
+  in the task detail view; missing-requirements dialog. See "UI".
 - 2c: kanban status mode, table column, filter/sort by status.
 - Later: approvals as a transition requirement, WIP limits, SLA timers,
   workflow templates shared between projects.

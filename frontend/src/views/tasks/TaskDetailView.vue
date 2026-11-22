@@ -289,9 +289,17 @@
 					</div>
 
 					<dl
-						v-if="canWrite || hasAnyProperty || hasCustomFields"
+						v-if="canWrite || hasAnyProperty || hasCustomFields || hasWorkflow"
 						class="property-list"
 					>
+						<TaskStatus
+							ref="workflowStatus"
+							:task-id="task.id"
+							:project-id="task.project_id"
+							:done="task.done"
+							:can-write="canWrite"
+							@changed="refreshAfterStatusChange"
+						/>
 						<TaskPropertyRow
 							name="assignees"
 							icon="users"
@@ -562,7 +570,9 @@ import RelatedTasks from '@/components/tasks/partials/RelatedTasks.vue'
 import Reminders from '@/components/tasks/partials/Reminders.vue'
 import RepeatAfter from '@/components/tasks/partials/RepeatAfter.vue'
 import TaskCustomFields from '@/components/tasks/partials/TaskCustomFields.vue'
+import TaskStatus from '@/components/workflow/TaskStatus.vue'
 import {customFieldsQuery} from '@/client/queries/customFields'
+import {workflowQuery} from '@/client/queries/workflow'
 import {useQuery} from '@tanstack/vue-query'
 import TaskPropertyRow from '@/components/tasks/partials/TaskPropertyRow.vue'
 import TaskSubscription from '@/components/misc/Subscription.vue'
@@ -929,6 +939,18 @@ const customFieldsForVisibility = useQuery(computed(() => ({
 })))
 const hasCustomFields = computed(() => (customFieldsForVisibility.data.value?.length ?? 0) > 0)
 
+const workflowForVisibility = useQuery(computed(() => workflowQuery(task.value?.project_id ?? 0)))
+const hasWorkflow = computed(() => (workflowForVisibility.data.value ?? null) !== null)
+const workflowStatus = ref<InstanceType<typeof TaskStatus> | null>(null)
+
+// A status change can flip done, and the requirements dialog can save fields the local draft keeps.
+async function refreshAfterStatusChange() {
+	await taskQuery.refetch()
+	if (taskQuery.task.value) {
+		seedTask(taskQuery.task.value)
+	}
+}
+
 const favoriteLabel = computed(() => task.value.is_favorite
 	? t('task.detail.actions.unfavorite')
 	: t('task.detail.actions.favorite'))
@@ -1143,6 +1165,10 @@ async function deleteTask() {
 }
 
 async function toggleTaskDone() {
+	// A project with a workflow moves the task through its done or initial status instead.
+	if (await workflowStatus.value?.toggleDone() != null) {
+		return
+	}
 	const newTask = {
 		...task.value,
 		done: !task.value.done,
@@ -1160,6 +1186,15 @@ async function toggleTaskDone() {
 
 async function markDoneAndGoBack() {
 	if (!canWrite.value || task.value.done) {
+		return
+	}
+
+	const viaWorkflow = await workflowStatus.value?.toggleDone()
+	if (viaWorkflow === false) {
+		return
+	}
+	if (viaWorkflow === true) {
+		goBack()
 		return
 	}
 

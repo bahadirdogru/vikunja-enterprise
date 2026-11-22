@@ -99,6 +99,11 @@ import {
 	faUmbrellaBeach,
 	faCalendarPlus,
 	faFlagCheckered,
+	faArrowRight,
+	faCircleCheck,
+	faCircleHalfStroke,
+	faCircleXmark,
+	faTableCells,
 } from '@fortawesome/free-solid-svg-icons'
 import {
 	faBellSlash,
@@ -113,6 +118,7 @@ import {
 	faTimesCircle,
 	faCircleQuestion, faFaceLaugh,
 	faCalendarCheck,
+	faCircle,
 } from '@fortawesome/free-regular-svg-icons'
 import {FontAwesomeIcon} from '@fortawesome/vue-fontawesome'
 
@@ -237,6 +243,12 @@ library.add(faCalendarCheck)
 library.add(faFaceLaugh)
 library.add(faExclamation)
 library.add(faArrowUpRightFromSquare)
+library.add(faArrowRight)
+library.add(faCircle)
+library.add(faCircleCheck)
+library.add(faCircleHalfStroke)
+library.add(faCircleXmark)
+library.add(faTableCells)
 
 // overwriting the wrong types
 export default FontAwesomeIcon as unknown as FontAwesomeIconFixedTypes

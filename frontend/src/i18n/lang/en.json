@@ -1695,6 +1695,14 @@
     "4013": "The task sort param is invalid.",
     "4014": "The task sort order is invalid.",
     "4015": "The task comment does not exist.",
+    "21001": "This project has no workflow.",
+    "21002": "The workflow definition is not valid.",
+    "21003": "The workflow status does not exist.",
+    "21004": "The workflow status is archived.",
+    "21005": "This status change is not allowed by the workflow.",
+    "21006": "You are not allowed to make this status change.",
+    "21007": "The task does not meet the requirements of this status change.",
+    "21008": "Choose a status to move the tasks of the removed statuses to.",
     "4016": "Invalid task field.",
     "4017": "Invalid task filter comparator.",
     "4018": "Invalid task filter concatenator.",
@@ -2056,6 +2064,156 @@
       "cardFields": "Card fields",
       "yes": "Yes",
       "no": "No"
+    }
+  },
+  "workflow": {
+    "title": "Workflow",
+    "onlyAdminsCanEdit": "Only project admins can manage the workflow.",
+    "saveSuccess": "The workflow was saved.",
+    "disableSuccess": "The workflow was disabled.",
+    "save": "Save workflow",
+    "unsaved": "Unsaved changes",
+    "empty": {
+      "title": "This project has no workflow yet",
+      "text": "A workflow gives tasks real statuses, such as To do, In progress and Done, and rules for moving between them: who may do it, which fields must be filled in and whether a comment is needed.",
+      "kanban": "A status belongs to the task and is the same in every view. It is independent of the kanban columns, which only group tasks inside one view.",
+      "enable": "Enable workflow",
+      "draftHint": "This is a starting point. Adjust the statuses and rules, then save to turn the workflow on."
+    },
+    "defaults": {
+      "todo": "To do",
+      "inProgress": "In progress",
+      "done": "Done"
+    },
+    "categories": {
+      "open": "Open",
+      "in_progress": "In progress",
+      "done": "Done",
+      "cancelled": "Cancelled"
+    },
+    "statuses": {
+      "title": "Statuses",
+      "hint": "Tasks move through these statuses in this order. The category decides whether a task counts as done.",
+      "add": "Add status",
+      "newTitle": "New status",
+      "color": "Color of the status \"{title}\"",
+      "titleLabel": "Title of status {n}",
+      "titlePlaceholder": "Status title",
+      "categoryLabel": "Category of the status \"{title}\"",
+      "initial": "Initial",
+      "moveUp": "Move \"{title}\" up",
+      "moveDown": "Move \"{title}\" down",
+      "remove": "Remove the status \"{title}\"",
+      "removeHint": "New tasks start in the initial status. A removed status that was used before is archived, its history stays readable.",
+      "archived": "{count} archived status | {count} archived statuses",
+      "archivedHint": "Archived statuses are hidden from pickers but keep their history."
+    },
+    "validation": {
+      "noStatuses": "A workflow needs at least one status.",
+      "noInitial": "Exactly one status has to be the initial status.",
+      "noDone": "At least one status needs the category Done.",
+      "titleRequired": "Enter a title.",
+      "titleTooLong": "The title must not be longer than 250 characters.",
+      "titleDuplicate": "Another status already has this title.",
+      "statusRequired": "Choose both statuses.",
+      "sameStatus": "A transition needs two different statuses.",
+      "duplicatePair": "This pair of statuses is already listed."
+    },
+    "fields": {
+      "assignees": "Assignees",
+      "due_date": "Due date",
+      "start_date": "Start date",
+      "end_date": "End date",
+      "description": "Description",
+      "attachments": "Attachments",
+      "labels": "Labels"
+    },
+    "transitions": {
+      "title": "Transitions",
+      "restrict": "Only allow listed transitions",
+      "restrictOn": "Tasks can only move between statuses that are listed below. Everything else is blocked.",
+      "restrictOff": "Tasks can move from any status to any other. Listed transitions only add rules, such as required fields, for their pair.",
+      "view": "Transition view",
+      "viewList": "List",
+      "viewMatrix": "Matrix",
+      "add": "Add transition",
+      "empty": "No extra rules yet. Every status change is allowed.",
+      "emptyRestricted": "No transitions are listed, so tasks cannot change status. Add at least one.",
+      "from": "From status",
+      "to": "To status",
+      "buttonLabel": "Button label",
+      "buttonLabelPlaceholder": "Optional, e.g. Send to design",
+      "minPermission": "Minimum permission",
+      "permission": {
+        "write": "Can edit the task",
+        "admin": "Project admin"
+      },
+      "requireComment": "A comment is required",
+      "requiredFields": "Required fields",
+      "requiredFieldsHint": "These must be set on the task before it can make this change.",
+      "teams": "Allowed teams",
+      "teamsHint": "Optional. When teams are chosen, only their members and project admins can make this change.",
+      "noTeams": "You are not a member of any team yet.",
+      "remove": "Remove transition",
+      "tags": {
+        "comment": "Comment",
+        "fields": "Required fields",
+        "teams": "Teams",
+        "admin": "Admins only"
+      }
+    },
+    "matrix": {
+      "caption": "Which status changes are listed. Rows are the status a task leaves, columns the status it enters.",
+      "corner": "From \\ To",
+      "cell": "{from} to {to}",
+      "hint": "Tick a cell to allow a change from the row's status to the column's status. Select a ticked cell to edit its rules."
+    },
+    "move": {
+      "title": "Move tasks to another status",
+      "text": "Tasks are still in {statuses}. Choose the status they should move to.",
+      "target": "Move tasks to",
+      "confirm": "Move tasks and save"
+    },
+    "disable": {
+      "action": "Disable workflow",
+      "title": "Disable the workflow?",
+      "text": "The statuses and transitions of this project are deleted and tasks lose their status. Their done state stays as it is, and the status history stays readable on every task."
+    },
+    "leave": {
+      "title": "Discard your changes?",
+      "text": "The workflow has changes that were not saved. If you leave now they are lost."
+    },
+    "task": {
+      "label": "Status",
+      "change": "Status: {status}. Change status",
+      "none": "No status",
+      "changed": "The status is now \"{status}\"."
+    },
+    "menu": {
+      "heading": "Change status to",
+      "needs": "Needs: {items}",
+      "comment": "a comment"
+    },
+    "dialog": {
+      "title": "Change status to \"{status}\"",
+      "fieldsIntro": "Fill in the following before the task can change status.",
+      "chooseDate": "Choose a date",
+      "comment": "Comment",
+      "commentPlaceholder": "Why is the status changing?",
+      "commentRequired": "A comment is required for this change.",
+      "confirm": "Change status",
+      "stillMissing": "Some required fields are still missing."
+    },
+    "history": {
+      "title": "Status history",
+      "empty": "No status changes yet.",
+      "none": "No status"
+    },
+    "errors": {
+      "notAllowed": "This status change is not allowed by the workflow.",
+      "forbiddenPermission": "You do not have the permission this status change needs.",
+      "forbiddenTeam": "Only members of the allowed teams can make this status change.",
+      "statusGone": "This status no longer exists. Reload the task and try again."
     }
   }
 }

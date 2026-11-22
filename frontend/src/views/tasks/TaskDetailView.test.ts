@@ -2,6 +2,7 @@ import {createPinia} from 'pinia'
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 import {QueryClient, VueQueryPlugin} from '@tanstack/vue-query'
 import {enableAutoUnmount, flushPromises, shallowMount, type VueWrapper} from '@vue/test-utils'
+import {defineComponent} from 'vue'
 import {createMemoryHistory, createRouter, type RouteLocationRaw} from 'vue-router'
 
 const sdk = vi.hoisted(() => ({
@@ -12,6 +13,9 @@ const sdk = vi.hoisted(() => ({
 	projectViewTasksList: vi.fn(async () => ({data: {items: []}})),
 	projectViewBucketsTasksList: vi.fn(async () => ({data: {items: []}})),
 	bucketsList: vi.fn(async () => ({data: {items: []}})),
+	workflowRead: vi.fn(async () => {
+		throw {status: 404, code: 21001}
+	}),
 }))
 vi.mock('@/client/generated', () => sdk)
 const message = vi.hoisted(() => ({error: vi.fn(), success: vi.fn()}))
@@ -56,6 +60,14 @@ function serverTask(id: number, overrides: Record<string, unknown> = {}) {
 	}
 }
 
+// The status row has its own tests; here the done button just has to find no workflow.
+const taskStatusStub = defineComponent({
+	setup(_, {expose}) {
+		expose({toggleDone: async () => null})
+		return () => null
+	},
+})
+
 let queryClient: QueryClient
 
 function dueDatePicker(wrapper: VueWrapper) {
@@ -86,7 +98,7 @@ async function mountDetail(taskId = 1, {visited = [], backdropView, stubs = {}}:
 		global: {
 			plugins: [createPinia(), router, [VueQueryPlugin, {queryClient}]],
 			mocks: {$t: (key: string) => key},
-			stubs: {Icon: true, XButton: true, Modal: true, TaskPropertyRow: false, ...stubs},
+			stubs: {Icon: true, XButton: true, Modal: true, TaskPropertyRow: false, TaskStatus: taskStatusStub, ...stubs},
 			directives: {tooltip: () => {}, cy: () => {}, shortcut: () => {}},
 		},
 	})

@@ -1577,6 +1577,14 @@
 		"4013": "Görev sıralama parametresi geçersiz.",
 		"4014": "Görev sıralama yönü geçersiz.",
 		"4015": "Görev yorumu bulunamadı.",
+		"21001": "Bu projede iş akışı yok.",
+		"21002": "İş akışı tanımı geçerli değil.",
+		"21003": "İş akışı durumu bulunamadı.",
+		"21004": "İş akışı durumu arşivlenmiş.",
+		"21005": "Bu durum değişikliğine iş akışı izin vermiyor.",
+		"21006": "Bu durum değişikliğini yapma yetkiniz yok.",
+		"21007": "Görev bu durum değişikliğinin gereklerini karşılamıyor.",
+		"21008": "Kaldırılan durumlardaki görevlerin taşınacağı bir durum seçin.",
 		"4016": "Geçersiz görev alanı.",
 		"4017": "Geçersiz filtre karşılaştırıcısı.",
 		"4018": "Geçersiz filtre bağlayıcısı.",
@@ -1870,6 +1878,156 @@
 			"cardFields": "Kart alanları",
 			"yes": "Evet",
 			"no": "Hayır"
+		}
+	},
+	"workflow": {
+		"title": "İş akışı",
+		"onlyAdminsCanEdit": "İş akışını yalnızca proje yöneticileri düzenleyebilir.",
+		"saveSuccess": "İş akışı kaydedildi.",
+		"disableSuccess": "İş akışı kapatıldı.",
+		"save": "İş akışını kaydet",
+		"unsaved": "Kaydedilmemiş değişiklikler var",
+		"empty": {
+			"title": "Bu projede henüz iş akışı yok",
+			"text": "İş akışı, görevlere Yapılacak, Devam ediyor ve Tamamlandı gibi gerçek durumlar ve bu durumlar arasındaki geçişler için kurallar verir: geçişi kimin yapabileceği, hangi alanların doldurulması gerektiği ve yorum zorunlu olup olmadığı.",
+			"kanban": "Durum görevin kendisine aittir ve her görünümde aynıdır. Yalnızca tek bir görünümde görevleri gruplayan kanban sütunlarından bağımsızdır.",
+			"enable": "İş akışını aç",
+			"draftHint": "Bu bir başlangıç taslağı. Durumları ve kuralları düzenleyin, ardından iş akışını açmak için kaydedin."
+		},
+		"defaults": {
+			"todo": "Yapılacak",
+			"inProgress": "Devam ediyor",
+			"done": "Tamamlandı"
+		},
+		"categories": {
+			"open": "Açık",
+			"in_progress": "Devam ediyor",
+			"done": "Tamamlandı",
+			"cancelled": "İptal edildi"
+		},
+		"statuses": {
+			"title": "Durumlar",
+			"hint": "Görevler bu durumlar arasında bu sırayla ilerler. Kategori, görevin tamamlanmış sayılıp sayılmayacağını belirler.",
+			"add": "Durum ekle",
+			"newTitle": "Yeni durum",
+			"color": "\"{title}\" durumunun rengi",
+			"titleLabel": "{n}. durumun başlığı",
+			"titlePlaceholder": "Durum başlığı",
+			"categoryLabel": "\"{title}\" durumunun kategorisi",
+			"initial": "Başlangıç",
+			"moveUp": "\"{title}\" durumunu yukarı taşı",
+			"moveDown": "\"{title}\" durumunu aşağı taşı",
+			"remove": "\"{title}\" durumunu kaldır",
+			"removeHint": "Yeni görevler başlangıç durumunda açılır. Daha önce kullanılmış bir durum kaldırılırsa arşivlenir, geçmişi okunabilir kalır.",
+			"archived": "{count} arşivlenmiş durum | {count} arşivlenmiş durum",
+			"archivedHint": "Arşivlenmiş durumlar seçicilerde görünmez ama geçmişi korunur."
+		},
+		"validation": {
+			"noStatuses": "İş akışında en az bir durum olmalı.",
+			"noInitial": "Tam olarak bir durum başlangıç durumu olmalı.",
+			"noDone": "En az bir durumun kategorisi Tamamlandı olmalı.",
+			"titleRequired": "Bir başlık girin.",
+			"titleTooLong": "Başlık en fazla 250 karakter olabilir.",
+			"titleDuplicate": "Başka bir durum zaten bu başlığı kullanıyor.",
+			"statusRequired": "İki durumu da seçin.",
+			"sameStatus": "Bir geçiş için iki farklı durum gerekir.",
+			"duplicatePair": "Bu durum çifti zaten listede."
+		},
+		"fields": {
+			"assignees": "Atananlar",
+			"due_date": "Bitiş tarihi",
+			"start_date": "Başlangıç tarihi",
+			"end_date": "Son tarih",
+			"description": "Açıklama",
+			"attachments": "Ekler",
+			"labels": "Etiketler"
+		},
+		"transitions": {
+			"title": "Geçişler",
+			"restrict": "Yalnızca listelenen geçişlere izin ver",
+			"restrictOn": "Görevler yalnızca aşağıda listelenen durumlar arasında geçebilir. Diğer her şey engellenir.",
+			"restrictOff": "Görevler her durumdan başka herhangi bir duruma geçebilir. Listelenen geçişler yalnızca kendi çiftleri için zorunlu alan gibi ek kurallar getirir.",
+			"view": "Geçiş görünümü",
+			"viewList": "Liste",
+			"viewMatrix": "Matris",
+			"add": "Geçiş ekle",
+			"empty": "Henüz ek kural yok. Her durum değişikliğine izin verilir.",
+			"emptyRestricted": "Hiç geçiş listelenmedi, bu yüzden görevlerin durumu değiştirilemez. En az bir geçiş ekleyin.",
+			"from": "Başlangıç durumu",
+			"to": "Hedef durum",
+			"buttonLabel": "Düğme etiketi",
+			"buttonLabelPlaceholder": "İsteğe bağlı, ör. Tasarıma gönder",
+			"minPermission": "En düşük yetki",
+			"permission": {
+				"write": "Görevi düzenleyebilen",
+				"admin": "Proje yöneticisi"
+			},
+			"requireComment": "Yorum zorunlu",
+			"requiredFields": "Zorunlu alanlar",
+			"requiredFieldsHint": "Görev bu değişikliği yapmadan önce bu alanlar doldurulmuş olmalı.",
+			"teams": "İzin verilen ekipler",
+			"teamsHint": "İsteğe bağlı. Ekip seçilirse bu değişikliği yalnızca ekip üyeleri ve proje yöneticileri yapabilir.",
+			"noTeams": "Henüz hiçbir ekibin üyesi değilsiniz.",
+			"remove": "Geçişi kaldır",
+			"tags": {
+				"comment": "Yorum",
+				"fields": "Zorunlu alanlar",
+				"teams": "Ekipler",
+				"admin": "Yalnızca yönetici"
+			}
+		},
+		"matrix": {
+			"caption": "Hangi durum değişiklikleri listelendi. Satırlar görevin ayrıldığı, sütunlar girdiği durumdur.",
+			"corner": "Nereden \\ Nereye",
+			"cell": "{from} durumundan {to} durumuna",
+			"hint": "Satırdaki durumdan sütundaki duruma geçişe izin vermek için hücreyi işaretleyin. Kurallarını düzenlemek için işaretli bir hücreyi seçin."
+		},
+		"move": {
+			"title": "Görevleri başka bir duruma taşı",
+			"text": "{statuses} durumunda hâlâ görevler var. Görevlerin taşınacağı durumu seçin.",
+			"target": "Görevlerin taşınacağı durum",
+			"confirm": "Görevleri taşı ve kaydet"
+		},
+		"disable": {
+			"action": "İş akışını kapat",
+			"title": "İş akışı kapatılsın mı?",
+			"text": "Bu projenin durumları ve geçişleri silinir, görevler durumlarını kaybeder. Tamamlanma durumları olduğu gibi kalır ve durum geçmişi her görevde okunabilir olarak korunur."
+		},
+		"leave": {
+			"title": "Değişiklikler silinsin mi?",
+			"text": "İş akışında kaydedilmemiş değişiklikler var. Şimdi ayrılırsanız kaybolur."
+		},
+		"task": {
+			"label": "Durum",
+			"change": "Durum: {status}. Durumu değiştir",
+			"none": "Durum yok",
+			"changed": "Durum artık \"{status}\"."
+		},
+		"menu": {
+			"heading": "Durumu şuna değiştir",
+			"needs": "Gerekli: {items}",
+			"comment": "bir yorum"
+		},
+		"dialog": {
+			"title": "Durumu \"{status}\" olarak değiştir",
+			"fieldsIntro": "Görevin durumu değişmeden önce aşağıdakileri doldurun.",
+			"chooseDate": "Bir tarih seçin",
+			"comment": "Yorum",
+			"commentPlaceholder": "Durum neden değişiyor?",
+			"commentRequired": "Bu değişiklik için yorum yazmak zorunlu.",
+			"confirm": "Durumu değiştir",
+			"stillMissing": "Bazı zorunlu alanlar hâlâ eksik."
+		},
+		"history": {
+			"title": "Durum geçmişi",
+			"empty": "Henüz durum değişikliği yok.",
+			"none": "Durum yok"
+		},
+		"errors": {
+			"notAllowed": "Bu durum değişikliğine iş akışı izin vermiyor.",
+			"forbiddenPermission": "Bu durum değişikliği için gereken yetkiye sahip değilsiniz.",
+			"forbiddenTeam": "Bu durum değişikliğini yalnızca izin verilen ekiplerin üyeleri yapabilir.",
+			"statusGone": "Bu durum artık yok. Görevi yenileyip tekrar deneyin."
 		}
 	}
 }
