@@ -8,6 +8,7 @@ import {useQuery} from '@tanstack/vue-query'
 import RuleEditor from '@/components/automation/RuleEditor.vue'
 import RuleList from '@/components/automation/RuleList.vue'
 import RunsView from '@/components/automation/RunsView.vue'
+import SecretsSection from '@/components/automation/SecretsSection.vue'
 import XButton from '@/components/input/Button.vue'
 import CreateEdit from '@/components/misc/CreateEdit.vue'
 import ErrorMessage from '@/components/misc/Error.vue'
@@ -15,6 +16,7 @@ import Loading from '@/components/misc/Loading.vue'
 import Message from '@/components/misc/Message.vue'
 import Modal from '@/components/misc/Modal.vue'
 import {automationCatalogQuery, automationRulesQuery, type AutomationRuleResponse} from '@/client/queries/automation'
+import {automationSecretsQuery} from '@/client/queries/automationSecrets'
 import {customFieldsQuery} from '@/client/queries/customFields'
 import {workflowQuery} from '@/client/queries/workflow'
 import {PERMISSIONS} from '@/constants/permissions'
@@ -38,6 +40,9 @@ const enabled = computed(() => props.projectId > 0 && isAdmin.value)
 const catalogResult = useQuery(computed(() => ({...automationCatalogQuery(props.projectId), enabled: enabled.value})))
 const rulesResult = useQuery(computed(() => ({...automationRulesQuery(props.projectId), enabled: enabled.value})))
 const fieldsResult = useQuery(computed(() => ({...customFieldsQuery(props.projectId), enabled: enabled.value})))
+// A failing list leaves the rule editor with a plain text input for secret names.
+const secretsResult = useQuery(computed(() => ({...automationSecretsQuery(props.projectId), enabled: enabled.value, retry: false})))
+const secretNames = computed(() => secretsResult.data.value ? secretsResult.data.value.map(secret => secret.name) : null)
 const workflowResult = useQuery(computed(() => ({...workflowQuery(props.projectId), enabled: enabled.value})))
 
 const loadError = computed(() => projectError.value ?? catalogResult.error.value ?? rulesResult.error.value
@@ -150,6 +155,10 @@ const editingTitle = computed(() => mode.value.kind === 'edit'
 				@runs="mode = {kind: 'runs', rule: $event}"
 				@duplicate="duplicate"
 			/>
+			<SecretsSection
+				v-if="mode.kind === 'list'"
+				:project-id="projectId"
+			/>
 			<RuleEditor
 				v-else-if="mode.kind === 'edit'"
 				ref="editor"
@@ -158,7 +167,7 @@ const editingTitle = computed(() => mode.value.kind === 'edit'
 				:catalog="catalogResult.data.value!"
 				:custom-fields="customFields"
 				:statuses="statuses"
-				:secrets="null"
+				:secrets="secretNames"
 				:rule="mode.rule"
 				:preset="mode.preset"
 				@close="backToList"

@@ -1589,6 +1589,10 @@
 		"21008": "Kaldırılan durumlardaki görevlerin taşınacağı bir durum seçin.",
 		"21009": "İş akışı durumları, yalnızca projede bir iş akışı varsa sütun olarak kullanılabilir.",
 		"21010": "Bu panonun sütunları iş akışı durumlarıdır. Bunları iş akışı ayarlarından değiştirin.",
+		"22005": "Bu sunucuda otomasyon kurallarındaki betikler kapalı (automation.scripts.enabled).",
+		"22006": "Gizli anahtar geçerli değil: adda harf, rakam ve alt çizgi kullanın, rakamla başlamasın (en çok 64 karakter); değer en çok 8 KiB olabilir.",
+		"22007": "Bu gizli anahtar bulunamadı.",
+		"22008": "Gizli anahtarın şifresi artık çözülemiyor. Yeniden girin.",
 		"4016": "Geçersiz görev alanı.",
 		"4017": "Geçersiz filtre karşılaştırıcısı.",
 		"4018": "Geçersiz filtre bağlayıcısı.",
@@ -2152,7 +2156,9 @@
 			"create_subtask": "Alt görev oluştur",
 			"create_related": "İlişkili görev oluştur",
 			"move": "Başka bir projeye taşı",
-			"stop_if": "Koşul sağlanırsa dur"
+			"stop_if": "Koşul sağlanırsa dur",
+			"script_run": "Betik çalıştır",
+			"http_request": "HTTP isteği gönder"
 		},
 		"condition": {
 			"always": "Her zaman",
@@ -2210,7 +2216,13 @@
 			"due_offset": "Şimdiden itibaren teslim tarihi (isteğe bağlı)",
 			"relation_kind": "İlişki (isteğe bağlı)",
 			"project_id": "Proje",
-			"condition": "Şu durumda dur"
+			"condition": "Şu durumda dur",
+			"source": "Betik",
+			"url": "Adres (URL)",
+			"method": "Yöntem",
+			"headers": "Başlıklar",
+			"body": "İçerik",
+			"secret": "İmza gizli anahtarı (isteğe bağlı)"
 		},
 		"date": {
 			"helpAction": "2026-12-31 gibi bir tarih, +3d veya -2h gibi göreli bir değer (m, h, d, w) ya da tarihi temizlemek için \"none\".",
@@ -2227,7 +2239,23 @@
 		},
 		"code": {
 			"reference": "Betik API'si",
-			"tabHint": "Tab tuşu girinti ekler. Alandan çıkmak için önce Escape, sonra Tab tuşuna basın."
+			"tabHint": "Tab tuşu sekme ekler. Alandan çıkmak için önce Escape, sonra Tab tuşuna basın.",
+			"filter": "API'de ara",
+			"insertName": "{name} adını imlecin olduğu yere ekle",
+			"noMatch": "Eşleşen bir şey yok.",
+			"insertExample": "Örnek ekle…",
+			"limits": "Sınırlar",
+			"limitName": "Sınır",
+			"limitValue": "Değer",
+			"limitDescription": "Ne olur",
+			"errorAt": "{line}. satır, {column}. sütunda sözdizimi hatası.",
+			"disabledNote": "Bu sunucuda betikler kapalı. Betik salt okunur gösterilir ve kural çalışınca hata verir. Yöneticiden betikleri açmasını (automation.scripts.enabled) isteyin ya da betiği kaldırın.",
+			"snippet": {
+				"sumSubtasks": "Alt görevlerin bir sayı alanını üst görevde topla",
+				"assignFromSecret": "Gizli anahtarda tutulan kullanıcı listesinden ata",
+				"comment": "Günlüğe yaz ve yorum ekle",
+				"conditionPriority": "Öncelik 3 veya üstü ve tamamlanmamış"
+			}
 		},
 		"map": {
 			"add": "Satır ekle",
@@ -2253,7 +2281,8 @@
 			"conditionsNotMet": "Koşullar sağlanmıyor",
 			"nothingWouldRun": "Bu görev için hiçbir şey çalışmazdı. Aşağıdaki eylemler, koşullar sağlansaydı ne olacağını gösterir.",
 			"stops": "Kuralı durdurur",
-			"wouldFail": "Başarısız olurdu"
+			"wouldFail": "Başarısız olurdu",
+			"scriptOutput": "Betik çıktısı ve çağrıları"
 		},
 		"runs": {
 			"title": "\"{title}\" çalıştırmaları",
@@ -2421,7 +2450,46 @@
 			"percent_done": "Tamamlanma yüzdesi",
 			"priority": "Öncelik",
 			"project_id": "Proje",
-			"repeat_after": "Tekrar aralığı"
+			"repeat_after": "Tekrar aralığı",
+			"GET": "GET",
+			"POST": "POST",
+			"PUT": "PUT",
+			"PATCH": "PATCH",
+			"DELETE": "DELETE"
+		},
+		"secrets": {
+			"title": "Gizli anahtarlar",
+			"new": "Yeni gizli anahtar",
+			"intro": "Gizli anahtarlar; betikler (secrets.get) ve HTTP istekleri (başlık değerlerinde ve içerikte {'{{secrets.AD}}'}) için belirteç ve imza anahtarı gibi değerleri tutar. Değer şifreli saklanır ve bir daha gösterilemez.",
+			"security": "Gizli anahtarlar görüntülenmeye karşı korunur, betiği yazan kişiye karşı değil: her proje yöneticisi, bir gizli anahtarı seçtiği bir sunucuya gönderen betik yazabilir.",
+			"empty": "Bu projede henüz gizli anahtar yok.",
+			"name": "Ad",
+			"nameHelp": "Harf, rakam ve alt çizgi; rakamla başlayamaz.",
+			"nameError": {
+				"required": "Bir ad girin.",
+				"invalid": "Yalnızca harf, rakam ve alt çizgi kullanın; rakamla başlamasın (en çok 64 karakter).",
+				"exists": "Bu adla bir gizli anahtar zaten var. Onun yerine \"Değeri değiştir\"i kullanın."
+			},
+			"value": "Değer",
+			"valueHelp": "Bir kez gönderilir, sonradan okunamaz.",
+			"newValueFor": "{name} için yeni değer",
+			"add": "Gizli anahtarı kaydet",
+			"replace": "Değeri değiştir",
+			"replaceAria": "{name} değerini değiştir",
+			"deleteAria": "{name} gizli anahtarını sil",
+			"createdAt": "oluşturuldu",
+			"updatedAt": "değer girildi",
+			"unreadable": "Okunamıyor",
+			"unreadableHelp": "Sunucu gizli anahtarı değiştiği için kayıtlı değerin şifresi artık çözülemiyor. Değeri yeniden girin; o zamana kadar bunu kullanan betikler hata verir.",
+			"newOption": "Yeni gizli anahtar…",
+			"insertPlaceholder": "Gizli anahtar ekle…",
+			"created": "Gizli anahtar kaydedildi.",
+			"replaced": "Değer değiştirildi.",
+			"deleted": "Gizli anahtar silindi.",
+			"deleteConfirm": {
+				"title": "Bu gizli anahtar silinsin mi?",
+				"text": "“{name}” anahtarını kullanan kuralların tanımı korunur ama ihtiyaç duyan adımda hata verirler."
+			}
 		}
 	}
 }

@@ -2,10 +2,14 @@
 import XButton from '@/components/input/Button.vue'
 import {ref, watch} from 'vue'
 
+import {secretPlaceholder} from '@/helpers/automationScript'
+
 const props = defineProps<{
 	modelValue: unknown
 	id: string
 	label: string
+	// Names of project secrets that may be inserted as {{secrets.NAME}} into a value (header values of http.request).
+	secrets?: string[]
 }>()
 
 const emit = defineEmits<{
@@ -42,6 +46,19 @@ function commit() {
 	emit('update:modelValue', objectOf(rows.value))
 }
 
+// The row whose value was edited last receives an inserted secret placeholder.
+const lastValueRow = ref<number | null>(null)
+
+function insertSecret(event: Event) {
+	const select = event.target as HTMLSelectElement
+	const name = select.value
+	select.value = ''
+	if (name === '' || rows.value.length === 0) return
+	const index = lastValueRow.value !== null && rows.value[lastValueRow.value] ? lastValueRow.value : rows.value.length - 1
+	rows.value[index].value += `{{${secretPlaceholder(name)}}}`
+	commit()
+}
+
 function add() {
 	rows.value.push({key: '', value: ''})
 }
@@ -76,6 +93,7 @@ function remove(index: number) {
 				class="input"
 				:aria-label="$t('automation.map.value', {n: index + 1})"
 				:placeholder="$t('automation.map.valuePlaceholder')"
+				@focus="lastValueRow = index"
 				@input="commit"
 			>
 			<XButton
@@ -95,6 +113,26 @@ function remove(index: number) {
 		>
 			{{ $t('automation.map.add') }}
 		</XButton>
+		<div
+			v-if="secrets && secrets.length > 0 && rows.length > 0"
+			class="select"
+		>
+			<select
+				:aria-label="$t('automation.secrets.insertPlaceholder')"
+				@change="insertSecret"
+			>
+				<option value="">
+					{{ $t('automation.secrets.insertPlaceholder') }}
+				</option>
+				<option
+					v-for="name in secrets"
+					:key="name"
+					:value="name"
+				>
+					{{ name }}
+				</option>
+			</select>
+		</div>
 	</div>
 </template>
 

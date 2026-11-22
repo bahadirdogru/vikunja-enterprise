@@ -46,7 +46,7 @@ describe('ConditionBuilder', () => {
 		const field = wrapper.get('select[aria-label="Field"]')
 		const groups = field.findAll('optgroup').map(g => g.attributes('label'))
 		expect(groups).toEqual(['Task', 'Status', 'Custom fields', 'The change that started the rule'])
-		expect(field.findAll('option').map(o => o.text())).toContain('Baskı adedi')
+		expect(field.findAll('option').map(o => o.text())).toContain('Print run')
 		expect(field.findAll('option').map(o => o.text())).not.toContain('Custom field')
 
 		await field.setValue('done')
@@ -125,10 +125,9 @@ describe('ConditionBuilder', () => {
 	})
 
 	it('offers adding a script only when the catalog advertises it', () => {
-		const without = mountBuilder({all: []})
+		const without = mountBuilder({all: []}, makeContext({catalog: {...catalog, script: null, supportsScript: false}}))
 		expect(without.text()).not.toContain('Add script condition')
-		const advertised = {...catalog, supportsScriptCondition: true}
-		const wrapper = mountBuilder({all: []}, makeContext({catalog: advertised}))
+		const wrapper = mountBuilder({all: []})
 		expect(wrapper.text()).toContain('Add script condition')
 	})
 

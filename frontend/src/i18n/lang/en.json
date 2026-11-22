@@ -1707,6 +1707,10 @@
     "21008": "Choose a status to move the tasks of the removed statuses to.",
     "21009": "Workflow statuses can only be used as columns when the project has a workflow.",
     "21010": "The columns of this board are the workflow statuses. Change them in the workflow settings.",
+    "22005": "Scripts in automation rules are turned off on this server (automation.scripts.enabled).",
+    "22006": "The secret is not valid: use letters, digits and underscores in the name, not starting with a digit (at most 64 characters), and a value of at most 8 KiB.",
+    "22007": "This secret does not exist.",
+    "22008": "The secret cannot be decrypted any more. Set it again.",
     "4016": "Invalid task field.",
     "4017": "Invalid task filter comparator.",
     "4018": "Invalid task filter concatenator.",
@@ -2338,7 +2342,9 @@
       "create_subtask": "Create a subtask",
       "create_related": "Create a related task",
       "move": "Move to another project",
-      "stop_if": "Stop if a condition holds"
+      "stop_if": "Stop if a condition holds",
+      "script_run": "Run a script",
+      "http_request": "Send an HTTP request"
     },
     "condition": {
       "always": "Always",
@@ -2396,7 +2402,13 @@
       "due_offset": "Due date from now (optional)",
       "relation_kind": "Relation (optional)",
       "project_id": "Project",
-      "condition": "Stop when this holds"
+      "condition": "Stop when this holds",
+      "source": "Script",
+      "url": "Address (URL)",
+      "method": "Method",
+      "headers": "Headers",
+      "body": "Body",
+      "secret": "Signing secret (optional)"
     },
     "date": {
       "helpAction": "A date like 2026-12-31, a relative value like +3d or -2h (m, h, d, w) or \"none\" to clear the date.",
@@ -2413,7 +2425,23 @@
     },
     "code": {
       "reference": "Script API",
-      "tabHint": "Tab inserts a tab. Press Escape, then Tab, to leave the field."
+      "tabHint": "Tab inserts a tab. Press Escape, then Tab, to leave the field.",
+      "filter": "Filter the API",
+      "insertName": "Insert {name} at the cursor",
+      "noMatch": "Nothing matches.",
+      "insertExample": "Insert an example…",
+      "limits": "Limits",
+      "limitName": "Limit",
+      "limitValue": "Value",
+      "limitDescription": "What happens",
+      "errorAt": "Syntax error at line {line}, column {column}.",
+      "disabledNote": "Scripts are turned off on this server. This script is shown read-only and fails when the rule runs. Ask the administrator to turn scripts on (automation.scripts.enabled), or remove the script.",
+      "snippet": {
+        "sumSubtasks": "Sum a number field of the subtasks into the parent",
+        "assignFromSecret": "Assign from a list of users kept in a secret",
+        "comment": "Log and add a comment",
+        "conditionPriority": "Priority 3 or higher and not done"
+      }
     },
     "map": {
       "add": "Add row",
@@ -2439,7 +2467,8 @@
       "conditionsNotMet": "The conditions are not met",
       "nothingWouldRun": "Nothing would run for this task. The actions below show what would happen if they were met.",
       "stops": "Stops the rule",
-      "wouldFail": "Would fail"
+      "wouldFail": "Would fail",
+      "scriptOutput": "Script output and calls"
     },
     "runs": {
       "title": "Runs of \"{title}\"",
@@ -2607,7 +2636,46 @@
       "percent_done": "Percent done",
       "priority": "Priority",
       "project_id": "Project",
-      "repeat_after": "Repeat interval"
+      "repeat_after": "Repeat interval",
+      "GET": "GET",
+      "POST": "POST",
+      "PUT": "PUT",
+      "PATCH": "PATCH",
+      "DELETE": "DELETE"
+    },
+    "secrets": {
+      "title": "Secrets",
+      "new": "New secret",
+      "intro": "Secrets hold values such as tokens and signing keys for scripts (secrets.get) and for HTTP requests ({'{{secrets.NAME}}'} in header values and body). A value is stored encrypted and can never be shown again.",
+      "security": "Secrets are protected from display, not from the script author: any project admin can write a script that sends a secret to a server of their choice.",
+      "empty": "This project has no secrets yet.",
+      "name": "Name",
+      "nameHelp": "Letters, digits and underscores, not starting with a digit.",
+      "nameError": {
+        "required": "Enter a name.",
+        "invalid": "Use letters, digits and underscores only, not starting with a digit (at most 64 characters).",
+        "exists": "A secret with this name exists already. Use Replace value on it instead."
+      },
+      "value": "Value",
+      "valueHelp": "Is sent once and cannot be read back.",
+      "newValueFor": "New value for {name}",
+      "add": "Save secret",
+      "replace": "Replace value",
+      "replaceAria": "Replace the value of {name}",
+      "deleteAria": "Delete the secret {name}",
+      "createdAt": "created",
+      "updatedAt": "value set",
+      "unreadable": "Unreadable",
+      "unreadableHelp": "The stored value cannot be decrypted any more because the server secret changed. Set the value again; scripts that use it fail until then.",
+      "newOption": "New secret…",
+      "insertPlaceholder": "Insert a secret…",
+      "created": "The secret was saved.",
+      "replaced": "The value was replaced.",
+      "deleted": "The secret was deleted.",
+      "deleteConfirm": {
+        "title": "Delete this secret?",
+        "text": "Rules that use “{name}” keep their definition and fail at the step that needs it."
+      }
     }
   }
 }

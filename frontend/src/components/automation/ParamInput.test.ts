@@ -140,21 +140,18 @@ describe('ParamInput', () => {
 	})
 
 	it('edits scripts in a monospace textarea with tab support and the API reference', async () => {
-		const context = makeContext()
-		context.catalog.scriptReference = [{name: 'vikunja.tasks.get(id)', description: 'Reads a task'}]
-		const wrapper = mountInput({kind: 'code', modelValue: 'a'}, context)
+		const wrapper = mountInput({kind: 'code', modelValue: 'a'})
 		const area = wrapper.get('textarea')
 		expect(area.classes()).toContain('code-editor__input')
 		await area.trigger('keydown', {key: 'Tab'})
 		expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['a\t'])
 		expect(wrapper.text()).toContain('vikunja.tasks.get(id)')
-		context.catalog.scriptReference = []
 	})
 
 	it('uses a plain input for a secret without a secrets list and a select with one', () => {
 		expect(mountInput({kind: 'secret', modelValue: 'TOKEN'}).find('input[type=text]').exists()).toBe(true)
 		const wrapper = mountInput({kind: 'secret'}, makeContext({secrets: ['TOKEN', 'KEY']}))
-		expect(wrapper.findAll('option').map(o => o.text())).toEqual(['Choose…', 'TOKEN', 'KEY'])
+		expect(wrapper.findAll('option').map(o => o.text())).toEqual(['Choose…', 'TOKEN', 'KEY', 'New secret…'])
 	})
 
 	it('edits a map as key/value rows', async () => {

@@ -71,7 +71,7 @@ function onRemove(treePath: NodePath) {
 					{{ $t('automation.condition.addComparison') }}
 				</XButton>
 				<XButton
-					v-if="context.catalog.supportsScriptCondition"
+					v-if="context.catalog.supportsScript"
 					type="button"
 					variant="secondary"
 					icon="code"

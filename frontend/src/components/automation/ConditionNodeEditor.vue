@@ -232,7 +232,7 @@ function childPath(index: number): string {
 					{{ $t('automation.condition.addGroup') }}
 				</XButton>
 				<XButton
-					v-if="context.catalog.supportsScriptCondition"
+					v-if="context.catalog.supportsScript"
 					type="button"
 					variant="secondary"
 					icon="code"
@@ -266,11 +266,20 @@ function childPath(index: number): string {
 				:id="pathToId(path + '.script')"
 				:model-value="node.script ?? ''"
 				:label="$t('automation.condition.script')"
-				:reference="context.catalog.scriptReference"
+				mode="condition"
 				:invalid="nodeErrors(path + '.script').length > 0"
+				:readonly="!context.catalog.supportsScript"
+				:error-position="context.lines?.value.get(path + '.script') ?? null"
 				:rows="5"
 				@update:modelValue="setScript"
 			/>
+			<p
+				v-if="!context.catalog.supportsScript"
+				class="help is-danger"
+				role="status"
+			>
+				{{ $t('automation.code.disabledNote') }}
+			</p>
 			<p
 				v-for="message in [...nodeErrors(path), ...nodeErrors(path + '.script')]"
 				:key="message"

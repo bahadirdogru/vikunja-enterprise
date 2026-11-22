@@ -55,6 +55,13 @@ async function run() {
 	}
 }
 
+// A script step reports several lines ("would call ..." for what it would change, then its log() output); the first
+// line is the headline, the rest is shown as it is in a monospace box.
+function splitSummary(summary: string): {head: string, rest: string} {
+	const index = summary.indexOf('\n')
+	return index === -1 ? {head: summary, rest: ''} : {head: summary.slice(0, index), rest: summary.slice(index + 1)}
+}
+
 function stepTitle(type: string): string {
 	return catalogLabel(t, te, actionDef(context.catalog, type)?.title_key ?? '', type)
 }
@@ -127,7 +134,7 @@ function stepTitle(type: string): string {
 					:class="{'has-error': step.error}"
 				>
 					<strong>{{ stepTitle(step.type) }}</strong>
-					<span v-if="step.summary">: {{ step.summary }}</span>
+					<span v-if="step.summary">: {{ splitSummary(step.summary).head }}</span>
 					<AutomationBadge
 						v-if="step.stops"
 						variant="info"
@@ -135,6 +142,11 @@ function stepTitle(type: string): string {
 					>
 						{{ $t('automation.test.stops') }}
 					</AutomationBadge>
+					<pre
+						v-if="splitSummary(step.summary).rest"
+						class="dry-run__output"
+						:aria-label="$t('automation.test.scriptOutput')"
+					>{{ splitSummary(step.summary).rest }}</pre>
 					<p
 						v-if="step.error"
 						class="help is-danger"
@@ -195,6 +207,21 @@ function stepTitle(type: string): string {
 		li.has-error strong {
 			color: var(--danger);
 		}
+	}
+
+	&__output {
+		margin: .35rem 0 0;
+		padding: .5rem .7rem;
+		border: 1px solid var(--grey-200);
+		border-radius: $radius;
+		background: var(--grey-100);
+		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+		font-size: .8rem;
+		line-height: 1.45;
+		white-space: pre-wrap;
+		word-break: break-word;
+		max-block-size: 18rem;
+		overflow: auto;
 	}
 
 	&__warning {

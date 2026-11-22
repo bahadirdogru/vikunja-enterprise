@@ -593,7 +593,7 @@ that succeeded are not executed again. Manual trigger (`/tasks/{task}/automation
   task" shows the plan before saving.
 - Runs: table of runs, a run opens to its steps with output and error.
 
-### UI status (3c)
+### UI status (3c, 3b scripting UI)
 
 Implemented in `frontend/`: project settings -> Automations (project admins),
 rule list with enable switch, last run, a warning badge for rules the system
@@ -605,7 +605,26 @@ and remove); client-side required checks and mapping of the server's issue
 paths (`actions[1].params.status_id`) onto the exact inputs; "Test with a task"
 (dry run); per-rule runs table with steps, output, error, retry and automatic
 refresh while a run is `running`. Translation keys of the catalog are checked
-against `en.json` and `tr-TR.json` by a unit test on a catalog snapshot.
+against `en.json` and `tr-TR.json` by a unit test on a catalog snapshot (taken
+from a real 3b backend, with the custom fields of a test project).
+
+Scripting UI (3b), checked in a browser against a real backend (script action
+with log, `task`, `vikunja.fields.set` and a comment; syntax error marked on its
+line and fixed; dry run with the "would call" lines and `log()` output; a real
+run with its step output; a script condition that returns false (run skipped,
+"conditions not met"); `http.request` to a loopback address (step fails with the
+SSRF message); `while (true) {}` (fails with the timeout after 5 s); secrets
+created, replaced, deleted and shown as unreadable after `service.secret`
+changed): the script editor (line numbers, the conventions of the catalog as a
+hint, a collapsible filterable API reference that inserts at the cursor, example
+snippets from the examples above, a collapsible limits table), compile errors
+under the editor and on the offending line, the multi-line dry run output in a
+monospace box, the `secret` parameter as a select over the project secrets with
+an inline "New secret..." form, the `map` parameter (headers) as key/value rows
+with a secret placeholder menu, and a Secrets section on the Automations page
+(names, timestamps, `unreadable` badge, add, replace the value, delete with
+confirmation; values are write-only: a password input, cleared after the
+request, never fetched or logged).
 
 Known limits / deferred:
 
@@ -613,11 +632,19 @@ Known limits / deferred:
   first and disables the test for a changed draft.
 - The runs list has no server-side status filter; the filter narrows the loaded
   page.
-- Script editing (`code` kind, script condition node, `secret`, `map`) is
-  handled generically (textarea with tab support, API reference from any
-  `script*` list in the catalog, key/value rows) but untested against a real
-  3b backend. Unknown kinds fall back to a JSON textarea. No syntax
-  highlighting yet.
+- Script editing has no syntax highlighting (monospace textarea with line
+  numbers, Tab support and an error marker on the line the server reports).
+  A script is only checked by the server when the rule is saved (syntax errors
+  with line and column); the editor does not compile it while typing.
+- `{{secrets.NAME}}` is offered in the placeholder menu only for the `http.request`
+  header values and body. The catalog does not mark those places, so the list
+  is a constant in `frontend/src/helpers/automationScript.ts`; the server still
+  rejects the placeholder elsewhere when the rule is saved.
+- Scripts switched off on the instance (`automation.scripts.enabled = false`):
+  the catalog still carries the `script` object, but its limits row
+  `automation.scripts.enabled` has the value `false`. The UI treats that (or a
+  catalog without `script`) as "scripts unavailable": the script action and the
+  script condition are not offered, existing ones are shown read-only with a note.
 - No drag-and-drop reordering (buttons only), no manual-trigger button on the
   task (3d).
 

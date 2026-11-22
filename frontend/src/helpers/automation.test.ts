@@ -20,6 +20,7 @@ import {
 	issuesFromProblem,
 	knownPaths,
 	mapIssues,
+	offeredActions,
 	moveItem,
 	newComparison,
 	newGroup,
@@ -63,19 +64,8 @@ describe('catalog normalization', () => {
 		const result = normalizeCatalog({triggers: null, actions: [{type: 'x.y', params: [{name: 'p', kind: 'brand_new'}]}]})
 		expect(result.triggers).toEqual([])
 		expect(result.actions[0].params[0]).toMatchObject({kind: 'brand_new', required: false, enum: []})
-		expect(result.supportsScriptCondition).toBe(false)
-	})
-
-	it('detects the scripting additions generically', () => {
-		const result = normalizeCatalog({
-			actions: [{type: 'script.run', title_key: 'automation.action.script_run', params: [{name: 'source', kind: 'code', required: true}]}],
-			script_api: [{name: 'vikunja.tasks.get(id)', description: 'Reads a task'}, 'log(...)'],
-		})
-		expect(result.supportsScriptCondition).toBe(true)
-		expect(result.scriptReference).toEqual([
-			{name: 'vikunja.tasks.get(id)', description: 'Reads a task'},
-			{name: 'log(...)', description: ''},
-		])
+		expect(result.supportsScript).toBe(false)
+		expect(result.script).toBeNull()
 	})
 
 	it('groups fields', () => {
@@ -362,27 +352,48 @@ describe('template presets', () => {
 })
 
 describe('script reference from the catalog', () => {
-	it('reads the api list of the script object and offers script conditions', () => {
+	it('reads the script object: conventions, limits and api', () => {
 		const catalog = normalizeCatalog({
 			triggers: [], fields: [], operators: [], actions: [],
 			script: {
 				language: 'javascript',
+				action_convention: 'Use return.',
+				condition_convention: 'Return a boolean.',
+				limits: [{name: 'Script timeout', config_key: 'automation.scripts.timeout', value: '5s', description: 'Stops it.'}],
 				api: [
-					{name: 'vikunja.tasks.get', signature: 'vikunja.tasks.get(id) -> task', description: 'Loads a task.'},
-					{name: 'log', signature: '', description: 'Writes to the step output.'},
+					{name: 'vikunja.tasks.get', signature: 'vikunja.tasks.get(id) -> task', description: 'Loads a task.', mutating: false, in_condition: true},
+					{name: 'vikunja.tasks.update', signature: '', description: 'Changes a task.', mutating: true, in_condition: false},
 				],
 			},
 		})
-		expect(catalog.scriptReference).toEqual([
-			{name: 'vikunja.tasks.get(id) -> task', description: 'Loads a task.'},
-			{name: 'log', description: 'Writes to the step output.'},
+		expect(catalog.script?.actionConvention).toBe('Use return.')
+		expect(catalog.script?.conditionConvention).toBe('Return a boolean.')
+		expect(catalog.script?.limits).toEqual([{name: 'Script timeout', configKey: 'automation.scripts.timeout', value: '5s', description: 'Stops it.'}])
+		expect(catalog.script?.api).toEqual([
+			{name: 'vikunja.tasks.get', signature: 'vikunja.tasks.get(id) -> task', description: 'Loads a task.', mutating: false, inCondition: true},
+			{name: 'vikunja.tasks.update', signature: 'vikunja.tasks.update', description: 'Changes a task.', mutating: true, inCondition: false},
 		])
-		expect(catalog.supportsScriptCondition).toBe(true)
+		expect(catalog.supportsScript).toBe(true)
 	})
 
-	it('offers no script condition without a script object', () => {
-		const catalog = normalizeCatalog({triggers: [], fields: [], operators: [], actions: []})
-		expect(catalog.scriptReference).toEqual([])
-		expect(catalog.supportsScriptCondition).toBe(false)
+	it('offers no scripts without a script object or when the instance switch is off', () => {
+		const none = normalizeCatalog({triggers: [], fields: [], operators: [], actions: []})
+		expect(none.script).toBeNull()
+		expect(none.supportsScript).toBe(false)
+		const off = normalizeCatalog({
+			triggers: [], fields: [], operators: [],
+			actions: [{type: 'script.run', params: [{name: 'source', kind: 'code'}]}, {type: 'task.assign', params: []}],
+			script: {limits: [{name: 'Scripts enabled', config_key: 'automation.scripts.enabled', value: 'false', description: ''}], api: []},
+		})
+		expect(off.supportsScript).toBe(false)
+		expect(offeredActions(off).map(a => a.type)).toEqual(['task.assign'])
+		expect(offeredActions(off, 'script.run').map(a => a.type)).toEqual(['script.run', 'task.assign'])
+	})
+
+	it('maps the line and column of a syntax error onto its path', () => {
+		const issues = issuesFromProblem({details: {issues: [{path: 'actions[0].params.source', message: 'syntax error: Unexpected token ;', line: 2, column: 9}]}})
+		expect(issues).toEqual([{path: 'actions[0].params.source', message: 'syntax error: Unexpected token ;', line: 2, column: 9}])
+		const mapped = mapIssues(issues!, new Set(['actions[0].params.source']))
+		expect(mapped.lines.get('actions[0].params.source')).toEqual({line: 2, column: 9})
 	})
 })

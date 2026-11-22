@@ -13,6 +13,7 @@ import {
 	pathToId,
 	type CatalogParam,
 } from '@/helpers/automation'
+import {allowsSecretPlaceholder} from '@/helpers/automationScript'
 
 const props = defineProps<{
 	param: CatalogParam
@@ -21,6 +22,8 @@ const props = defineProps<{
 	values: Record<string, unknown>
 	path: string
 	dateContext?: 'action' | 'condition'
+	// The action type the param belongs to (decides where {{secrets.NAME}} is accepted).
+	actionType?: string
 }>()
 
 const emit = defineEmits<{
@@ -109,6 +112,7 @@ const isCondition = computed(() => kind.value === 'condition')
 			:invalid="messages.length > 0"
 			:custom-field="customField"
 			:path="path"
+			:allow-secrets="allowsSecretPlaceholder(actionType, param.name)"
 			@update:modelValue="emit('update', param.name, $event)"
 		/>
 

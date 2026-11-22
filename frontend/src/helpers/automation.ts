@@ -35,13 +35,32 @@ export type CatalogResponse = {
 	operators: CatalogOperator[]
 	actions: CatalogAction[]
 	placeholders: string[]
-	// Reference of the script API a newer backend may send (any top-level list whose key starts with "script").
-	scriptReference: ScriptReferenceEntry[]
-	// Whether the backend offers script conditions (a catalog flag or any `code` param).
-	supportsScriptCondition: boolean
+	// The script reference of the backend (conventions, limits, API), or null when it sends none.
+	script: ScriptDoc | null
+	// True when scripts can be written: the catalog has a script reference and the instance has them enabled.
+	supportsScript: boolean
 }
 
-export type ScriptReferenceEntry = {name: string, description: string}
+export type ScriptApiEntry = {
+	name: string
+	signature: string
+	description: string
+	// Changes something (not available in a condition script).
+	mutating: boolean
+	// Available in a condition script.
+	inCondition: boolean
+}
+export type ScriptLimit = {name: string, configKey: string, value: string, description: string}
+export type ScriptDoc = {
+	language: string
+	actionConvention: string
+	conditionConvention: string
+	limits: ScriptLimit[]
+	api: ScriptApiEntry[]
+}
+
+// The config key of the instance switch that turns scripts off; its value is a limit row of the reference.
+export const SCRIPTS_ENABLED_KEY = 'automation.scripts.enabled'
 
 type Json = Record<string, unknown>
 
@@ -72,37 +91,43 @@ function params(value: unknown): CatalogParam[] {
 	return Array.isArray(value) ? (value as Json[]).map(normalizeParam) : []
 }
 
-function normalizeScriptReference(raw: Json): ScriptReferenceEntry[] {
-	const entries: ScriptReferenceEntry[] = []
-	// The backend sends `script: {language, action_convention, condition_convention, limits, api: [...]}`.
+function normalizeScript(raw: Json): ScriptDoc | null {
 	const doc = raw.script
-	if (doc && typeof doc === 'object' && !Array.isArray(doc)) {
-		const api = (doc as Json).api
-		if (Array.isArray(api)) {
-			for (const item of api as Json[]) {
-				if (!item || typeof item !== 'object') continue
-				entries.push({
-					name: str(item.signature) || str(item.name),
-					description: str(item.description),
-				})
-			}
-		}
+	if (!doc || typeof doc !== 'object' || Array.isArray(doc)) return null
+	const d = doc as Json
+	const list = (value: unknown): Json[] => Array.isArray(value)
+		? (value as unknown[]).filter((item): item is Json => !!item && typeof item === 'object')
+		: []
+	return {
+		language: str(d.language) || 'javascript',
+		actionConvention: str(d.action_convention),
+		conditionConvention: str(d.condition_convention),
+		limits: list(d.limits).map(l => ({
+			name: str(l.name),
+			configKey: str(l.config_key),
+			value: str(l.value),
+			description: str(l.description),
+		})),
+		api: list(d.api)
+			.map(entry => ({
+				name: str(entry.name),
+				signature: str(entry.signature) || str(entry.name),
+				description: str(entry.description),
+				mutating: entry.mutating === true,
+				inCondition: entry.in_condition !== false,
+			}))
+			.filter(entry => entry.name !== ''),
 	}
-	for (const [key, value] of Object.entries(raw)) {
-		if (!key.startsWith('script') || !Array.isArray(value)) continue
-		for (const item of value) {
-			if (typeof item === 'string') {
-				entries.push({name: item, description: ''})
-			} else if (item && typeof item === 'object') {
-				const entry = item as Json
-				entries.push({
-					name: str(entry.name) || str(entry.signature) || str(entry.title),
-					description: str(entry.description) || str(entry.doc) || str(entry.summary),
-				})
-			}
-		}
-	}
-	return entries.filter(entry => entry.name !== '')
+}
+
+// True for an action that runs a script (it has a `code` parameter).
+export function isScriptAction(def: CatalogAction | undefined): boolean {
+	return !!def && def.params.some(param => param.kind === 'code')
+}
+
+// The actions to offer: script actions only when scripts are available (an existing one stays in the list of its card).
+export function offeredActions(catalog: CatalogResponse, keep = ''): CatalogAction[] {
+	return catalog.supportsScript ? catalog.actions : catalog.actions.filter(a => a.type === keep || !isScriptAction(a))
 }
 
 // The generated type marks everything optional; this is the shape the editor relies on.
@@ -135,19 +160,17 @@ export function normalizeCatalog(raw: Json): CatalogResponse {
 		no_value: o.no_value === true,
 		list: o.list === true,
 	}))
-	const hasCodeParam = actions.some(a => a.params.some(p => p.kind === 'code'))
+	const script = normalizeScript(raw)
 	return {
 		triggers,
 		fields,
 		operators,
 		actions,
 		placeholders: strList(raw.placeholders),
-		scriptReference: normalizeScriptReference(raw),
-		supportsScriptCondition: (!!raw.script && typeof raw.script === 'object')
-			|| raw.script_condition === true
-			|| raw.supports_script_condition === true
-			|| (Array.isArray(raw.condition_nodes) && raw.condition_nodes.includes('script'))
-			|| hasCodeParam,
+		script,
+		// A backend that lists the switch with the value "false" has scripts turned off.
+		supportsScript: script !== null
+			&& script.limits.find(limit => limit.configKey === SCRIPTS_ENABLED_KEY)?.value !== 'false',
 	}
 }
 
@@ -493,7 +516,8 @@ export function changeActionType(action: ActionDraft, next: CatalogAction | unde
 // ---------------------------------------------------------------------------------------------------------------
 // Validation
 
-export type Issue = {path: string, message: string}
+export type ScriptPosition = {line: number, column: number}
+export type Issue = {path: string, message: string, line?: number, column?: number}
 
 export type Translate = (key: string, params?: Record<string, unknown>) => string
 
@@ -621,8 +645,9 @@ function parentPath(path: string): string {
 
 // Server paths address the pruned document, which can differ from the draft after pruning empty groups. The
 // serialized form is what the server saw, so indexes line up with knownPaths (which also uses the pruned tree).
-export function mapIssues(issues: Issue[], known: Set<string>): {byPath: Map<string, string[]>, unmapped: Issue[]} {
+export function mapIssues(issues: Issue[], known: Set<string>): {byPath: Map<string, string[]>, lines: Map<string, ScriptPosition>, unmapped: Issue[]} {
 	const byPath = new Map<string, string[]>()
+	const lines = new Map<string, ScriptPosition>()
 	const unmapped: Issue[] = []
 	for (const issue of issues) {
 		let path = issue.path
@@ -632,8 +657,11 @@ export function mapIssues(issues: Issue[], known: Set<string>): {byPath: Map<str
 			continue
 		}
 		byPath.set(path, [...(byPath.get(path) ?? []), issue.message])
+		if (issue.line !== undefined && path === issue.path && !lines.has(path)) {
+			lines.set(path, {line: issue.line, column: issue.column ?? 1})
+		}
 	}
-	return {byPath, unmapped}
+	return {byPath, lines, unmapped}
 }
 
 // Id of the DOM element that carries the input for a path.
@@ -647,8 +675,14 @@ export function issuesFromProblem(problem: unknown): Issue[] | null {
 	const raw = details && typeof details === 'object' ? (details as {issues?: unknown}).issues : undefined
 	if (!Array.isArray(raw)) return null
 	return raw
-		.filter((item): item is {path?: unknown, message?: unknown} => !!item && typeof item === 'object')
-		.map(item => ({path: str(item.path), message: str(item.message)}))
+		.filter((item): item is {path?: unknown, message?: unknown, line?: unknown, column?: unknown} => !!item && typeof item === 'object')
+		.map(item => {
+			const issue: Issue = {path: str(item.path), message: str(item.message)}
+			// A syntax error of a script carries the position in the source.
+			if (typeof item.line === 'number' && item.line > 0) issue.line = item.line
+			if (typeof item.column === 'number' && item.column > 0) issue.column = item.column
+			return issue
+		})
 		.filter(item => item.message !== '')
 }
 

@@ -27,6 +27,7 @@ import {
 	knownPaths,
 	mapIssues,
 	moveItem,
+	offeredActions,
 	pathToId,
 	pruneConditions,
 	removeAction,
@@ -83,6 +84,7 @@ const mapped = computed(() => mapIssues(
 	knownPaths(draft.value, props.catalog),
 ))
 const errors = computed(() => mapped.value.byPath)
+const lines = computed(() => mapped.value.lines)
 
 // Server messages describe the saved document: they go stale with the next edit.
 watch(() => draftSignature(draft.value), () => {
@@ -97,6 +99,7 @@ const context: AutomationContext = {
 	get statuses() { return props.statuses },
 	get secrets() { return props.secrets ?? null },
 	errors,
+	lines,
 }
 provide(automationContextKey, context)
 
@@ -385,7 +388,7 @@ const actionsErrors = computed(() => errors.value.get('actions') ?? [])
 						id="automation-add-action"
 						:key="addKey"
 						model-value=""
-						:items="catalog.actions"
+						:items="offeredActions(catalog)"
 						:label="$t('automation.then.add')"
 						:placeholder="$t('automation.then.add')"
 						@update:modelValue="addAction"

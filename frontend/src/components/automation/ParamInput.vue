@@ -8,6 +8,7 @@ import AutomationSelect, {type SelectChoice} from '@/components/automation/Autom
 import CodeEditor from '@/components/automation/CodeEditor.vue'
 import ConditionBuilder from '@/components/automation/ConditionBuilder.vue'
 import KeyValueInput from '@/components/automation/KeyValueInput.vue'
+import SecretForm from '@/components/automation/SecretForm.vue'
 import {placeholderLabel, useAutomationContext} from '@/components/automation/context'
 import CustomFieldValueEditor from '@/components/custom-fields/CustomFieldValueEditor.vue'
 import type {CustomFieldResponse} from '@/client/queries/customFields'
@@ -15,6 +16,7 @@ import {useLabels} from '@/composables/useLabels'
 import {useProjects} from '@/composables/useProjects'
 import {useProjectUserSearch} from '@/composables/useUserSearch'
 import {enumLabel, groupKind, type ConditionNode} from '@/helpers/automation'
+import {secretPlaceholder} from '@/helpers/automationScript'
 import {dateSuggestions, isValidDateSpec, isValidOffset} from '@/helpers/automationValues'
 import {getDisplayName} from '@/helpers/user'
 
@@ -36,6 +38,8 @@ const props = withDefaults(defineProps<{
 	customField?: CustomFieldResponse | null
 	// Path used for the ids of nested inputs (embedded conditions).
 	path?: string
+	// {{secrets.NAME}} may be used in this value (see allowsSecretPlaceholder).
+	allowSecrets?: boolean
 }>(), {
 	multiple: false,
 	enumValues: () => [],
@@ -45,6 +49,7 @@ const props = withDefaults(defineProps<{
 	required: false,
 	customField: null,
 	path: '',
+	allowSecrets: false,
 })
 
 const emit = defineEmits<{
@@ -109,9 +114,37 @@ const statusChoices = computed<SelectChoice[]>(() => context.statuses.map(status
 
 const customFieldChoices = computed<SelectChoice[]>(() => context.customFields.map(field => ({value: field.id, label: field.title})))
 
-const secretChoices = computed<SelectChoice[]>(() => (context.secrets ?? []).map(name => ({value: name, label: name})))
+const secretNames = computed(() => context.secrets ?? [])
+// The empty entry of the select is "choose", the last one opens the inline form for a secret that does not exist yet.
+const NEW_SECRET = '\u0000new-secret'
+const secretChoices = computed<SelectChoice[]>(() => [
+	...secretNames.value.map(name => ({value: name, label: name})),
+	{value: NEW_SECRET, label: t('automation.secrets.newOption')},
+])
+const creatingSecret = ref(false)
 
-const placeholders = computed(() => context.catalog.placeholders.flatMap(p => placeholderLabel(p, context.customFields)))
+function onSecretChoice(value: string | number | boolean | null) {
+	if (value === NEW_SECRET) {
+		creatingSecret.value = true
+		return
+	}
+	creatingSecret.value = false
+	emit('update:modelValue', value)
+}
+
+function onSecretCreated(name: string) {
+	creatingSecret.value = false
+	emit('update:modelValue', name)
+}
+
+// Scripts can be read but not changed when the instance turned them off.
+const scriptsReadonly = computed(() => !context.catalog.supportsScript)
+const scriptPosition = computed(() => context.lines?.value.get(props.path) ?? null)
+
+const placeholders = computed<{value: string, label: string, group?: string}[]>(() => [
+	...context.catalog.placeholders.flatMap(p => placeholderLabel(p, context.customFields)),
+	...(props.allowSecrets && props.kind === 'template' ? secretNames.value.map(name => ({value: secretPlaceholder(name), label: secretPlaceholder(name), group: t('automation.secrets.title')})) : []),
+])
 
 // ---- text-like inputs ----------------------------------------------------------------------------------------
 const textValue = computed(() => typeof props.modelValue === 'string' ? props.modelValue : props.modelValue == null ? '' : String(props.modelValue))
@@ -455,15 +488,25 @@ function toggleEnum(value: string, checked: boolean) {
 		/>
 
 		<!-- scripting kinds -->
-		<CodeEditor
-			v-else-if="kind === 'code'"
-			:id="id"
-			:model-value="textValue"
-			:label="label"
-			:reference="context.catalog.scriptReference"
-			:invalid="invalid"
-			@update:modelValue="emit('update:modelValue', $event)"
-		/>
+		<template v-else-if="kind === 'code'">
+			<CodeEditor
+				:id="id"
+				:model-value="textValue"
+				:label="label"
+				mode="action"
+				:invalid="invalid"
+				:readonly="scriptsReadonly"
+				:error-position="scriptPosition"
+				@update:modelValue="emit('update:modelValue', $event)"
+			/>
+			<p
+				v-if="scriptsReadonly"
+				class="help is-danger"
+				role="status"
+			>
+				{{ $t('automation.code.disabledNote') }}
+			</p>
+		</template>
 		<template v-else-if="kind === 'secret'">
 			<AutomationSelect
 				v-if="context.secrets !== null"
@@ -473,10 +516,19 @@ function toggleEnum(value: string, checked: boolean) {
 				:label="label"
 				:placeholder="emptyLabel"
 				:invalid="invalid"
-				@update:modelValue="emit('update:modelValue', $event)"
+				@update:modelValue="onSecretChoice"
+			/>
+			<SecretForm
+				v-if="context.secrets !== null && creatingSecret"
+				:project-id="context.projectId"
+				:existing="secretNames"
+				:id-prefix="`${id}-new-secret`"
+				@saved="onSecretCreated"
+				@cancel="creatingSecret = false"
 			/>
 			<input
-				v-else
+				v-else-if="context.secrets === null"
+				
 				:id="id"
 				class="input"
 				type="text"
@@ -492,6 +544,7 @@ function toggleEnum(value: string, checked: boolean) {
 			:id="id"
 			:model-value="modelValue"
 			:label="label"
+			:secrets="allowSecrets ? secretNames : []"
 			@update:modelValue="emit('update:modelValue', $event)"
 		/>
 
@@ -542,7 +595,7 @@ function toggleEnum(value: string, checked: boolean) {
 			v-if="kind === 'template' && placeholders.length > 0"
 			class="param-input__placeholders"
 			:model-value="null"
-			:options="placeholders.map(p => ({value: p.value, label: p.label}))"
+			:options="placeholders.map(p => ({value: p.value, label: p.label, group: p.group}))"
 			:aria-label="$t('automation.param.insertPlaceholder')"
 			:placeholder="$t('automation.param.insertPlaceholder')"
 			@update:modelValue="insertPlaceholder"

@@ -10,6 +10,7 @@ import {
 	actionDef,
 	catalogLabel,
 	changeActionType,
+	offeredActions,
 	pathToId,
 	type ActionDraft,
 } from '@/helpers/automation'
@@ -57,7 +58,7 @@ function setParam(name: string, value: unknown) {
 			<TypePicker
 				:id="pathToId(`${path}.type`)"
 				:model-value="action.type"
-				:items="context.catalog.actions"
+				:items="offeredActions(context.catalog, action.type)"
 				:searchable="false"
 				:label="$t('automation.action.type')"
 				:invalid="typeMessages.length > 0"
@@ -115,6 +116,7 @@ function setParam(name: string, value: unknown) {
 				:param="param"
 				:siblings="def.params"
 				:values="action.params"
+				:action-type="action.type"
 				:path="`${path}.params.${param.name}`"
 				@update="setParam"
 			/>

@@ -1,7 +1,7 @@
 import {inject, type ComputedRef, type InjectionKey} from 'vue'
 
 import type {CustomFieldResponse} from '@/client/queries/customFields'
-import type {CatalogResponse} from '@/helpers/automation'
+import type {CatalogResponse, ScriptPosition} from '@/helpers/automation'
 
 export type AutomationStatus = {id: number, title: string, category: string}
 
@@ -15,6 +15,8 @@ export type AutomationContext = {
 	secrets: string[] | null
 	// Messages by path (client and server validation).
 	errors: ComputedRef<Map<string, string[]>>
+	// Position of a script syntax error by path (the server reports line and column).
+	lines?: ComputedRef<Map<string, ScriptPosition>>
 }
 
 export const automationContextKey: InjectionKey<AutomationContext> = Symbol('automation-context')
