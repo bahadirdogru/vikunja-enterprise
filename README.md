@@ -1,3 +1,10 @@
+> **vikunja-enterprise** is an independent community fork of [Vikunja](https://github.com/go-vikunja/vikunja).
+> It is **not** an official Vikunja product and is not affiliated with or endorsed by the Vikunja project.
+> All features are enabled without a license key. See [docs/enterprise/ROADMAP.md](docs/enterprise/ROADMAP.md).
+> If Vikunja is useful to you, please consider [supporting the upstream project](https://vikunja.io).
+>
+> Image: `ghcr.io/bahadirdogru/vikunja-enterprise` (linux/amd64, linux/arm64)
+
 <img src="https://vikunja.io/images/vikunja-logo.svg" alt="" style="display: block;width: 50%;margin: 0 auto;" width="50%"/>
 
 [![Build Status](https://github.com/go-vikunja/vikunja/actions/workflows/ci.yml/badge.svg)](https://github.com/go-vikunja/vikunja/actions/workflows/ci.yml)
