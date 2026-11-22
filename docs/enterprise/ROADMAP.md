@@ -34,9 +34,9 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
 | 3c | Automation UI: rule list, catalog-driven When / If / Then editor, dry run, runs with steps and retry | Done |
 | 3d | Automation: schedule / manual / incoming webhook triggers, wait action, templates | Planned |
 | 4a | Dashboards: task aggregation API (`POST /api/v2/reports/tasks`), options endpoint, dashboards/widgets CRUD ([dashboards.md](dashboards.md)) | Done |
-| 4b | Dashboards: pages, SVG charts, widget editor, drill-down | Next |
+| 4b | Dashboards UI: SVG charts, dashboard pages with drag/resize grid, widget editor with live preview, drill-down | Done |
 | 4c | Dashboards: status time, workload, time tracking widgets, CSV export | Planned |
-| 5a | Approvals backend ([forms-approvals.md](forms-approvals.md)) | Designed |
+| 5a | Approvals backend ([forms-approvals.md](forms-approvals.md)) | In progress |
 | 5b | Approvals UI | Planned |
 | 5c | Forms backend | Designed |
 | 5d | Forms UI (builder, public form page) | Planned |
@@ -113,3 +113,11 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   who writes scripts can read that project's secrets; the step transaction
   stays open during scripts and HTTP calls; MySQL not exercised;
   `vikunja.tasks.find` with `cf_` / status filters not tested.
+- Dashboards UI added (en + tr); full frontend suite passes (3319 tests) with
+  caches cleared. Exercised in a browser: default project dashboard, all 7
+  offered widget types with live preview, move/resize and persistence,
+  drill-down counts matching chart values, read-only second user, rename /
+  delete, widget duplicate / remove, Turkish locale, 390px, dark mode.
+  Display options (bar direction, stacked, legend) are stored in the browser.
+  Note for test runs: delete `frontend/node_modules/.vitest-cache` after
+  translation changes, a stale cache makes new keys render as raw key names.
