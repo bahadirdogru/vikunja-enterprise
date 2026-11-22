@@ -24,8 +24,11 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
 | 1a | Custom fields: backend (models, migration, `/api/v2` routes, events) | Done |
 | 1b | Custom fields: frontend (project settings page, task detail editors, en + tr) | Done |
 | 1c | Custom fields: filter (`cf_<id>`) and sort in the API, values removed when a task changes project | Done |
-| 1d | Custom fields: filter/sort UI (field names instead of ids), table columns, kanban card fields | Planned |
-| 2 | Workflow (statuses, allowed transitions, required fields, transition history) | Designed, see [workflow.md](workflow.md) |
+| 1d | Custom fields: values in task lists (`expand=custom_fields`), table columns, kanban card fields | Done |
+| 1e | Custom fields: filter UI with field names instead of `cf_<id>` | Planned |
+| 2a | Workflow backend: statuses, transitions, required fields, teams, history, done sync, `/api/v2` ([workflow.md](workflow.md)) | Done |
+| 2b | Workflow UI: editor in project settings, status picker + history on the task, missing-requirements dialog | Next |
+| 2c | Workflow: kanban status mode, table column, filter/sort by status | Planned |
 | 3 | Automation + scripting (trigger → condition → action, run history, safety limits) | Designed, see [automation.md](automation.md) |
 | 4 | Dashboards and reports | Planned |
 | 5 | Forms and approvals | Planned |
@@ -52,3 +55,11 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   PostgreSQL 17. MySQL not exercised. Date `=` compares exact instants, use a
   range. Picking a date and a user in the task detail view checked in a
   browser.
+- Custom field values can be embedded in task lists; table view columns and
+  kanban card fields added (selection stored in the browser, per project /
+  per view). Checked visually.
+- Workflow backend added. Full models suite passes on SQLite and PostgreSQL
+  17, full webtests on SQLite; MySQL not exercised, golangci-lint not run,
+  not exposed through MCP. Notes: a transition that requires a comment cannot
+  be done through the done checkbox; enabling a workflow on an existing
+  project assigns statuses in bulk without history rows.
