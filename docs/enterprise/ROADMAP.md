@@ -31,10 +31,10 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
 | 2c | Workflow in views: kanban status mode (columns = statuses, drag = transition), table column, list/card badges, filter and sort by `status` / `status_category` | Done |
 | 3a | Automation core: transactional outbox, workers, rules, conditions, non-script actions, run history, limits, dry run, catalog ([automation.md](automation.md)) | Done |
 | 3b | Automation: script condition/action, http, secrets | Planned |
-| 3c | Automation UI | Planned |
+| 3c | Automation UI: rule list, catalog-driven When / If / Then editor, dry run, runs with steps and retry | Done |
 | 3d | Automation: schedule / manual / incoming webhook triggers, wait action, templates | Planned |
-| 4a | Dashboards: aggregation API, dashboards/widgets CRUD ([dashboards.md](dashboards.md)) | In progress |
-| 4b | Dashboards: pages, SVG charts, widget editor, drill-down | Planned |
+| 4a | Dashboards: task aggregation API (`POST /api/v2/reports/tasks`), options endpoint, dashboards/widgets CRUD ([dashboards.md](dashboards.md)) | Done |
+| 4b | Dashboards: pages, SVG charts, widget editor, drill-down | Next |
 | 4c | Dashboards: status time, workload, time tracking widgets, CSV export | Planned |
 | 5 | Forms and approvals | Planned |
 | – | Organisation / tenant layer, AI features | Deferred |
@@ -88,3 +88,14 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   suggestions. Not exercised in a browser: forbidden moves, create-in-column
   that needs input, a status board after its workflow is deleted. In status
   mode a column's bucket id is the negated status id.
+- Automation UI added (en + tr); full frontend unit suite passes on main.
+  Exercised in a browser: rule from a template, hand-built rule with nested
+  conditions, server validation error mapped to its input, dry run, real runs
+  with steps, retry, enable switch, 390px width, dark mode. The dry run only
+  tests saved rules.
+- Reports API and dashboards backend added. The report reuses the task
+  list's own scope and filter builder; a permission matrix test (7 viewers x
+  11 filters x 4 scopes) asserts report totals equal task list totals. New
+  tests pass on SQLite, PostgreSQL 17 and MySQL 8; full suites on SQLite
+  only. Deferred: status time / workload / time tracking data, CSV export,
+  number comparison, running open count.
