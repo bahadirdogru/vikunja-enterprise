@@ -118,6 +118,32 @@
       "title_key": "automation.trigger.task_attachment_added",
       "event": "task.attachment.created",
       "options": []
+    },
+    {
+      "type": "approval.requested",
+      "title_key": "automation.trigger.approval_requested",
+      "event": "approval.requested",
+      "options": []
+    },
+    {
+      "type": "approval.resolved",
+      "title_key": "automation.trigger.approval_resolved",
+      "event": "approval.resolved",
+      "options": [
+        {
+          "name": "outcome",
+          "kind": "enum",
+          "required": false,
+          "enum": [
+            "any",
+            "approved",
+            "rejected",
+            "cancelled"
+          ],
+          "title_key": "automation.option.outcome",
+          "default": "any"
+        }
+      ]
     }
   ],
   "fields": [
@@ -917,6 +943,122 @@
       "title_key": "automation.field.event_new_attachment_name"
     },
     {
+      "name": "event.new.approval_id",
+      "kind": "number",
+      "operators": [
+        "=",
+        "!=",
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "in",
+        "not in",
+        "is_empty",
+        "is_not_empty"
+      ],
+      "title_key": "automation.field.event_new_approval_id"
+    },
+    {
+      "name": "event.new.approval_title",
+      "kind": "string",
+      "operators": [
+        "=",
+        "!=",
+        "like",
+        "in",
+        "not in",
+        "is_empty",
+        "is_not_empty"
+      ],
+      "title_key": "automation.field.event_new_approval_title"
+    },
+    {
+      "name": "event.new.approval_mode",
+      "kind": "enum",
+      "enum": [
+        "any",
+        "all"
+      ],
+      "operators": [
+        "=",
+        "!=",
+        "in",
+        "not in",
+        "is_empty",
+        "is_not_empty"
+      ],
+      "title_key": "automation.field.event_new_approval_mode"
+    },
+    {
+      "name": "event.new.ad_hoc",
+      "kind": "bool",
+      "operators": [
+        "=",
+        "!="
+      ],
+      "title_key": "automation.field.event_new_ad_hoc"
+    },
+    {
+      "name": "event.new.requested_by",
+      "kind": "user",
+      "operators": [
+        "=",
+        "!=",
+        "in",
+        "not in",
+        "is_empty",
+        "is_not_empty"
+      ],
+      "title_key": "automation.field.event_new_requested_by"
+    },
+    {
+      "name": "event.new.approvers",
+      "kind": "users",
+      "multiple": true,
+      "operators": [
+        "=",
+        "!=",
+        "in",
+        "not in",
+        "is_empty",
+        "is_not_empty"
+      ],
+      "title_key": "automation.field.event_new_approvers"
+    },
+    {
+      "name": "event.new.outcome",
+      "kind": "enum",
+      "enum": [
+        "approved",
+        "rejected",
+        "cancelled"
+      ],
+      "operators": [
+        "=",
+        "!=",
+        "in",
+        "not in",
+        "is_empty",
+        "is_not_empty"
+      ],
+      "title_key": "automation.field.event_new_outcome"
+    },
+    {
+      "name": "event.new.cancel_reason",
+      "kind": "string",
+      "operators": [
+        "=",
+        "!=",
+        "like",
+        "in",
+        "not in",
+        "is_empty",
+        "is_not_empty"
+      ],
+      "title_key": "automation.field.event_new_cancel_reason"
+    },
+    {
       "name": "cf_1",
       "kind": "number",
       "operators": [
@@ -1282,6 +1424,55 @@
       "description": "Runs JavaScript with the permissions of the rule owner. The source is the body of a function: use return to give a result, which is stored (as JSON) in the output of the step. A thrown error fails the step. See the script reference for the globals and the limits."
     },
     {
+      "type": "approval.request",
+      "title_key": "automation.action.approval_request",
+      "params": [
+        {
+          "name": "approvers",
+          "kind": "users",
+          "required": true,
+          "multiple": true,
+          "enum": [
+            "event_doer",
+            "task_creator",
+            "assignees"
+          ],
+          "title_key": "automation.param.approvers"
+        },
+        {
+          "name": "mode",
+          "kind": "enum",
+          "required": false,
+          "enum": [
+            "any",
+            "all"
+          ],
+          "title_key": "automation.param.mode",
+          "description": "any: the first decision resolves the request. all: every approver has to approve, one rejection rejects.",
+          "default": "any"
+        },
+        {
+          "name": "title",
+          "kind": "template",
+          "required": true,
+          "title_key": "automation.param.title"
+        },
+        {
+          "name": "description",
+          "kind": "template",
+          "required": false,
+          "title_key": "automation.param.description"
+        },
+        {
+          "name": "due_offset",
+          "kind": "duration",
+          "required": false,
+          "title_key": "automation.param.due_offset"
+        }
+      ],
+      "description": "Asks people to approve the task: an ad-hoc approval request that changes no status. The request is made by the owner of the rule, who cannot be one of the approvers. The approvers need to be able to read the task."
+    },
+    {
       "type": "http.request",
       "title_key": "automation.action.http_request",
       "params": [
@@ -1340,7 +1531,10 @@
     "task.cf.<id>",
     "event.doer.name",
     "event.doer.username",
-    "project.title"
+    "project.title",
+    "event.approval.id",
+    "event.approval.title",
+    "event.approval.outcome"
   ],
   "script": {
     "language": "javascript",

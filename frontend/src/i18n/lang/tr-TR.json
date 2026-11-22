@@ -1,4 +1,124 @@
 {
+	"approvals": {
+		"title": "Onaylar",
+		"requested": "Onay istendi",
+		"approve": "Onayla",
+		"reject": "Reddet",
+		"requestedBy": "Talep eden",
+		"modeLabel": "Karar şekli",
+		"due": "Son tarih",
+		"overdue": "gecikti",
+		"age": "Bekleme süresi",
+		"resolvedAt": "Sonuçlandı",
+		"progress": "{done}/{total} onay",
+		"progressLabel": "İlerleme",
+		"mode": {
+			"any": "Onaylayanlardan biri",
+			"all": "Tüm onaylayanlar"
+		},
+		"state": {
+			"pending": "Bekliyor",
+			"approved": "Onayladı",
+			"rejected": "Reddetti"
+		},
+		"outcome": {
+			"pending": "Bekliyor",
+			"approved": "Onaylandı",
+			"rejected": "Reddedildi",
+			"cancelled": "İptal edildi"
+		},
+		"banner": {
+			"waitingFor": "Onay bekliyor → {status}"
+		},
+		"menu": {
+			"request": "Onay iste → {status}",
+			"willAsk": "Sorulacaklar: {names}",
+			"askNobody": "Henüz sorulacak kimse yok"
+		},
+		"decision": {
+			"approveTitle": "Talebi onayla",
+			"rejectTitle": "Talebi reddet",
+			"commentOptional": "Yorum (isteğe bağlı)",
+			"commentRequired": "Reddetme gerekçesi (zorunlu)",
+			"approvedSuccess": "Onaylandı",
+			"rejectedSuccess": "Reddedildi",
+			"cancelledMeanwhile": "Kararınız kaydedildi ancak değişiklik artık yapılamadığı için talep iptal edildi."
+		},
+		"cancel": {
+			"action": "Talebi iptal et",
+			"title": "Talebi iptal et",
+			"text": "“{title}” talebi iptal edilsin mi? Onaylayanlara artık sorulmayacak.",
+			"keep": "Talebi koru",
+			"confirm": "Talebi iptal et",
+			"success": "Talep iptal edildi"
+		},
+		"history": {
+			"title": "Sonuçlanan onaylar ({count})",
+			"approvedBy": "{names} onayladı",
+			"viaApproval": "bir onay talebiyle"
+		},
+		"cancelReason": {
+			"cancelled_by_requester": "Talep, talep eden veya bir proje yöneticisi tarafından iptal edildi.",
+			"task_deleted": "Görev silindi.",
+			"task_moved": "Görev başka bir projeye taşındı.",
+			"workflow_removed": "Projenin iş akışı kaldırıldı.",
+			"status_removed": "Talepteki bir durum kaldırıldı veya arşivlendi.",
+			"transition_removed": "Bu durum değişikliği artık iş akışında yok.",
+			"approval_disabled": "Bu durum değişikliği artık onay gerektirmiyor.",
+			"status_changed": "Görev bu arada durumundan ayrıldı.",
+			"target_archived": "Hedef durum arşivlendi.",
+			"requirements_not_met": "Onaylanan değişiklik, koşulları artık sağlanmadığı için yapılamadı.",
+			"requester_lost_access": "Talep edenin göreve erişimi kalmadı.",
+			"requester_not_in_team": "Talep eden artık değişikliğin sınırlı olduğu bir ekipte değil.",
+			"requester_deleted": "Talep eden artık yok.",
+			"no_approvers": "Görevi okuyabilen karar verecek kimse kalmadı.",
+			"unknown": "Talep iptal edildi."
+		},
+		"marker": {
+			"label": "Onay bekliyor",
+			"tooltip": "Bu görev için bir talep karar bekliyor."
+		},
+		"adHoc": {
+			"action": "Onay iste",
+			"title": "Onay iste",
+			"intro": "Bu görevi onaylamaları için kişilere sorun. Karar kaydedilir; durum değişmez.",
+			"what": "Neyin onaylanması gerekiyor?",
+			"whatPlaceholder": "Örneğin: Kapak tasarımı",
+			"details": "Ayrıntılar (isteğe bağlı)",
+			"approvers": "Kim karar verecek?",
+			"noMembers": "Bu projeye erişimi olan başka kimse yok.",
+			"titleRequired": "Neyin onaylanacağını yazın.",
+			"approversRequired": "En az bir kişi seçin.",
+			"due": "Son tarih (isteğe bağlı)",
+			"submit": "Talebi gönder"
+		},
+		"errors": {
+			"commentRequired": "Reddetmek için bir yorum gerekli.",
+			"notPending": "Bu talep zaten sonuçlandı.",
+			"alreadyDecided": "Bu talebe zaten karar verdiniz.",
+			"notApprover": "Bu talebin onaylayanlarından biri değilsiniz.",
+			"selfDecision": "Kendi talebinize karar veremezsiniz.",
+			"notFound": "Bu talep artık yok."
+		},
+		"page": {
+			"tabsLabel": "Onay listeleri",
+			"tabs": {
+				"waiting": "Benden bekleyenler",
+				"requested": "Benim taleplerim",
+				"history": "Geçmiş"
+			},
+			"allProjects": "Tüm projeler",
+			"project": "Proje",
+			"outcome": "Sonuç",
+			"loadError": "Onaylar yüklenemedi.",
+			"badgeLabel": "{count} tanesi sizi bekliyor",
+			"empty": {
+				"waiting": "Kararınızı bekleyen bir şey yok. Sizi onaylayan olarak belirten talepler burada görünür.",
+				"requested": "Açık bir talebiniz yok. Onay istediğinizde buradan takip edebilirsiniz.",
+				"history": "Bu sonuçla bitmiş bir talep yok."
+			}
+		}
+	},
 	"404": {
 		"title": "Sayfa bulunamadı",
 		"text": "Aradığın sayfa buralarda yok, belki de hiç olmadı."
@@ -1522,6 +1642,16 @@
 		"add": "Tepki ekle"
 	},
 	"error": {
+		"24001": "Bu onay talebi yok.",
+		"24002": "Bu onay talebi zaten sonuçlandı.",
+		"24003": "Bu talebin onaylayanlarından biri değilsiniz.",
+		"24004": "Bu talebe zaten karar verdiniz.",
+		"24005": "Reddetmek için bir yorum gerekli.",
+		"24006": "Bu değişiklik için onay istenebilecek kimse yok.",
+		"24007": "Bu değişiklik onay gerektiriyor. Onayı görevin durum menüsünden isteyin.",
+		"24008": "Kendi talebinize karar veremezsiniz.",
+		"24009": "Onay talebi geçerli değil.",
+		"24010": "Paylaşım bağlantılarıyla onay istenemez.",
 		"1001": "Bu kullanıcı adı zaten kapılmış.",
 		"1002": "Bu e-posta adresiyle kayıtlı bir hesap zaten var.",
 		"1004": "Kullanıcı adı ve şifre belirtilmedi.",
@@ -1898,6 +2028,56 @@
 		}
 	},
 	"workflow": {
+		"approval": {
+			"title": "Onay",
+			"marker": "Onay gerekir",
+			"requires": "Onay gerektirir",
+			"requiresHint": "Durum hemen değişmez. Önce seçtiğiniz kişilerin onaylaması gerekir.",
+			"mode": {
+				"title": "Kaç kişinin onaylaması gerekir",
+				"any": "Onaylayanlardan biri",
+				"anyHint": "İlk karar talebi sonuçlandırır.",
+				"all": "Tüm onaylayanlar",
+				"allHint": "Herkesin onaylaması gerekir. Tek bir ret talebi reddeder."
+			},
+			"approvers": "Onaylayanlar",
+			"approversHint": "Kişi, ekip, görevin atananları veya görevdeki bir alandaki kişi ekleyin. Talep yapıldığında belirlenirler.",
+			"noApprovers": "Henüz onaylayan yok.",
+			"addKind": "Onaylayan türü",
+			"source": {
+				"user": "Bir kişi",
+				"team": "Bir ekip",
+				"assignees": "Görevin atananları",
+				"customField": "Görev alanındaki kişi"
+			},
+			"pick": {
+				"user": "Kişi",
+				"team": "Ekip",
+				"assignees": "",
+				"custom_field": "Alan"
+			},
+			"choose": "Seçin…",
+			"add": "Ekle",
+			"removeSource": "{name} kaldır",
+			"sourceLabel": {
+				"user": "{name}",
+				"team": "{name} ekibi",
+				"assignees": "Görevin atananları",
+				"customField": "{name} alanı"
+			},
+			"noOptions": {
+				"user": "Seçilebilecek proje üyesi yok.",
+				"team": "Proje hiçbir ekiple paylaşılmamış.",
+				"custom_field": "Projede kişi türünde özel alan yok."
+			},
+			"rejectedStatus": "Reddedilirse şuraya taşı",
+			"rejectedStay": "Mevcut durumda kalsın",
+			"rejectedStatusHint": "Ret yorumu göreve eklenir.",
+			"dueIn": "Karar süresi",
+			"dueInPlaceholder": "2d",
+			"dueInHint": "Örneğin 12h, 2d veya 1w. Süre dolunca onaylayanlara bir kez hatırlatılır.",
+			"allowSelf": "Talep eden kendi talebini onaylayabilir"
+		},
 		"title": "İş akışı",
 		"onlyAdminsCanEdit": "İş akışını yalnızca proje yöneticileri düzenleyebilir.",
 		"saveSuccess": "İş akışı kaydedildi.",
@@ -1940,6 +2120,11 @@
 			"archivedHint": "Arşivlenmiş durumlar seçicilerde görünmez ama geçmişi korunur."
 		},
 		"validation": {
+			"approvalApproversRequired": "En az bir onaylayan ekleyin.",
+			"approvalSourceIncomplete": "Her onaylayan için bir kişi, ekip veya alan seçin.",
+			"approvalDueInvalid": "12h, 2d veya 1w gibi bir süre yazın.",
+			"approvalRejectedStatusSame": "Ret sonrası durum hedef durumdan farklı olmalı.",
+			"approvalRejectedStatusGone": "Ret sonrası durum artık yok.",
 			"noStatuses": "İş akışında en az bir durum olmalı.",
 			"noInitial": "Tam olarak bir durum başlangıç durumu olmalı.",
 			"noDone": "En az bir durumun kategorisi Tamamlandı olmalı.",
@@ -1987,6 +2172,7 @@
 			"noTeams": "Henüz hiçbir ekibin üyesi değilsiniz.",
 			"remove": "Geçişi kaldır",
 			"tags": {
+				"approval": "Onay",
 				"comment": "Yorum",
 				"fields": "Zorunlu alanlar",
 				"teams": "Ekipler",
@@ -2392,6 +2578,7 @@
 			"notify": "Bildirim"
 		},
 		"action": {
+			"approval_request": "Onay iste",
 			"n": "Eylem {n}: {title}",
 			"type": "Eylem türü",
 			"moveUp": "{n}. eylemi yukarı taşı",
@@ -2442,6 +2629,8 @@
 			"event": "Kuralı başlatan değişiklik"
 		},
 		"param": {
+			"approvers": "Onaylayanlar",
+			"mode": "Kimlerin onaylaması gerekir",
 			"choose": "Seçin…",
 			"required": "zorunlu",
 			"yes": "Evet",
@@ -2591,6 +2780,8 @@
 			"unknown": "Bu kural sistem tarafından kapatıldı ({reason})."
 		},
 		"trigger": {
+			"approval_requested": "Bir onay istendiğinde",
+			"approval_resolved": "Bir onay sonuçlandığında",
 			"task_created": "Bir görev oluşturulduğunda",
 			"task_updated": "Bir görev güncellendiğinde",
 			"task_completed": "Bir görev tamamlandığında",
@@ -2604,6 +2795,7 @@
 			"task_attachment_added": "Bir ek eklendiğinde"
 		},
 		"option": {
+			"outcome": "Sonuç",
 			"fields": "Yalnızca şu alanlardan biri değiştiğinde",
 			"from_status_id": "Önceki durum (isteğe bağlı)",
 			"to_status_id": "Yeni durum (isteğe bağlı)",
@@ -2624,6 +2816,14 @@
 			"is_not_empty": "boş değildir"
 		},
 		"field": {
+			"event_new_approval_id": "Onay talebi: kimlik",
+			"event_new_approval_title": "Onay talebi: başlık",
+			"event_new_approval_mode": "Onay talebi: karar şekli",
+			"event_new_ad_hoc": "Onay talebi: serbest (durum değişmez)",
+			"event_new_requested_by": "Onay talebi: talep eden",
+			"event_new_approvers": "Onay talebi: onaylayanlar",
+			"event_new_outcome": "Onay talebi: sonuç",
+			"event_new_cancel_reason": "Onay talebi: iptal nedeni",
 			"title": "Başlık",
 			"description": "Açıklama",
 			"done": "Tamamlandı",
@@ -2683,6 +2883,11 @@
 			"event_new_attachment_name": "Sonra: ek adı"
 		},
 		"enum": {
+			"any": "Onaylayanlardan biri",
+			"all": "Tüm onaylayanlar",
+			"approved": "Onaylandı",
+			"rejected": "Reddedildi",
+			"assignees": "Görevin atananları",
 			"open": "Açık",
 			"in_progress": "Devam ediyor",
 			"cancelled": "İptal edildi",

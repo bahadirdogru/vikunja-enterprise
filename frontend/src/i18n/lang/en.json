@@ -1,4 +1,124 @@
 {
+  "approvals": {
+    "title": "Approvals",
+    "requested": "Approval requested",
+    "approve": "Approve",
+    "reject": "Reject",
+    "requestedBy": "Requested by",
+    "modeLabel": "Decision",
+    "due": "Due",
+    "overdue": "overdue",
+    "age": "Waiting since",
+    "resolvedAt": "Resolved",
+    "progress": "{done}/{total} approved",
+    "progressLabel": "Progress",
+    "mode": {
+      "any": "Any one approver",
+      "all": "All approvers"
+    },
+    "state": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "outcome": {
+      "pending": "Waiting",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled"
+    },
+    "banner": {
+      "waitingFor": "Waiting for approval → {status}"
+    },
+    "menu": {
+      "request": "Request approval → {status}",
+      "willAsk": "Will ask: {names}",
+      "askNobody": "Nobody to ask yet"
+    },
+    "decision": {
+      "approveTitle": "Approve request",
+      "rejectTitle": "Reject request",
+      "commentOptional": "Comment (optional)",
+      "commentRequired": "Reason for the rejection (required)",
+      "approvedSuccess": "Approved",
+      "rejectedSuccess": "Rejected",
+      "cancelledMeanwhile": "Your decision was recorded, but the change could not be made any more and the request was cancelled."
+    },
+    "cancel": {
+      "action": "Cancel request",
+      "title": "Cancel request",
+      "text": "Cancel the request “{title}”? The approvers will not be asked any more.",
+      "keep": "Keep request",
+      "confirm": "Cancel request",
+      "success": "Request cancelled"
+    },
+    "history": {
+      "title": "Resolved approvals ({count})",
+      "approvedBy": "approved by {names}",
+      "viaApproval": "via an approval request"
+    },
+    "cancelReason": {
+      "cancelled_by_requester": "The request was cancelled by the requester or a project admin.",
+      "task_deleted": "The task was deleted.",
+      "task_moved": "The task was moved to another project.",
+      "workflow_removed": "The project workflow was removed.",
+      "status_removed": "A status of the request was removed or archived.",
+      "transition_removed": "The status change is no longer part of the workflow.",
+      "approval_disabled": "The status change no longer needs an approval.",
+      "status_changed": "The task left its status in the meantime.",
+      "target_archived": "The target status was archived.",
+      "requirements_not_met": "The approved change could not be made because its requirements are no longer met.",
+      "requester_lost_access": "The requester lost access to the task.",
+      "requester_not_in_team": "The requester is no longer in a team the change is limited to.",
+      "requester_deleted": "The requester no longer exists.",
+      "no_approvers": "Nobody who can read the task was left to decide.",
+      "unknown": "The request was cancelled."
+    },
+    "marker": {
+      "label": "Waiting for approval",
+      "tooltip": "A request for this task is waiting for a decision."
+    },
+    "adHoc": {
+      "action": "Request approval",
+      "title": "Request approval",
+      "intro": "Ask people to approve this task. The decision is recorded; the status does not change.",
+      "what": "What should be approved?",
+      "whatPlaceholder": "For example: Cover design",
+      "details": "Details (optional)",
+      "approvers": "Who should decide?",
+      "noMembers": "Nobody else has access to this project.",
+      "titleRequired": "Say what should be approved.",
+      "approversRequired": "Choose at least one person.",
+      "due": "Due date (optional)",
+      "submit": "Send request"
+    },
+    "errors": {
+      "commentRequired": "A comment is required to reject.",
+      "notPending": "This request has already been resolved.",
+      "alreadyDecided": "You have already decided on this request.",
+      "notApprover": "You are not an approver of this request.",
+      "selfDecision": "You cannot decide on your own request.",
+      "notFound": "This request does not exist any more."
+    },
+    "page": {
+      "tabsLabel": "Approval lists",
+      "tabs": {
+        "waiting": "Waiting for me",
+        "requested": "Requested by me",
+        "history": "History"
+      },
+      "allProjects": "All projects",
+      "project": "Project",
+      "outcome": "Outcome",
+      "loadError": "The approvals could not be loaded.",
+      "badgeLabel": "{count} waiting for you",
+      "empty": {
+        "waiting": "Nothing waits for your decision. Requests that name you as an approver show up here.",
+        "requested": "You have no open requests. When you ask for an approval, you can follow it here.",
+        "history": "No resolved requests with this outcome yet."
+      }
+    }
+  },
   "home": {
     "welcomeNight": "Good Night {username}!",
     "welcomeNightOwl": "Hello, night owl {username}",
@@ -1633,6 +1753,16 @@
     "add": "Add your reaction"
   },
   "error": {
+    "24001": "This approval request does not exist.",
+    "24002": "This approval request has already been resolved.",
+    "24003": "You are not an approver of this request.",
+    "24004": "You have already decided on this request.",
+    "24005": "A rejection needs a comment.",
+    "24006": "Nobody can be asked to approve this change.",
+    "24007": "This change needs an approval. Use the status menu of the task to request it.",
+    "24008": "You cannot decide on your own request.",
+    "24009": "The approval request is not valid.",
+    "24010": "Share links cannot request approvals.",
     "error": "Error",
     "success": "Success",
     "0001": "You're not allowed to do that.",
@@ -2084,6 +2214,56 @@
     }
   },
   "workflow": {
+    "approval": {
+      "title": "Approval",
+      "marker": "Needs approval",
+      "requires": "Requires approval",
+      "requiresHint": "The status does not change right away. People you choose have to approve first.",
+      "mode": {
+        "title": "How many have to approve",
+        "any": "Any one approver",
+        "anyHint": "The first decision settles the request.",
+        "all": "All approvers",
+        "allHint": "Everybody has to approve. One rejection rejects the request."
+      },
+      "approvers": "Approvers",
+      "approversHint": "Add people, a team, the assignees of the task or a person from a field of the task. They are worked out when the request is made.",
+      "noApprovers": "No approvers yet.",
+      "addKind": "Add approver",
+      "source": {
+        "user": "A person",
+        "team": "A team",
+        "assignees": "Assignees of the task",
+        "customField": "A person in a task field"
+      },
+      "pick": {
+        "user": "Person",
+        "team": "Team",
+        "assignees": "",
+        "custom_field": "Field"
+      },
+      "choose": "Choose…",
+      "add": "Add",
+      "removeSource": "Remove {name}",
+      "sourceLabel": {
+        "user": "{name}",
+        "team": "Team {name}",
+        "assignees": "Assignees of the task",
+        "customField": "Field {name}"
+      },
+      "noOptions": {
+        "user": "The project has no members to choose from.",
+        "team": "The project is not shared with a team.",
+        "custom_field": "The project has no custom field of the type person."
+      },
+      "rejectedStatus": "When rejected, move to",
+      "rejectedStay": "Stay in the current status",
+      "rejectedStatusHint": "The rejection comment is added to the task.",
+      "dueIn": "Decide within",
+      "dueInPlaceholder": "2d",
+      "dueInHint": "For example 12h, 2d or 1w. Approvers are reminded once when it has passed.",
+      "allowSelf": "The requester may approve their own request"
+    },
     "title": "Workflow",
     "onlyAdminsCanEdit": "Only project admins can manage the workflow.",
     "saveSuccess": "The workflow was saved.",
@@ -2126,6 +2306,11 @@
       "archivedHint": "Archived statuses are hidden from pickers but keep their history."
     },
     "validation": {
+      "approvalApproversRequired": "Add at least one approver.",
+      "approvalSourceIncomplete": "Choose a person, team or field for every approver.",
+      "approvalDueInvalid": "Use a duration like 12h, 2d or 1w.",
+      "approvalRejectedStatusSame": "The status after a rejection must differ from the target status.",
+      "approvalRejectedStatusGone": "The status after a rejection does not exist any more.",
       "noStatuses": "A workflow needs at least one status.",
       "noInitial": "Exactly one status has to be the initial status.",
       "noDone": "At least one status needs the category Done.",
@@ -2173,6 +2358,7 @@
       "noTeams": "You are not a member of any team yet.",
       "remove": "Remove transition",
       "tags": {
+        "approval": "Approval",
         "comment": "Comment",
         "fields": "Required fields",
         "teams": "Teams",
@@ -2578,6 +2764,7 @@
       "notify": "Notify"
     },
     "action": {
+      "approval_request": "Request an approval",
       "n": "Action {n}: {title}",
       "type": "Action type",
       "moveUp": "Move action {n} up",
@@ -2628,6 +2815,8 @@
       "event": "The change that started the rule"
     },
     "param": {
+      "approvers": "Approvers",
+      "mode": "Who has to approve",
       "choose": "Choose…",
       "required": "required",
       "yes": "Yes",
@@ -2777,6 +2966,8 @@
       "unknown": "This rule was disabled by the system ({reason})."
     },
     "trigger": {
+      "approval_requested": "An approval is requested",
+      "approval_resolved": "An approval is resolved",
       "task_created": "A task is created",
       "task_updated": "A task is updated",
       "task_completed": "A task is completed",
@@ -2790,6 +2981,7 @@
       "task_attachment_added": "An attachment is added"
     },
     "option": {
+      "outcome": "Outcome",
       "fields": "Only when one of these fields changed",
       "from_status_id": "From status (optional)",
       "to_status_id": "To status (optional)",
@@ -2810,6 +3002,14 @@
       "is_not_empty": "is not empty"
     },
     "field": {
+      "event_new_approval_id": "Approval request: id",
+      "event_new_approval_title": "Approval request: title",
+      "event_new_approval_mode": "Approval request: mode",
+      "event_new_ad_hoc": "Approval request: ad-hoc (no status change)",
+      "event_new_requested_by": "Approval request: requested by",
+      "event_new_approvers": "Approval request: approvers",
+      "event_new_outcome": "Approval request: outcome",
+      "event_new_cancel_reason": "Approval request: reason for cancelling",
       "title": "Title",
       "description": "Description",
       "done": "Done",
@@ -2869,6 +3069,11 @@
       "event_new_attachment_name": "After: attachment name"
     },
     "enum": {
+      "any": "Any one approver",
+      "all": "All approvers",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "assignees": "The assignees of the task",
       "open": "Open",
       "in_progress": "In progress",
       "cancelled": "Cancelled",
