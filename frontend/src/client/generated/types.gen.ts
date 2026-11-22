@@ -56,6 +56,10 @@ export type Action = {
 
 export type ActionDef = {
     /**
+     * Plain English help for the action, for the editor to show.
+     */
+    description?: string;
+    /**
      * The parameters of the action.
      */
     params?: Array<Param> | null;
@@ -595,6 +599,52 @@ export type AutomationRunStep = {
     readonly status?: 'success' | 'failed' | 'skipped';
 };
 
+export type AutomationSecret = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * When the secret was created.
+     */
+    readonly created?: string;
+    /**
+     * The user who first stored the secret.
+     */
+    readonly created_by_id?: number;
+    /**
+     * The unique, numeric id of this secret.
+     */
+    readonly id?: number;
+    /**
+     * The name scripts and templates use: letters, digits and underscores, not starting with a digit, at most 64 characters.
+     */
+    name?: string;
+    /**
+     * The project the secret belongs to. Taken from the URL.
+     */
+    readonly project_id?: number;
+    /**
+     * True when the stored value cannot be decrypted any more because service.secret changed. Set the secret again.
+     */
+    readonly unreadable?: boolean;
+    /**
+     * When the value was last set.
+     */
+    readonly updated?: string;
+};
+
+export type AutomationSecretSetRequest = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * The secret value, at most 8 KiB. Write-only: it is never returned by any endpoint, never shown in run output and never written to the log. The previous value is replaced.
+     */
+    value: string;
+};
+
 export type AutomationTestRequest = {
     /**
      * A URL to the JSON Schema for this object.
@@ -867,6 +917,10 @@ export type Catalog = {
      */
     placeholders?: Array<string> | null;
     /**
+     * Reference for the JavaScript of script actions and script conditions: conventions, limits and every global and function. The editor's help panel is generated from it.
+     */
+    script?: ScriptDoc;
+    /**
      * All triggers.
      */
     triggers?: Array<TriggerDef> | null;
@@ -908,6 +962,10 @@ export type Condition = {
      * The operator, see the catalog for the ones each field supports.
      */
     op?: string;
+    /**
+     * A JavaScript condition instead of a comparison: the body of a function that returns true or false (see the script reference of the catalog). Cannot be combined with field, op or value. Runs with a read-only API.
+     */
+    script?: string;
     /**
      * The value to compare with. A list for in and not in, absent for is_empty and is_not_empty. Dates are RFC 3339 timestamps, plain dates or relative: now, now+3d, now-12h.
      */
@@ -2062,6 +2120,18 @@ export type PaginatedAutomationRun = {
     total_pages?: number;
 };
 
+export type PaginatedAutomationSecret = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    items?: Array<AutomationSecret> | null;
+    page?: number;
+    per_page?: number;
+    total?: number;
+    total_pages?: number;
+};
+
 export type PaginatedBotUser = {
     /**
      * A URL to the JSON Schema for this object.
@@ -2388,17 +2458,29 @@ export type PaginatedWebhook = {
 
 export type Param = {
     /**
+     * The value used when the parameter is left out.
+     */
+    default?: unknown;
+    /**
+     * Plain English help for the parameter, for the editor to show beside the field.
+     */
+    description?: string;
+    /**
      * The allowed values of an enum. For user and users these are the keywords accepted besides user ids.
      */
     enum?: Array<string> | null;
     /**
-     * The kind of value: string, text, number, bool, date, duration, user, users, label, status, custom_field, project, template, condition, enum or any.
+     * The kind of value: string, text, number, bool, date, duration, user, users, label, status, custom_field, project, template, condition, enum, code (source code, see language), secret (the name of a project secret), map (an object with string values, e.g. headers; the values are templates) or any.
      */
     kind?: string;
     /**
      * Set when the kind of the value depends on another parameter.
      */
     kind_by?: KindBy;
+    /**
+     * For the kind code: the language of the source, so the editor can highlight it. Always javascript at the moment.
+     */
+    language?: string;
     /**
      * Whether the value is a list of values of this kind.
      */
@@ -2996,6 +3078,71 @@ export type SavedFilterReadBody = {
      * A timestamp when this filter was last updated. You cannot change this value.
      */
     readonly updated?: string;
+};
+
+export type ScriptApiDef = {
+    /**
+     * Plain English description.
+     */
+    description?: string;
+    /**
+     * Whether the call is available in a script condition (read-only).
+     */
+    in_condition?: boolean;
+    /**
+     * True when the call changes data or contacts another system. A test run records these instead of performing them.
+     */
+    mutating?: boolean;
+    /**
+     * The name as written in a script, e.g. vikunja.tasks.update.
+     */
+    name?: string;
+    /**
+     * The signature, e.g. vikunja.tasks.update(id, patch) -> task.
+     */
+    signature?: string;
+};
+
+export type ScriptDoc = {
+    /**
+     * How a script action returns a result.
+     */
+    action_convention?: string;
+    /**
+     * Every global and function available to scripts.
+     */
+    api?: Array<ScriptApiDef> | null;
+    /**
+     * How a script condition returns its answer.
+     */
+    condition_convention?: string;
+    /**
+     * Always javascript (ECMAScript 5.1 plus most of ES6, pure Go interpreter).
+     */
+    language?: string;
+    /**
+     * The limits a script runs under. The values are the ones configured on this instance.
+     */
+    limits?: Array<ScriptLimit> | null;
+};
+
+export type ScriptLimit = {
+    /**
+     * The configuration key that sets it.
+     */
+    config_key?: string;
+    /**
+     * What happens when the limit is reached.
+     */
+    description?: string;
+    /**
+     * The name of the limit.
+     */
+    name?: string;
+    /**
+     * The configured value.
+     */
+    value?: string;
 };
 
 export type Session = {
@@ -5385,6 +5532,13 @@ export type AutomationRuleReadBodyWritable = {
     trigger?: Trigger;
 };
 
+export type AutomationSecretWritable = {
+    /**
+     * The name scripts and templates use: letters, digits and underscores, not starting with a digit, at most 64 characters.
+     */
+    name?: string;
+};
+
 export type AutomationTestRequestWritable = {
     /**
      * The task to test the rule with. It has to belong to the project of the rule.
@@ -5527,6 +5681,10 @@ export type CatalogWritable = {
      * The placeholders text parameters of kind template may contain. cf.<id> stands for a custom field.
      */
     placeholders?: Array<string> | null;
+    /**
+     * Reference for the JavaScript of script actions and script conditions: conventions, limits and every global and function. The editor's help panel is generated from it.
+     */
+    script?: ScriptDoc;
     /**
      * All triggers.
      */
@@ -5982,6 +6140,14 @@ export type PaginatedAutomationRuleWritable = {
 
 export type PaginatedAutomationRunWritable = {
     items?: Array<unknown> | null;
+    page?: number;
+    per_page?: number;
+    total?: number;
+    total_pages?: number;
+};
+
+export type PaginatedAutomationSecretWritable = {
+    items?: Array<AutomationSecretWritable> | null;
     page?: number;
     per_page?: number;
     total?: number;
@@ -9807,6 +9973,104 @@ export type ProjectsDuplicateResponses = {
 };
 
 export type ProjectsDuplicateResponse = ProjectsDuplicateResponses[keyof ProjectsDuplicateResponses];
+
+export type AutomationSecretsListData = {
+    body?: never;
+    path: {
+        project: number;
+    };
+    query?: {
+        /**
+         * 1-based page number.
+         */
+        page?: number;
+        /**
+         * Items per page. Defaults to the instance's configured maximum (service.maxitemsperpage, reported as max_items_per_page by /info) and is silently capped at it; asking for more is not an error.
+         */
+        per_page?: number;
+    };
+    url: '/projects/{project}/automation-secrets';
+};
+
+export type AutomationSecretsListErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type AutomationSecretsListError = AutomationSecretsListErrors[keyof AutomationSecretsListErrors];
+
+export type AutomationSecretsListResponses = {
+    /**
+     * OK
+     */
+    200: PaginatedAutomationSecret;
+};
+
+export type AutomationSecretsListResponse = AutomationSecretsListResponses[keyof AutomationSecretsListResponses];
+
+export type AutomationSecretsDeleteData = {
+    body?: never;
+    path: {
+        project: number;
+        /**
+         * The name of the secret.
+         */
+        name: string;
+    };
+    query?: never;
+    url: '/projects/{project}/automation-secrets/{name}';
+};
+
+export type AutomationSecretsDeleteErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type AutomationSecretsDeleteError = AutomationSecretsDeleteErrors[keyof AutomationSecretsDeleteErrors];
+
+export type AutomationSecretsDeleteResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type AutomationSecretsDeleteResponse = AutomationSecretsDeleteResponses[keyof AutomationSecretsDeleteResponses];
+
+export type AutomationSecretsSetData = {
+    body: AutomationSecretSetRequest;
+    path: {
+        project: number;
+        /**
+         * The name of the secret.
+         */
+        name: string;
+    };
+    query?: never;
+    url: '/projects/{project}/automation-secrets/{name}';
+};
+
+export type AutomationSecretsSetErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type AutomationSecretsSetError = AutomationSecretsSetErrors[keyof AutomationSecretsSetErrors];
+
+export type AutomationSecretsSetResponses = {
+    /**
+     * OK
+     */
+    200: AutomationSecret;
+};
+
+export type AutomationSecretsSetResponse = AutomationSecretsSetResponses[keyof AutomationSecretsSetResponses];
 
 export type AutomationsListData = {
     body?: never;
