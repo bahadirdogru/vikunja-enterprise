@@ -30,7 +30,7 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
 | 2b | Workflow UI: editor (list + matrix) in project settings, status menu, requirements dialog and history on the task | Done |
 | 2c | Workflow in views: kanban status mode (columns = statuses, drag = transition), table column, list/card badges, filter and sort by `status` / `status_category` | Done |
 | 3a | Automation core: transactional outbox, workers, rules, conditions, non-script actions, run history, limits, dry run, catalog ([automation.md](automation.md)) | Done |
-| 3b | Automation: script condition/action, http, secrets | Planned |
+| 3b | Automation scripting: JavaScript action and condition, `http.request` action, encrypted project secrets, script editor with API reference | Done |
 | 3c | Automation UI: rule list, catalog-driven When / If / Then editor, dry run, runs with steps and retry | Done |
 | 3d | Automation: schedule / manual / incoming webhook triggers, wait action, templates | Planned |
 | 4a | Dashboards: task aggregation API (`POST /api/v2/reports/tasks`), options endpoint, dashboards/widgets CRUD ([dashboards.md](dashboards.md)) | Done |
@@ -102,3 +102,14 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   tests pass on SQLite, PostgreSQL 17 and MySQL 8; full suites on SQLite
   only. Deferred: status time / workload / time tracking data, CSV export,
   number comparison, running open count.
+- Automation scripting added (backend + UI). Engine tests with the race
+  detector, full models and webtests pass on SQLite; engine and automation
+  model tests pass on PostgreSQL 17; frontend suite passes (3186 tests).
+  Exercised in a browser against the real backend: script action writing a
+  custom field and a comment, syntax error marked on its line, dry run,
+  script condition, SSRF block on `http.request`, 5 s timeout on an endless
+  loop, secrets create/replace/delete and the unreadable state.
+  Known limits: no hard memory cap inside the interpreter; a project admin
+  who writes scripts can read that project's secrets; the step transaction
+  stays open during scripts and HTTP calls; MySQL not exercised;
+  `vikunja.tasks.find` with `cf_` / status filters not tested.
