@@ -1,0 +1,87 @@
+.chart {
+	display: flex;
+	flex-direction: column;
+	gap: .4rem;
+	block-size: 100%;
+	min-block-size: 8rem;
+	min-inline-size: 0;
+	position: relative;
+}
+
+.chart__plot {
+	position: relative;
+	flex: 1 1 auto;
+	min-block-size: 7rem;
+	min-inline-size: 0;
+
+	> svg {
+		position: absolute;
+		inset: 0;
+		overflow: visible;
+	}
+}
+
+.chart__note {
+	margin: 0;
+	color: var(--text-light);
+	font-size: .75rem;
+}
+
+.chart__text {
+	fill: var(--text-light);
+	font-size: 11px;
+}
+
+.chart__value {
+	fill: var(--text);
+	font-size: 11px;
+	font-variant-numeric: tabular-nums;
+}
+
+.chart__grid {
+	stroke: var(--grey-200);
+	stroke-width: 1;
+}
+
+.chart__mark {
+	outline: none;
+
+	&.is-selectable {
+		cursor: pointer;
+	}
+
+	&.is-disabled {
+		cursor: not-allowed;
+	}
+
+	rect,
+	path,
+	circle {
+		@media (prefers-reduced-motion: no-preference) {
+			transition: opacity .12s ease, filter .12s ease;
+		}
+	}
+
+	&:hover rect,
+	&:hover path,
+	&:focus-visible rect,
+	&:focus-visible path {
+		filter: brightness(1.12);
+	}
+
+	&:focus-visible .chart__focus-ring {
+		stroke: var(--primary);
+		stroke-width: 2;
+		fill: none;
+	}
+}
+
+.chart__focus-ring {
+	fill: none;
+	stroke: none;
+	pointer-events: none;
+}
+
+.chart.is-dimming .chart__mark:not(.is-active) {
+	opacity: .45;
+}

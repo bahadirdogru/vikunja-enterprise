@@ -120,6 +120,15 @@ import {
 	faCalendarCheck,
 	faCircle,
 } from '@fortawesome/free-regular-svg-icons'
+import {
+	faArrowsRotate,
+	faArrowTrendUp,
+	faChartColumn,
+	faChartLine,
+	faChartPie,
+	faChartSimple,
+	faGrip,
+} from '@fortawesome/free-solid-svg-icons'
 import {FontAwesomeIcon} from '@fortawesome/vue-fontawesome'
 
 import type {FontAwesomeIcon as FontAwesomeIconFixedTypes} from '@/types/vue-fontawesome'
@@ -249,6 +258,14 @@ library.add(faCircleCheck)
 library.add(faCircleHalfStroke)
 library.add(faCircleXmark)
 library.add(faTableCells)
+
+library.add(faArrowsRotate)
+library.add(faArrowTrendUp)
+library.add(faChartColumn)
+library.add(faChartLine)
+library.add(faChartPie)
+library.add(faChartSimple)
+library.add(faGrip)
 
 // overwriting the wrong types
 export default FontAwesomeIcon as unknown as FontAwesomeIconFixedTypes
