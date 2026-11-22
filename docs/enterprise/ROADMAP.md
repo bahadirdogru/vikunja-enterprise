@@ -29,7 +29,7 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
 | 2a | Workflow backend: statuses, transitions, required fields, teams, history, done sync, `/api/v2` ([workflow.md](workflow.md)) | Done |
 | 2b | Workflow UI: editor (list + matrix) in project settings, status menu, requirements dialog and history on the task | Done |
 | 2c | Workflow: kanban status mode, table column, filter/sort by status | Next |
-| 3a | Automation core: outbox, workers, rules, conditions, non-script actions, run history, limits ([automation.md](automation.md)) | In progress |
+| 3a | Automation core: transactional outbox, workers, rules, conditions, non-script actions, run history, limits, dry run, catalog ([automation.md](automation.md)) | Done |
 | 3b | Automation: script condition/action, http, secrets | Planned |
 | 3c | Automation UI | Planned |
 | 3d | Automation: schedule / manual / incoming webhook triggers, wait action, templates | Planned |
@@ -72,3 +72,10 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   dark mode. Not exercised in a browser: forbidden (403) and team-restricted
   transitions, inline server validation errors. In workflow projects the done
   button posts a status change instead of a task update.
+- Automation core added (backend only, no UI yet). Race-detector runs of the
+  engine tests pass on SQLite; engine, models and selected webtests pass on
+  PostgreSQL 17; full webtests on SQLite. Not done: MySQL, golangci-lint,
+  in-app notification action, overdue and label triggers. Known gaps: code
+  paths that commit their own sessions (cron, CalDAV, importers) only log a
+  failed outbox insert; a rule enabled on one replica can miss another
+  replica's events for up to `automation.cachettl` (30 s).
