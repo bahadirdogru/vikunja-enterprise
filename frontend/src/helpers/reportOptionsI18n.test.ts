@@ -1,4 +1,4 @@
-import {describe, expect, it} from 'vitest'
+import {describe, expect, it, vi} from 'vitest'
 
 import {readFileSync} from 'node:fs'
 import {resolve as resolvePath} from 'node:path'
@@ -57,5 +57,28 @@ describe('report option translations', () => {
 			const [en, tr] = messages.map(([, tree]) => flatten(tree[root] as Messages).sort())
 			expect(tr).toEqual(en)
 		}
+	})
+})
+
+describe('message syntax', () => {
+	const flatten = (node: Messages, prefix = ''): string[] => Object.entries(node).flatMap(([k, v]) =>
+		typeof v === 'string' ? [prefix + k] : flatten(v, `${prefix}${k}.`))
+
+	it.each(messages)('compiles and formats every charts, dashboards and reports message in %s', async (name, tree) => {
+		const {createI18n} = await import('vue-i18n')
+		const i18n = createI18n({legacy: false, locale: name, messages: {[name]: tree as never}})
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+		const bad: string[] = []
+		for (const root of ['charts', 'dashboards', 'reports']) {
+			for (const key of flatten(tree[root] as Messages, `${root}.`)) {
+				const out = i18n.global.t(key, {count: 1, title: 'T', project: 'P', column: 1, row: 1, w: 1, h: 1}, {plural: 1})
+				if (!out || out === key) {
+					bad.push(key)
+				}
+			}
+		}
+		expect(bad).toEqual([])
+		expect(warn).not.toHaveBeenCalled()
+		warn.mockRestore()
 	})
 })
