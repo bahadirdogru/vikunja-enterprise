@@ -117,6 +117,11 @@ func deleteUserDataInProjects(s *xorm.Session, userID int64, projectIDs []int64)
 		return err
 	}
 
+	err = dropApproverFromPendingApprovals(s, userID, projectIDs, false)
+	if err != nil {
+		return err
+	}
+
 	_, err = s.Where(builder.In("entity_id", taskIDs)).
 		And("entity_type = ? AND user_id = ?", SubscriptionEntityTask, userID).
 		Delete(&Subscription{})

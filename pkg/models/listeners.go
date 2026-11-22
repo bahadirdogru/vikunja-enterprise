@@ -39,6 +39,8 @@ import (
 // RegisterListeners registers all event listeners
 func RegisterListeners() {
 	events.RegisterListener((&TaskCommentCreatedEvent{}).Name(), &SendTaskCommentNotification{})
+	events.RegisterListener((&ApprovalRequestedEvent{}).Name(), &SendApprovalRequestedNotification{})
+	events.RegisterListener((&ApprovalResolvedEvent{}).Name(), &SendApprovalResolvedNotification{})
 	events.RegisterListener((&TaskAssigneeCreatedEvent{}).Name(), &SendTaskAssignedNotification{})
 	events.RegisterListener((&TaskCreatedEvent{}).Name(), &SendTaskCreatedNotification{})
 	events.RegisterListener((&TaskDeletedEvent{}).Name(), &SendTaskDeletedNotification{})

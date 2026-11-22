@@ -41,6 +41,8 @@ type TaskBucket struct {
 	ProjectViewID int64 `xorm:"bigint not null index unique(task_view)" json:"project_view_id" param:"view" doc:"The view the bucket belongs to. On /api/v2 this is taken from the URL; a value in the body is ignored."`
 	ProjectID     int64 `xorm:"-" json:"-" param:"project"`
 	Task          *Task `xorm:"-" json:"task" readOnly:"true" doc:"The task as it stands after the move, reflecting any done-state change."`
+	// Approval is set, with HTTP status 202, when the move into a status column needs an approval.
+	Approval *ApprovalRequest `xorm:"-" json:"approval,omitempty" readOnly:"true" doc:"Set, with HTTP status 202, when moving the task into the column of a status view needs an approval: the pending request. The task did not move and bucket is the column it is still in."`
 
 	// Set by task updates and creates, which run the workflow checks themselves once the task is written.
 	skipWorkflowSync bool

@@ -76,6 +76,14 @@ func placeholderValue(name string, sub *Subject) (string, bool) {
 		if sub.Project != nil {
 			return sub.Project.Title, true
 		}
+	case "event.approval.id", "event.approval.title", "event.approval.outcome":
+		key := map[string]string{"event.approval.id": "approval_id", "event.approval.title": "approval_title", "event.approval.outcome": "outcome"}[name]
+		if sub.Event != nil {
+			if v, has := sub.Event.New[key]; has {
+				return toString(canon(v)), true
+			}
+		}
+		return "", true
 	}
 	if rest, ok := strings.CutPrefix(name, "task.cf."); ok {
 		id, err := strconv.ParseInt(rest, 10, 64)

@@ -124,6 +124,30 @@
         "project": {
             "created": "%[1]s created the project \"%[2]s\""
         },
+        "approval": {
+            "outcome": {
+                "approved": "approved",
+                "rejected": "rejected",
+                "cancelled": "cancelled",
+                "pending": "pending"
+            },
+            "requested": {
+                "subject": "Approval requested: \"%[1]s\" on \"%[2]s\" (%[3]s)",
+                "message": "%[1]s asks for your approval: \"%[2]s\" on the task \"%[3]s\" (%[4]s).",
+                "due": "Please decide until %[1]s."
+            },
+            "resolved": {
+                "subject": "The approval \"%[1]s\" on \"%[2]s\" (%[3]s) was %[4]s",
+                "message_requester": "Your approval request \"%[1]s\" on the task \"%[2]s\" (%[3]s) was %[4]s.",
+                "message_others": "The approval request \"%[1]s\" on the task \"%[2]s\" (%[3]s) was %[4]s by %[5]s. You do not need to decide any more.",
+                "message_others_system": "The approval request \"%[1]s\" on the task \"%[2]s\" (%[3]s) was %[4]s. You do not need to decide any more.",
+                "reason": "Reason: %[1]s"
+            },
+            "reminder": {
+                "subject": "Reminder: please decide \"%[1]s\" on \"%[2]s\" (%[3]s)",
+                "message": "The approval request \"%[1]s\" from %[2]s on the task \"%[3]s\" (%[4]s) was due %[5]s and is still waiting for your decision."
+            }
+        },
         "team": {
             "member_added": {
                 "subject": "%[1]s added you to the \"%[2]s\" team in Vikunja",

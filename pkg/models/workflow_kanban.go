@@ -160,6 +160,22 @@ func (b *TaskBucket) moveToStatusColumn(s *xorm.Session, a web.Auth, view *Proje
 		return err
 	}
 
+	if change.Approval != nil {
+		// A drag is an explicit status change: the request exists now, the card stays where it is.
+		b.Task = task
+		b.Approval = change.Approval
+		if current := change.Status; current != nil {
+			count, err := s.Where("status_id = ?", current.ID).Count(&TaskStatus{})
+			if err != nil {
+				return err
+			}
+			b.Bucket = d.statusBucket(view, current)
+			b.Bucket.ID = statusBucketID(current.ID)
+			b.Bucket.Count = count
+		}
+		return nil
+	}
+
 	st := d.statuses[statusID]
 	count, err := s.Where("status_id = ?", statusID).Count(&TaskStatus{})
 	if err != nil {
@@ -215,6 +231,9 @@ func (t *Task) moveNewTaskToStatusColumn(s *xorm.Session, a web.Auth) error {
 	change := &TaskStatusChange{TaskID: t.ID, ToStatusID: statusID, task: t}
 	err = change.Create(s, a)
 	switch {
+	case err == nil && change.Approval != nil:
+		// The column asks for an approval: the request exists, the task stays in the status it started in.
+		return nil
 	case err == nil:
 		t.BucketID = statusBucketID(statusID)
 		return nil

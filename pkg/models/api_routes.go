@@ -224,6 +224,8 @@ func isStandardCRUDRoute(routeGroupName string, routeParts []string, _ string) b
 	crudResources["projects_automations"] = true
 	crudResources["projects_automations_runs"] = true
 	crudResources["dashboards"] = true
+	crudResources["approvals"] = true
+	crudResources["tasks_approvals"] = true
 
 	// Check if this is a standard CRUD resource
 	if crudResources[routeGroupName] {
@@ -632,6 +634,8 @@ func requiredScopeForExpand(value string) (group, permission string, needsScope 
 		return "tasks_custom_field_values", "read_all", true
 	case TaskCollectionExpandStatus:
 		return "tasks", "status", true
+	case TaskCollectionExpandApprovals:
+		return "tasks_approvals", "read_all", true
 	case TaskCollectionExpandSubtasks, TaskCollectionExpandBuckets, TaskCollectionExpandIsUnread:
 		return "", "", false
 	}

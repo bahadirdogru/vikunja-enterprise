@@ -183,6 +183,9 @@ type Task struct {
 	// Workflow status of this task. Only present when fetching tasks with the `expand` parameter set to `status` and the task has a status.
 	Status *TaskStatusSummary `xorm:"-" json:"status,omitempty" readOnly:"true" doc:"The workflow status of this task. Only present when requested via the status expand option and the task has one."`
 
+	// Pending approval requests of this task. Only present when fetching tasks with the `expand` parameter set to `approvals`.
+	Approvals *TaskApprovalsSummary `xorm:"-" json:"approvals,omitempty" readOnly:"true" doc:"Whether the task has pending approval requests. Only present when requested via the approvals expand option; never for link shares."`
+
 	// Set by a creation in a status column whose transition was rejected, see workflow_kanban.go.
 	statusColumnErr error
 
@@ -934,6 +937,13 @@ func addMoreInfoToTasks(s *xorm.Session, taskMap map[int64]*Task, a web.Auth, vi
 				err = addStatusToTasks(s, taskIDs, taskMap)
 				if err != nil {
 					return
+				}
+			case TaskCollectionExpandApprovals:
+				if !isLinkShareAuth(a) {
+					err = addApprovalsToTasks(s, taskIDs, taskMap)
+					if err != nil {
+						return
+					}
 				}
 			}
 			expanded[expandable] = true
@@ -2352,6 +2362,9 @@ func (t *Task) Delete(s *xorm.Session, a web.Auth) (err error) {
 	if err = stopRunningTimersOnTrashedTask(s, t.ID, doer); err != nil {
 		return err
 	}
+	if err = cancelApprovalsForTask(s, t.ID, ApprovalCancelTaskDeleted); err != nil {
+		return err
+	}
 
 	_, err = s.ID(t.ID).Cols("deleted_by_id").NoAutoTime().Update(&Task{DeletedByID: doer.ID})
 	if err != nil {
@@ -2487,6 +2500,11 @@ func hardDeleteTask(s *xorm.Session, t *Task) (err error) {
 	}
 
 	err = deleteTaskStatusData(s, t.ID)
+	if err != nil {
+		return err
+	}
+
+	err = deleteApprovalsForTask(s, t.ID)
 	if err != nil {
 		return err
 	}

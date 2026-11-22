@@ -56,6 +56,9 @@ type TaskStatusHistory struct {
 	Doer         *user.User `xorm:"-" json:"doer" readOnly:"true" doc:"Who made the change. Null for changes made through a link share."`
 	Comment      string     `xorm:"text null" json:"comment" readOnly:"true" doc:"The comment left with the change."`
 	Created      time.Time  `xorm:"created not null" json:"created" readOnly:"true" doc:"When the change happened."`
+	// ApprovalRequestID is set for changes an approval request made or caused: an approved transition (the doer is
+	// the requester) or the move after a rejection (the doer is the rejecting approver).
+	ApprovalRequestID *int64 `xorm:"bigint null" json:"approval_request_id" readOnly:"true" doc:"The approval request behind the change, null for changes without one."`
 
 	web.CRUDable    `xorm:"-" json:"-"`
 	web.Permissions `xorm:"-" json:"-"`
@@ -250,6 +253,9 @@ func (d *workflowDef) assignStartStatuses(s *xorm.Session, tasks []*Task, a web.
 // resetTaskStatusForMove drops the status of a task that moved to another project and gives it the start
 // status of the new project's workflow, if there is one. The history stays.
 func resetTaskStatusForMove(s *xorm.Session, a web.Auth, t *Task) error {
+	if err := cancelApprovalsForTask(s, t.ID, ApprovalCancelTaskMoved); err != nil {
+		return err
+	}
 	if _, err := s.Where("task_id = ?", t.ID).Delete(&TaskStatus{}); err != nil {
 		return err
 	}
@@ -287,12 +293,12 @@ func syncWorkflowAfterTaskUpdate(s *xorm.Session, a web.Auth, t *Task, oldProjec
 
 	if !wantsDone {
 		initial := d.initialStatus()
-		_, err = d.changeTaskStatus(s, a, &statusChange{Task: t, ToStatusID: initial.ID})
+		_, err = d.changeTaskStatus(s, a, &statusChange{Task: t, ToStatusID: initial.ID, FailOnApproval: true})
 		return err
 	}
 
 	done := d.firstDoneStatus()
-	if _, err = d.changeTaskStatus(s, a, &statusChange{Task: t, ToStatusID: done.ID}); err != nil {
+	if _, err = d.changeTaskStatus(s, a, &statusChange{Task: t, ToStatusID: done.ID, FailOnApproval: true}); err != nil {
 		return err
 	}
 	if t.Done {
@@ -312,15 +318,34 @@ type statusChange struct {
 	// SyncDone writes the done flag of the task when the category of the new status needs a different one.
 	// The task update path writes it itself.
 	SyncDone bool
-	// SkipChecks is for system transitions that have no actor to check, e.g. re-opening a repeating task.
+	// SkipChecks is for system transitions that have no actor to check, e.g. re-opening a repeating task. It also
+	// skips the approval requirement: system transitions never create approvals.
 	SkipChecks bool
+	// BypassApproval skips only the approval requirement. The approval of a request uses it; every other check
+	// still runs.
+	BypassApproval bool
+	// FailOnApproval returns ErrApprovalRequired instead of creating a request. Changes that are a side effect of
+	// a task update (the done flag) use it: an update must not create requests, the client has to ask for the
+	// status explicitly.
+	FailOnApproval bool
+	// ApprovalRequestID is recorded in the history entry.
+	ApprovalRequestID int64
 }
 
+// statusChangeResult is the outcome of changeTaskStatus: the status changed (Changed), the task did not move
+// because an approval is needed (Approval is set), or nothing was to do.
 type statusChangeResult struct {
 	From        *WorkflowStatus
 	To          *WorkflowStatus
 	Changed     bool
 	DoneChanged bool
+	// Approval is the pending request of the transition when it needs an approval; the task did not move.
+	Approval *ApprovalRequest
+	// ApprovalCreated is false when the request already existed.
+	ApprovalCreated bool
+	// Final is the status the task is in at the end when it differs from To: a repeating task that entered a
+	// done status is back in the initial one.
+	Final *WorkflowStatus
 }
 
 // changeTaskStatus is the one place that moves a task between statuses. Checks run in this order: the target
@@ -353,6 +378,16 @@ func (d *workflowDef) changeTaskStatus(s *xorm.Session, a web.Auth, c *statusCha
 		if err = d.checkTransition(s, a, t, from, to, c.Comment); err != nil {
 			return nil, err
 		}
+		if rule := d.approvalRuleFor(from, to); rule != nil && !c.BypassApproval {
+			if c.FailOnApproval {
+				return nil, ErrApprovalRequired{TaskID: t.ID, FromStatusID: from.ID, ToStatusID: to.ID}
+			}
+			req, created, err := d.requestTransitionApproval(s, a, t, from, to, rule, c.Comment)
+			if err != nil {
+				return nil, err
+			}
+			return &statusChangeResult{From: from, To: to, Approval: req, ApprovalCreated: created}, nil
+		}
 	}
 
 	now := time.Now()
@@ -366,7 +401,16 @@ func (d *workflowDef) changeTaskStatus(s *xorm.Session, a web.Auth, c *statusCha
 	if err != nil {
 		return nil, err
 	}
-	if _, err = s.Insert(newHistoryEntry(t.ID, from, to, a, c.Comment)); err != nil {
+	entry := newHistoryEntry(t.ID, from, to, a, c.Comment)
+	if c.ApprovalRequestID != 0 {
+		id := c.ApprovalRequestID
+		entry.ApprovalRequestID = &id
+	}
+	if _, err = s.Insert(entry); err != nil {
+		return nil, err
+	}
+	// Requests made for the status the task just left are stale, whichever route moved it.
+	if err = cancelApprovalsAfterStatusChange(s, t.ID); err != nil {
 		return nil, err
 	}
 
@@ -633,6 +677,7 @@ func duplicateWorkflowForProject(s *xorm.Session, sourceProjectID, targetProject
 		cp.WorkflowID = wf.ID
 		cp.FromStatusID = statusMap[tr.FromStatusID]
 		cp.ToStatusID = statusMap[tr.ToStatusID]
+		cp.Approval = remapTransitionApproval(tr.Approval, statusMap, customFieldMap)
 		if _, err = s.Insert(&cp); err != nil {
 			return nil, 0, err
 		}

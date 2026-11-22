@@ -107,15 +107,17 @@ func (*WorkflowStatus) TableName() string {
 
 // WorkflowTransition is the rule set of one from to pair of statuses.
 type WorkflowTransition struct {
-	ID             int64    `xorm:"bigint autoincr not null unique pk" json:"id" doc:"The unique, numeric id of this transition. Send 0 or omit it to create one."`
-	WorkflowID     int64    `xorm:"bigint not null INDEX unique(workflow_transitions_pair)" json:"workflow_id" readOnly:"true" doc:"The workflow this transition belongs to."`
-	FromStatusID   int64    `xorm:"bigint not null unique(workflow_transitions_pair)" json:"from_status_id" doc:"The status tasks leave. A negative id refers to a new status of the same document."`
-	ToStatusID     int64    `xorm:"bigint not null unique(workflow_transitions_pair)" json:"to_status_id" doc:"The status tasks enter. A negative id refers to a new status of the same document."`
-	Title          string   `xorm:"varchar(250) null" json:"title" maxLength:"250" doc:"Optional button label, e.g. Send to design."`
-	MinPermission  string   `xorm:"varchar(10) not null" json:"min_permission" enum:"write,admin" doc:"The lowest project permission that may perform the transition. write when omitted."`
-	RequireComment bool     `xorm:"bool default false" json:"require_comment" doc:"Whether the person performing the transition has to leave a comment."`
-	RequiredFields []string `xorm:"-" json:"required_fields" doc:"Fields that must be set on the task before the transition: assignees, due_date, start_date, end_date, description, attachments, labels or cf_<id> for a custom field of the project."`
-	TeamIDs        []int64  `xorm:"-" json:"team_ids" doc:"When not empty, only members of one of these teams, or project admins, may perform the transition."`
+	ID               int64               `xorm:"bigint autoincr not null unique pk" json:"id" doc:"The unique, numeric id of this transition. Send 0 or omit it to create one."`
+	WorkflowID       int64               `xorm:"bigint not null INDEX unique(workflow_transitions_pair)" json:"workflow_id" readOnly:"true" doc:"The workflow this transition belongs to."`
+	FromStatusID     int64               `xorm:"bigint not null unique(workflow_transitions_pair)" json:"from_status_id" doc:"The status tasks leave. A negative id refers to a new status of the same document."`
+	ToStatusID       int64               `xorm:"bigint not null unique(workflow_transitions_pair)" json:"to_status_id" doc:"The status tasks enter. A negative id refers to a new status of the same document."`
+	Title            string              `xorm:"varchar(250) null" json:"title" maxLength:"250" doc:"Optional button label, e.g. Send to design."`
+	MinPermission    string              `xorm:"varchar(10) not null" json:"min_permission" enum:"write,admin" doc:"The lowest project permission that may perform the transition. write when omitted."`
+	RequireComment   bool                `xorm:"bool default false" json:"require_comment" doc:"Whether the person performing the transition has to leave a comment."`
+	RequiresApproval bool                `xorm:"bool default false" json:"requires_approval" doc:"Whether performing the transition only asks for an approval: the task does not move until the approvers agreed (see approval). The permission, team, required field and comment checks run first."`
+	Approval         *TransitionApproval `xorm:"json null" json:"approval" doc:"The approval configuration, required when requires_approval is set and ignored (stored as null) otherwise."`
+	RequiredFields   []string            `xorm:"-" json:"required_fields" doc:"Fields that must be set on the task before the transition: assignees, due_date, start_date, end_date, description, attachments, labels or cf_<id> for a custom field of the project."`
+	TeamIDs          []int64             `xorm:"-" json:"team_ids" doc:"When not empty, only members of one of these teams, or project admins, may perform the transition."`
 }
 
 // TableName returns the table name of workflow transitions.
@@ -431,6 +433,10 @@ func (wf *Workflow) validateTransitions(s *xorm.Session, docIDs, archivedInDoc m
 		tr.RequiredFields = fields
 		tr.TeamIDs = uniqueInts(tr.TeamIDs)
 		teamIDs = append(teamIDs, tr.TeamIDs...)
+
+		if err := validateTransitionApproval(s, wf.ProjectID, tr, docIDs, archivedInDoc); err != nil {
+			return err
+		}
 	}
 
 	if len(customFieldIDs) > 0 {
@@ -605,6 +611,9 @@ func (wf *Workflow) removeStatuses(s *xorm.Session, plan *workflowDocPlan, idMap
 	if err := disableAutomationRulesForStatuses(s, wf.ProjectID, removedIDs); err != nil {
 		return err
 	}
+	if err := cancelApprovalsForStatuses(s, removedIDs); err != nil {
+		return err
+	}
 
 	for _, st := range plan.removed {
 		if target != nil {
@@ -685,6 +694,9 @@ func (wf *Workflow) saveTransitions(s *xorm.Session, idMap map[int64]int64) erro
 	for _, tr := range wf.Transitions {
 		tr.FromStatusID = idMap[tr.FromStatusID]
 		tr.ToStatusID = idMap[tr.ToStatusID]
+		if tr.Approval != nil && tr.Approval.RejectedStatusID != 0 {
+			tr.Approval.RejectedStatusID = idMap[tr.Approval.RejectedStatusID]
+		}
 	}
 
 	keep := map[int64]bool{}
@@ -700,6 +712,19 @@ func (wf *Workflow) saveTransitions(s *xorm.Session, idMap map[int64]int64) erro
 		if !keep[id] {
 			removed = append(removed, id)
 		}
+	}
+	sort.Slice(removed, func(i, j int) bool { return removed[i] < removed[j] })
+	if err := cancelApprovalsForTransitions(s, removed, ApprovalCancelTransitionRemoved); err != nil {
+		return err
+	}
+	disabled := []int64{}
+	for _, tr := range wf.Transitions {
+		if keep[tr.ID] && storedByID[tr.ID].RequiresApproval && !tr.RequiresApproval {
+			disabled = append(disabled, tr.ID)
+		}
+	}
+	if err := cancelApprovalsForTransitions(s, disabled, ApprovalCancelApprovalDisabled); err != nil {
+		return err
 	}
 	if len(removed) > 0 {
 		if _, err := s.Where(builder.In("transition_id", removed)).Delete(&WorkflowTransitionRequiredField{}); err != nil {
@@ -717,7 +742,7 @@ func (wf *Workflow) saveTransitions(s *xorm.Session, idMap map[int64]int64) erro
 		tr.WorkflowID = wf.ID
 		if keep[tr.ID] {
 			_, err := s.ID(tr.ID).
-				Cols("title", "min_permission", "require_comment").
+				Cols("title", "min_permission", "require_comment", "requires_approval", "approval").
 				Update(tr)
 			if err != nil {
 				return err
@@ -758,6 +783,9 @@ func (wf *Workflow) Delete(s *xorm.Session, a web.Auth) error {
 		return err
 	}
 	if err = loadWorkflowRelations(s, existing); err != nil {
+		return err
+	}
+	if err = cancelApprovalsForWorkflow(s, wf.ProjectID); err != nil {
 		return err
 	}
 	if err = deleteWorkflowByID(s, existing.ID); err != nil {

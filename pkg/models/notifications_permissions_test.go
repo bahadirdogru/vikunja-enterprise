@@ -166,6 +166,9 @@ func TestDatabaseNotifications_ReadAll_ProjectPermissions(t *testing.T) {
 // to actually return a project.
 func TestNotificationScopeClassification(t *testing.T) {
 	projectScoped := []string{
+		"approval.reminder",
+		"approval.requested",
+		"approval.resolved",
 		"project.created",
 		"task.assigned",
 		"task.comment",

@@ -143,8 +143,8 @@ func TestHumaAutomation_Catalog(t *testing.T) {
 			Placeholders []string `json:"placeholders"`
 		}
 		require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &catalog))
-		assert.Len(t, catalog.Triggers, 11)
-		assert.Len(t, catalog.Actions, 15)
+		assert.Len(t, catalog.Triggers, 13)
+		assert.Len(t, catalog.Actions, 16)
 		assert.Len(t, catalog.Operators, 11)
 		assert.NotEmpty(t, catalog.Fields)
 		assert.Contains(t, catalog.Placeholders, "task.title")

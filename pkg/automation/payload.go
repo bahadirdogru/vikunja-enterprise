@@ -174,6 +174,16 @@ func describe(event events.Event) (p *Payload, ok bool) {
 			return nil, false
 		}
 		return taskPayload(e.Name(), e.Task, e.Doer, nil, map[string]any{"comment": e.Comment.Comment}), true
+	case *models.ApprovalRequestedEvent:
+		if e.Task == nil || e.Approval == nil {
+			return nil, false
+		}
+		return taskPayload(e.Name(), e.Task, e.Doer, approvalOld(e.Approval), approvalNew(e.Approval, "")), true
+	case *models.ApprovalResolvedEvent:
+		if e.Task == nil || e.Approval == nil {
+			return nil, false
+		}
+		return taskPayload(e.Name(), e.Task, e.Doer, approvalOld(e.Approval), approvalNew(e.Approval, string(e.Outcome))), true
 	case *models.TaskAttachmentCreatedEvent:
 		if e.Task == nil || e.Attachment == nil {
 			return nil, false
@@ -185,6 +195,40 @@ func describe(event events.Event) (p *Payload, ok bool) {
 		return taskPayload(e.Name(), e.Task, e.Doer, nil, newValues), true
 	}
 	return nil, false
+}
+
+// approvalOld holds the status the task has to be in for a transition request.
+func approvalOld(a *models.ApprovalRequest) map[string]any {
+	if a.FromStatusID == nil {
+		return nil
+	}
+	return map[string]any{"status": *a.FromStatusID}
+}
+
+// approvalNew holds the fields of event.new.* of the approval events. outcome is empty for a new request.
+func approvalNew(a *models.ApprovalRequest, outcome string) map[string]any {
+	approvers := make([]int64, 0, len(a.Approvers))
+	for _, ap := range a.Approvers {
+		approvers = append(approvers, ap.UserID)
+	}
+	values := map[string]any{
+		"approval_id":    a.ID,
+		"approval_title": a.Title,
+		"approval_mode":  string(a.Mode),
+		"ad_hoc":         a.TransitionID == nil,
+		"requested_by":   a.RequestedByID,
+		"approvers":      approvers,
+	}
+	if a.ToStatusID != nil {
+		values["status"] = *a.ToStatusID
+	}
+	if outcome != "" {
+		values["outcome"] = outcome
+	}
+	if a.CancelReason != "" {
+		values["cancel_reason"] = a.CancelReason
+	}
+	return values
 }
 
 func statusValues(st *models.WorkflowStatus) map[string]any {

@@ -89,6 +89,8 @@ func SetupTests() {
 		"automation_secrets",
 		"task_statuses",
 		"task_status_history",
+		"approval_requests",
+		"approval_approvers",
 		"team_projects",
 		"team_members",
 		"teams",

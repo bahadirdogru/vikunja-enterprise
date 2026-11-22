@@ -134,5 +134,24 @@ func (c *TaskStatusChange) Check(s *xorm.Session, a web.Auth) error {
 			return nil
 		}
 	}
-	return d.checkTransition(s, a, t, from, to, c.Comment)
+	if err = d.checkTransition(s, a, t, from, to, c.Comment); err != nil {
+		return err
+	}
+	if rule := d.approvalRuleFor(from, to); rule != nil {
+		c.needsApproval = true
+		approvers, err := resolveTransitionApprovers(s, t, a.GetID(), rule.Approval)
+		if err != nil {
+			return err
+		}
+		if len(approvers) == 0 {
+			return ErrApprovalNoApprovers{TaskID: t.ID, ToStatusID: to.ID}
+		}
+	}
+	return nil
+}
+
+// RequiresApproval reports, after a successful Check, whether performing the change asks for an approval
+// instead of moving the task.
+func (c *TaskStatusChange) RequiresApproval() bool {
+	return c.needsApproval
 }

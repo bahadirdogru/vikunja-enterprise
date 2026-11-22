@@ -162,6 +162,7 @@ func init() {
 	register(spec.ActionStopIf, planStopIf)
 	register(spec.ActionScriptRun, planScript)
 	register(spec.ActionHTTPRequest, planHTTPRequest)
+	register(spec.ActionApprovalRequest, planApprovalRequest)
 }
 
 // requireWritableTask checks that the task exists and the owner of the rule may change it.
@@ -410,13 +411,104 @@ func planSetStatus(env *Env, p params) (*Plan, error) {
 		return nil, err
 	}
 	plan.Summary = fmt.Sprintf("change the status to %d", change.ToStatusID)
+	if change.RequiresApproval() {
+		// The transition asks for an approval instead of moving the task; the owner of the rule is the requester.
+		plan.Summary = fmt.Sprintf("would request approval for the status change to %d", change.ToStatusID)
+	}
 	plan.apply = func() (string, error) {
 		if err := change.Create(env.S, env.Auth); err != nil {
 			return "", err
 		}
+		if change.Approval != nil {
+			return fmt.Sprintf("approval requested (#%d)", change.Approval.ID), nil
+		}
 		return plan.Summary, nil
 	}
 	return plan, nil
+}
+
+// planApprovalRequest asks people to approve the task, ad hoc: no status changes with the answer.
+func planApprovalRequest(env *Env, p params) (*Plan, error) {
+	task, err := requireWritableTask(env)
+	if err != nil {
+		return nil, err
+	}
+	plan := &Plan{}
+	unknownBefore := len(env.Unknown)
+	title := strings.TrimSpace(env.render(p.str("title")))
+	description := env.render(p.str("description"))
+	renderedWarning(env, plan, unknownBefore)
+	if title == "" {
+		return nil, actionErrorf("the title would be empty")
+	}
+
+	approvers := []int64{}
+	add := func(id int64) {
+		if id != env.Auth.ID && !containsInt(approvers, id) {
+			approvers = append(approvers, id)
+		}
+	}
+	list, _ := p["approvers"].([]any)
+	for _, item := range list {
+		if s, ok := item.(string); ok && s == spec.UserAssignees {
+			assignees, _ := env.Sub.Fields["assignees"].([]any)
+			for _, a := range assignees {
+				if id, ok := a.(float64); ok {
+					add(int64(id))
+				}
+			}
+			continue
+		}
+		id, err := resolveUserParam(env, item)
+		if err != nil {
+			return nil, err
+		}
+		add(id)
+	}
+	if len(approvers) == 0 {
+		return nil, actionErrorf("nobody is left to ask: the approvers are empty or only the owner of the rule")
+	}
+
+	request := &models.ApprovalRequest{
+		TaskID:      task.ID,
+		Title:       title,
+		Description: description,
+		Mode:        models.ApprovalMode(p.str("mode")),
+		ApproverIDs: approvers,
+	}
+	if p.has("due_offset") {
+		offset, err := spec.ParseOffset(p.str("due_offset"))
+		if err != nil {
+			return nil, actionErrorf("%s", err.Error())
+		}
+		due := env.Now.Add(offset)
+		request.Due = &due
+	}
+	can, err := request.CanCreate(env.S, env.Auth)
+	if err != nil {
+		return nil, err
+	}
+	if !can {
+		return nil, models.ErrGenericForbidden{}
+	}
+
+	plan.Summary = fmt.Sprintf("request approval %q from %d user(s)", title, len(approvers))
+	plan.apply = func() (string, error) {
+		if err := request.Create(env.S, env.Auth); err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("approval requested (#%d)", request.ID), nil
+	}
+	return plan, nil
+}
+
+func containsInt(list []int64, id int64) bool {
+	for _, v := range list {
+		if v == id {
+			return true
+		}
+	}
+	return false
 }
 
 func containsID(list any, id int64) bool {

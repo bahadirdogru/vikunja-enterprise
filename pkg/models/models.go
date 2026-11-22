@@ -92,6 +92,8 @@ func GetTables() []interface{} {
 		&AutomationSecret{},
 		&TaskStatus{},
 		&TaskStatusHistory{},
+		&ApprovalRequest{},
+		&ApprovalApprover{},
 		&UserInviteLink{},
 		&UserInviteLinkTeam{},
 	}

@@ -23,24 +23,29 @@ import (
 	"code.vikunja.io/api/pkg/user"
 	"code.vikunja.io/api/pkg/web"
 
+	"xorm.io/builder"
 	"xorm.io/xorm"
 )
 
 // AvailableTransition is a status change the requesting user may perform on a task right now.
 type AvailableTransition struct {
-	ToStatus       *WorkflowStatus `json:"to_status" readOnly:"true" doc:"The status the task would enter."`
-	Title          string          `json:"title" readOnly:"true" doc:"The button label of the transition, empty for plain changes."`
-	RequireComment bool            `json:"require_comment" readOnly:"true" doc:"Whether a comment has to be sent with the change."`
-	MissingFields  []string        `json:"missing_fields" readOnly:"true" doc:"The required fields the task does not have yet. The change is rejected until they are set."`
+	ToStatus         *WorkflowStatus `json:"to_status" readOnly:"true" doc:"The status the task would enter."`
+	Title            string          `json:"title" readOnly:"true" doc:"The button label of the transition, empty for plain changes."`
+	RequireComment   bool            `json:"require_comment" readOnly:"true" doc:"Whether a comment has to be sent with the change."`
+	MissingFields    []string        `json:"missing_fields" readOnly:"true" doc:"The required fields the task does not have yet. The change is rejected until they are set."`
+	RequiresApproval bool            `json:"requires_approval" readOnly:"true" doc:"Whether performing the change only asks for an approval (HTTP 202); the task does not move until the approvers agreed."`
+	ApprovalMode     ApprovalMode    `json:"approval_mode,omitempty" readOnly:"true" doc:"any or all, set when the change needs an approval."`
+	Approvers        []*user.User    `json:"approvers" readOnly:"true" doc:"Who would be asked if the requesting user asked now: the approver sources resolved to users, without the requester unless the transition allows it. Empty when the change needs no approval, or when nobody could be asked, in which case the request fails with 24006."`
 }
 
 // TaskWorkflowStatus is the current status of a task with the changes available to the requesting user.
 type TaskWorkflowStatus struct {
-	TaskID      int64                  `json:"task_id" readOnly:"true" doc:"The task. Taken from the URL."`
-	WorkflowID  int64                  `json:"workflow_id" readOnly:"true" doc:"The workflow of the project of the task."`
-	Status      *WorkflowStatus        `json:"status" readOnly:"true" doc:"The current status, null when the task has none."`
-	Entered     *time.Time             `json:"entered" readOnly:"true" doc:"When the task entered its current status."`
-	Transitions []*AvailableTransition `json:"transitions" readOnly:"true" doc:"The changes the requesting user may perform now: the workflow allows them and the user has the permission and team they need. Each lists the requirements the task does not meet yet."`
+	TaskID           int64                  `json:"task_id" readOnly:"true" doc:"The task. Taken from the URL."`
+	WorkflowID       int64                  `json:"workflow_id" readOnly:"true" doc:"The workflow of the project of the task."`
+	Status           *WorkflowStatus        `json:"status" readOnly:"true" doc:"The current status, null when the task has none."`
+	Entered          *time.Time             `json:"entered" readOnly:"true" doc:"When the task entered its current status."`
+	Transitions      []*AvailableTransition `json:"transitions" readOnly:"true" doc:"The changes the requesting user may perform now: the workflow allows them and the user has the permission and team they need. Each lists the requirements the task does not meet yet."`
+	PendingApprovals []*ApprovalRequest     `json:"pending_approvals" readOnly:"true" doc:"The pending approval requests of the task, ad-hoc ones included. Empty for link shares."`
 
 	task *Task
 
@@ -100,32 +105,58 @@ func (ts *TaskWorkflowStatus) ReadOne(s *xorm.Session, a web.Auth) error {
 		available := &AvailableTransition{
 			ToStatus:      to,
 			MissingFields: missing,
+			Approvers:     []*user.User{},
 		}
 		if rule != nil {
 			available.Title = rule.Title
 			available.RequireComment = rule.RequireComment
+			if rule.RequiresApproval {
+				available.RequiresApproval = true
+				if rule.Approval != nil {
+					available.ApprovalMode = rule.Approval.Mode
+				}
+				if !isLinkShareAuth(a) {
+					if available.Approvers, err = resolveTransitionApprovers(s, task, a.GetID(), rule.Approval); err != nil {
+						return err
+					}
+				}
+			}
 		}
 		ts.Transitions = append(ts.Transitions, available)
+	}
+
+	ts.PendingApprovals = []*ApprovalRequest{}
+	if !isLinkShareAuth(a) {
+		if err = s.Where(builder.And(builder.Eq{"task_id": task.ID}, builder.Eq{"status": ApprovalStatusPending})).
+			OrderBy("id ASC").Find(&ts.PendingApprovals); err != nil {
+			return err
+		}
+		if err = hydrateApprovalRequests(s, ts.PendingApprovals); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
 // TaskStatusChange asks to move a task to another status.
 type TaskStatusChange struct {
-	TaskID       int64           `json:"task_id" readOnly:"true" doc:"The task. Taken from the URL."`
-	ToStatusID   int64           `json:"to_status_id" doc:"The status the task should enter."`
-	Comment      string          `json:"comment" doc:"A comment that is stored in the history of the task. Required when the transition says so."`
-	FromStatusID *int64          `json:"from_status_id" readOnly:"true" doc:"The status the task left, null when it had none."`
-	Status       *WorkflowStatus `json:"status" readOnly:"true" doc:"The status the task is in after the change."`
-	Done         bool            `json:"done" readOnly:"true" doc:"Whether the task is done after the change."`
+	TaskID       int64            `json:"task_id" readOnly:"true" doc:"The task. Taken from the URL."`
+	ToStatusID   int64            `json:"to_status_id" doc:"The status the task should enter."`
+	Comment      string           `json:"comment" doc:"A comment that is stored in the history of the task. Required when the transition says so."`
+	FromStatusID *int64           `json:"from_status_id" readOnly:"true" doc:"The status the task left, null when it had none."`
+	Status       *WorkflowStatus  `json:"status" readOnly:"true" doc:"The status the task is in after the change. When the change needs an approval this is the status the task is still in."`
+	Done         bool             `json:"done" readOnly:"true" doc:"Whether the task is done after the change."`
+	Approval     *ApprovalRequest `json:"approval" readOnly:"true" doc:"Set, with HTTP status 202, when the transition needs an approval: the pending request. The task did not move. Asking again for the same status returns the same request."`
 
-	task *Task
+	task          *Task
+	needsApproval bool
 
 	web.CRUDable    `json:"-"`
 	web.Permissions `json:"-"`
 }
 
-// Create performs the status change with all checks of the workflow.
+// Create performs the status change with all checks of the workflow. When the transition needs an approval
+// the task does not move: the pending request is returned in Approval.
 // @Summary Change the status of a task
 func (c *TaskStatusChange) Create(s *xorm.Session, a web.Auth) error {
 	t := c.task
@@ -137,14 +168,10 @@ func (c *TaskStatusChange) Create(s *xorm.Session, a web.Auth) error {
 		return ErrWorkflowDoesNotExist{ProjectID: t.ProjectID}
 	}
 
-	to := d.statuses[c.ToStatusID]
-	reopens := to != nil && to.Category == WorkflowCategoryDone && t.isRepeating() && !t.Done
-
-	result, err := d.changeTaskStatus(s, a, &statusChange{
+	result, err := d.runStatusChange(s, a, &statusChange{
 		Task:       t,
 		ToStatusID: c.ToStatusID,
 		Comment:    c.Comment,
-		SyncDone:   !reopens,
 	})
 	if err != nil {
 		return err
@@ -155,22 +182,46 @@ func (c *TaskStatusChange) Create(s *xorm.Session, a web.Auth) error {
 		c.FromStatusID = &id
 	}
 	c.Status = result.To
+	if result.Approval != nil {
+		if err = hydrateApprovalRequest(s, result.Approval); err != nil {
+			return err
+		}
+		c.Approval = result.Approval
+		c.Status = result.From
+	} else if result.Final != nil {
+		c.Status = result.Final
+	}
+	c.Done = t.Done
+	return nil
+}
+
+// runStatusChange is changeTaskStatus plus what a status change of a person also does: a repeating task that
+// enters a done status re-opens in the initial status, the task is touched and its update is announced.
+func (d *workflowDef) runStatusChange(s *xorm.Session, a web.Auth, c *statusChange) (*statusChangeResult, error) {
+	t := c.Task
+	to := d.statuses[c.ToStatusID]
+	reopens := to != nil && to.Category == WorkflowCategoryDone && t.isRepeating() && !t.Done
+	c.SyncDone = !reopens
+
+	result, err := d.changeTaskStatus(s, a, c)
+	if err != nil {
+		return nil, err
+	}
 
 	if reopens && result.Changed {
 		if err = reopenRepeatingTask(s, t); err != nil {
-			return err
+			return nil, err
 		}
 		initial := d.initialStatus()
 		if _, err = d.changeTaskStatus(s, a, &statusChange{Task: t, ToStatusID: initial.ID, SkipChecks: true}); err != nil {
-			return err
+			return nil, err
 		}
-		c.Status = initial
+		result.Final = initial
 	}
 
-	c.Done = t.Done
 	if result.Changed {
 		if err = updateTaskLastUpdated(s, &Task{ID: t.ID}); err != nil {
-			return err
+			return nil, err
 		}
 		if result.DoneChanged || reopens {
 			// The done flag is what changed, so consumers can tell completing from reopening.
@@ -181,7 +232,7 @@ func (c *TaskStatusChange) Create(s *xorm.Session, a web.Auth) error {
 			events.DispatchOnCommit(s, &TaskUpdatedEvent{Task: t, Doer: doerFromAuth(s, a), OldTask: &oldTask})
 		}
 	}
-	return nil
+	return result, nil
 }
 
 // reopenRepeatingTask does what marking a repeating task done does: shift its dates and reminders and keep it open.

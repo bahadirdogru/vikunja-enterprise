@@ -83,31 +83,47 @@ const (
 	TriggerTaskAssigneeRemoved    = "task.assignee_removed"
 	TriggerTaskCommentAdded       = "task.comment_added"
 	TriggerTaskAttachmentAdded    = "task.attachment_added"
+	TriggerApprovalRequested      = "approval.requested"
+	TriggerApprovalResolved       = "approval.resolved"
 )
+
+// The outcomes the approval.resolved trigger can wait for.
+const (
+	OutcomeAny       = "any"
+	OutcomeApproved  = "approved"
+	OutcomeRejected  = "rejected"
+	OutcomeCancelled = "cancelled"
+)
+
+// ApprovalOutcomes are the values of the outcome option and field.
+var ApprovalOutcomes = []string{OutcomeApproved, OutcomeRejected, OutcomeCancelled}
 
 // The action types.
 const (
-	ActionSetField       = "task.set_field"
-	ActionSetCustomField = "task.set_custom_field"
-	ActionSetDone        = "task.set_done"
-	ActionSetStatus      = "task.set_status"
-	ActionAssign         = "task.assign"
-	ActionUnassign       = "task.unassign"
-	ActionAddLabel       = "task.add_label"
-	ActionRemoveLabel    = "task.remove_label"
-	ActionAddComment     = "task.add_comment"
-	ActionCreateSubtask  = "task.create_subtask"
-	ActionCreateRelated  = "task.create_related"
-	ActionMove           = "task.move"
-	ActionStopIf         = "flow.stop_if"
-	ActionScriptRun      = "script.run"
-	ActionHTTPRequest    = "http.request"
+	ActionSetField        = "task.set_field"
+	ActionSetCustomField  = "task.set_custom_field"
+	ActionSetDone         = "task.set_done"
+	ActionSetStatus       = "task.set_status"
+	ActionAssign          = "task.assign"
+	ActionUnassign        = "task.unassign"
+	ActionAddLabel        = "task.add_label"
+	ActionRemoveLabel     = "task.remove_label"
+	ActionAddComment      = "task.add_comment"
+	ActionCreateSubtask   = "task.create_subtask"
+	ActionCreateRelated   = "task.create_related"
+	ActionMove            = "task.move"
+	ActionStopIf          = "flow.stop_if"
+	ActionScriptRun       = "script.run"
+	ActionHTTPRequest     = "http.request"
+	ActionApprovalRequest = "approval.request"
 )
 
 // The keywords the user kind accepts besides a user id.
 const (
 	UserEventDoer   = "event_doer"
 	UserTaskCreator = "task_creator"
+	// UserAssignees stands for every assignee of the task; only list parameters accept it.
+	UserAssignees = "assignees"
 )
 
 // Param describes one option of a trigger or one parameter of an action.
@@ -270,6 +286,10 @@ func Triggers() []*TriggerDef {
 		{Type: TriggerTaskAssigneeRemoved, TitleKey: title("trigger", "task_assignee_removed"), Event: "task.assignee.deleted", Options: []Param{}},
 		{Type: TriggerTaskCommentAdded, TitleKey: title("trigger", "task_comment_added"), Event: "task.comment.created", Options: []Param{}},
 		{Type: TriggerTaskAttachmentAdded, TitleKey: title("trigger", "task_attachment_added"), Event: "task.attachment.created", Options: []Param{}},
+		{Type: TriggerApprovalRequested, TitleKey: title("trigger", "approval_requested"), Event: "approval.requested", Options: []Param{}},
+		{Type: TriggerApprovalResolved, TitleKey: title("trigger", "approval_resolved"), Event: "approval.resolved", Options: []Param{
+			{Name: "outcome", Kind: KindEnum, Enum: append([]string{OutcomeAny}, ApprovalOutcomes...), TitleKey: title("option", "outcome"), Default: OutcomeAny},
+		}},
 	}
 }
 
@@ -356,6 +376,14 @@ func Fields() []*FieldDef {
 	fields = append(fields,
 		field("event.new.comment", KindText),
 		field("event.new.attachment_name", KindString),
+		field("event.new.approval_id", KindNumber),
+		field("event.new.approval_title", KindString),
+		field("event.new.approval_mode", KindEnum, enumOf("any", "all")),
+		field("event.new.ad_hoc", KindBool),
+		field("event.new.requested_by", KindUser),
+		field("event.new.approvers", KindUsers, multiple),
+		field("event.new.outcome", KindEnum, enumOf(ApprovalOutcomes...)),
+		field("event.new.cancel_reason", KindString),
 	)
 	return fields
 }
@@ -395,6 +423,7 @@ func Placeholders() []string {
 	return []string{
 		"task.id", "task.title", "task.description", "task.identifier", "task.cf.<id>",
 		"event.doer.name", "event.doer.username", "project.title",
+		"event.approval.id", "event.approval.title", "event.approval.outcome",
 	}
 }
 
@@ -458,6 +487,16 @@ func Actions() []*ActionDef {
 			Params: []Param{
 				{Name: "source", Kind: KindCode, Language: "javascript", Required: true, TitleKey: title("param", "source"),
 					Description: "The body of a function, for example: `const parent = vikunja.tasks.get(task.id); return parent.title;`. Statements run in strict mode. Not a template: {{placeholders}} are not replaced."},
+			}},
+		{Type: ActionApprovalRequest, TitleKey: title("action", "approval_request"),
+			Description: "Asks people to approve the task: an ad-hoc approval request that changes no status. The request is made by the owner of the rule, who cannot be one of the approvers. The approvers need to be able to read the task.",
+			Params: []Param{
+				{Name: "approvers", Kind: KindUsers, Required: true, Multiple: true, Enum: []string{UserEventDoer, UserTaskCreator, UserAssignees}, TitleKey: title("param", "approvers")},
+				{Name: "mode", Kind: KindEnum, Enum: []string{"any", "all"}, Default: "any", TitleKey: title("param", "mode"),
+					Description: "any: the first decision resolves the request. all: every approver has to approve, one rejection rejects."},
+				{Name: "title", Kind: KindTemplate, Required: true, TitleKey: title("param", "title")},
+				{Name: "description", Kind: KindTemplate, TitleKey: title("param", "description")},
+				{Name: "due_offset", Kind: KindDuration, TitleKey: title("param", "due_offset")},
 			}},
 		{Type: ActionHTTPRequest, TitleKey: title("action", "http_request"),
 			Description: "Sends an HTTP request to an external service, for example a chat webhook. Private, loopback and link-local addresses are blocked. A 5xx answer or a network error is retried like any temporary failure; a 4xx answer fails the run. The status and the first 2 KiB of the answer are stored in the step output.",

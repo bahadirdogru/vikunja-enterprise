@@ -63,6 +63,11 @@ func (ts *TaskWorkflowStatus) CanRead(s *xorm.Session, a web.Auth) (bool, int, e
 
 // CanCreate needs write access to the task. The rules of the transition itself are checked when it is performed.
 func (c *TaskStatusChange) CanCreate(s *xorm.Session, a web.Auth) (bool, error) {
+	// Status changes of one task run one after the other: with transitions that ask for approvals two parallel
+	// changes would otherwise create the same request twice. The write comes before any read, see lockApprovalRequest.
+	if err := lockTaskForApproval(s, c.TaskID); err != nil {
+		return false, err
+	}
 	task := &Task{ID: c.TaskID}
 	can, err := task.CanWrite(s, a)
 	if err != nil || !can {

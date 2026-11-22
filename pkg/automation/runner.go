@@ -135,6 +135,12 @@ func matchesTrigger(rule *models.AutomationRule, p *Payload) bool {
 			return p.FieldID == id
 		}
 		return true
+	case spec.TriggerApprovalResolved:
+		if outcome, ok := opts["outcome"].(string); ok && outcome != "" && outcome != spec.OutcomeAny {
+			cur, _ := p.New["outcome"].(string)
+			return cur == outcome
+		}
+		return true
 	}
 	return true
 }

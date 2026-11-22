@@ -66,7 +66,7 @@ func RegisterWorkflowRoutes(api huma.API) {
 	Register(api, huma.Operation{
 		OperationID: "task-status-read",
 		Summary:     "Get the status of a task",
-		Description: "Returns the current status of a task and the status changes the requesting user may perform right now, each with the requirements the task does not meet yet. Requires read access to the task; 404 when its project has no workflow.",
+		Description: "Returns the current status of a task and the status changes the requesting user may perform right now, each with the requirements the task does not meet yet, whether it needs an approval and who would be asked. pending_approvals lists the open approval requests of the task. Requires read access to the task; 404 when its project has no workflow.",
 		Method:      http.MethodGet,
 		Path:        "/tasks/{task}/status",
 		Tags:        tags,
@@ -75,7 +75,7 @@ func RegisterWorkflowRoutes(api huma.API) {
 	Register(api, huma.Operation{
 		OperationID: "task-status-change",
 		Summary:     "Change the status of a task",
-		Description: "Moves the task to another status. Checks run in order: the status exists and is not archived, the workflow allows the change, the user has the permission and team of the transition, then required fields and comment. Failing requirements return 422 with code 21007 and a details object listing missing_fields and comment_required. Entering a done or cancelled status marks the task done, leaving it clears the flag; a repeating task that enters a done status re-opens in the initial status and both changes are recorded. Requires write access to the task.",
+		Description: "Moves the task to another status. Checks run in order: the status exists and is not archived, the workflow allows the change, the user has the permission and team of the transition, then required fields and comment. Failing requirements return 422 with code 21007 and a details object listing missing_fields and comment_required. Entering a done or cancelled status marks the task done, leaving it clears the flag; a repeating task that enters a done status re-opens in the initial status and both changes are recorded. When the transition requires approval these checks run and then, instead of moving the task, a pending approval request is created (or the existing one for the same target status is returned) and the response is 202 with it in approval; status is the status the task is still in. 422 with code 24006 when nobody can be asked. Requires write access to the task.",
 		Method:      http.MethodPost,
 		Path:        "/tasks/{task}/status",
 		// Performs an action on the task, it does not create a resource.
@@ -159,7 +159,7 @@ func taskStatusRead(ctx context.Context, in *struct {
 func taskStatusChange(ctx context.Context, in *struct {
 	TaskID int64 `path:"task"`
 	Body   models.TaskStatusChange
-}) (*singleBody[models.TaskStatusChange], error) {
+}) (*statusBody[models.TaskStatusChange], error) {
 	a, err := authFromCtx(ctx)
 	if err != nil {
 		return nil, err
@@ -168,7 +168,12 @@ func taskStatusChange(ctx context.Context, in *struct {
 	if err := handler.DoCreate(ctx, &in.Body, a); err != nil {
 		return nil, translateDomainError(err)
 	}
-	return &singleBody[models.TaskStatusChange]{Body: &in.Body}, nil
+	// A transition that needs an approval does not move the task: 202 with the pending request.
+	status := http.StatusOK
+	if in.Body.Approval != nil {
+		status = http.StatusAccepted
+	}
+	return &statusBody[models.TaskStatusChange]{Status: status, Body: &in.Body}, nil
 }
 
 func taskStatusHistoryList(ctx context.Context, in *struct {
