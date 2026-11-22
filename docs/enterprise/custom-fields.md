@@ -1,7 +1,8 @@
 # Custom fields — design
 
-Status: backend done (step 1a), filtering and sorting done. Frontend
-filter/sort UI and table/kanban display follow in later steps.
+Status: backend done (step 1a), filtering and sorting done, display in task
+lists, table columns and kanban cards done. Frontend filter/sort UI follows in
+a later step.
 
 ## Model
 
@@ -135,3 +136,50 @@ Sorting: `sort_by=cf_<fieldID>` with `order_by=asc|desc` works for all
 single-value types. Select fields sort by option position, not option id.
 `multi_select` and `user` fields cannot be sorted by (`400`). Tasks without a
 value sort last in both directions, like the built-in nullable columns.
+
+## Display
+
+### `expand=custom_fields`
+
+Task list and single task reads (`/api/v2/tasks`, `/projects/{project}/tasks`,
+`/projects/{project}/views/{view}/tasks`, `/projects/{project}/views/{view}/buckets/tasks`,
+`/tasks/{task}`, `/projects/{project}/tasks/by-index/{index}`) accept
+`expand=custom_fields`. Each task then carries `custom_fields`, a compact list
+with one entry per field that has a value, ordered by the field position:
+
+```json
+"custom_fields": [
+  {"custom_field_id": 1, "type": "text", "value": "REF-1"},
+  {"custom_field_id": 2, "type": "select", "value": 1},
+  {"custom_field_id": 4, "type": "multi_select", "value": [3, 4]}
+]
+```
+
+`value` has the same shape as in `/tasks/{task}/custom-field-values`. Fields
+without a value are left out (a checkbox set to `false` counts as a value). The
+values of a page are loaded with two queries, independent of the page size.
+Without the expand, and for tasks that have no value at all, the key is absent. API tokens need
+`tasks_custom_field_values` `read_all` to use it, like `comment_count` needs
+the comment scope.
+
+### Table view
+
+The columns menu of a table view lists the project's custom fields under a
+"Custom fields" heading. They are off by default; the choice is stored in the
+browser (`localStorage` key `tableViewCustomColumns`, field ids per project id).
+The view requests `expand=custom_fields` only while at least one custom column
+is shown. Cells are read-only; headers of all types except `multi_select` and
+`user` sort through `sort_by=cf_<id>`.
+
+### Kanban cards
+
+A kanban view has a "Card fields" menu next to the filter. Selected fields are
+shown on every card as label and value; a card without a value for a field
+omits that line. The selection is stored in the browser (`localStorage` key
+`kanbanCardFields`, field ids per view id). The expand is added to the bucket
+requests only when a field is selected.
+
+Both use the read-only `CustomFieldValueDisplay` component, which renders text
+truncated, numbers and currency by locale, dates with the app's date format,
+checkboxes as a check mark, select values as coloured chips, users with
+avatar and name, links, rating stars and a progress bar.

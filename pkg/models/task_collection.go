@@ -83,6 +83,7 @@ const TaskCollectionExpandComments TaskCollectionExpandable = `comments`
 const TaskCollectionExpandCommentCount TaskCollectionExpandable = `comment_count`
 const TaskCollectionExpandTimeEntriesCount TaskCollectionExpandable = `time_entries_count`
 const TaskCollectionExpandIsUnread TaskCollectionExpandable = `is_unread`
+const TaskCollectionExpandCustomFields TaskCollectionExpandable = `custom_fields`
 
 // Validate validates if the TaskCollectionExpandable value is valid.
 func (t TaskCollectionExpandable) Validate() error {
@@ -99,11 +100,11 @@ func (t TaskCollectionExpandable) Validate() error {
 		return nil
 	case TaskCollectionExpandTimeEntriesCount:
 		return nil
-	case TaskCollectionExpandIsUnread:
+	case TaskCollectionExpandIsUnread, TaskCollectionExpandCustomFields:
 		return nil
 	}
 
-	return InvalidFieldErrorWithMessage([]string{"expand"}, "Expand must be one of the following values: subtasks, buckets, reactions, comments, comment_count, time_entries_count, is_unread")
+	return InvalidFieldErrorWithMessage([]string{"expand"}, "Expand must be one of the following values: subtasks, buckets, reactions, comments, comment_count, time_entries_count, is_unread, custom_fields")
 }
 
 func validateTaskField(fieldName string) error {
@@ -366,7 +367,7 @@ func getFilterValueForBucketFilter(filter string, view *ProjectView) (newFilter 
 // @Param filter query string false "The filter query to match tasks by. Check out https://vikunja.io/docs/filters for a full explanation of the feature."
 // @Param filter_timezone query string false "The time zone which should be used for date match (statements like "now" resolve to different actual times)"
 // @Param filter_include_nulls query string false "If set to true the result will include filtered fields whose value is set to `null`. Available values are `true` or `false`. Defaults to `false`."
-// @Param expand query string false "If set to `subtasks`, Vikunja will fetch only tasks which do not have subtasks and then in a second step, will fetch all of these subtasks. This may result in more tasks than the pagination limit being returned, but all subtasks will be present in the response. If set to `buckets`, the buckets of each task will be present in the response. If set to `reactions`, the reactions of each task will be present in the response. If set to `comments`, the first 50 comments of each task will be present in the response. You can set this multiple times with different values."
+// @Param expand query string false "If set to `subtasks`, Vikunja will fetch only tasks which do not have subtasks and then in a second step, will fetch all of these subtasks. This may result in more tasks than the pagination limit being returned, but all subtasks will be present in the response. If set to `buckets`, the buckets of each task will be present in the response. If set to `reactions`, the reactions of each task will be present in the response. If set to `comments`, the first 50 comments of each task will be present in the response. If set to `custom_fields`, the custom field values of each task will be present in the response. You can set this multiple times with different values."
 // @Security JWTKeyAuth
 // @Success 200 {array} models.Task "The tasks"
 // @Failure 500 {object} models.Message "Internal error"

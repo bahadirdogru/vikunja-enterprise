@@ -217,6 +217,44 @@ func TestHumaTaskCollection_Expand(t *testing.T) {
 		assert.Contains(t, body, `"comment_count":`)
 		assert.Contains(t, body, `"reactions":`)
 	})
+	t.Run("custom_fields expand embeds compact values", func(t *testing.T) {
+		rec := get("/api/v2/projects/1/tasks?expand=custom_fields")
+		require.Equal(t, http.StatusOK, rec.Code, "body: %s", rec.Body.String())
+		var page struct {
+			Items []struct {
+				ID           int64 `json:"id"`
+				CustomFields []struct {
+					CustomFieldID int64  `json:"custom_field_id"`
+					Type          string `json:"type"`
+					Value         any    `json:"value"`
+				} `json:"custom_fields"`
+			} `json:"items"`
+		}
+		require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &page))
+		tasks := page.Items
+		var found bool
+		for _, task := range tasks {
+			if task.ID != 1 {
+				continue
+			}
+			found = true
+			require.Len(t, task.CustomFields, 3)
+			assert.Equal(t, int64(1), task.CustomFields[0].CustomFieldID)
+			assert.Equal(t, "text", task.CustomFields[0].Type)
+			assert.Equal(t, "REF-1", task.CustomFields[0].Value)
+			assert.Equal(t, "multi_select", task.CustomFields[2].Type)
+			assert.Equal(t, []any{float64(3), float64(4)}, task.CustomFields[2].Value)
+		}
+		assert.True(t, found)
+
+		rec = get("/api/v2/projects/1/tasks")
+		require.Equal(t, http.StatusOK, rec.Code)
+		assert.NotContains(t, rec.Body.String(), `"custom_fields"`)
+
+		rec = get("/api/v2/tasks/1?expand=custom_fields")
+		require.Equal(t, http.StatusOK, rec.Code, "body: %s", rec.Body.String())
+		assert.Contains(t, rec.Body.String(), `"custom_fields":[{`)
+	})
 	t.Run("invalid expand rejected", func(t *testing.T) {
 		rec := get("/api/v2/projects/1/tasks?expand=bogus")
 		// enum on the query param makes Huma reject before the handler.

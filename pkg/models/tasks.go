@@ -177,6 +177,9 @@ type Task struct {
 	// Time entry count of this task. Only present when fetching tasks with the `expand` parameter set to `time_entries_count`.
 	TimeEntriesCount *int64 `xorm:"-" json:"time_entries_count,omitempty" readOnly:"true" doc:"The number of time entries on this task. Only present when requested via the time_entries_count expand option."`
 
+	// Custom field values of this task. Only present when fetching tasks with the `expand` parameter set to `custom_fields`.
+	CustomFields []*TaskCustomFieldSummary `xorm:"-" json:"custom_fields,omitempty" readOnly:"true" doc:"The custom field values of this task, only fields that have a value. Only present when requested via the custom_fields expand option."`
+
 	// Behaves exactly the same as with the TaskCollection.Expand parameter
 	Expand []TaskCollectionExpandable `xorm:"-" json:"-" query:"expand"`
 
@@ -913,6 +916,11 @@ func addMoreInfoToTasks(s *xorm.Session, taskMap map[int64]*Task, a web.Auth, vi
 				}
 			case TaskCollectionExpandIsUnread:
 				err = addIsUnreadToTasks(s, taskIDs, taskMap, a)
+				if err != nil {
+					return
+				}
+			case TaskCollectionExpandCustomFields:
+				err = addCustomFieldsToTasks(s, taskIDs, taskMap)
 				if err != nil {
 					return
 				}
