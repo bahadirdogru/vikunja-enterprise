@@ -17,6 +17,7 @@ import {invalidateTaskMembership} from './taskCache'
 import {workflowKeys} from './workflow'
 import {i18n} from '@/i18n'
 import {
+	canDecide,
 	normalizeApproval,
 	type ApprovalDecisionValue,
 	type ApprovalMode,
@@ -61,16 +62,30 @@ export function approvalsListQuery(params: ApprovalListParams) {
 	})
 }
 
-// How many requests wait for the user. The list endpoint reports the total, so one item is enough.
-export function approvalCountQuery() {
+// The requests that wait for this user's decision. The endpoint lists every pending request the user is an
+// approver of, including those they decided already (the request stays open for the others), so the list is
+// filtered here. The teams are small, so all pages are read.
+export function approvalWaitingQuery(userId: number, projectId = 0) {
 	return queryOptions({
-		queryKey: approvalKeys.count,
-		queryFn: async ({signal}): Promise<number> => {
-			const {data} = await approvalsList({query: {status: 'pending', role: 'approver', page: 1, per_page: 1}, signal})
-			return data.total ?? data.items?.length ?? 0
+		queryKey: approvalKeys.waiting(userId, projectId),
+		queryFn: async ({signal}): Promise<ApprovalResponse[]> => {
+			const items = await fetchAllPages(async page => (await approvalsList({
+				query: {status: 'pending', role: 'approver', ...(projectId > 0 ? {project_id: projectId} : {}), page},
+				signal,
+			})).data)
+			return items.map(normalizeApproval).filter(request => canDecide(request, userId))
 		},
+		enabled: userId > 0,
 		staleTime: 30_000,
 		refetchOnWindowFocus: true,
+	})
+}
+
+// How many requests wait for the user (the badge of the sidebar).
+export function approvalCountQuery(userId: number) {
+	return queryOptions({
+		...approvalWaitingQuery(userId),
+		select: (items: ApprovalResponse[]) => items.length,
 	})
 }
 

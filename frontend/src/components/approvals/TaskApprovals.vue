@@ -343,8 +343,8 @@ defineExpose({pending})
 
 .approval-banner {
 	padding: .75rem 1rem;
-	background: var(--warning-light, var(--grey-100));
-	border: 1px solid var(--warning, var(--grey-300));
+	background: var(--grey-100);
+	border: 1px solid var(--warning, var(--grey-400));
 	border-radius: $radius;
 	min-inline-size: 0;
 
@@ -360,7 +360,7 @@ defineExpose({pending})
 	}
 
 	&__icon {
-		color: var(--warning-dark, var(--grey-700));
+		color: var(--warning);
 	}
 
 	&__title {

@@ -29,8 +29,8 @@ defineProps<{
 	gap: .25rem;
 	max-inline-size: 100%;
 	padding: .0625rem .5rem;
-	background: var(--warning-light, var(--grey-100));
-	border: 1px solid var(--warning, var(--grey-300));
+	background: var(--grey-100);
+	border: 1px solid var(--warning, var(--grey-400));
 	border-radius: 999px;
 	color: var(--grey-800);
 	font-size: .75rem;

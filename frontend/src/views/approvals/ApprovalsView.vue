@@ -11,7 +11,7 @@ import Pagination from '@/components/misc/Pagination.vue'
 import SwitchView from '@/components/misc/SwitchView.vue'
 import ApprovalDecisionDialog from '@/components/approvals/ApprovalDecisionDialog.vue'
 import ApprovalRow from '@/components/approvals/ApprovalRow.vue'
-import {approvalCountQuery, approvalKeys, approvalsListQuery} from '@/client/queries/approvals'
+import {APPROVALS_PER_PAGE, approvalKeys, approvalsListQuery, approvalWaitingQuery} from '@/client/queries/approvals'
 import {useProjects} from '@/composables/useProjects'
 import {useTitle} from '@/composables/useTitle'
 import {
@@ -51,10 +51,24 @@ const params = computed(() => ({
 	page: page.value,
 }))
 
-const list = useQuery(computed(() => approvalsListQuery(params.value)))
-const count = useQuery(approvalCountQuery())
-const items = computed(() => list.data.value?.items ?? [])
 const userId = computed(() => authStore.info?.id ?? 0)
+// "Waiting for me" leaves out the requests I decided on, which the endpoint cannot filter: all are read once
+// (the sidebar badge uses the same query) and narrowed to the project here.
+const waiting = useQuery(computed(() => approvalWaitingQuery(userId.value, 0)))
+const waitingItems = computed(() => (waiting.data.value ?? [])
+	.filter(request => projectId.value === 0 || request.project_id === projectId.value))
+const list = useQuery(computed(() => ({
+	...approvalsListQuery(params.value),
+	enabled: tab.value !== 'waiting',
+})))
+const isPending = computed(() => tab.value === 'waiting' ? waiting.isPending.value : list.isPending.value)
+const isError = computed(() => tab.value === 'waiting' ? waiting.isError.value : list.isError.value)
+const items = computed(() => tab.value === 'waiting'
+	? waitingItems.value.slice((page.value - 1) * APPROVALS_PER_PAGE, page.value * APPROVALS_PER_PAGE)
+	: list.data.value?.items ?? [])
+const totalPages = computed(() => tab.value === 'waiting'
+	? Math.ceil(waitingItems.value.length / APPROVALS_PER_PAGE)
+	: list.data.value?.total_pages ?? 0)
 
 const projectOptions = computed(() => [
 	{value: 0, label: t('approvals.page.allProjects')},
@@ -100,9 +114,9 @@ function refresh() {
 				>
 					{{ tabLabels[entry] }}
 					<span
-						v-if="entry === 'waiting' && (count.data.value ?? 0) > 0"
+						v-if="entry === 'waiting' && (waiting.data.value?.length ?? 0) > 0"
 						class="approvals-page__count"
-					>{{ count.data.value }}</span>
+					>{{ waiting.data.value?.length }}</span>
 				</BaseButton>
 			</SwitchView>
 			<div class="approvals-page__filters">
@@ -137,11 +151,11 @@ function refresh() {
 		</div>
 
 		<Loading
-			v-if="list.isPending.value"
+			v-if="isPending"
 			variant="small"
 		/>
 		<p
-			v-else-if="list.isError.value"
+			v-else-if="isError"
 			class="help is-danger"
 			role="alert"
 		>
@@ -174,8 +188,8 @@ function refresh() {
 		</ul>
 
 		<Pagination
-			v-if="(list.data.value?.total_pages ?? 0) > 1"
-			:total-pages="list.data.value?.total_pages ?? 1"
+			v-if="totalPages > 1"
+			:total-pages="totalPages"
 			:current-page="page"
 		/>
 

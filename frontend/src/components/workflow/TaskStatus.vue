@@ -227,12 +227,14 @@ defineExpose({toggleDone, visible})
 					@click="choose(transition, close)"
 				>
 					<span class="menu-item__main">
-						<Icon
-							v-if="transition.requires_approval"
-							icon="user-check"
-							class="menu-item__approval-icon"
-						/>
-						<span class="menu-item__label">{{ transitionLabel(transition) }}</span>
+						<span class="menu-item__label">
+							<Icon
+								v-if="transition.requires_approval"
+								icon="user-check"
+								class="menu-item__approval-icon"
+							/>
+							{{ transitionLabel(transition) }}
+						</span>
 						<WorkflowStatusBadge
 							v-if="transition.title || transition.requires_approval"
 							:status="transition.to_status"

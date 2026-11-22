@@ -494,6 +494,63 @@ Dropped now and its history names user1 (the requester) with
 - Workflow editor: approval settings on a transition; kanban status mode
   shows a "waiting for approval" marker on the card.
 
+## UI status (5b)
+
+Done (web client, `frontend/`):
+
+- **Workflow editor.** A transition has an "Approval" section: the switch, the
+  mode (any / all, each with one line of explanation), the approver sources
+  (a person, a team the project is shared with, the assignees of the task, a
+  person in a `user` field of the project), the status after a rejection, the
+  duration to decide within (`12h`, `2d`, `1w`) and the self-approval switch.
+  Transitions with an approval carry a tag in the list and an icon in the
+  matrix. The client checks what the server checks (at least one complete
+  source, the duration format, a rejected status that differs from the
+  target). The server's 21002 messages name no transition, so one that is
+  about an approval control is shown at that control of the transition that
+  is open.
+- **Task detail.** The status menu labels transitions that need an approval
+  ("Request approval -> Print ready") and previews who will be asked; the
+  requirements dialog runs first, the `202` shows "Approval requested", never
+  an error. The done button goes through the status endpoint, so it asks for
+  the approval too and no failing `PUT` is needed. An approval banner sits
+  above the property list: title, requester, mode, due (overdue marked),
+  state, comment and time per approver, approve / reject (comment required for
+  a rejection, 24005 shown at the field) for approvers who have not decided,
+  cancel with a confirmation for the requester and project admins. Resolved
+  requests are in a collapsible section (outcome, decisions, the cancel
+  reason in words). The status history links an entry made by an approval to
+  that section. "Request approval" in the actions menu opens the ad-hoc
+  dialog.
+- **Boards, lists, table.** A status mode drop that answers `202` leaves the
+  card in place and shows a toast; cards, list rows and the table status cell
+  show a "Waiting for approval" marker (from `expand=approvals`, requested only
+  for projects with a workflow).
+- **Approvals page** (`/approvals`, sidebar entry with a count badge): waiting
+  for me, requested by me, history, with a project filter, paging, and
+  approve / reject in the first tab. Notifications `approval.requested`,
+  `approval.resolved` and `approval.reminder` have text and a link to the task.
+- **Automation.** The catalog fixture and the English and Turkish strings
+  cover the new triggers, options, fields and the `approval.request` action;
+  the generic editor renders its parameters with the existing user list
+  (people plus `assignees`, `task_creator`, `event_doer`) and enum controls.
+
+Behaviour worth knowing:
+
+- `GET /approvals?role=approver&status=pending` also lists the requests the
+  caller has already decided (they stay open for the others). "Waiting for me"
+  and the badge therefore read all pages and keep only the requests the
+  caller can still decide. The badge refreshes on window focus, when an
+  `approval.*` notification arrives over the websocket, and by polling every
+  minute without a socket.
+- The history tab asks for one outcome at a time (approved, rejected,
+  cancelled), because the endpoint takes a single status; there is no
+  combined "all resolved" list.
+- Plain updates with `done: true` (checkbox of a list row, a drop into a done
+  bucket of a manual board) still answer `409` / `24007`; the message says to
+  use the status menu. Only the task detail done button asks for the approval.
+- Paging of "Waiting for me" is done in the client.
+
 # Steps
 
 - 5a (done): approvals backend (requests, approvers, workflow integration,

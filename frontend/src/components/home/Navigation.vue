@@ -201,8 +201,8 @@ const authStore = useAuthStore()
 // Requests waiting for the user. Notifications of new requests invalidate it; without a socket it is polled.
 const {authenticated: socketConnected} = useWebSocket()
 const approvalCountResult = useQuery(computed(() => ({
-	...approvalCountQuery(),
-	enabled: !authStore.isLinkShareAuth,
+	...approvalCountQuery(authStore.info?.id ?? 0),
+	enabled: !authStore.isLinkShareAuth && (authStore.info?.id ?? 0) > 0,
 	refetchInterval: socketConnected.value ? false : 60_000,
 })))
 const approvalCount = computed(() => approvalCountResult.data.value ?? 0)

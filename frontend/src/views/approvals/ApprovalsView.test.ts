@@ -46,8 +46,7 @@ async function mountPage(path = '/approvals') {
 	return {wrapper, router}
 }
 
-// The sidebar count asks for one item; the list asks for a page.
-const queries = () => sdk.approvalsList.mock.calls.map(call => call[0].query).filter(query => query.per_page !== 1)
+const queries = () => sdk.approvalsList.mock.calls.map(call => call[0].query)
 
 enableAutoUnmount(afterEach)
 
@@ -55,15 +54,13 @@ describe('ApprovalsView', () => {
 	beforeEach(() => {
 		sdk.approvalsList.mockReset()
 		sdk.approvalsDecide.mockReset()
-		sdk.approvalsList.mockImplementation(async ({query}: {query: {per_page?: number}}) => ({
-			data: {items: query.per_page === 1 ? [] : [approvalFixture()], total: 4, total_pages: 1},
-		}))
+		sdk.approvalsList.mockResolvedValue({data: {items: [approvalFixture()], total: 1, total_pages: 1}})
 	})
 
 	it('starts on the requests that wait for me and shows what is asked, by whom, the progress and the task', async () => {
 		const {wrapper} = await mountPage()
 
-		expect(queries()).toContainEqual(expect.objectContaining({status: 'pending', role: 'approver', page: 1, per_page: 20}))
+		expect(queries()).toContainEqual(expect.objectContaining({status: 'pending', role: 'approver', page: 1}))
 		const row = wrapper.find('[data-cy="approval-row"]')
 		expect(row.text()).toContain('PUB-1 Cover')
 		expect(row.text()).toContain('Publishing')
@@ -71,8 +68,18 @@ describe('ApprovalsView', () => {
 		expect(row.text()).toContain('requester')
 		expect(row.text()).toContain('1/2 approved')
 		expect(row.findAll('button').map(button => button.text())).toEqual(['Approve', 'Reject'])
-		// The badge of the tab shows how many requests wait, from the total of the count query.
-		expect(wrapper.find('.approvals-page__count').text()).toBe('4')
+		// The badge of the tab counts the requests that wait for my decision.
+		expect(wrapper.find('.approvals-page__count').text()).toBe('1')
+	})
+
+	it('leaves out requests I decided on already, although the request is still open', async () => {
+		sdk.approvalsList.mockResolvedValue({data: {items: [
+			approvalFixture({id: 1}),
+			approvalFixture({id: 2, approvers: [{id: 9, request_id: 2, user_id: 3, decision: 'approved', user: {id: 3, username: 'me'}}]}),
+		], total_pages: 1}})
+		const {wrapper} = await mountPage()
+		expect(wrapper.findAll('[data-cy="approval-row"]')).toHaveLength(1)
+		expect(wrapper.find('.approvals-page__count').text()).toBe('1')
 	})
 
 	it('shows the requests I made without decision buttons', async () => {
@@ -98,9 +105,12 @@ describe('ApprovalsView', () => {
 	})
 
 	it('filters by project', async () => {
-		const {router} = await mountPage('/approvals?project=4')
-		expect(queries()).toContainEqual(expect.objectContaining({project_id: 4, role: 'approver'}))
-		expect(router.currentRoute.value.query.project).toBe('4')
+		// The waiting list is narrowed in the client, the other tabs ask the server.
+		const {wrapper, router} = await mountPage('/approvals?project=4')
+		expect(wrapper.find('[data-cy="approval-row"]').exists()).toBe(false)
+		await router.replace({name: 'approvals.index', query: {tab: 'requested', project: '4'}})
+		await flushPromises()
+		expect(queries()).toContainEqual(expect.objectContaining({project_id: 4, role: 'requester'}))
 	})
 
 	it('explains an empty list in one sentence per tab', async () => {

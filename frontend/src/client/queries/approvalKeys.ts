@@ -4,7 +4,7 @@ export const approvalKeys = {
 	lists: ['approvals', 'list'] as const,
 	list: (params: {status?: string, role?: string, projectId?: number, page?: number}) =>
 		['approvals', 'list', params] as const,
-	count: ['approvals', 'count'] as const,
+	waiting: (userId: number, projectId: number) => ['approvals', 'waiting', userId, projectId] as const,
 	tasks: ['approvals', 'task'] as const,
 	task: (taskId: number) => ['approvals', 'task', taskId] as const,
 }
