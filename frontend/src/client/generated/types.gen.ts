@@ -1228,6 +1228,187 @@ export type CustomFieldValue = {
     value?: unknown;
 };
 
+export type Dashboard = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * A timestamp when this dashboard was created. You cannot change this value.
+     */
+    readonly created?: string;
+    /**
+     * What the dashboard is for.
+     */
+    description?: string;
+    /**
+     * The unique, numeric id of this dashboard.
+     */
+    readonly id?: number;
+    /**
+     * The user who created the dashboard.
+     */
+    readonly owner?: User;
+    /**
+     * Sort order in lists, ascending.
+     */
+    position?: number;
+    /**
+     * 0 for a personal dashboard, else the project of a project dashboard. It cannot change after creation. In the list it filters to the dashboards of one project.
+     */
+    project_id?: number;
+    /**
+     * The title of the dashboard.
+     */
+    title?: string;
+    /**
+     * A timestamp when this dashboard was last updated. You cannot change this value.
+     */
+    readonly updated?: string;
+    /**
+     * The number of widgets, so lists need not load them.
+     */
+    readonly widget_count?: number;
+    /**
+     * The widgets. Null in lists. On update, send the whole list to replace the widgets (widgets with an id are updated, those without one are created and stored widgets that are missing are deleted); null or omitting it keeps them.
+     */
+    widgets?: Array<DashboardWidget> | null;
+};
+
+export type DashboardLayout = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * The new positions. Widgets that are not listed keep theirs.
+     */
+    items?: Array<DashboardLayoutItem> | null;
+};
+
+export type DashboardLayoutItem = {
+    /**
+     * The height in grid rows.
+     */
+    h?: number;
+    /**
+     * The widget.
+     */
+    id?: number;
+    /**
+     * The width in grid columns.
+     */
+    w?: number;
+    /**
+     * The column of the left edge, starting at 0.
+     */
+    x?: number;
+    /**
+     * The row of the top edge, starting at 0.
+     */
+    y?: number;
+};
+
+export type DashboardReadBody = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * A timestamp when this dashboard was created. You cannot change this value.
+     */
+    readonly created?: string;
+    /**
+     * What the dashboard is for.
+     */
+    description?: string;
+    /**
+     * The unique, numeric id of this dashboard.
+     */
+    readonly id?: number;
+    /**
+     * The maximum permission the requesting user has on this dashboard: 2 for the owner of a personal dashboard and for admins of the project, 0 for readers of a project dashboard (1 for write members, who cannot change it).
+     */
+    readonly max_permission?: number;
+    /**
+     * The user who created the dashboard.
+     */
+    readonly owner?: User;
+    /**
+     * Sort order in lists, ascending.
+     */
+    position?: number;
+    /**
+     * 0 for a personal dashboard, else the project of a project dashboard. It cannot change after creation. In the list it filters to the dashboards of one project.
+     */
+    project_id?: number;
+    /**
+     * The title of the dashboard.
+     */
+    title?: string;
+    /**
+     * A timestamp when this dashboard was last updated. You cannot change this value.
+     */
+    readonly updated?: string;
+    /**
+     * The number of widgets, so lists need not load them.
+     */
+    readonly widget_count?: number;
+    /**
+     * The widgets. Null in lists. On update, send the whole list to replace the widgets (widgets with an id are updated, those without one are created and stored widgets that are missing are deleted); null or omitting it keeps them.
+     */
+    widgets?: Array<DashboardWidget> | null;
+};
+
+export type DashboardWidget = {
+    /**
+     * The settings of the widget. number: {request, compare}. bar, donut and line: {request}, where request is a report request (POST /reports/tasks) that is checked on save but not run. created_vs_done: {project_id, filter, bucket, from, to}. task_list: {project_id, filter, sort_by, order_by, columns, limit}. workload: {project_id, filter, estimate_field}. status_time: {project_id, from, to}. time_tracking: {from, to, group_by}. text: {text}. On a project dashboard project_id values are set to the project of the dashboard.
+     */
+    config?: {
+        [key: string]: unknown;
+    };
+    /**
+     * A timestamp when this widget was created. You cannot change this value.
+     */
+    readonly created?: string;
+    /**
+     * The dashboard this widget belongs to.
+     */
+    readonly dashboard_id?: number;
+    /**
+     * The height in grid rows.
+     */
+    h?: number;
+    /**
+     * The unique, numeric id of this widget. Send the id of an existing widget to keep it when you replace the widgets of a dashboard; omit it or send 0 to create a widget.
+     */
+    readonly id?: number;
+    /**
+     * An optional title shown above the widget.
+     */
+    title?: string;
+    /**
+     * What the widget shows. The config has a shape per type.
+     */
+    type?: 'number' | 'bar' | 'donut' | 'line' | 'created_vs_done' | 'task_list' | 'workload' | 'status_time' | 'time_tracking' | 'text';
+    /**
+     * A timestamp when this widget was last updated. You cannot change this value.
+     */
+    readonly updated?: string;
+    /**
+     * The width in grid columns. x + w must not exceed 12.
+     */
+    w?: number;
+    /**
+     * The column of the left edge in the 12 column grid, starting at 0.
+     */
+    x?: number;
+    /**
+     * The row of the top edge in the grid, starting at 0.
+     */
+    y?: number;
+};
+
 export type DatabaseNotification = {
     /**
      * A timestamp when this notification was created. You cannot change this value.
@@ -2180,6 +2361,18 @@ export type PaginatedCustomFieldValue = {
     total_pages?: number;
 };
 
+export type PaginatedDashboard = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    items?: Array<Dashboard> | null;
+    page?: number;
+    per_page?: number;
+    total?: number;
+    total_pages?: number;
+};
+
 export type PaginatedDatabaseNotification = {
     /**
      * A URL to the JSON Schema for this object.
@@ -2991,6 +3184,213 @@ export type RenewTokenBodyBody = {
      * The renewed JWT auth token.
      */
     readonly token?: string;
+};
+
+export type ReportGroup = {
+    /**
+     * The groups of then_by inside this group.
+     */
+    children?: Array<ReportGroup> | null;
+    /**
+     * A hex color including #, when the group has one.
+     */
+    color?: string;
+    /**
+     * The identity of the group: an id, a category name, a number or a boolean, depending on the dimension. null for the none and other groups.
+     */
+    key?: unknown;
+    /**
+     * The display name, resolved by the server.
+     */
+    label?: string;
+    /**
+     * True for the group of tasks that have no value for the dimension.
+     */
+    none?: boolean;
+    /**
+     * True for the group the remaining groups beyond the limit are folded into. It has no children.
+     */
+    other?: boolean;
+    /**
+     * The values per time bucket, for time series.
+     */
+    series?: Array<ReportPoint> | null;
+    /**
+     * The measure of the tasks of the group.
+     */
+    value?: number;
+};
+
+export type ReportLimits = {
+    default_limit?: number;
+    max_buckets?: number;
+    max_dimensions?: number;
+    max_groups?: number;
+};
+
+export type ReportMeasureOption = {
+    /**
+     * The fields sum, avg, min and max can work on.
+     */
+    fields?: Array<ReportOption> | null;
+    label?: string;
+    name?: string;
+    title_key?: string;
+    /**
+     * tasks for count.
+     */
+    unit?: string;
+};
+
+export type ReportOption = {
+    /**
+     * Set for custom fields.
+     */
+    custom_field_id?: number;
+    /**
+     * The type of a custom field.
+     */
+    field_type?: string;
+    /**
+     * A readable title: the english name of built-in options, the title of a custom field.
+     */
+    label?: string;
+    /**
+     * Dimensions only: a task can be part of several groups.
+     */
+    multi_valued?: boolean;
+    /**
+     * The value to send, e.g. group_by: assignee or cf_12.
+     */
+    name?: string;
+    /**
+     * The project of a custom field.
+     */
+    project_id?: number;
+    /**
+     * A translation key for clients that localize, e.g. reports.dimension.assignee.
+     */
+    title_key?: string;
+};
+
+export type ReportOptions = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    buckets?: Array<string> | null;
+    dimensions?: Array<ReportOption> | null;
+    /**
+     * Whether a project of the scope has a workflow. Without one the status dimensions and the status_entered time field are not offered.
+     */
+    has_workflow?: boolean;
+    limits?: ReportLimits;
+    measures?: Array<ReportMeasureOption> | null;
+    /**
+     * The scope that was asked for, 0 for all projects the user can read.
+     */
+    project_id?: number;
+    time_fields?: Array<ReportOption> | null;
+};
+
+export type ReportPoint = {
+    /**
+     * The local date the bucket starts on, e.g. 2026-11-02.
+     */
+    bucket?: string;
+    /**
+     * The end of the bucket (exclusive), RFC 3339.
+     */
+    end?: string;
+    /**
+     * The start of the bucket as RFC 3339 timestamp in the time zone of the report.
+     */
+    start?: string;
+    /**
+     * The measure of the tasks in the bucket. Empty buckets are returned with 0.
+     */
+    value?: number;
+};
+
+export type ReportRequest = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * The numeric field sum, avg, min and max work on: percent_done, time_spent (seconds of finished time entries) or cf_<id> of a number, currency, rating or progress field. Tasks without a value are ignored.
+     */
+    field?: string;
+    /**
+     * A task filter, the same syntax as in views, incl. status, status_category and cf_<id>.
+     */
+    filter?: string;
+    /**
+     * If true, tasks whose filtered field is empty are included.
+     */
+    filter_include_nulls?: boolean;
+    /**
+     * A dimension: status, status_category, assignee, label, project, priority, done, created_by or cf_<id> of a select, multi select, user, checkbox or rating field.
+     */
+    group_by?: string;
+    /**
+     * Keep this many groups per level (20 when omitted); the rest is folded into one other group.
+     */
+    limit?: number;
+    /**
+     * What every group shows, count of tasks when omitted.
+     */
+    measure?: 'count' | 'sum' | 'avg' | 'min' | 'max';
+    /**
+     * Limit the report to one project. Without it every project the requester can read is included. -1 is the favorites pseudo project.
+     */
+    project_id?: number;
+    /**
+     * A second dimension, nested under the groups of group_by. Needs group_by.
+     */
+    then_by?: string;
+    /**
+     * Makes the report a time series: values are split into buckets of this date field.
+     */
+    time?: ReportTime;
+};
+
+export type ReportTime = {
+    /**
+     * The size of a bucket, day when omitted. Weeks start on Monday.
+     */
+    bucket?: 'day' | 'week' | 'month';
+    /**
+     * The date every task is placed in a bucket by. Tasks where it is empty are left out and reported in excluded. status_entered is the moment the task entered its current workflow status.
+     */
+    field?: 'created' | 'done_at' | 'due_date' | 'status_entered';
+    /**
+     * The start of the range: an RFC 3339 timestamp, a date like 2026-01-31 (midnight in the time zone of the report), or now, now-90d, now-12h. now-90d when omitted. The bucket that contains it is the first one.
+     */
+    from?: string;
+    /**
+     * An IANA time zone like Europe/Istanbul that decides where days, weeks and months begin. Defaults to the time zone setting of the user, or the instance time zone for link shares.
+     */
+    timezone?: string;
+    /**
+     * The end of the range, same formats as from, now when omitted. The bucket that contains it is the last one.
+     */
+    to?: string;
+};
+
+export type ReportTimeInfo = {
+    bucket?: string;
+    buckets?: number;
+    field?: string;
+    /**
+     * Start of the first bucket, RFC 3339.
+     */
+    from?: string;
+    timezone?: string;
+    /**
+     * End of the last bucket (exclusive), RFC 3339.
+     */
+    to?: string;
 };
 
 export type RouteDetail = {
@@ -3810,6 +4210,48 @@ export type TaskReminder = {
     relative_period?: number;
     relative_to?: string;
     reminder?: string;
+};
+
+export type TaskReport = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * Time series only: tasks that were left out because the date field is empty.
+     */
+    excluded?: number;
+    field?: string;
+    /**
+     * The groups, largest value first. Empty without group_by.
+     */
+    groups?: Array<ReportGroup> | null;
+    measure?: string;
+    /**
+     * True when a task can be part of several groups (assignee, label, multi select, user fields), so group values can add up to more than total.
+     */
+    multi_valued?: boolean;
+    /**
+     * The time series of all tasks, for a time series without group_by.
+     */
+    series?: Array<ReportPoint> | null;
+    time?: ReportTimeInfo;
+    /**
+     * The number of distinct tasks the report counted, also when a task is part of several groups.
+     */
+    total?: number;
+    /**
+     * True when groups were folded into other.
+     */
+    truncated?: boolean;
+    /**
+     * What value counts: tasks, seconds or the unit of the field (empty).
+     */
+    unit?: string;
+    /**
+     * The measure over all counted tasks.
+     */
+    value?: number;
 };
 
 export type TaskStatusChange = {
@@ -5840,6 +6282,92 @@ export type CustomFieldValueWritable = {
     value?: unknown;
 };
 
+export type DashboardWritable = {
+    /**
+     * What the dashboard is for.
+     */
+    description?: string;
+    /**
+     * Sort order in lists, ascending.
+     */
+    position?: number;
+    /**
+     * 0 for a personal dashboard, else the project of a project dashboard. It cannot change after creation. In the list it filters to the dashboards of one project.
+     */
+    project_id?: number;
+    /**
+     * The title of the dashboard.
+     */
+    title?: string;
+    /**
+     * The widgets. Null in lists. On update, send the whole list to replace the widgets (widgets with an id are updated, those without one are created and stored widgets that are missing are deleted); null or omitting it keeps them.
+     */
+    widgets?: Array<DashboardWidgetWritable> | null;
+};
+
+export type DashboardLayoutWritable = {
+    /**
+     * The new positions. Widgets that are not listed keep theirs.
+     */
+    items?: Array<DashboardLayoutItem> | null;
+};
+
+export type DashboardReadBodyWritable = {
+    /**
+     * What the dashboard is for.
+     */
+    description?: string;
+    /**
+     * Sort order in lists, ascending.
+     */
+    position?: number;
+    /**
+     * 0 for a personal dashboard, else the project of a project dashboard. It cannot change after creation. In the list it filters to the dashboards of one project.
+     */
+    project_id?: number;
+    /**
+     * The title of the dashboard.
+     */
+    title?: string;
+    /**
+     * The widgets. Null in lists. On update, send the whole list to replace the widgets (widgets with an id are updated, those without one are created and stored widgets that are missing are deleted); null or omitting it keeps them.
+     */
+    widgets?: Array<DashboardWidgetWritable> | null;
+};
+
+export type DashboardWidgetWritable = {
+    /**
+     * The settings of the widget. number: {request, compare}. bar, donut and line: {request}, where request is a report request (POST /reports/tasks) that is checked on save but not run. created_vs_done: {project_id, filter, bucket, from, to}. task_list: {project_id, filter, sort_by, order_by, columns, limit}. workload: {project_id, filter, estimate_field}. status_time: {project_id, from, to}. time_tracking: {from, to, group_by}. text: {text}. On a project dashboard project_id values are set to the project of the dashboard.
+     */
+    config?: {
+        [key: string]: unknown;
+    };
+    /**
+     * The height in grid rows.
+     */
+    h?: number;
+    /**
+     * An optional title shown above the widget.
+     */
+    title?: string;
+    /**
+     * What the widget shows. The config has a shape per type.
+     */
+    type?: 'number' | 'bar' | 'donut' | 'line' | 'created_vs_done' | 'task_list' | 'workload' | 'status_time' | 'time_tracking' | 'text';
+    /**
+     * The width in grid columns. x + w must not exceed 12.
+     */
+    w?: number;
+    /**
+     * The column of the left edge in the 12 column grid, starting at 0.
+     */
+    x?: number;
+    /**
+     * The row of the top edge in the grid, starting at 0.
+     */
+    y?: number;
+};
+
 export type DatabaseNotificationsWritable = {
     /**
      * Set true to mark the notification read, false to mark it unread.
@@ -6180,6 +6708,14 @@ export type PaginatedCustomFieldWritable = {
 
 export type PaginatedCustomFieldValueWritable = {
     items?: Array<CustomFieldValueWritable> | null;
+    page?: number;
+    per_page?: number;
+    total?: number;
+    total_pages?: number;
+};
+
+export type PaginatedDashboardWritable = {
+    items?: Array<DashboardWritable> | null;
     page?: number;
     per_page?: number;
     total?: number;
@@ -6607,6 +7143,61 @@ export type RegisterUserRequestWritable = {
     username?: string;
 };
 
+export type ReportOptionsWritable = {
+    buckets?: Array<string> | null;
+    dimensions?: Array<ReportOption> | null;
+    /**
+     * Whether a project of the scope has a workflow. Without one the status dimensions and the status_entered time field are not offered.
+     */
+    has_workflow?: boolean;
+    limits?: ReportLimits;
+    measures?: Array<ReportMeasureOption> | null;
+    /**
+     * The scope that was asked for, 0 for all projects the user can read.
+     */
+    project_id?: number;
+    time_fields?: Array<ReportOption> | null;
+};
+
+export type ReportRequestWritable = {
+    /**
+     * The numeric field sum, avg, min and max work on: percent_done, time_spent (seconds of finished time entries) or cf_<id> of a number, currency, rating or progress field. Tasks without a value are ignored.
+     */
+    field?: string;
+    /**
+     * A task filter, the same syntax as in views, incl. status, status_category and cf_<id>.
+     */
+    filter?: string;
+    /**
+     * If true, tasks whose filtered field is empty are included.
+     */
+    filter_include_nulls?: boolean;
+    /**
+     * A dimension: status, status_category, assignee, label, project, priority, done, created_by or cf_<id> of a select, multi select, user, checkbox or rating field.
+     */
+    group_by?: string;
+    /**
+     * Keep this many groups per level (20 when omitted); the rest is folded into one other group.
+     */
+    limit?: number;
+    /**
+     * What every group shows, count of tasks when omitted.
+     */
+    measure?: 'count' | 'sum' | 'avg' | 'min' | 'max';
+    /**
+     * Limit the report to one project. Without it every project the requester can read is included. -1 is the favorites pseudo project.
+     */
+    project_id?: number;
+    /**
+     * A second dimension, nested under the groups of group_by. Needs group_by.
+     */
+    then_by?: string;
+    /**
+     * Makes the report a time series: values are split into buckets of this date field.
+     */
+    time?: ReportTime;
+};
+
 export type SavedFilterWritable = {
     /**
      * The description of the filter.
@@ -6801,6 +7392,44 @@ export type TaskRelationWritable = {
      * The kind of relation, describing the direction from the base task to the other task (e.g. subtask, blocking, related). The inverse relation is created automatically.
      */
     relation_kind?: 'subtask' | 'parenttask' | 'related' | 'duplicateof' | 'duplicates' | 'blocking' | 'blocked' | 'precedes' | 'follows' | 'copiedfrom' | 'copiedto';
+};
+
+export type TaskReportWritable = {
+    /**
+     * Time series only: tasks that were left out because the date field is empty.
+     */
+    excluded?: number;
+    field?: string;
+    /**
+     * The groups, largest value first. Empty without group_by.
+     */
+    groups?: Array<ReportGroup> | null;
+    measure?: string;
+    /**
+     * True when a task can be part of several groups (assignee, label, multi select, user fields), so group values can add up to more than total.
+     */
+    multi_valued?: boolean;
+    /**
+     * The time series of all tasks, for a time series without group_by.
+     */
+    series?: Array<ReportPoint> | null;
+    time?: ReportTimeInfo;
+    /**
+     * The number of distinct tasks the report counted, also when a task is part of several groups.
+     */
+    total?: number;
+    /**
+     * True when groups were folded into other.
+     */
+    truncated?: boolean;
+    /**
+     * What value counts: tasks, seconds or the unit of the field (empty).
+     */
+    unit?: string;
+    /**
+     * The measure over all counted tasks.
+     */
+    value?: number;
 };
 
 export type TaskStatusChangeWritable = {
@@ -8240,6 +8869,226 @@ export type BackgroundsUnsplashSearchResponses = {
 };
 
 export type BackgroundsUnsplashSearchResponse = BackgroundsUnsplashSearchResponses[keyof BackgroundsUnsplashSearchResponses];
+
+export type DashboardsListData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Only the dashboards of this project.
+         */
+        project_id?: number;
+        /**
+         * 1-based page number.
+         */
+        page?: number;
+        /**
+         * Items per page. Defaults to the instance's configured maximum (service.maxitemsperpage, reported as max_items_per_page by /info) and is silently capped at it; asking for more is not an error.
+         */
+        per_page?: number;
+        /**
+         * Search query; filters the list to items matching this string.
+         */
+        q?: string;
+    };
+    url: '/dashboards';
+};
+
+export type DashboardsListErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type DashboardsListError = DashboardsListErrors[keyof DashboardsListErrors];
+
+export type DashboardsListResponses = {
+    /**
+     * OK
+     */
+    200: PaginatedDashboard;
+};
+
+export type DashboardsListResponse = DashboardsListResponses[keyof DashboardsListResponses];
+
+export type DashboardsCreateData = {
+    body: DashboardWritable;
+    path?: never;
+    query?: never;
+    url: '/dashboards';
+};
+
+export type DashboardsCreateErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type DashboardsCreateError = DashboardsCreateErrors[keyof DashboardsCreateErrors];
+
+export type DashboardsCreateResponses = {
+    /**
+     * Created
+     */
+    201: Dashboard;
+};
+
+export type DashboardsCreateResponse = DashboardsCreateResponses[keyof DashboardsCreateResponses];
+
+export type DashboardsDeleteData = {
+    body?: never;
+    path: {
+        dashboard: number;
+    };
+    query?: never;
+    url: '/dashboards/{dashboard}';
+};
+
+export type DashboardsDeleteErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type DashboardsDeleteError = DashboardsDeleteErrors[keyof DashboardsDeleteErrors];
+
+export type DashboardsDeleteResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type DashboardsDeleteResponse = DashboardsDeleteResponses[keyof DashboardsDeleteResponses];
+
+export type DashboardsReadData = {
+    body?: never;
+    headers?: {
+        /**
+         * Succeeds if the server's resource matches one of the passed values.
+         */
+        'If-Match'?: Array<string> | null;
+        /**
+         * Succeeds if the server's resource matches none of the passed values. On writes, the special value * may be used to match any existing value.
+         */
+        'If-None-Match'?: Array<string> | null;
+        /**
+         * Succeeds if the server's resource date is more recent than the passed date.
+         */
+        'If-Modified-Since'?: string;
+        /**
+         * Succeeds if the server's resource date is older or the same as the passed date.
+         */
+        'If-Unmodified-Since'?: string;
+    };
+    path: {
+        dashboard: number;
+    };
+    query?: never;
+    url: '/dashboards/{dashboard}';
+};
+
+export type DashboardsReadErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type DashboardsReadError = DashboardsReadErrors[keyof DashboardsReadErrors];
+
+export type DashboardsReadResponses = {
+    /**
+     * OK
+     */
+    200: DashboardReadBody;
+};
+
+export type DashboardsReadResponse = DashboardsReadResponses[keyof DashboardsReadResponses];
+
+export type PatchDashboardsReadData = {
+    body: Array<JsonPatchOp> | null;
+    path: {
+        dashboard: number;
+    };
+    query?: never;
+    url: '/dashboards/{dashboard}';
+};
+
+export type PatchDashboardsReadErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type PatchDashboardsReadError = PatchDashboardsReadErrors[keyof PatchDashboardsReadErrors];
+
+export type PatchDashboardsReadResponses = {
+    /**
+     * OK
+     */
+    200: Dashboard;
+};
+
+export type PatchDashboardsReadResponse = PatchDashboardsReadResponses[keyof PatchDashboardsReadResponses];
+
+export type DashboardsUpdateData = {
+    body: DashboardReadBodyWritable;
+    path: {
+        dashboard: number;
+    };
+    query?: never;
+    url: '/dashboards/{dashboard}';
+};
+
+export type DashboardsUpdateErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type DashboardsUpdateError = DashboardsUpdateErrors[keyof DashboardsUpdateErrors];
+
+export type DashboardsUpdateResponses = {
+    /**
+     * OK
+     */
+    200: Dashboard;
+};
+
+export type DashboardsUpdateResponse = DashboardsUpdateResponses[keyof DashboardsUpdateResponses];
+
+export type DashboardsLayoutData = {
+    body: DashboardLayoutWritable;
+    path: {
+        dashboard: number;
+    };
+    query?: never;
+    url: '/dashboards/{dashboard}/layout';
+};
+
+export type DashboardsLayoutErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type DashboardsLayoutError = DashboardsLayoutErrors[keyof DashboardsLayoutErrors];
+
+export type DashboardsLayoutResponses = {
+    /**
+     * OK
+     */
+    200: DashboardLayout;
+};
+
+export type DashboardsLayoutResponse = DashboardsLayoutResponses[keyof DashboardsLayoutResponses];
 
 export type FiltersCreateData = {
     body: SavedFilterWritable;
@@ -12117,6 +12966,61 @@ export type AuthRegisterResponses = {
 };
 
 export type AuthRegisterResponse = AuthRegisterResponses[keyof AuthRegisterResponses];
+
+export type ReportsTasksData = {
+    body: ReportRequestWritable;
+    path?: never;
+    query?: never;
+    url: '/reports/tasks';
+};
+
+export type ReportsTasksErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type ReportsTasksError = ReportsTasksErrors[keyof ReportsTasksErrors];
+
+export type ReportsTasksResponses = {
+    /**
+     * OK
+     */
+    200: TaskReport;
+};
+
+export type ReportsTasksResponse = ReportsTasksResponses[keyof ReportsTasksResponses];
+
+export type ReportsTasksOptionsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Only what applies to this project. Without it, every project you can read.
+         */
+        project_id?: number;
+    };
+    url: '/reports/tasks/options';
+};
+
+export type ReportsTasksOptionsErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type ReportsTasksOptionsError = ReportsTasksOptionsErrors[keyof ReportsTasksOptionsErrors];
+
+export type ReportsTasksOptionsResponses = {
+    /**
+     * OK
+     */
+    200: ReportOptions;
+};
+
+export type ReportsTasksOptionsResponse = ReportsTasksOptionsResponses[keyof ReportsTasksOptionsResponses];
 
 export type TokenRoutesData = {
     body?: never;
