@@ -35,7 +35,10 @@ caller names a status to move its tasks to.
 ### `workflow_transitions`
 id, workflow_id (index), from_status_id, to_status_id (unique pair), title
 (optional button label, e.g. "Send to design"), min_permission (`write` |
-`admin`), require_comment (bool).
+`admin`), require_comment (bool), requires_approval (bool), approval (json,
+null unless `requires_approval`: `mode` `any`|`all`, `approvers` as a list of
+`{type: user|team|assignees|custom_field, id}`, `rejected_status_id`,
+`allow_self`, `due_in`; see [forms-approvals.md](forms-approvals.md#approvals)).
 
 ### `workflow_transition_required_fields`
 id, transition_id (index), field (varchar). `field` is a built-in name
@@ -53,7 +56,8 @@ Kept out of the `tasks` table to keep the upstream diff small.
 
 ### `task_status_history`
 id, task_id (index), from_status_id (null for the first), to_status_id,
-doer_id, comment (text null), created.
+doer_id, comment (text null), approval_request_id (null; set for an approved
+transition and for the move after a rejection), created.
 
 ## Behaviour
 
@@ -65,6 +69,16 @@ doer_id, comment (text null), created.
   names the unmet requirement (which fields are missing) so the UI can ask
   for exactly those. Every successful change writes history and dispatches
   `task.status.changed`.
+- Transitions with `requires_approval`: after all of the checks above passed,
+  the function does not move the task but creates (or returns) the pending
+  approval request, and its result says so (`Approval` set, `Changed` false).
+  `POST /tasks/{task}/status` answers `202` then. Callers that change the
+  status as a side effect (the done checkbox) are refused with `409` / `24007`
+  and create nothing; automation and scripts create the request as the rule
+  owner; system transitions (re-opening a repeating task, the move after a
+  rejection, removing a status) never ask. When the request is approved the
+  same function runs again as the requester with only the approval requirement
+  bypassed. Details, cancel reasons and the API: [forms-approvals.md](forms-approvals.md#approvals).
 - `done` sync: entering a status of category `done` or `cancelled` sets
   `task.done = true`; leaving it clears it. Marking a task done through the
   existing checkbox performs the transition to the first `done` status and is
@@ -84,8 +98,11 @@ doer_id, comment (text null), created.
   creates or replaces it; ids are matched, missing statuses are archived or
   moved according to `move_tasks_to` in the request.
 - `GET /tasks/{task}/status` — current status plus the transitions the
-  current user may perform right now, each with its unmet requirements.
-- `POST /tasks/{task}/status` — `{to_status_id, comment}`.
+  current user may perform right now, each with its unmet requirements,
+  `requires_approval` and the approvers that would be asked, and the pending
+  approval requests of the task (`pending_approvals`).
+- `POST /tasks/{task}/status` — `{to_status_id, comment}`; `200` with the new
+  status, or `202` with `approval` when the transition needs an approval.
 - `GET /tasks/{task}/status/history`.
 - Task lists accept `status` and `status_category` in the filter syntax,
   `sort_by=status` and `expand=status`; see "Filtering and sorting" and
@@ -272,5 +289,6 @@ treats it as "no workflow" and renders nothing extra.
 - 2c (done): kanban status mode, table column, status badges in list and
   cards, filter/sort/expand by status. See "Filtering and sorting", "Task
   lists" and "Kanban".
-- Later: approvals as a transition requirement, WIP limits, SLA timers,
-  workflow templates shared between projects.
+- Approvals as a transition requirement (done in 5a, see
+  [forms-approvals.md](forms-approvals.md)).
+- Later: WIP limits, SLA timers, workflow templates shared between projects.

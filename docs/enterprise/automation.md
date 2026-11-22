@@ -159,7 +159,11 @@ Trigger types in the API: `task.created`, `task.updated` (option `fields`),
 `task.completed`, `task.reopened`, `task.deleted`, `task.status_changed` (options
 `from_status_id`, `to_status_id`, `to_category`), `task.custom_field_changed`
 (option `field_id`), `task.assignee_added`, `task.assignee_removed`,
-`task.comment_added`, `task.attachment_added`.
+`task.comment_added`, `task.attachment_added`, `approval.requested`,
+`approval.resolved` (option `outcome`: `any`, `approved`, `rejected`,
+`cancelled`). The approval triggers see the fields of the request as
+`event.new.*` and the placeholders `{{event.approval.id|title|outcome}}`; see
+[forms-approvals.md](forms-approvals.md#approvals).
 
 - *completed* and *reopened* are `task.updated` events in which the done flag
   changed; they need the old state, which `TaskUpdatedEvent` now carries in
@@ -204,7 +208,8 @@ script that returns a boolean (3b).
 | Kind | Actions |
 |---|---|
 | Task | set a field (title, description, priority, due/start/end date — absolute or relative such as `+3d` or `none`, percent done, color) *(3a)*, set a custom field *(3a)*, mark done / reopen *(3a)*, move to project *(3a)*, duplicate, delete (to trash) |
-| Workflow | change status (goes through the normal transition checks, as the rule owner) *(3a)* |
+| Workflow | change status (goes through the normal transition checks, as the rule owner; a transition that requires approval creates the request and the step finishes with `approval requested (#id)`) *(3a)* |
+| Approval | `approval.request`: ask users (ids, `assignees`, `task_creator`, `event_doer`) to approve the task, ad hoc, `mode`, templated title and description, `due_offset` *(5a)* |
 | People | assign / unassign (a user id, the event's doer, the task creator) *(3a)*, round robin over a team |
 | Content | add comment *(3a)*, add / remove label *(3a)*, create subtask or related task from a template *(3a)*, add checklist to description |
 | Notify | in-app notification, e-mail to users / assignees / a team (not in 3a: a persisted notification type needs a frontend renderer and a mail template) |
