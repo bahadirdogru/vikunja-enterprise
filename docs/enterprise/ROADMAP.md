@@ -37,9 +37,9 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
 | 4b | Dashboards UI: SVG charts, dashboard pages with drag/resize grid, widget editor with live preview, drill-down | Done |
 | 4c | Dashboards: status time, workload, time tracking widgets, CSV export | Planned |
 | 5a | Approvals backend: requests and decisions, approval on workflow transitions, ad-hoc approvals, automation triggers/action, notifications ([forms-approvals.md](forms-approvals.md)) | Done |
-| 5b | Approvals UI (banner on the task, my approvals page, workflow editor settings, notification rendering, catalog translations) | Next |
-| 5c | Forms backend | Designed |
-| 5d | Forms UI (builder, public form page) | Planned |
+| 5b | Approvals UI: transition approval settings, task banner with approve / reject, approvals page with badge, kanban and list markers, notifications | Done |
+| 5c | Forms backend: definitions, public and signed-in submission path, limits, attachments, `form.submitted` trigger | Done |
+| 5d | Forms UI (builder, public form page, catalog translations for the form trigger) | Next |
 | – | Organisation / tenant layer, AI features | Deferred |
 
 ## Log
@@ -129,3 +129,16 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   Open: one `./pkg/models/` run failed once and did not reproduce in ten
   further runs (failing test not captured); approvers' Turkish backend
   strings not added; new catalog keys have no UI translations until 5b.
+- Approvals UI added (en + tr); frontend suite passes (3374 tests).
+  Exercised in a browser with three users: approval settings in the workflow
+  editor, request from the status menu and the done button, mode all and any,
+  reject with comment and rejected status, cancel, ad-hoc approval, kanban
+  marker, approvals page and badge, 390px, dark mode. Not exercised: overdue
+  request, reminder notification, table marker. Plain `done: true` updates
+  from the list checkbox still answer 409 and point to the status menu.
+- Forms backend added (no UI yet). Full models, webtests and race-detector
+  automation tests pass on SQLite; new tests pass on PostgreSQL 17 and
+  MySQL 8. Public routes skip auth only without an Authorization header.
+  Known limits: hourly limits are check-then-insert; honeypot hits and
+  validation failures only count against the per-minute request limit; not
+  exposed through MCP.
