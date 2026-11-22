@@ -12,7 +12,7 @@ import {
 	widgetProjectId,
 	type TaskListConfig,
 } from '@/helpers/dashboards'
-import type {ChartSelection, ChartSeries} from '@/helpers/charts'
+import {groupLabel, type ChartSelection, type ChartSeries} from '@/helpers/charts'
 import BarChart from '@/components/charts/BarChart.vue'
 import ChartState from '@/components/charts/ChartState.vue'
 import DonutChart from '@/components/charts/DonutChart.vue'
@@ -109,7 +109,7 @@ const lineSeries = computed<ChartSeries[]>(() => {
 	if (r.groups.length > 0) {
 		return r.groups.map((group, i) => ({
 			key: `${i}:${String(group.key)}`,
-			label: group.label,
+			label: groupLabel(group, t),
 			color: group.color,
 			points: group.series,
 			group,

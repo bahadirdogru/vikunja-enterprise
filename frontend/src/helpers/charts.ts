@@ -73,6 +73,49 @@ export function groupColor(group: ChartGroup, index: number): string {
 	return safeColor(group.color) ?? (group.none ? NEUTRAL_COLOR : paletteColor(index))
 }
 
+function hashString(text: string): number {
+	let hash = 2166136261
+	for (let i = 0; i < text.length; i++) {
+		hash ^= text.charCodeAt(i)
+		hash = Math.imul(hash, 16777619)
+	}
+	return hash >>> 0
+}
+
+// Colours for the groups of one chart, parallel to the input. The API colour wins, "other" and "none" are neutral. The
+// rest take a palette slot from a hash of what they are (key and label), not of where they are in the list, so the same
+// option has the same colour in every widget whatever the sizes; clashes inside one chart move on to the next free slot.
+export function assignColors(groups: ChartGroup[]): string[] {
+	const colors: string[] = groups.map(group => {
+		if (group.other) {
+			return NEUTRAL_COLOR
+		}
+		return safeColor(group.color) ?? (group.none ? NEUTRAL_COLOR : '')
+	})
+	const used = new Set<number>()
+	const pending = groups
+		.map((group, index) => ({index, id: `${groupKeyId(group)}|${group.label}`}))
+		.filter(entry => colors[entry.index] === '')
+		.sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
+	for (const {index, id} of pending) {
+		let slot = hashString(id) % PALETTE.length
+		for (let tries = 0; tries < PALETTE.length && used.has(slot); tries++) {
+			slot = (slot + 1) % PALETTE.length
+		}
+		used.add(slot)
+		colors[index] = paletteColor(slot)
+	}
+	return colors
+}
+
+// The API names the empty and the folded group in English.
+export function groupLabel(group: ChartGroup, t: (key: string) => string): string {
+	if (group.other) {
+		return t('charts.other')
+	}
+	return group.none ? t('charts.noValue') : group.label
+}
+
 export function seriesColor(series: ChartSeries, index: number): string {
 	return safeColor(series.color) ?? paletteColor(index)
 }

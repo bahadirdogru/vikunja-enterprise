@@ -1,6 +1,10 @@
 import {describe, expect, it} from 'vitest'
 
+import fixture from './stackedReports.fixture.json'
+
 import {
+	assignColors,
+	groupLabel,
 	bandScale,
 	donutArcs,
 	formatAxisNumber,
@@ -161,5 +165,57 @@ describe('stacking', () => {
 		expect(model.keys).toEqual(['1', '2'])
 		expect(model.bars.map(b => b.total)).toEqual([5, 4])
 		expect(model.labels.get('2')!.label).toBe('done')
+	})
+})
+
+describe('colours and labels of nested groups (real reports)', () => {
+	const reports = fixture as unknown as Record<string, {groups: (ChartGroup & {children?: ChartGroup[]})[]}>
+	const colorsOf = (groups: ChartGroup[]) => {
+		const colors = assignColors(groups)
+		return Object.fromEntries(groups.map((g, i) => [g.label, colors[i]]))
+	}
+
+	it('gives an option the same colour in every chart whatever the order and sizes', () => {
+		const model = stackModel(reports.statusByField!.groups)
+		const stacked = colorsOf(model.keys.map(k => model.labels.get(k)!))
+		const donut = colorsOf(reports.field!.groups)
+		for (const name of ['Son', 'Taslak', 'Düzelti']) {
+			expect(stacked[name]).toBe(donut[name])
+		}
+		const shuffled = colorsOf([...reports.field!.groups].reverse().map((g, i) => ({...g, value: i})))
+		expect(shuffled['Son']).toBe(donut['Son'])
+	})
+
+	it('keeps the none group neutral and apart from the palette, keys unique per chart', () => {
+		for (const report of Object.values(reports)) {
+			const model = stackModel(report.groups)
+			expect(new Set(model.keys).size).toBe(model.keys.length)
+			const colors = assignColors(model.keys.map(k => model.labels.get(k)!))
+			model.keys.forEach((key, i) => {
+				if (key === '\u0000none') {
+					expect(colors[i]).toBe(NEUTRAL_COLOR)
+				}
+			})
+			const real = colors.filter(c => c !== NEUTRAL_COLOR)
+			expect(new Set(real).size).toBe(real.length)
+		}
+	})
+
+	it('uses the colours the API sends for labels and the same child values in every parent', () => {
+		const model = stackModel(reports.statusByLabel!.groups)
+		const colors = colorsOf(model.keys.map(k => model.labels.get(k)!))
+		expect(colors['Acil']).toBe('#e11d48')
+		expect(colors['Web']).toBe('#10b981')
+		const first = model.bars[0]!
+		expect([...first.values.keys()].every(k => model.keys.includes(k))).toBe(true)
+		// A task with several labels counts in each, so the stack is at least the distinct tasks.
+		expect(first.total).toBeGreaterThanOrEqual(first.group.value)
+	})
+
+	it('names the empty and folded groups in the user language', () => {
+		const t = (key: string) => ({'charts.noValue': 'Değeri yok', 'charts.other': 'Diğer'}[key] ?? key)
+		expect(groupLabel({key: null, label: 'None', value: 1, none: true}, t)).toBe('Değeri yok')
+		expect(groupLabel({key: null, label: 'Other', value: 1, other: true}, t)).toBe('Diğer')
+		expect(groupLabel({key: 1, label: 'Son', value: 1}, t)).toBe('Son')
 	})
 })

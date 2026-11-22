@@ -238,6 +238,7 @@ Deferred or different from the plan:
 - `number` has no compare period; `created_vs_done` has no running open count; `status_time`, `workload` and
   `time_tracking` are not offered (4c); no CSV export; a `text` widget stores the editor's HTML (sanitized on render).
 - The `line` chart does not offer a second dimension.
+- Colours without an API colour come from a hash of the group's key and label (same option, same colour in every widget); the empty and folded groups are named in the user's language. In a stack over a multi valued dimension a task counts once per child, so the stack can be taller than the distinct tasks (the tooltip shows both).
 
 ## Steps
 

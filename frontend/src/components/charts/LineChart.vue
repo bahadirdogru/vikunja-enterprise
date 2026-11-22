@@ -10,7 +10,7 @@ import {
 	linearScale,
 	linePath,
 	niceTicks,
-	seriesColor,
+	assignColors,
 	type ChartSelection,
 	type ChartSeries,
 } from '@/helpers/charts'
@@ -80,8 +80,17 @@ const xOf = computed(() => {
 })
 const yScale = computed(() => linearScale([ticks.value.min, ticks.value.max], [frame.value.bottom, frame.value.top]))
 
+const seriesColors = computed(() => assignColors(props.series.map(s => ({
+	key: s.key,
+	label: s.label,
+	value: 0,
+	color: s.color,
+	none: s.group?.none,
+	other: s.group?.other,
+}))))
+
 const lines = computed(() => props.series.map((s, si) => {
-	const color = seriesColor(s, si)
+	const color = seriesColors.value[si]!
 	const pts = s.points.map((p, i) => ({x: xOf.value(i), y: yScale.value(p.value)}))
 	return {
 		key: s.key,
@@ -104,7 +113,7 @@ const legendVisible = computed(() => props.showLegend ?? props.series.length > 1
 const legendItems = computed<LegendItem[]>(() => props.series.map((s, i) => ({
 	key: s.key,
 	label: s.label,
-	color: seriesColor(s, i),
+	color: seriesColors.value[i]!,
 })))
 
 function selectionAt(bucket: number, series: number): ChartSelection | null {
@@ -126,7 +135,7 @@ function tooltipFor(bucket: number, series: number): TooltipState | null {
 	const rows = props.series.map((s, i) => ({
 		label: s.label,
 		value: valueText(s.points[bucket]?.value ?? 0, props.unit),
-		color: seriesColor(s, i),
+		color: seriesColors.value[i]!,
 	}))
 	const y = yScale.value(props.series[series]?.points[bucket]?.value ?? 0)
 	return {

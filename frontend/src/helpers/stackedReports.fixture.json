@@ -1,0 +1,358 @@
+{
+ "statusByField": {
+  "groups": [
+   {
+    "key": 4,
+    "label": "Yayında",
+    "color": "#22c55e",
+    "value": 13,
+    "children": [
+     {
+      "key": 1,
+      "label": "Taslak",
+      "value": 5
+     },
+     {
+      "key": 2,
+      "label": "Düzelti",
+      "value": 4
+     },
+     {
+      "key": 3,
+      "label": "Son",
+      "value": 4
+     }
+    ]
+   },
+   {
+    "key": 3,
+    "label": "İnceleme",
+    "color": "#f59e0b",
+    "value": 9,
+    "children": [
+     {
+      "key": 2,
+      "label": "Düzelti",
+      "value": 4
+     },
+     {
+      "key": 1,
+      "label": "Taslak",
+      "value": 3
+     },
+     {
+      "key": null,
+      "label": "None",
+      "value": 1,
+      "none": true
+     },
+     {
+      "key": 3,
+      "label": "Son",
+      "value": 1
+     }
+    ]
+   },
+   {
+    "key": 1,
+    "label": "Planlandı",
+    "color": "#94a3b8",
+    "value": 3,
+    "children": [
+     {
+      "key": 3,
+      "label": "Son",
+      "value": 3
+     }
+    ]
+   },
+   {
+    "key": 2,
+    "label": "Yazım",
+    "color": "#3b82f6",
+    "value": 3,
+    "children": [
+     {
+      "key": 3,
+      "label": "Son",
+      "value": 2
+     },
+     {
+      "key": null,
+      "label": "None",
+      "value": 1,
+      "none": true
+     }
+    ]
+   }
+  ],
+  "total": 28,
+  "value": 28,
+  "measure": "count",
+  "unit": "tasks",
+  "multi_valued": false
+ },
+ "fieldByAssignee": {
+  "groups": [
+   {
+    "key": 3,
+    "label": "Son",
+    "value": 10,
+    "children": [
+     {
+      "key": null,
+      "label": "None",
+      "value": 4,
+      "none": true
+     },
+     {
+      "key": 1,
+      "label": "demo",
+      "value": 4
+     },
+     {
+      "key": 2,
+      "label": "second",
+      "value": 2
+     }
+    ]
+   },
+   {
+    "key": 2,
+    "label": "Düzelti",
+    "value": 8,
+    "children": [
+     {
+      "key": 1,
+      "label": "demo",
+      "value": 4
+     },
+     {
+      "key": 2,
+      "label": "second",
+      "value": 3
+     },
+     {
+      "key": null,
+      "label": "None",
+      "value": 1,
+      "none": true
+     }
+    ]
+   },
+   {
+    "key": 1,
+    "label": "Taslak",
+    "value": 8,
+    "children": [
+     {
+      "key": 1,
+      "label": "demo",
+      "value": 3
+     },
+     {
+      "key": 2,
+      "label": "second",
+      "value": 3
+     },
+     {
+      "key": null,
+      "label": "None",
+      "value": 2,
+      "none": true
+     }
+    ]
+   },
+   {
+    "key": null,
+    "label": "None",
+    "value": 2,
+    "none": true,
+    "children": [
+     {
+      "key": 1,
+      "label": "demo",
+      "value": 1
+     },
+     {
+      "key": 2,
+      "label": "second",
+      "value": 1
+     }
+    ]
+   }
+  ],
+  "total": 28,
+  "value": 28,
+  "measure": "count",
+  "unit": "tasks",
+  "multi_valued": true
+ },
+ "statusByLabel": {
+  "groups": [
+   {
+    "key": 4,
+    "label": "Yayında",
+    "color": "#22c55e",
+    "value": 13,
+    "children": [
+     {
+      "key": 4,
+      "label": "Web",
+      "color": "#10b981",
+      "value": 6
+     },
+     {
+      "key": null,
+      "label": "None",
+      "value": 5,
+      "none": true
+     },
+     {
+      "key": 1,
+      "label": "Acil",
+      "color": "#e11d48",
+      "value": 2
+     },
+     {
+      "key": 2,
+      "label": "Tasarım",
+      "color": "#8b5cf6",
+      "value": 2
+     },
+     {
+      "key": 3,
+      "label": "Baskı",
+      "color": "#0ea5e9",
+      "value": 1
+     }
+    ]
+   },
+   {
+    "key": 3,
+    "label": "İnceleme",
+    "color": "#f59e0b",
+    "value": 9,
+    "children": [
+     {
+      "key": null,
+      "label": "None",
+      "value": 3,
+      "none": true
+     },
+     {
+      "key": 2,
+      "label": "Tasarım",
+      "color": "#8b5cf6",
+      "value": 3
+     },
+     {
+      "key": 4,
+      "label": "Web",
+      "color": "#10b981",
+      "value": 2
+     },
+     {
+      "key": 3,
+      "label": "Baskı",
+      "color": "#0ea5e9",
+      "value": 1
+     }
+    ]
+   },
+   {
+    "key": 1,
+    "label": "Planlandı",
+    "color": "#94a3b8",
+    "value": 3,
+    "children": [
+     {
+      "key": null,
+      "label": "None",
+      "value": 1,
+      "none": true
+     },
+     {
+      "key": 3,
+      "label": "Baskı",
+      "color": "#0ea5e9",
+      "value": 1
+     },
+     {
+      "key": 2,
+      "label": "Tasarım",
+      "color": "#8b5cf6",
+      "value": 1
+     },
+     {
+      "key": 4,
+      "label": "Web",
+      "color": "#10b981",
+      "value": 1
+     }
+    ]
+   },
+   {
+    "key": 2,
+    "label": "Yazım",
+    "color": "#3b82f6",
+    "value": 3,
+    "children": [
+     {
+      "key": null,
+      "label": "None",
+      "value": 2,
+      "none": true
+     },
+     {
+      "key": 2,
+      "label": "Tasarım",
+      "color": "#8b5cf6",
+      "value": 1
+     },
+     {
+      "key": 4,
+      "label": "Web",
+      "color": "#10b981",
+      "value": 1
+     }
+    ]
+   }
+  ],
+  "total": 28,
+  "value": 28,
+  "measure": "count",
+  "unit": "tasks",
+  "multi_valued": true
+ },
+ "field": {
+  "groups": [
+   {
+    "key": 3,
+    "label": "Son",
+    "value": 10
+   },
+   {
+    "key": 2,
+    "label": "Düzelti",
+    "value": 8
+   },
+   {
+    "key": 1,
+    "label": "Taslak",
+    "value": 8
+   },
+   {
+    "key": null,
+    "label": "None",
+    "value": 2,
+    "none": true
+   }
+  ],
+  "total": 28,
+  "value": 28,
+  "measure": "count",
+  "unit": "tasks",
+  "multi_valued": false
+ }
+}

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {computed, ref, useId} from 'vue'
 
-import {donutArcs, formatNumber, groupColor, groupKeyId, type ChartGroup, type ChartSelection} from '@/helpers/charts'
+import {donutArcs, formatNumber, assignColors, groupKeyId, groupLabel, type ChartGroup, type ChartSelection} from '@/helpers/charts'
 import ChartLegend, {type LegendItem} from './ChartLegend.vue'
 import ChartState from './ChartState.vue'
 import ChartTable from './ChartTable.vue'
@@ -44,6 +44,8 @@ const tooltip = ref<TooltipState | null>(null)
 const activeIndex = ref<number | null>(null)
 const plot = ref<HTMLElement | null>(null)
 
+const lbl = (group: ChartGroup) => groupLabel(group, t)
+const colors = computed(() => assignColors(props.groups))
 const sum = computed(() => props.groups.reduce((s, g) => s + Math.max(0, g.value), 0))
 // Beside the legend when there is room, above it otherwise.
 const sideBySide = computed(() => size.value.width >= 440 && size.value.width > size.value.height * 1.2)
@@ -66,17 +68,17 @@ const slices = computed(() => arcs.value.map(arc => {
 		id: `${uid}-${arc.index}`,
 		arc,
 		group,
-		color: groupColor(group, arc.index),
+		color: colors.value[arc.index]!,
 		percent,
-		aria: `${ariaLabel(group.label, group.value, props.unit)} (${percent}%)`,
+		aria: `${ariaLabel(lbl(group), group.value, props.unit)} (${percent}%)`,
 		reason: props.disabledReason?.({group}) ?? null,
 	}
 }))
 
 const legendItems = computed<LegendItem[]>(() => props.groups.map((group, i) => ({
 	key: groupKeyId(group),
-	label: group.label,
-	color: groupColor(group, i),
+	label: lbl(group),
+	color: colors.value[i]!,
 	value: valueText(group.value, props.unit),
 	selectable: props.selectable && !props.disabledReason?.({group}),
 })))
@@ -92,7 +94,7 @@ function showTooltip(index: number, event: PointerEvent | FocusEvent) {
 		: slice.arc.anchor
 	tooltip.value = {
 		...pos,
-		title: slice.group.label,
+		title: lbl(slice.group),
 		rows: [{label: `${slice.percent}%`, value: valueText(slice.group.value, props.unit), color: slice.color}],
 		note: slice.reason ?? undefined,
 	}
@@ -125,7 +127,7 @@ function hoverByKey(key: string | null) {
 
 const centerValue = computed(() => formatNumber(props.total ?? sum.value, locale.value))
 const caption = computed(() => props.title ?? t('charts.donut'))
-const tableRows = computed(() => props.groups.map(g => [g.label, valueText(g.value, props.unit)]))
+const tableRows = computed(() => props.groups.map(g => [lbl(g), valueText(g.value, props.unit)]))
 </script>
 
 <template>

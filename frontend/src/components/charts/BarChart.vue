@@ -4,14 +4,12 @@ import {computed, ref, useId} from 'vue'
 import {
 	bandScale,
 	formatAxisNumber,
-	groupColor,
+	assignColors,
+	groupLabel,
 	groupKeyId,
 	linearScale,
 	maxCharsFor,
-	NEUTRAL_COLOR,
 	niceTicks,
-	paletteColor,
-	safeColor,
 	stackModel,
 	stackSegments,
 	truncateLabel,
@@ -66,13 +64,21 @@ const nested = computed(() => model.value.keys.length > 0)
 const horizontal = computed(() => props.orientation === 'horizontal')
 const legendVisible = computed(() => props.showLegend ?? nested.value)
 
+const lbl = (group: ChartGroup) => groupLabel(group, t)
+const colorById = computed(() => {
+	const children = model.value.keys.map(k => model.value.labels.get(k)!)
+	const colors = assignColors(children)
+	return new Map(model.value.keys.map((key, i) => [key, colors[i]!]))
+})
+const groupColors = computed(() => assignColors(props.groups))
+
 function childColor(id: string): string {
-	const index = model.value.keys.indexOf(id)
+	return colorById.value.get(id) ?? 'var(--grey-400)'
+}
+
+function childLabel(id: string): string {
 	const child = model.value.labels.get(id)
-	if (child?.other) {
-		return NEUTRAL_COLOR
-	}
-	return safeColor(child?.color) ?? (child?.none ? NEUTRAL_COLOR : paletteColor(index))
+	return child ? lbl(child) : id
 }
 
 const maxValue = computed(() => {
@@ -98,7 +104,7 @@ const tickMarks = computed(() => {
 
 const frame = computed(() => {
 	const {width, height} = size.value
-	const longest = Math.max(1, ...props.groups.map(g => Array.from(g.label).length))
+	const longest = Math.max(1, ...props.groups.map(g => Array.from(lbl(g)).length))
 	if (horizontal.value) {
 		const labelWidth = Math.min(longest * CHAR_WIDTH + 10, width * 0.4)
 		return {left: labelWidth, right: width - 40, top: 4, bottom: height - 22, labelWidth}
@@ -152,7 +158,7 @@ const marks = computed<Mark[]>(() => {
 		const rects: Mark['rects'] = []
 		let total = group.value
 		if (!nested.value) {
-			rects.push(rect(band, 0, group.value, groupColor(group, i)))
+			rects.push(rect(band, 0, group.value, groupColors.value[i]!))
 		} else if (props.stacked) {
 			total = bar.total
 			for (const seg of stackSegments(bar.values, model.value.keys)) {
@@ -181,17 +187,17 @@ const marks = computed<Mark[]>(() => {
 		return {
 			id: `${uid}-${i}`,
 			group,
-			label: group.label,
-			color: groupColor(group, i),
+			label: lbl(group),
+			color: groupColors.value[i]!,
 			rects,
 			box,
 			valueLabel,
 			categoryLabel: horizontal.value
-				? {x: f.left - 6, y: band.center + 4, text: truncateLabel(group.label, labelChars), anchor: 'end'}
-				: {x: band.center, y: f.bottom + 16, text: truncateLabel(group.label, labelChars), anchor: 'middle'},
+				? {x: f.left - 6, y: band.center + 4, text: truncateLabel(lbl(group), labelChars), anchor: 'end'}
+				: {x: band.center, y: f.bottom + 16, text: truncateLabel(lbl(group), labelChars), anchor: 'middle'},
 			aria: nested.value
-				? `${ariaLabel(group.label, total, props.unit)} (${[...bar.values.entries()].map(([key, v]) => ariaLabel(model.value.labels.get(key)?.label ?? key, v, props.unit)).join(', ')})`
-				: ariaLabel(group.label, group.value, props.unit),
+				? `${ariaLabel(lbl(group), total, props.unit)} (${[...bar.values.entries()].map(([key, v]) => ariaLabel(childLabel(key), v, props.unit)).join(', ')})`
+				: ariaLabel(lbl(group), group.value, props.unit),
 			reason: props.disabledReason?.(selection) ?? null,
 		}
 	})
@@ -203,7 +209,7 @@ function childOf(group: ChartGroup, key: string): ChartGroup | undefined {
 
 const legendItems = computed<LegendItem[]>(() => model.value.keys.map(key => ({
 	key,
-	label: model.value.labels.get(key)?.label ?? key,
+	label: childLabel(key),
 	color: childColor(key),
 })))
 
@@ -223,13 +229,18 @@ function showTooltip(mark: Mark, event: PointerEvent | FocusEvent) {
 	}
 	const rows = nested.value
 		? [...model.value.bars[props.groups.indexOf(mark.group)]!.values.entries()].map(([key, v]) => ({
-			label: model.value.labels.get(key)?.label ?? key,
+			label: childLabel(key),
 			value: valueText(v, props.unit),
 			color: childColor(key),
 		}))
 		: [{label: mark.label, value: valueText(mark.group.value, props.unit), color: mark.color}]
 	if (nested.value) {
-		rows.push({label: t('charts.total'), value: valueText(mark.group.value, props.unit), color: ''})
+		const sum = model.value.bars[props.groups.indexOf(mark.group)]!.total
+		rows.push({label: t('charts.total'), value: valueText(sum, props.unit), color: ''})
+		// The height of a stack counts a task once per child it is in.
+		if (sum !== mark.group.value) {
+			rows.push({label: t('charts.distinct'), value: valueText(mark.group.value, props.unit), color: ''})
+		}
 	}
 	tooltip.value = {...point(event, fallback), title: mark.label, rows, note: mark.reason ?? undefined}
 	activeKey.value = mark.id
@@ -249,9 +260,9 @@ function activate(mark: Mark, child?: ChartGroup) {
 
 const tableRows = computed(() => nested.value
 	? props.groups.flatMap(group => (group.children ?? []).map(child => [
-		group.label, child.label, valueText(child.value, props.unit),
+		lbl(group), lbl(child), valueText(child.value, props.unit),
 	]))
-	: props.groups.map(group => [group.label, valueText(group.value, props.unit)]))
+	: props.groups.map(group => [lbl(group), valueText(group.value, props.unit)]))
 const tableColumns = computed(() => nested.value
 	? [t('charts.group'), t('charts.subgroup'), t('charts.value')]
 	: [t('charts.group'), t('charts.value')])

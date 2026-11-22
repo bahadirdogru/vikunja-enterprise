@@ -9,7 +9,7 @@ import {tasksQuery, type TaskFilterParams} from '@/client/queries/tasks'
 import {userSearchQuery} from '@/client/queries/userSearch'
 import {drilldownFilter, drilldownInputFor} from '@/helpers/dashboardDrilldown'
 import {widgetProjectId} from '@/helpers/dashboards'
-import type {ChartSelection} from '@/helpers/charts'
+import {groupLabel, type ChartSelection} from '@/helpers/charts'
 import ChartState from '@/components/charts/ChartState.vue'
 import SidePanel from './SidePanel.vue'
 import TaskRow from './TaskRow.vue'
@@ -112,7 +112,13 @@ watch(filter, () => {
 const items = computed(() => tasks.data.value?.items ?? [])
 const total = computed(() => tasks.data.value?.total ?? 0)
 const totalPages = computed(() => tasks.data.value?.total_pages ?? 1)
-const conditions = computed(() => result.value.ok ? result.value.parts : [])
+// The parts are the labels the API gave; the empty and folded groups are named in the user's language.
+const conditions = computed(() => {
+	const {group, child} = baseInput.value
+	const named = [group, child].filter((g): g is NonNullable<typeof g> => !!g).map(g => groupLabel(g, t))
+	const point = baseInput.value.point?.bucket
+	return result.value.ok ? [...named, ...(point ? [point] : [])] : []
+})
 const blocked = computed(() => {
 	if (result.value.ok || unresolvedUser.value || (needsOptions.value && fieldsQuery.isFetching.value)) {
 		return null
