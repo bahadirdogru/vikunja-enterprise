@@ -19,6 +19,10 @@ import {
 	updateStatus,
 	validateDraft,
 	addTransition,
+	isStatusBucketId,
+	statusBadgeOf,
+	statusBucketId,
+	statusIdOfBucket,
 	type WorkflowResponse,
 } from './workflow'
 
@@ -252,6 +256,7 @@ describe('API problems', () => {
 			missingFields: ['due_date', 'cf_3'],
 			commentRequired: true,
 			toStatusId: 12,
+			taskId: 0,
 		})
 		expect(outcomeOfProblem(problem)).toEqual({
 			kind: 'dialog',
@@ -291,5 +296,29 @@ describe('API problems', () => {
 	it('uses the detail of a rejected definition', () => {
 		expect(readWorkflowProblem({code: 21002, detail: 'exactly one status must be the initial status'}))
 			.toEqual({kind: 'invalidDefinition', message: 'exactly one status must be the initial status'})
+	})
+})
+
+describe('status columns', () => {
+	it('maps a status to a bucket id that no real bucket can have, and back', () => {
+		expect(statusBucketId(7)).toBe(-7)
+		expect(isStatusBucketId(-7)).toBe(true)
+		expect(isStatusBucketId(7)).toBe(false)
+		expect(isStatusBucketId(0)).toBe(false)
+		expect(statusIdOfBucket(statusBucketId(7))).toBe(7)
+	})
+
+	it('reads the 21009 and 21010 problems and the task of a rejected creation', () => {
+		expect(readWorkflowProblem({code: 21009})).toEqual({kind: 'statusViewNeedsWorkflow'})
+		expect(readWorkflowProblem({code: 21007, details: {task_id: 5, to_status_id: 3, missing_fields: ['due_date']}}))
+			.toMatchObject({kind: 'requirements', taskId: 5, toStatusId: 3, missingFields: ['due_date']})
+	})
+
+	it('turns an embedded status into badge props', () => {
+		expect(statusBadgeOf({title: 'Doing', color: '#0088ff', category: 'in_progress'}))
+			.toEqual({title: 'Doing', color: '#0088ff', category: 'in_progress'})
+		expect(statusBadgeOf({title: 'Odd', category: 'unknown'})).toEqual({title: 'Odd', color: '', category: 'open'})
+		expect(statusBadgeOf(undefined)).toBeNull()
+		expect(statusBadgeOf({})).toBeNull()
 	})
 })

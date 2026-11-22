@@ -37,11 +37,22 @@ export const PROJECT_FIELDS = [
 	'project',
 ]
 
+// The workflow status of a task: `status` by title (sent as id), `statusCategory` by its fixed name.
+export const STATUS_FIELDS = [
+	'status',
+]
+
+export const STATUS_CATEGORY_FIELDS = [
+	'statusCategory',
+]
+
 export const AUTOCOMPLETE_FIELDS = [
 	...LABEL_FIELDS,
 	...ASSIGNEE_FIELDS,
 	...CREATED_BY_FIELDS,
 	...PROJECT_FIELDS,
+	...STATUS_FIELDS,
+	...STATUS_CATEGORY_FIELDS,
 ]
 
 export const AVAILABLE_FILTER_FIELDS = [
@@ -50,6 +61,8 @@ export const AVAILABLE_FILTER_FIELDS = [
 	...CREATED_BY_FIELDS,
 	...LABEL_FIELDS,
 	...PROJECT_FIELDS,
+	...STATUS_FIELDS,
+	...STATUS_CATEGORY_FIELDS,
 	'done',
 	'priority',
 	'percentDone',
@@ -116,6 +129,7 @@ export function transformFilterStringForApi(
 	filter: string,
 	labelResolver: (title: string) => number | null,
 	projectResolver: (title: string) => number | null,
+	statusResolver: (title: string) => number | null = () => null,
 ): string {
 
 	filter = filter.trim()
@@ -203,6 +217,9 @@ export function transformFilterStringForApi(
 	// Transform projects to ids
 	filter = transformFieldToIds(PROJECT_FIELDS, projectResolver, filter)
 
+	// Transform workflow statuses to ids; values nobody knows (ids, typos) stay as they are
+	filter = transformFieldToIds(STATUS_FIELDS, statusResolver, filter)
+
 	// Transform all field names (not values) to snake case
 	AVAILABLE_FILTER_FIELDS.forEach(f => {
 		const fieldPattern = new RegExp('\\b' + f + '\\b(?=\\s*' + FILTER_OPERATORS_REGEX + ')', 'gi')
@@ -216,6 +233,7 @@ export function transformFilterStringFromApi(
 	filter: string,
 	labelResolver: (id: number) => string | null | undefined,
 	projectResolver: (id: number) => string | null | undefined,
+	statusResolver: (id: number) => string | null | undefined = () => null,
 ): string {
 
 	if (filter.trim() === '') {
@@ -297,6 +315,9 @@ export function transformFilterStringFromApi(
 
 	// Transform projects to their titles
 	transformFieldsToTitles(PROJECT_FIELDS, projectResolver)
+
+	// Transform workflow statuses to their titles
+	transformFieldsToTitles(STATUS_FIELDS, statusResolver)
 
 	return filter
 }

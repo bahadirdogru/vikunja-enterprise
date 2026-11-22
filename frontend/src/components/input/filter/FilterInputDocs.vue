@@ -31,6 +31,8 @@ const showDocs = ref(false)
 			<li><code>createdBy</code>: {{ $t('filters.query.help.fields.createdBy') }}</li>
 			<li><code>labels</code>: {{ $t('filters.query.help.fields.labels') }}</li>
 			<li><code>project</code>: {{ $t('filters.query.help.fields.project') }}</li>
+			<li><code>status</code>: {{ $t('filters.query.help.fields.status') }}</li>
+			<li><code>statusCategory</code>: {{ $t('filters.query.help.fields.statusCategory') }}</li>
 			<li><code>reminders</code>: {{ $t('filters.query.help.fields.reminders') }}</li>
 			<li><code>created</code>: {{ $t('filters.query.help.fields.created') }}</li>
 			<li><code>updated</code>: {{ $t('filters.query.help.fields.updated') }}</li>

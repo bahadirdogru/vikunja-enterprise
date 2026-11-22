@@ -68,6 +68,12 @@
 				</RouterLink>
 			</h3>
 			
+			<WorkflowStatusBadge
+				v-if="statusBadge"
+				:status="statusBadge"
+				class="kanban-card__status"
+			/>
+
 			<span
 				v-if="projectTitle"
 				class="project-title"
@@ -170,6 +176,8 @@ import Labels from '@/components/tasks/partials/Labels.vue'
 import ChecklistSummary from './ChecklistSummary.vue'
 import CustomFieldValueDisplay from '@/components/custom-fields/CustomFieldValueDisplay.vue'
 import CommentCount from './CommentCount.vue'
+import WorkflowStatusBadge from '@/components/workflow/WorkflowStatusBadge.vue'
+import {statusBadgeOf} from '@/helpers/workflow'
 
 import {getHexColor, getTaskIdentifier} from '@/helpers/task'
 import {getDisplayName} from '@/helpers/user'
@@ -197,8 +205,11 @@ const props = withDefaults(defineProps<{
 	projectId: number,
 	// Custom fields to show on the card; fields without a value are left out.
 	customFields?: CustomFieldResponse[],
+	// Show the workflow status of the task (needs the status expand). Off where columns already are the status.
+	showStatus?: boolean,
 }>(), {
 	customFields: () => [],
+	showStatus: false,
 })
 
 const emit = defineEmits<{
@@ -214,6 +225,8 @@ const loadingInternal = ref(false)
 const showLoading = useDelayedLoading(loadingInternal)
 
 const color = computed(() => getHexColor(props.task.hex_color))
+
+const statusBadge = computed(() => props.showStatus ? statusBadgeOf(props.task.status) : null)
 
 const visibleCustomFields = computed(() => props.customFields
 	.filter(field => hasCustomFieldValue(props.task.custom_fields, field.id)))
@@ -368,6 +381,11 @@ onBeforeUnmount(() => {
 </script>
 
 <style lang="scss" scoped>
+.kanban-card__status {
+	margin-block-start: .25rem;
+	font-size: .75rem;
+}
+
 $task-background: var(--white);
 
 .task {

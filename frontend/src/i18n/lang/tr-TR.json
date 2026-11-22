@@ -698,7 +698,9 @@
 					"project": "Görevin ait olduğu proje (yalnızca kayıtlı filtrelerde geçerlidir, proje içinde kullanılamaz)",
 					"reminders": "Tarih alanı olarak görev hatırlatıcıları; sorguyla eşleşen en az bir hatırlatıcısı olan görevleri getirir",
 					"created": "Görevin oluşturulma zamanı",
-					"updated": "Görevin en son güncellenme zamanı"
+					"updated": "Görevin en son güncellenme zamanı",
+			"status": "Görevin iş akışı durumu (yalnızca iş akışı olan projelerde)",
+			"statusCategory": "İş akışı durumunun kategorisi: open, in_progress, done veya cancelled"
 				},
 				"operators": {
 					"intro": "Kullanabileceğin filtreleme operatörleri:",
@@ -1585,6 +1587,8 @@
 		"21006": "Bu durum değişikliğini yapma yetkiniz yok.",
 		"21007": "Görev bu durum değişikliğinin gereklerini karşılamıyor.",
 		"21008": "Kaldırılan durumlardaki görevlerin taşınacağı bir durum seçin.",
+		"21009": "İş akışı durumları, yalnızca projede bir iş akışı varsa sütun olarak kullanılabilir.",
+		"21010": "Bu panonun sütunları iş akışı durumlarıdır. Bunları iş akışı ayarlarından değiştirin.",
 		"4016": "Geçersiz görev alanı.",
 		"4017": "Geçersiz filtre karşılaştırıcısı.",
 		"4018": "Geçersiz filtre bağlayıcısı.",
@@ -2028,6 +2032,12 @@
 			"forbiddenPermission": "Bu durum değişikliği için gereken yetkiye sahip değilsiniz.",
 			"forbiddenTeam": "Bu durum değişikliğini yalnızca izin verilen ekiplerin üyeleri yapabilir.",
 			"statusGone": "Bu durum artık yok. Görevi yenileyip tekrar deneyin."
+		},
+		"kanban": {
+			"mode": "İş akışı durumları",
+			"modeHint": "Projenin iş akışındaki her durum için bir sütun. Bir kartı taşımak görevin durumunu değiştirir ve iş akışının kurallarına uyar.",
+			"managed": "Bu panonun sütunları projenin iş akışındaki durumlardır. Bunları iş akışı ayarlarından düzenleyin.",
+			"noWorkflow": "Bu projenin artık bir iş akışı olmadığı için bu panoda sütun yok. İş akışını yeniden etkinleştirin ya da görünümü el ile sütunlara geçirin."
 		}
 	}
 }

@@ -473,6 +473,7 @@ export type Bucket = {
     limit?: number;
     position?: number;
     project_view_id?: number;
+    readonly status?: TaskStatusSummary;
     tasks?: Array<Task> | null;
     title?: string;
     updated?: string;
@@ -2177,9 +2178,9 @@ export type ProjectView = {
      */
     bucket_configuration?: Array<ProjectViewBucketConfiguration> | null;
     /**
-     * The bucket configuration mode. One of none, manual or filter. manual lets you move tasks between buckets; filter creates a bucket per filter.
+     * The bucket configuration mode. One of none, manual, filter or status. manual lets you move tasks between buckets; filter creates a bucket per filter; status shows one column per status of the project workflow and moving a task performs the status change.
      */
-    bucket_configuration_mode?: 'none' | 'manual' | 'filter';
+    bucket_configuration_mode?: 'none' | 'manual' | 'filter' | 'status';
     /**
      * A timestamp when this view was created. You cannot change this value.
      */
@@ -2243,9 +2244,9 @@ export type ProjectViewReadBody = {
      */
     bucket_configuration?: Array<ProjectViewBucketConfiguration> | null;
     /**
-     * The bucket configuration mode. One of none, manual or filter. manual lets you move tasks between buckets; filter creates a bucket per filter.
+     * The bucket configuration mode. One of none, manual, filter or status. manual lets you move tasks between buckets; filter creates a bucket per filter; status shows one column per status of the project workflow and moving a task performs the status change.
      */
-    bucket_configuration_mode?: 'none' | 'manual' | 'filter';
+    bucket_configuration_mode?: 'none' | 'manual' | 'filter' | 'status';
     /**
      * A timestamp when this view was created. You cannot change this value.
      */
@@ -2713,6 +2714,10 @@ export type Task = {
     repeat_mode?: number;
     start_date?: string;
     /**
+     * The workflow status of this task. Only present when requested via the status expand option and the task has one.
+     */
+    readonly status?: TaskStatusSummary;
+    /**
      * The requesting user's subscription to this task. Read-only here; use the subscription endpoints to change it. Only present when reading a single task.
      */
     readonly subscription?: Subscription;
@@ -3078,6 +3083,10 @@ export type TaskReadOneBody = {
     repeat_mode?: number;
     start_date?: string;
     /**
+     * The workflow status of this task. Only present when requested via the status expand option and the task has one.
+     */
+    readonly status?: TaskStatusSummary;
+    /**
      * The requesting user's subscription to this task. Read-only here; use the subscription endpoints to change it. Only present when reading a single task.
      */
     readonly subscription?: Subscription;
@@ -3196,6 +3205,25 @@ export type TaskStatusHistory = {
      * The title of the status the task entered when the change happened.
      */
     readonly to_title?: string;
+};
+
+export type TaskStatusSummary = {
+    /**
+     * The category of the status.
+     */
+    category?: 'open' | 'in_progress' | 'done' | 'cancelled';
+    /**
+     * The hex color of the status, empty when it has none.
+     */
+    color?: string;
+    /**
+     * The id of the workflow status.
+     */
+    id?: number;
+    /**
+     * The title of the status.
+     */
+    title?: string;
 };
 
 export type TaskWorkflowStatus = {
@@ -3894,6 +3922,10 @@ export type TrashedTask = {
      */
     repeat_mode?: number;
     start_date?: string;
+    /**
+     * The workflow status of this task. Only present when requested via the status expand option and the task has one.
+     */
+    readonly status?: TaskStatusSummary;
     /**
      * The requesting user's subscription to this task. Read-only here; use the subscription endpoints to change it. Only present when reading a single task.
      */
@@ -5630,9 +5662,9 @@ export type ProjectViewWritable = {
      */
     bucket_configuration?: Array<ProjectViewBucketConfiguration> | null;
     /**
-     * The bucket configuration mode. One of none, manual or filter. manual lets you move tasks between buckets; filter creates a bucket per filter.
+     * The bucket configuration mode. One of none, manual, filter or status. manual lets you move tasks between buckets; filter creates a bucket per filter; status shows one column per status of the project workflow and moving a task performs the status change.
      */
-    bucket_configuration_mode?: 'none' | 'manual' | 'filter';
+    bucket_configuration_mode?: 'none' | 'manual' | 'filter' | 'status';
     /**
      * The id of the bucket new tasks without a bucket are added to. Defaults to the leftmost bucket.
      */
@@ -5665,9 +5697,9 @@ export type ProjectViewReadBodyWritable = {
      */
     bucket_configuration?: Array<ProjectViewBucketConfiguration> | null;
     /**
-     * The bucket configuration mode. One of none, manual or filter. manual lets you move tasks between buckets; filter creates a bucket per filter.
+     * The bucket configuration mode. One of none, manual, filter or status. manual lets you move tasks between buckets; filter creates a bucket per filter; status shows one column per status of the project workflow and moving a task performs the status change.
      */
-    bucket_configuration_mode?: 'none' | 'manual' | 'filter';
+    bucket_configuration_mode?: 'none' | 'manual' | 'filter' | 'status';
     /**
      * The id of the bucket new tasks without a bucket are added to. Defaults to the leftmost bucket.
      */
@@ -9572,7 +9604,7 @@ export type ProjectTasksListData = {
         /**
          * Embed extra, more expensive data per task. Repeatable.
          */
-        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread' | 'custom_fields'> | null;
+        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread' | 'custom_fields' | 'status'> | null;
         /**
          * How rich-text fields are exchanged. See the API description.
          */
@@ -9703,7 +9735,7 @@ export type TasksReadByIndexData = {
         /**
          * Embed extra data per task. Repeatable.
          */
-        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread' | 'custom_fields'> | null;
+        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread' | 'custom_fields' | 'status'> | null;
         /**
          * How rich-text fields are exchanged. See the API description.
          */
@@ -10326,7 +10358,7 @@ export type ProjectViewBucketsTasksListData = {
         /**
          * Embed extra, more expensive data per task. Repeatable.
          */
-        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread' | 'custom_fields'> | null;
+        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread' | 'custom_fields' | 'status'> | null;
         /**
          * How rich-text fields are exchanged. See the API description.
          */
@@ -10492,7 +10524,7 @@ export type ProjectViewTasksListData = {
         /**
          * Embed extra, more expensive data per task. Repeatable.
          */
-        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread' | 'custom_fields'> | null;
+        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread' | 'custom_fields' | 'status'> | null;
         /**
          * How rich-text fields are exchanged. See the API description.
          */
@@ -10963,7 +10995,7 @@ export type TasksListData = {
         /**
          * Embed extra, more expensive data per task. Repeatable.
          */
-        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread' | 'custom_fields'> | null;
+        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread' | 'custom_fields' | 'status'> | null;
         /**
          * How rich-text fields are exchanged. See the API description.
          */
@@ -11210,7 +11242,7 @@ export type TasksReadData = {
         /**
          * Embed extra data per task. Repeatable.
          */
-        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread' | 'custom_fields'> | null;
+        expand?: Array<'subtasks' | 'buckets' | 'reactions' | 'comments' | 'comment_count' | 'time_entries_count' | 'is_unread' | 'custom_fields' | 'status'> | null;
         /**
          * How rich-text fields are exchanged. See the API description.
          */

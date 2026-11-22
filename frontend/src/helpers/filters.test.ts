@@ -17,6 +17,8 @@ describe('Filter Transformation', () => {
 		'assignees': 'assignees',
 		'createdBy': 'created_by',
 		'labels': 'labels',
+		'status': 'status',
+		'statusCategory': 'status_category',
 	}
 
 	describe('For API', () => {
@@ -607,6 +609,15 @@ describe('hasFilterQuery', () => {
 	})
 
 	it.each([
+		'status = 3',
+		'status in 1, 2',
+		'status_category = done',
+		'statusCategory != cancelled',
+	])('treats the workflow filter "%s" as a filter', filter => {
+		expect(hasFilterQuery(filter)).toBe(true)
+	})
+
+	it.each([
 		'done = false',
 		'done=false',
 		'priority >= 3',
@@ -618,5 +629,34 @@ describe('hasFilterQuery', () => {
 		'(done = false) && (priority > 2)',
 	])('treats "%s" as a filter', filter => {
 		expect(hasFilterQuery(filter)).toBe(true)
+	})
+})
+
+describe('Workflow status filters', () => {
+	const toId = (title: string) => ({'In review': 12, 'To do': 10}[title] ?? null)
+	const toTitle = (id: number) => ({12: 'In review', 10: 'To do'}[id] ?? null)
+
+	it('sends status titles as ids and the category as it is', () => {
+		expect(transformFilterStringForApi('status = In review && statusCategory = in_progress', () => null, () => null, toId))
+			.toBe('status = 12 && status_category = in_progress')
+		expect(transformFilterStringForApi('status in To do, In review', () => null, () => null, toId))
+			.toBe('status in 10, 12')
+	})
+
+	it('leaves ids and unknown titles alone', () => {
+		expect(transformFilterStringForApi('status = 12', () => null, () => null, toId)).toBe('status = 12')
+		expect(transformFilterStringForApi('status = Nope', () => null, () => null, toId)).toBe('status = Nope')
+	})
+
+	it('shows ids as status titles again', () => {
+		expect(transformFilterStringFromApi('status = 12 && status_category = done', () => null, () => null, toTitle))
+			.toBe('status = In review && statusCategory = done')
+		expect(transformFilterStringFromApi('status not in 10, 12', () => null, () => null, toTitle))
+			.toBe('status not in To do, In review')
+	})
+
+	it('round-trips without a workflow', () => {
+		const api = 'status = 12 && status_category != cancelled'
+		expect(transformFilterStringForApi(transformFilterStringFromApi(api, () => null, () => null), () => null, () => null)).toBe(api)
 	})
 })

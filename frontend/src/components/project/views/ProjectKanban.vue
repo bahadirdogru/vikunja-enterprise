@@ -47,6 +47,13 @@
 
 		<template #default>
 			<div class="kanban-view">
+				<Message
+					v-if="isStatusMode && !workflowLoading && !hasWorkflow && !initialLoading"
+					variant="warning"
+					class="mbe-2"
+				>
+					{{ $t('workflow.kanban.noWorkflow') }}
+				</Message>
 				<div
 					:class="{ 'is-loading': showInitialLoading, 'is-dragging': drag || dragBucket }"
 					class="kanban kanban-bucket-container loader-container"
@@ -55,7 +62,7 @@
 						v-bind="DRAG_OPTIONS"
 						:model-value="buckets"
 						group="buckets"
-						:disabled="!canWrite || newTaskInputFocused"
+						:disabled="!canManageBuckets || newTaskInputFocused"
 						tag="ul"
 						:item-key="({id}: BucketResponse) => `bucket${id}`"
 						:component-data="bucketDraggableComponentData"
@@ -83,8 +90,17 @@
 										<Icon icon="check-double" />
 									</span>
 									<h2
+										v-if="isStatusMode && bucket.status"
+										v-tooltip="$t('workflow.kanban.managed')"
+										class="title status-title"
+										:data-status-id="bucket.status.id"
+									>
+										<WorkflowStatusBadge :status="statusBadgeOf(bucket.status)!" />
+									</h2>
+									<h2
+										v-else
 										class="title input"
-										:contenteditable="(bucketTitleEditable && canWrite && !collapsedBuckets[bucket.id]) ? true : undefined"
+										:contenteditable="(bucketTitleEditable && canManageBuckets && !collapsedBuckets[bucket.id]) ? true : undefined"
 										:spellcheck="false"
 										@keydown.enter.prevent.stop="!$event.isComposing && ($event.target as HTMLElement).blur()"
 										@keydown.esc.prevent.stop="!$event.isComposing && ($event.target as HTMLElement).blur()"
@@ -94,7 +110,7 @@
 										{{ bucket.title }}
 									</h2>
 									<span
-										v-if="bucket.limit > 0 || alwaysShowBucketTaskCount"
+										v-if="bucket.limit > 0 || alwaysShowBucketTaskCount || isStatusMode"
 										v-tooltip="isBucketFull(bucket) ? $t('project.kanban.bucketLimitReached') : ''"
 										:class="{'is-max': isBucketFull(bucket)}"
 										class="limit"
@@ -111,7 +127,7 @@
 										>{{ $t('project.kanban.bucketLimitReachedShort') }}</span>
 									</span>
 									<Dropdown
-										v-if="canWrite && !collapsedBuckets[bucket.id]"
+										v-if="canManageBuckets && !collapsedBuckets[bucket.id]"
 										class="is-right options"
 										trigger-icon="ellipsis-v"
 										:trigger-label="$t('project.kanban.bucketOptions')"
@@ -270,6 +286,7 @@
 												:task="task"
 												:project-id="projectId"
 												:custom-fields="cardFields"
+												:show-status="showCardStatus"
 												@taskCompletedRecurring="handleRecurringTaskCompletion"
 											/>
 										</li>
@@ -280,7 +297,7 @@
 					</BucketDraggable>
 
 					<div
-						v-if="canWrite && !initialLoading && buckets.length > 0"
+						v-if="canManageBuckets && !initialLoading && buckets.length > 0"
 						class="bucket new-bucket"
 					>
 						<input
@@ -308,6 +325,19 @@
 						</XButton>
 					</div>
 				</div>
+
+				<TaskStatusDialog
+					v-if="statusMove.dialog.value"
+					:task-id="statusMove.dialog.value.taskId"
+					:project-id="projectId"
+					:to-status="statusMove.dialog.value.toStatus"
+					:missing-fields="statusMove.dialog.value.missingFields"
+					:comment-required="statusMove.dialog.value.commentRequired"
+					:problem="statusMove.dialog.value.problem"
+					:busy="statusMove.busy.value"
+					@close="statusMove.closeDialog()"
+					@submit="statusMove.submitDialog"
+				/>
 
 				<Modal
 					:enabled="showBucketDeleteModal"
@@ -364,6 +394,12 @@ import Dropdown from '@/components/misc/Dropdown.vue'
 import Popup from '@/components/misc/Popup.vue'
 import CustomFieldPicker from '@/components/custom-fields/CustomFieldPicker.vue'
 import DropdownItem from '@/components/misc/DropdownItem.vue'
+import Message from '@/components/misc/Message.vue'
+import TaskStatusDialog from '@/components/workflow/TaskStatusDialog.vue'
+import WorkflowStatusBadge from '@/components/workflow/WorkflowStatusBadge.vue'
+import {useProjectWorkflow} from '@/composables/useProjectWorkflow'
+import {useStatusColumnMove} from '@/composables/useStatusColumnMove'
+import {statusBadgeOf} from '@/helpers/workflow'
 
 import {
 	type CollapsedBuckets,
@@ -492,11 +528,16 @@ const bucketDraggableComponentData = computed(() => ({
 	],
 }))
 const {currentProject: project} = useCurrentProject()
-const canWrite = computed(() =>
-	typeof project.value?.max_permission === 'number' &&
-	project.value.max_permission > Permissions.READ &&
-	props.view.bucket_configuration_mode === 'manual',
-)
+// A board in status mode has no buckets of its own: cards move, columns are the workflow's.
+const isStatusMode = computed(() => props.view.bucket_configuration_mode === 'status')
+const hasWritePermission = computed(() =>
+	typeof project.value?.max_permission === 'number' && project.value.max_permission > Permissions.READ)
+const canManageBuckets = computed(() => hasWritePermission.value && props.view.bucket_configuration_mode === 'manual')
+const canWrite = computed(() => hasWritePermission.value && (canManageBuckets.value || isStatusMode.value))
+const {workflow, hasWorkflow, isLoading: workflowLoading} = useProjectWorkflow(projectId)
+const statusMove = useStatusColumnMove(projectId, () => props.viewId, workflow)
+// Manual columns show the status on the card, status columns are the status.
+const showCardStatus = computed(() => hasWorkflow.value && !isStatusMode.value)
 const canCreateTasks = computed(() => canWrite.value && projectId.value > 0)
 
 const isTouchDevice = ref(false)
@@ -542,11 +583,17 @@ const {
 const cardFieldsTrigger = ref<ComponentPublicInstance | null>(null)
 const cardFieldsTriggerEl = computed<HTMLElement | null>(() => (cardFieldsTrigger.value?.$el as HTMLElement) ?? null)
 
-const boardParams = computed(() => ({
-	...params.value,
-	filter_timezone: authStore.settings.timezone,
-	...(cardFields.value.length > 0 ? {expand: ['custom_fields' as const]} : {}),
-}))
+const boardParams = computed(() => {
+	const expand = [
+		...(cardFields.value.length > 0 ? ['custom_fields' as const] : []),
+		...(showCardStatus.value ? ['status' as const] : []),
+	]
+	return {
+		...params.value,
+		filter_timezone: authStore.settings.timezone,
+		...(expand.length > 0 ? {expand} : {}),
+	}
+})
 const board = useKanban(projectId, () => props.viewId, boardParams)
 const queryClient = useQueryClient()
 const buckets = board.buckets
@@ -642,8 +689,13 @@ async function updateTaskPosition(e: SortableEvent & {originalEvent?: MouseEvent
 		const before = bucket.tasks[index - 1]
 		const after = bucket.tasks[index + 1]
 		if (bucket.id !== sourceBucket.value) {
-			const result = await moveMutation.mutateAsync({project, view, bucket: bucket.id, task})
-			if (result.bucket_id !== undefined && result.bucket_id !== bucket.id) return
+			if (isStatusMode.value) {
+				// A rejected transition leaves the card in its column; the dialog or a message says why.
+				if (!await statusMove.move(task, bucket.id)) return
+			} else {
+				const result = await moveMutation.mutateAsync({project, view, bucket: bucket.id, task})
+				if (result.bucket_id !== undefined && result.bucket_id !== bucket.id) return
+			}
 		}
 		await positionMutation.mutateAsync({
 			taskId: task.id,
@@ -682,11 +734,16 @@ async function addTaskToBucket(bucketId: number) {
 	}
 	newTaskError.value[bucketId] = false
 
-	await createNewTask({
-		title: newTaskText.value,
-		bucket_id: bucketId,
-		project_id: projectIdWithFallback.value,
-	})
+	try {
+		await createNewTask({
+			title: newTaskText.value,
+			bucket_id: bucketId,
+			project_id: projectIdWithFallback.value,
+		})
+	} catch (cause) {
+		// The task exists in the initial column when its status could not be entered.
+		if (!isStatusMode.value || !statusMove.reportRejectedCreate(cause, bucketId)) throw cause
+	}
 	newTaskText.value = ''
 	scrollTaskContainerToTop(bucketId)
 

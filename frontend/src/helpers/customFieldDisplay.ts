@@ -55,6 +55,11 @@ export function withCustomFieldsExpand<T extends string>(expand: readonly T[], a
 	return active && !expand.includes('custom_fields' as T) ? [...expand, 'custom_fields'] : [...expand]
 }
 
+// The workflow status is embedded in each task only when the status column is shown.
+export function withStatusExpand<T extends string>(expand: readonly T[], active: boolean): (T | 'status')[] {
+	return active && !expand.includes('status' as T) ? [...expand, 'status'] : [...expand]
+}
+
 export type TaskCustomFieldValues = {custom_field_id?: number, value?: unknown}[] | null | undefined
 
 export function valueOfCustomField(values: TaskCustomFieldValues, fieldId: number): unknown {

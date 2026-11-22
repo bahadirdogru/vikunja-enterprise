@@ -28,6 +28,8 @@ export const WORKFLOW_ERROR_CODE = {
 	forbidden: 21006,
 	requirementsNotMet: 21007,
 	moveTasksRequired: 21008,
+	workflowRequiredForStatusView: 21009,
+	statusViewBucketsManaged: 21010,
 } as const
 
 export const MAX_TITLE_LENGTH = 250
@@ -467,7 +469,8 @@ export type WorkflowProblem =
 	| {kind: 'statusGone'}
 	| {kind: 'notAllowed'}
 	| {kind: 'forbidden', reason: string}
-	| {kind: 'requirements', missingFields: string[], commentRequired: boolean, toStatusId: number}
+	| {kind: 'statusViewNeedsWorkflow'}
+	| {kind: 'requirements', missingFields: string[], commentRequired: boolean, toStatusId: number, taskId: number}
 	| {kind: 'other'}
 
 function numberList(value: unknown): number[] {
@@ -505,12 +508,15 @@ export function readWorkflowProblem(cause: unknown): WorkflowProblem {
 			return {kind: 'notAllowed'}
 		case WORKFLOW_ERROR_CODE.forbidden:
 			return {kind: 'forbidden', reason: typeof details.reason === 'string' ? details.reason : ''}
+		case WORKFLOW_ERROR_CODE.workflowRequiredForStatusView:
+			return {kind: 'statusViewNeedsWorkflow'}
 		case WORKFLOW_ERROR_CODE.requirementsNotMet:
 			return {
 				kind: 'requirements',
 				missingFields: stringList(details.missing_fields),
 				commentRequired: details.comment_required === true,
 				toStatusId: typeof details.to_status_id === 'number' ? details.to_status_id : 0,
+				taskId: typeof details.task_id === 'number' ? details.task_id : 0,
 			}
 		default:
 			return {kind: 'other'}
@@ -545,4 +551,33 @@ export function outcomeOfProblem(problem: WorkflowProblem): ProblemOutcome {
 
 export function needsInput(transition: Pick<AvailableTransitionResponse, 'missing_fields' | 'require_comment'>): boolean {
 	return transition.missing_fields.length > 0 || transition.require_comment
+}
+
+// Columns of a kanban view in status mode have the negated id of their status as bucket id,
+// which can never clash with the (positive) ids of real buckets.
+export function statusBucketId(statusId: number): number {
+	return -statusId
+}
+
+export function isStatusBucketId(bucketId: number): boolean {
+	return bucketId < 0
+}
+
+export function statusIdOfBucket(bucketId: number): number {
+	return -bucketId
+}
+
+export type StatusBadgeProps = {title: string, color: string, category: WorkflowCategory}
+
+// The status that tasks and columns embed (expand=status) in the shape of the badge.
+export function statusBadgeOf(
+	status: {title?: string, color?: string, category?: string} | null | undefined,
+): StatusBadgeProps | null {
+	if (!status?.title) {
+		return null
+	}
+	const category = (WORKFLOW_CATEGORIES as readonly string[]).includes(status.category ?? '')
+		? status.category as WorkflowCategory
+		: 'open'
+	return {title: status.title, color: status.color ?? '', category}
 }

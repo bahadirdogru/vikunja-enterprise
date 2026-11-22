@@ -69,6 +69,12 @@
 					</TaskGlanceTooltip>
 				</span>
 
+				<WorkflowStatusBadge
+					v-if="statusBadge"
+					:status="statusBadge"
+					class="task-status mis-2"
+				/>
+
 				<Labels
 					v-if="(task.labels?.length ?? 0) > 0"
 					class="labels mis-2 mie-1"
@@ -233,6 +239,8 @@ import ProgressBar from '@/components/misc/ProgressBar.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import FancyCheckbox from '@/components/input/FancyCheckbox.vue'
 import ColorBubble from '@/components/misc/ColorBubble.vue'
+import WorkflowStatusBadge from '@/components/workflow/WorkflowStatusBadge.vue'
+import {statusBadgeOf} from '@/helpers/workflow'
 import Popup from '@/components/misc/Popup.vue'
 
 
@@ -268,6 +276,9 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
 	'taskUpdated': [task: ITask],
 }>()
+
+// Only present when the list asked for the status expand, i.e. in projects with a workflow.
+const statusBadge = computed(() => statusBadgeOf(props.theTask.status))
 
 function getTaskById(taskId: number | undefined): ITask | undefined {
 	if (typeof props.allTasks === 'undefined' || props.allTasks.length === 0) {

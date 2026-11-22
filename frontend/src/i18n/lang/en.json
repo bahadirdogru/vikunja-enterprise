@@ -750,7 +750,9 @@
           "project": "The project the task belongs to (only available for saved filters, not on a project level)",
           "reminders": "The reminders of the task as a date field, will return all tasks with at least one reminder matching the query",
           "created": "The time and date when the task was created",
-          "updated": "The time and date when the task was last changed"
+          "updated": "The time and date when the task was last changed",
+          "status": "The workflow status of the task (only for projects with a workflow)",
+          "statusCategory": "The category of the workflow status: open, in_progress, done or cancelled"
         },
         "operators": {
           "intro": "The available operators for filtering include:",
@@ -1703,6 +1705,8 @@
     "21006": "You are not allowed to make this status change.",
     "21007": "The task does not meet the requirements of this status change.",
     "21008": "Choose a status to move the tasks of the removed statuses to.",
+    "21009": "Workflow statuses can only be used as columns when the project has a workflow.",
+    "21010": "The columns of this board are the workflow statuses. Change them in the workflow settings.",
     "4016": "Invalid task field.",
     "4017": "Invalid task filter comparator.",
     "4018": "Invalid task filter concatenator.",
@@ -2214,6 +2218,12 @@
       "forbiddenPermission": "You do not have the permission this status change needs.",
       "forbiddenTeam": "Only members of the allowed teams can make this status change.",
       "statusGone": "This status no longer exists. Reload the task and try again."
+    },
+    "kanban": {
+      "mode": "Workflow statuses",
+      "modeHint": "One column per status of the project workflow. Moving a card changes the status of the task and follows the rules of the workflow.",
+      "managed": "The columns of this board are the statuses of the project workflow. Edit them in the workflow settings.",
+      "noWorkflow": "This project no longer has a workflow, so this board has no columns. Enable a workflow again or switch the view to manual columns."
     }
   }
 }

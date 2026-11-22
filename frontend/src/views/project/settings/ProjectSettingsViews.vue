@@ -17,6 +17,7 @@ import Message from '@/components/misc/Message.vue'
 import {draggableFor} from '@/components/base/Draggable'
 import {calculateItemPosition} from '@/helpers/calculateItemPosition'
 import {useProject} from '@/composables/useProject'
+import {useProjectWorkflow} from '@/composables/useProjectWorkflow'
 import {useProjectViews} from '@/composables/useProjectViews'
 import ErrorMessage from '@/components/misc/Error.vue'
 
@@ -30,6 +31,8 @@ const query = useProjectViews(() => props.projectId)
 // useProject snapshots its project, which suits the permission check but would freeze the table.
 const {project, error: projectError} = useProject(() => props.projectId)
 const loadError = computed(() => projectError.value ?? query.error.value)
+
+const {hasWorkflow} = useProjectWorkflow(() => props.projectId)
 
 const views = ref<ProjectView[]>([])
 watch(
@@ -180,6 +183,7 @@ async function saveViewPosition(e: {newIndex: number}) {
 				v-if="showCreateForm"
 				v-model="newView"
 				class="mbe-4"
+				:has-workflow
 			/>
 			<div
 				v-if="isAdmin"
@@ -227,6 +231,7 @@ async function saveViewPosition(e: {newIndex: number}) {
 										<ViewEditForm
 											v-model="viewToEdit"
 											class="mbe-4"
+											:has-workflow
 											:loading="isSaving"
 											:show-save-buttons="true"
 											@cancel="viewToEdit = null"

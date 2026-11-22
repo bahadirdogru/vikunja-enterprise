@@ -39,6 +39,12 @@
 							<FancyCheckbox v-model="activeColumns.title">
 								{{ $t('task.attributes.title') }}
 							</FancyCheckbox>
+							<FancyCheckbox
+								v-if="hasWorkflow"
+								v-model="statusColumnShown"
+							>
+								{{ $t('workflow.task.label') }}
+							</FancyCheckbox>
 							<FancyCheckbox v-model="activeColumns.priority">
 								{{ $t('task.attributes.priority') }}
 							</FancyCheckbox>
@@ -144,6 +150,17 @@
 											:order="sortBy.title"
 											:label="$t('task.attributes.title')"
 											@click="sort('title', $event)"
+										/>
+									</th>
+									<th
+										v-if="showStatusColumn"
+										:aria-sort="ariaSort('status')"
+									>
+										{{ $t('workflow.task.label') }}
+										<Sort
+											:order="sortBy.status"
+											:label="$t('workflow.task.label')"
+											@click="sort('status', $event)"
 										/>
 									</th>
 									<th
@@ -292,6 +309,12 @@
 											</RouterLink>
 										</TaskGlanceTooltip>
 									</td>
+									<td v-if="showStatusColumn">
+										<WorkflowStatusBadge
+											v-if="statusBadgeOf(t.status)"
+											:status="statusBadgeOf(t.status)!"
+										/>
+									</td>
 									<td v-if="activeColumns.priority">
 										<PriorityLabel
 											:priority="t.priority"
@@ -399,6 +422,9 @@ import Popup from '@/components/misc/Popup.vue'
 import CustomFieldPicker from '@/components/custom-fields/CustomFieldPicker.vue'
 import CustomFieldValueDisplay from '@/components/custom-fields/CustomFieldValueDisplay.vue'
 import AddTask from '@/components/tasks/AddTask.vue'
+import WorkflowStatusBadge from '@/components/workflow/WorkflowStatusBadge.vue'
+import {useProjectWorkflow} from '@/composables/useProjectWorkflow'
+import {statusBadgeOf} from '@/helpers/workflow'
 
 import type {SortBy} from '@/composables/useTaskList'
 import {useTaskList} from '@/composables/useTaskList'
@@ -421,6 +447,7 @@ import {
 	parseCustomFieldSortKey,
 	valueOfCustomField,
 	withCustomFieldsExpand,
+	withStatusExpand,
 } from '@/helpers/customFieldDisplay'
 
 const props = defineProps<{
@@ -465,6 +492,16 @@ const SORT_BY_DEFAULT: SortBy = {
 }
 
 const activeColumns = useStorage('tableViewColumns', {...ACTIVE_COLUMNS_DEFAULT})
+
+// The status column is on by default in projects with a workflow and unavailable in the others.
+// The choice is stored with the other columns once the user makes it.
+const {hasWorkflow} = useProjectWorkflow(() => props.projectId)
+const storedStatusColumn = computed(() => (activeColumns.value as {status?: boolean}).status)
+const statusColumnShown = computed({
+	get: () => storedStatusColumn.value ?? true,
+	set: shown => { (activeColumns.value as {status?: boolean}).status = shown },
+})
+const showStatusColumn = computed(() => hasWorkflow.value && statusColumnShown.value)
 const sortBy = useStorage<SortBy>('tableViewSortBy', {...SORT_BY_DEFAULT})
 
 // Custom fields are optional columns, remembered per project. Their values are only requested
@@ -481,7 +518,10 @@ const taskList = useTaskList(
 	() => props.viewId, 
 	// A custom field sort left in storage may belong to another project.
 	omitCustomSortKeys(sortBy.value),
-	() => withCustomFieldsExpand(['comment_count', 'is_unread'], customColumns.value.length > 0),
+	() => withStatusExpand(
+		withCustomFieldsExpand(['comment_count', 'is_unread'], customColumns.value.length > 0),
+		showStatusColumn.value,
+	),
 	() => props.view,
 )
 
@@ -495,7 +535,7 @@ const loading = useDelayedLoading(taskList.loading)
 const tasks: Ref<TaskResponse[]> = taskList.tasks
 
 watch(
-	[() => activeColumns.value, () => customColumns.value],
+	[() => activeColumns.value, () => customColumns.value, showStatusColumn],
 	() => setActiveColumnsSortParam(),
 	{deep: true},
 )
@@ -508,6 +548,9 @@ function setActiveColumnsSortParam() {
 			const customFieldId = parseCustomFieldSortKey(prop)
 			if (customFieldId !== null) {
 				return customColumns.value.some(field => field.id === customFieldId && isSortableCustomFieldType(field.type))
+			}
+			if (prop === 'status') {
+				return showStatusColumn.value
 			}
 			return activeColumns.value[camelCase(prop) as keyof typeof activeColumns.value]
 		})

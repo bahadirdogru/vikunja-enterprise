@@ -151,7 +151,10 @@ function positionAboveBoard(board: BoardData, task: TaskResponse): number {
 // Filter buckets are server-decided and a filtered or searched board may not match the task.
 function canPatchBoard(view: ProjectView | undefined, params: TaskFilterParams | undefined): view is ProjectView {
 	return view !== undefined
+		// Filter columns are server-decided; status columns follow the status, which a plain insert may not
+		// place in the default column.
 		&& view.bucket_configuration_mode !== 'filter'
+		&& view.bucket_configuration_mode !== 'status'
 		&& !params?.filter
 		&& !params?.q
 }

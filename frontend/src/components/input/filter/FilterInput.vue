@@ -4,6 +4,9 @@ import {useI18n} from 'vue-i18n'
 import DatepickerWithValues from '@/components/date/DatepickerWithValues.vue'
 import {useLabels} from '@/composables/useLabels'
 import {useProjects} from '@/composables/useProjects'
+import {queryClient} from '@/client/queryClient'
+import {workflowKeys, workflowQuery} from '@/client/queries/workflow'
+import type {WorkflowResponse} from '@/helpers/workflow'
 import {
 	transformFilterStringForApi,
 	transformFilterStringFromApi,
@@ -139,6 +142,11 @@ const editor = useEditor({
 	},
 })
 
+// The status titles of the project's workflow, if it has one and it is loaded.
+const workflowStatuses = () => props.projectId
+	? queryClient.getQueryData<WorkflowResponse | null>(workflowKeys.project(props.projectId))?.statuses ?? []
+	: []
+
 // Process the editor content to output snake_cased filter
 const processContent = (content: string) => {
 	return transformFilterStringForApi(
@@ -148,10 +156,12 @@ const processContent = (content: string) => {
 			const found = projectList.findProjectByExactname(projectTitle)
 			return found?.id || null
 		},
+		statusTitle => workflowStatuses().find(status => status.title === statusTitle)?.id || null,
 	)
 }
 
 let lastEmittedValue: string | undefined
+let lastSetContent: string | undefined
 let pendingEditorContent: string | undefined
 let pendingModelValue: string | undefined
 let waitingForLabels = false
@@ -172,7 +182,25 @@ watch(
 	{immediate: true},
 )
 
-onMounted(() => setEditorContentFromModelValue(props.modelValue))
+onMounted(() => {
+	setEditorContentFromModelValue(props.modelValue)
+	loadWorkflowStatuses()
+})
+
+// Status ids in the filter only show as titles once the workflow is there; texts the user changed meanwhile stay.
+async function loadWorkflowStatuses() {
+	if (!props.projectId) {
+		return
+	}
+	try {
+		await queryClient.ensureQueryData(workflowQuery(props.projectId))
+	} catch {
+		return
+	}
+	if (editor.value && editor.value.getText() === lastSetContent) {
+		setEditorContentFromModelValue(props.modelValue)
+	}
+}
 
 watch(isPending, pending => {
 	if (pending || !waitingForLabels || editor.value?.getText() !== pendingEditorContent) {
@@ -198,7 +226,9 @@ function setEditorContentFromModelValue(newValue: string | undefined) {
 		newValue,
 		labelId => getLabelById(labelId)?.title || null,
 		projectId => projectList.projects[projectId]?.title || null,
+		statusId => workflowStatuses().find(status => status.id === statusId)?.title || null,
 	) : ''
+	lastSetContent = content
 
 	if (editor.value.getText() !== content) {
 		// Preserve cursor position before updating content

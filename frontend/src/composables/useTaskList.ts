@@ -33,6 +33,8 @@ export interface SortBy {
 	created?: Order
 	updated?: Order
 	done_at?: Order,
+	// The position of the workflow status, tasks without a status come last.
+	status?: Order,
 	position?: Order,
 	// Custom fields are sorted as cf_<fieldId>.
 	[customField: `cf_${number}`]: Order
@@ -40,7 +42,7 @@ export interface SortBy {
 
 const VALID_SORT_FIELDS = new Set<string>(
 	['id', 'index', 'done', 'title', 'priority', 'due_date', 'start_date',
-		'end_date', 'percent_done', 'created', 'updated', 'done_at', 'position'],
+		'end_date', 'percent_done', 'created', 'updated', 'done_at', 'position', 'status'],
 )
 
 function parseSortQuery(raw: string, fallback: SortBy): SortBy {

@@ -40,6 +40,7 @@ import {getCachedProject, projectKeys} from './projects'
 import {invalidateAfterTrashChange} from './trash'
 import {colorFromHex} from '@/helpers/color/colorFromHex'
 import {getDefaultBucketId, moveTaskToBucket} from '@/helpers/task'
+import {readWorkflowProblem} from '@/helpers/workflow'
 import {translatedError} from '@/message'
 
 const API_ZERO_DATE = '0001-01-01T00:00:00Z'
@@ -154,6 +155,8 @@ export function createTaskMutationOptions() {
 		})).data,
 		onSuccess: (task, _input, client) => insertTaskIntoBoards(client, task),
 		onSettled: (_task, client) => invalidateTaskMembership(client, undefined, 'active'),
+		// A task created in a status column whose requirements are missing opens the status dialog instead.
+		toastError: (_input, cause) => readWorkflowProblem(cause).kind !== 'requirements',
 	})
 }
 
@@ -390,7 +393,9 @@ function reconcileTaskBuckets(
 		: current)
 }
 
-export function moveTaskMutationOptions() {
+// In a status mode view the move is a workflow transition, which the caller reports itself
+// (a dialog for missing fields, a message for the rest), so the mutation stays quiet about errors.
+export function moveTaskMutationOptions({reportErrors = true}: {reportErrors?: boolean} = {}) {
 	return contextMutationOptions({
 		mutationFn: async ({project, view, bucket, task}: {
 			project: number,
@@ -422,6 +427,7 @@ export function moveTaskMutationOptions() {
 			if (id !== undefined) reconcileTaskBuckets(client, {project, view, bucket: target, task: id})
 		},
 		onSettled: ({task}, client) => invalidateTaskMembership(client, task.id),
+		toastError: () => reportErrors,
 	})
 }
 
@@ -483,4 +489,8 @@ export function useUpdateTaskPositionMutation() {
 
 export function useMoveTaskMutation() {
 	return useMutation(moveTaskMutationOptions())
+}
+
+export function useMoveTaskToStatusColumnMutation() {
+	return useMutation(moveTaskMutationOptions({reportErrors: false}))
 }

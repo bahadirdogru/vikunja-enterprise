@@ -113,6 +113,7 @@ import Pagination from '@/components/misc/Pagination.vue'
 import SortPopup from '@/components/project/partials/SortPopup.vue'
 
 import {useTaskList} from '@/composables/useTaskList'
+import {useProjectWorkflow} from '@/composables/useProjectWorkflow'
 import {useTaskDragToProject} from '@/composables/useTaskDragToProject'
 import {useCurrentProject} from '@/composables/useCurrentProject'
 import {shouldShowTaskInListView} from '@/composables/useTaskListFiltering'
@@ -148,6 +149,7 @@ const baseStore = useBaseStore()
 const {setDraggedTask} = useTaskDragState()
 const {handleTaskDropToProject} = useTaskDragToProject()
 const {currentProject: project} = useCurrentProject()
+const {hasWorkflow} = useProjectWorkflow(projectId)
 
 const ctaVisible = ref(false)
 
@@ -166,9 +168,13 @@ const {
 	() => projectId.value,
 	() => props.viewId,
 	{position: 'asc'},
-	() => projectId.value === -1
-		? ['comment_count', 'is_unread']
-		: ['subtasks', 'comment_count', 'is_unread'],
+	() => {
+		const expand = projectId.value === -1
+			? ['comment_count' as const, 'is_unread' as const]
+			: ['subtasks' as const, 'comment_count' as const, 'is_unread' as const]
+		// The status badge needs a workflow; the list of a project without one asks for nothing extra.
+		return hasWorkflow.value ? [...expand, 'status' as const] : expand
+	},
 	() => props.view,
 )
 const showLoading = useDelayedLoading(loading)

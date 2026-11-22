@@ -15,6 +15,6 @@ export const DEFAULT_PROJECT_VIEW_SETTINGS = {
 } as const
 export type DefaultProjectViewKind = typeof DEFAULT_PROJECT_VIEW_SETTINGS[keyof typeof DEFAULT_PROJECT_VIEW_SETTINGS]
 
-export const PROJECT_VIEW_BUCKET_CONFIGURATION_MODES = ['none', 'manual', 'filter'] as const satisfies readonly NonNullable<ProjectView['bucket_configuration_mode']>[]
+export const PROJECT_VIEW_BUCKET_CONFIGURATION_MODES = ['none', 'manual', 'filter', 'status'] as const satisfies readonly NonNullable<ProjectView['bucket_configuration_mode']>[]
 
 export const INCLUDE_SUBPROJECTS_QUERY_PARAM = 'include_subprojects'

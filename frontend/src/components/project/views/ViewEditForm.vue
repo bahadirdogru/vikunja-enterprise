@@ -20,9 +20,12 @@ const props = withDefaults(defineProps<{
 	modelValue: ProjectViewFormValue,
 	loading?: boolean,
 	showSaveButtons?: boolean,
+	// Offers the workflow statuses as the columns of a kanban view.
+	hasWorkflow?: boolean,
 }>(), {
 	loading: false,
 	showSaveButtons: false,
+	hasWorkflow: false,
 })
 
 const emit = defineEmits<{
@@ -251,7 +254,25 @@ function handleBubbleSave(event: FocusEvent) {
 					>
 					{{ $t('project.views.filter') }}
 				</label>
+				<label
+					v-if="hasWorkflow || view.bucket_configuration_mode === 'status'"
+					class="radio"
+				>
+					<input
+						v-model="view.bucket_configuration_mode"
+						type="radio"
+						name="configMode"
+						value="status"
+					>
+					{{ $t('workflow.kanban.mode') }}
+				</label>
 			</div>
+			<p
+				v-if="view.bucket_configuration_mode === 'status'"
+				class="help"
+			>
+				{{ $t('workflow.kanban.modeHint') }}
+			</p>
 		</div>
 
 		<div

@@ -102,6 +102,36 @@ describe('ViewEditForm', () => {
 		expect(wrapper.emitted('update:modelValue')).toBeUndefined()
 	})
 
+	it('offers the workflow statuses as columns only for a project with a workflow', async () => {
+		const board: ProjectView = {id: 1, project_id: 1, title: 'Board', view_kind: 'kanban', bucket_configuration_mode: 'manual'}
+		const without = mountForm(board)
+		expect(without.find('input[value="status"]').exists()).toBe(false)
+
+		const withWorkflow = shallowMount(ViewEditForm, {
+			props: {modelValue: board, hasWorkflow: true},
+			global: {
+				stubs: {FilterEditor: FilterEditorStub},
+				mocks: {$t: (key: string) => key},
+				directives: {focus: () => {}},
+			},
+		})
+		const radio = withWorkflow.find<HTMLInputElement>('input[value="status"]')
+		expect(radio.exists()).toBe(true)
+		expect(withWorkflow.text()).not.toContain('workflow.kanban.modeHint')
+
+		await radio.setValue(true)
+		expect(withWorkflow.text()).toContain('workflow.kanban.modeHint')
+		await withWorkflow.find('form').trigger('submit')
+		const emitted = withWorkflow.emitted('update:modelValue')
+		expect((emitted?.at(-1)?.[0] as ProjectView).bucket_configuration_mode).toBe('status')
+	})
+
+	it('keeps showing the mode of a view that already uses it, even without a workflow', () => {
+		const wrapper = mountForm({id: 1, project_id: 1, title: 'Board', view_kind: 'kanban', bucket_configuration_mode: 'status'})
+
+		expect(wrapper.find<HTMLInputElement>('input[value="status"]').element.checked).toBe(true)
+	})
+
 	it('saves when focus leaves the form without explicit save buttons', async () => {
 		const wrapper = mountForm()
 

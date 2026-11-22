@@ -13,7 +13,12 @@ import {
 	isMultiValueOperator,
 	LABEL_FIELDS,
 	PROJECT_FIELDS,
+	STATUS_CATEGORY_FIELDS,
+	STATUS_FIELDS,
 } from '@/helpers/filters'
+import {WORKFLOW_CATEGORIES} from '@/helpers/workflow'
+import {queryClient} from '@/client/queryClient'
+import {workflowQuery} from '@/client/queries/workflow'
 
 import {useLabels} from '@/composables/useLabels'
 import {useProjects} from '@/composables/useProjects'
@@ -39,13 +44,13 @@ interface AutocompleteContext {
 }
 
 interface SuggestionItem {
-	id: number
+	id: number | string
 	title?: string
 	username?: string
 	name?: string
 }
 
-export type AutocompleteField = 'labels' | 'users' | 'projects'
+export type AutocompleteField = 'labels' | 'users' | 'projects' | 'status' | 'statusCategory'
 
 /**
  * Calculates the replacement range for autocomplete selection.
@@ -87,7 +92,7 @@ export function calculateReplacementRange(
 export interface AutocompleteItem {
 	id: number | string
 	title: string
-	item: Label | IUser | ProjectResponse
+	item: Label | IUser | ProjectResponse | {id: number | string, title: string}
 	fieldType: AutocompleteField
 	context: AutocompleteContext
 }
@@ -248,6 +253,25 @@ export default Extension.create<FilterAutocompleteOptions>({
 					})
 				}
 
+				if (fieldType === 'status') {
+					// Statuses belong to the workflow of one project, there is nothing to suggest without it.
+					if (!this.options.projectId) {
+						return []
+					}
+					const workflow = await queryClient.ensureQueryData(workflowQuery(this.options.projectId))
+					const search = autocompleteContext.search.toLowerCase()
+					return (workflow?.statuses ?? [])
+						.filter(status => !status.archived && status.title.toLowerCase().includes(search))
+						.map(status => ({id: status.id, title: status.title}))
+				}
+
+				if (fieldType === 'statusCategory') {
+					const search = autocompleteContext.search.toLowerCase()
+					return WORKFLOW_CATEGORIES
+						.filter(category => category.includes(search))
+						.map(category => ({id: category, title: category}))
+				}
+
 				if (fieldType === 'projects' && !this.options.projectId) {
 					return projectList.searchProject(autocompleteContext.search) as SuggestionItem[]
 				}
@@ -339,6 +363,10 @@ export default Extension.create<FilterAutocompleteOptions>({
 						fieldType = 'users'
 					} else if (PROJECT_FIELDS.includes(field)) {
 						fieldType = 'projects'
+					} else if (STATUS_FIELDS.includes(field)) {
+						fieldType = 'status'
+					} else if (STATUS_CATEGORY_FIELDS.includes(field)) {
+						fieldType = 'statusCategory'
 					}
 					break
 				}
