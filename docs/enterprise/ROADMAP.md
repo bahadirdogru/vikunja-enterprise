@@ -33,7 +33,9 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
 | 3b | Automation: script condition/action, http, secrets | Planned |
 | 3c | Automation UI | Planned |
 | 3d | Automation: schedule / manual / incoming webhook triggers, wait action, templates | Planned |
-| 4 | Dashboards and reports | Planned |
+| 4a | Dashboards: aggregation API, dashboards/widgets CRUD ([dashboards.md](dashboards.md)) | In progress |
+| 4b | Dashboards: pages, SVG charts, widget editor, drill-down | Planned |
+| 4c | Dashboards: status time, workload, time tracking widgets, CSV export | Planned |
 | 5 | Forms and approvals | Planned |
 | – | Organisation / tenant layer, AI features | Deferred |
 
