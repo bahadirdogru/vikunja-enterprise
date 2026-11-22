@@ -49,6 +49,9 @@ type Bucket struct {
 	// The number of tasks currently in this bucket
 	Count int64 `xorm:"-" json:"count"`
 
+	// The workflow status this bucket stands for. Only set on the columns of a view in status mode.
+	Status *TaskStatusSummary `xorm:"-" json:"status,omitempty" readOnly:"true"`
+
 	// The position this bucket has when querying all buckets. See the tasks.position property on how to use this.
 	Position float64 `xorm:"double null" json:"position"`
 
@@ -129,6 +132,11 @@ func (b *Bucket) ReadAll(s *xorm.Session, auth web.Auth, _ string, _ int, _ int)
 		return nil, 0, 0, ErrGenericForbidden{}
 	}
 
+	if view.BucketConfigurationMode == BucketConfigurationModeStatus {
+		buckets, err := statusBucketsForView(s, view)
+		return buckets, len(buckets), int64(len(buckets)), err
+	}
+
 	buckets := []*Bucket{}
 	err = s.
 		Where("project_view_id = ?", b.ProjectViewID).
@@ -167,6 +175,13 @@ func GetTasksInBucketsForView(s *xorm.Session, view *ProjectView, projects []*Pr
 			Where("project_view_id = ?", view.ID).
 			OrderBy("position").
 			Find(&buckets)
+		if err != nil {
+			return
+		}
+	}
+
+	if view.BucketConfigurationMode == BucketConfigurationModeStatus {
+		buckets, err = statusBucketsForView(s, view)
 		if err != nil {
 			return
 		}
@@ -238,6 +253,9 @@ func GetTasksInBucketsForView(s *xorm.Session, view *ProjectView, projects []*Pr
 		if !strings.Contains(originalFilter, taskPropertyBucketID) {
 
 			var bucketFilter = taskPropertyBucketID + " = " + strconv.FormatInt(id, 10)
+			if statusID, isStatus := statusIDOfBucket(id); isStatus && view.BucketConfigurationMode == BucketConfigurationModeStatus {
+				bucketFilter = taskPropertyStatus + " = " + strconv.FormatInt(statusID, 10)
+			}
 			if view.BucketConfigurationMode == BucketConfigurationModeFilter {
 				bucketFilter = ""
 				if view.BucketConfiguration[id].Filter.Filter != "" {

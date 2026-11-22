@@ -266,3 +266,59 @@ func (err ErrWorkflowMoveTasksRequired) HTTPError() web.HTTPError {
 		},
 	}
 }
+
+// ErrWorkflowRequiredForStatusView represents an error where a kanban view should use workflow statuses as
+// columns but the project has no workflow.
+type ErrWorkflowRequiredForStatusView struct {
+	ProjectID int64
+}
+
+// IsErrWorkflowRequiredForStatusView checks if an error is ErrWorkflowRequiredForStatusView.
+func IsErrWorkflowRequiredForStatusView(err error) bool {
+	_, ok := err.(ErrWorkflowRequiredForStatusView)
+	return ok
+}
+
+func (err ErrWorkflowRequiredForStatusView) Error() string {
+	return fmt.Sprintf("Status columns need a workflow [ProjectID: %d]", err.ProjectID)
+}
+
+// ErrCodeWorkflowRequiredForStatusView holds the unique world-error code of this error
+const ErrCodeWorkflowRequiredForStatusView = 21009
+
+// HTTPError holds the http error description
+func (err ErrWorkflowRequiredForStatusView) HTTPError() web.HTTPError {
+	return web.HTTPError{
+		HTTPCode: http.StatusBadRequest,
+		Code:     ErrCodeWorkflowRequiredForStatusView,
+		Message:  "A kanban view can only use workflow statuses as columns when the project has a workflow.",
+	}
+}
+
+// ErrStatusViewBucketsManaged represents an error where the columns of a status mode view should be changed.
+// They are the statuses of the workflow and are edited there.
+type ErrStatusViewBucketsManaged struct {
+	ProjectViewID int64
+}
+
+// IsErrStatusViewBucketsManaged checks if an error is ErrStatusViewBucketsManaged.
+func IsErrStatusViewBucketsManaged(err error) bool {
+	_, ok := err.(ErrStatusViewBucketsManaged)
+	return ok
+}
+
+func (err ErrStatusViewBucketsManaged) Error() string {
+	return fmt.Sprintf("The columns of this view are workflow statuses [ProjectViewID: %d]", err.ProjectViewID)
+}
+
+// ErrCodeStatusViewBucketsManaged holds the unique world-error code of this error
+const ErrCodeStatusViewBucketsManaged = 21010
+
+// HTTPError holds the http error description
+func (err ErrStatusViewBucketsManaged) HTTPError() web.HTTPError {
+	return web.HTTPError{
+		HTTPCode: http.StatusBadRequest,
+		Code:     ErrCodeStatusViewBucketsManaged,
+		Message:  "The columns of this view are the statuses of the project workflow. Columns, the default column, the done column and limits are changed in the workflow, not in the view.",
+	}
+}

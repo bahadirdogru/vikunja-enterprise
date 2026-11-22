@@ -94,7 +94,7 @@ func (sp *sortParam) validate() error {
 		return nil
 	}
 
-	if _, isCustomField := parseCustomFieldIdentifier(sp.sortBy); isCustomField {
+	if _, isCustomField := parseCustomFieldIdentifier(sp.sortBy); isCustomField || sp.sortBy == taskPropertyStatus {
 		return nil
 	}
 

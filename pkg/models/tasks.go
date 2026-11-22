@@ -180,6 +180,12 @@ type Task struct {
 	// Custom field values of this task. Only present when fetching tasks with the `expand` parameter set to `custom_fields`.
 	CustomFields []*TaskCustomFieldSummary `xorm:"-" json:"custom_fields,omitempty" readOnly:"true" doc:"The custom field values of this task, only fields that have a value. Only present when requested via the custom_fields expand option."`
 
+	// Workflow status of this task. Only present when fetching tasks with the `expand` parameter set to `status` and the task has a status.
+	Status *TaskStatusSummary `xorm:"-" json:"status,omitempty" readOnly:"true" doc:"The workflow status of this task. Only present when requested via the status expand option and the task has one."`
+
+	// Set by a creation in a status column whose transition was rejected, see workflow_kanban.go.
+	statusColumnErr error
+
 	// Behaves exactly the same as with the TaskCollection.Expand parameter
 	Expand []TaskCollectionExpandable `xorm:"-" json:"-" query:"expand"`
 
@@ -924,6 +930,11 @@ func addMoreInfoToTasks(s *xorm.Session, taskMap map[int64]*Task, a web.Auth, vi
 				if err != nil {
 					return
 				}
+			case TaskCollectionExpandStatus:
+				err = addStatusToTasks(s, taskIDs, taskMap)
+				if err != nil {
+					return
+				}
 			}
 			expanded[expandable] = true
 		}
@@ -1078,7 +1089,10 @@ func (t *Task) Create(s *xorm.Session, a web.Auth) (err error) {
 	if err := validateTaskLimits(t, nil); err != nil {
 		return err
 	}
-	return createTask(s, t, a, true, true)
+	if err := createTask(s, t, a, true, true); err != nil {
+		return err
+	}
+	return t.moveNewTaskToStatusColumn(s, a)
 }
 
 func createTask(s *xorm.Session, t *Task, a web.Auth, updateAssignees bool, setBucket bool) (err error) {
@@ -1106,6 +1120,12 @@ func resolveProvidedBuckets(s *xorm.Session, a web.Auth, projectID int64, tasks 
 	batches := make(map[int64][]int)
 	for i, t := range tasks {
 		if t.BucketID == 0 {
+			continue
+		}
+		if _, isStatus := statusIDOfBucket(t.BucketID); isStatus {
+			if err := validateStatusColumnOfNewTask(s, projectID, t.BucketID); err != nil {
+				return nil, ErrInvalidTaskInBulkCreation{Index: i, Err: err}
+			}
 			continue
 		}
 		if _, has := batches[t.BucketID]; !has {
@@ -1150,7 +1170,7 @@ func resolveProvidedBuckets(s *xorm.Session, a web.Auth, projectID int64, tasks 
 
 	taskProvidedBucket := make(map[int64]*Bucket, len(tasks))
 	for _, t := range tasks {
-		if t.BucketID == 0 {
+		if t.BucketID <= 0 {
 			continue
 		}
 		taskProvidedBucket[t.ID] = buckets[t.BucketID]

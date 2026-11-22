@@ -629,6 +629,8 @@ func requiredScopeForExpand(value string) (group, permission string, needsScope 
 		return "time_entries", "read_all", true
 	case TaskCollectionExpandCustomFields:
 		return "tasks_custom_field_values", "read_all", true
+	case TaskCollectionExpandStatus:
+		return "tasks", "status", true
 	case TaskCollectionExpandSubtasks, TaskCollectionExpandBuckets, TaskCollectionExpandIsUnread:
 		return "", "", false
 	}

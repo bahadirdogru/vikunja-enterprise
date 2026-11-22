@@ -28,6 +28,10 @@ func (b *Bucket) CanCreate(s *xorm.Session, a web.Auth) (bool, error) {
 		return false, err
 	}
 
+	if pv.BucketConfigurationMode == BucketConfigurationModeStatus {
+		return false, ErrStatusViewBucketsManaged{ProjectViewID: pv.ID}
+	}
+
 	can, err := canWriteBucketProject(s, pv.ProjectID, a)
 	if err != nil || !can {
 		return false, err
@@ -57,6 +61,10 @@ func (b *Bucket) CanDelete(s *xorm.Session, a web.Auth) (bool, error) {
 
 // canDoBucket checks if the bucket exists and if the user has the permission to act on it
 func (b *Bucket) canDoBucket(s *xorm.Session, a web.Auth) (bool, error) {
+	if view, is := statusModeViewOf(s, b.ProjectID, b.ProjectViewID); is {
+		return false, ErrStatusViewBucketsManaged{ProjectViewID: view.ID}
+	}
+
 	pv, err := b.getOwnView(s)
 	if err != nil {
 		return false, err

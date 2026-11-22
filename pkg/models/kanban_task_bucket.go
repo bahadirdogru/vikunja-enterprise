@@ -54,6 +54,10 @@ func (b *TaskBucket) TableName() string {
 }
 
 func (b *TaskBucket) CanUpdate(s *xorm.Session, a web.Auth) (bool, error) {
+	if statusView, is := statusModeViewOf(s, b.ProjectID, b.ProjectViewID); is {
+		return b.canUpdateInStatusView(s, a, statusView)
+	}
+
 	bucket := Bucket{
 		ID:            b.BucketID,
 		ProjectID:     b.ProjectID,
@@ -281,6 +285,11 @@ func (b *TaskBucket) Update(s *xorm.Session, a web.Auth) (err error) {
 	}
 	if err = lockTaskInView(s, a, view, b.TaskID); err != nil {
 		return err
+	}
+
+	// A status column move is a workflow transition, which dispatches its own events.
+	if view.ViewKind == ProjectViewKindKanban && view.BucketConfigurationMode == BucketConfigurationModeStatus {
+		return b.moveToStatusColumn(s, a, view)
 	}
 
 	err = updateTaskBucket(s, a, b)

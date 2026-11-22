@@ -60,6 +60,8 @@ type taskFilter struct {
 	join       taskFilterConcatinator
 	// Set for cf_<id> filters, see custom_field_filter.go.
 	customField *customFieldFilter
+	// Set for status and status_category filters, see workflow_filter.go.
+	status *workflowStatusFilter
 	// Only set on nested groups: include nulls for this group even if the rest of the filter doesn't.
 	includeNulls bool
 }
@@ -161,6 +163,15 @@ func parseFilterFromExpression(f fexpr.ExprGroup, loc *time.Location, budget *bu
 
 	if id, is := parseCustomFieldIdentifier(filter.field); is {
 		filter.customField = &customFieldFilter{fieldID: id, raw: value, loc: loc, budget: budget}
+		filter.value = value
+		return filter, nil
+	}
+
+	if isStatusFilterField(filter.field) {
+		filter.status, err = parseWorkflowStatusFilter(filter.field, filter.comparator, value)
+		if err != nil {
+			return nil, err
+		}
 		filter.value = value
 		return filter, nil
 	}

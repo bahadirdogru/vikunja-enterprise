@@ -87,20 +87,117 @@ doer_id, comment (text null), created.
   current user may perform right now, each with its unmet requirements.
 - `POST /tasks/{task}/status` — `{to_status_id, comment}`.
 - `GET /tasks/{task}/status/history`.
-- Task lists accept `status` and `status_category` in the filter syntax and
-  `sort_by=status`.
+- Task lists accept `status` and `status_category` in the filter syntax,
+  `sort_by=status` and `expand=status`; see "Filtering and sorting" and
+  "Task lists".
 
 Permissions: reading follows project/task read access; changing the
 definition needs project admin; changing a task's status needs task write
 access plus the transition's own rules.
 
+## Filtering and sorting
+
+`status` and `status_category` work in the normal task `filter` and `sort_by`
+parameters, everywhere the filter syntax does (task lists, views, kanban
+buckets, saved filters), and combine freely with built-in fields, `cf_<id>`
+fields, `&&`, `||` and groups.
+
+| Field | Comparators | Value |
+|---|---|---|
+| `status` | `=` `!=` `in` `not in` | status ids, e.g. `status in 1,2` |
+| `status_category` | `=` `!=` `in` `not in` | `open`, `in_progress`, `done`, `cancelled`, e.g. `status_category not in done,cancelled` |
+
+- Statuses are matched by id, the ids come from the workflow document. Any
+  other comparator (`>`, `like`, ...) returns the usual invalid comparator
+  `400` (4018); a value that is not an id, or not a category name, returns the
+  invalid value `400` (4019). Both are checked when the filter is parsed, so
+  they need no database access and a saved filter with an invalid one is
+  rejected on save.
+- A task without a status row (its project has no workflow) never matches a
+  positive comparison (`=`, `in`) and always matches a negative one (`!=`,
+  `not in`). With `filter_include_nulls`, positive comparators match it too.
+  A status id of another project's workflow simply matches nothing.
+- Archived statuses can still be filtered by; tasks keep the status they
+  have.
+- No project lookup or permission check is needed: the filter only narrows
+  tasks the user can read anyway.
+
+Sorting: `sort_by=status` orders by the position of the status in its
+workflow (the order of the pickers and of the kanban columns), `order_by`
+reverses it. Tasks without a status sort last in both directions, like the
+built-in nullable columns. Tasks of several projects (a saved filter) are
+ordered by position within their own workflow, so mixed lists are only
+meaningful per project.
+
+## Task lists
+
+`expand=status` (task lists, views, single task read, kanban buckets with
+tasks) embeds the current status in every task that has one:
+
+```json
+{"id": 7, "title": "...", "status": {"id": 3, "title": "In review", "color": "#d97706", "category": "in_progress"}}
+```
+
+Tasks without a status have no `status` property. The statuses are loaded in
+two queries per response (status rows, then the definitions), regardless of
+the number of tasks. API tokens need the `status` permission of the `tasks`
+group (the one of `GET /tasks/{task}/status`) to use the expand, like the
+other expands that read other resources.
+
 ## Kanban
 
 A kanban view gets a third bucket mode next to manual and filter buckets:
-**status**. In that mode the columns are the workflow statuses (in position
-order), and dragging a card performs the transition with the same checks; a
-rejected drop snaps back and shows what is missing. Manual buckets keep
-working unchanged.
+`bucket_configuration_mode: "status"`. In that mode the columns are the
+non-archived statuses of the project workflow (in position order) and moving
+a card performs the transition with the same checks; a rejected drop snaps
+back and shows what is missing. Manual buckets keep working unchanged.
+
+- **No stored buckets.** A status view has no rows in `buckets`; the bucket
+  list (`GET .../views/{view}/buckets`, `.../buckets/tasks`) is derived from
+  the workflow on every read. Changing the workflow changes the board.
+- **Bucket id = negated status id.** The column of status 7 is bucket `-7`.
+  Real bucket ids are positive and filter-mode buckets use small indexes
+  starting at 0, so a column can never be mistaken for a bucket of another
+  view, and a bucket id on its own (task creation has no view in the request)
+  says unambiguously what it means. Every bucket of a status view also carries
+  `status: {id, title, color, category}`. The existing endpoints just work
+  with these ids:
+  - `PUT .../views/{view}/buckets/{bucket}/tasks` with `bucket = -<status>` is
+    the move. It runs the transition as the current user, without a comment,
+    through the same function as `POST /tasks/{task}/status` (done sync,
+    history, `task.status.changed`). Rejections return the same typed errors
+    with the same details (400 `21005`, 403 `21006`, 422 `21007` with
+    `task_id`, `from_status_id`, `to_status_id`, `missing_fields`,
+    `comment_required`; 404 `21003` / 400 `21004` for an unknown or archived
+    status) and nothing moves. Moving into the column the task is already in
+    is a no-op, so dropping within a column only changes the position
+    (`POST /tasks/{task}/position`, stored per view as everywhere else).
+  - `filter=bucket_id = -7` on the view's task list loads one column (the
+    frontend pages through a column this way); it is rewritten to
+    `status = 7`.
+  - Columns are paginated like buckets of the other modes (`page` and
+    `per_page` apply per column, `count` is the total of the column).
+- **Creating a task in a column**: `POST /projects/{project}/tasks` with
+  `bucket_id: -<status>`. A new task always starts in the initial status. When
+  the column is the initial status that is all; otherwise the transition is
+  attempted right after the task was stored. If it is rejected the task stays
+  created in the initial status and the request answers with the workflow
+  error (the `task_id` of the task is in the `21007` details). A column that
+  does not exist or is archived creates nothing (404 `21003` / 400 `21004`).
+  Only the single create on `/api/v2` reports the rejection; bulk creates
+  ignore the column and v1 creates the task in the initial status silently.
+- **Setting the mode** needs a workflow: creating a status view or switching
+  a view to it on a project without one returns 400 `21009`. Only kanban views
+  can have the mode. Switching back to manual keeps the buckets the view had
+  before and puts the tasks created meanwhile in its default bucket.
+- **Bucket management is rejected** in a status view with 400 `21010`:
+  creating, renaming, limiting and deleting buckets, and setting a default or
+  done bucket on the view. The columns are edited in the workflow editor. (A
+  view update that merely echoes the stored ids is fine.)
+- **The workflow is deleted later**: the view keeps its mode and degrades to
+  an empty bucket list (no error); moves answer 404 `21001`. It can be renamed
+  and switched back to manual; the UI explains that the board has no columns.
+- Saved filters and favorites cannot use the mode (they have no workflow).
 
 ## UI
 
@@ -136,11 +233,44 @@ A collapsible status history (who, from → to, when, comment) sits under the
 Status row. A project without a workflow answers 404 (21001) once; the UI
 treats it as "no workflow" and renders nothing extra.
 
+### Board, table and list
+
+- **View settings**: a kanban view offers "Workflow statuses" next to
+  manual and filter columns when the project has a workflow, with a one-line
+  explanation. The column management of the board (add, rename, delete,
+  limit, done and default column, reordering) is not shown in that mode.
+- **Status board**: the column header is the `WorkflowStatusBadge` of the
+  status (colour, category icon) with the task count. A drop into another
+  column calls the move; the card snaps back if it is rejected. A `21007`
+  opens the status dialog of the task detail for that task and target status
+  (missing fields and comment, then "Change status"); `21005`, `21006` and a
+  vanished status show their plain message. Which columns a card may enter
+  is not computed in advance, the response decides. "Add a task" in a column
+  creates the task there, with the same dialog when the transition needs
+  input (the task exists in the initial column meanwhile).
+- **Table**: a "Status" column with the badge, sortable (`sort_by=status`).
+  It is on by default in projects with a workflow (the Columns menu switches
+  it off, the choice is remembered with the other columns) and not offered
+  in projects without one. `expand=status` is only requested while it is
+  shown.
+- **List and manual kanban cards**: a small status badge next to the task
+  title (card: below it) in projects with a workflow, via `expand=status`.
+  Status columns do not repeat it on the cards.
+- **Filter input**: `status` and `statusCategory` are known filter fields
+  (the filter popup, the view filter editor and saved filters accept and
+  round-trip them; they show as `status_category` in the API and in URLs).
+  The editor suggests status titles of the project's workflow (and the four
+  category names) like it does for labels, shows status ids as titles and
+  sends titles as ids. Suggestions need a project; in a saved filter, where
+  there is none, ids and categories are typed by hand.
+
 ## Steps
 
 - 2a: tables, the transition function, API, events, done sync, tests.
 - 2b (done): workflow editor in project settings; status picker and history
   in the task detail view; missing-requirements dialog. See "UI".
-- 2c: kanban status mode, table column, filter/sort by status.
+- 2c (done): kanban status mode, table column, status badges in list and
+  cards, filter/sort/expand by status. See "Filtering and sorting", "Task
+  lists" and "Kanban".
 - Later: approvals as a transition requirement, WIP limits, SLA timers,
   workflow templates shared between projects.

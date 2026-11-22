@@ -159,6 +159,11 @@ func getOrderByDBStatement(opts *taskSearchOptions) (orderby string, err error) 
 			continue
 		}
 
+		if param.sortBy == taskPropertyStatus {
+			parts = append(parts, workflowStatusOrderPart(param))
+			continue
+		}
+
 		var prefix string
 		switch param.sortBy {
 		case taskPropertyPosition:
@@ -225,6 +230,12 @@ func convertFiltersToDBFilterCondWithAlias(rawFilters []*taskFilter, includeNull
 				return nil, err
 			}
 			dbFilters = append(dbFilters, cond)
+			dbFilterJoins = append(dbFilterJoins, f.join)
+			continue
+		}
+
+		if f.status != nil {
+			dbFilters = append(dbFilters, workflowStatusFilterCond(f, includeNulls, taskAlias))
 			dbFilterJoins = append(dbFilterJoins, f.join)
 			continue
 		}
@@ -714,6 +725,10 @@ func (d *dbTaskSearcher) Search(opts *taskSearchOptions) (tasks []*Task, totalCo
 		for _, param := range opts.sortby {
 			if param.customField != nil {
 				selectCols += ", " + customFieldSortExpr(param.customField)
+				hasCustomFieldSort = true
+			}
+			if param.sortBy == taskPropertyStatus {
+				selectCols += ", " + workflowStatusSortExpr
 				hasCustomFieldSort = true
 			}
 		}
