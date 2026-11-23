@@ -117,6 +117,9 @@ function getBuildConfig(env: Record<string, string>) {
 			environment: 'happy-dom',
 			setupFiles: ['./src/test-setup.ts'],
 			exclude: [...configDefaults.exclude, 'e2e/**'],
+			// The i18n plugin's virtual module ids exist only in the process that produced them, so transformed
+			// code read back from the on-disk cache fails to load with "Cannot find module '/@id/virtual:intlify-i18n-0'".
+			fsModuleCache: false,
 			'vitest.commandLine': 'pnpm test:unit',
 		},
 		css: {
