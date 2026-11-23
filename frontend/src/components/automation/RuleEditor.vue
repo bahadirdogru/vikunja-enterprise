@@ -9,9 +9,10 @@ import ConditionBuilder from '@/components/automation/ConditionBuilder.vue'
 import DryRunPanel from '@/components/automation/DryRunPanel.vue'
 import ParamField from '@/components/automation/ParamField.vue'
 import TypePicker from '@/components/automation/TypePicker.vue'
+import WebhookPanel from '@/components/automation/WebhookPanel.vue'
 import {automationContextKey, type AutomationContext, type AutomationStatus} from '@/components/automation/context'
 import Message from '@/components/misc/Message.vue'
-import {useSaveRuleMutation, type AutomationRuleResponse} from '@/client/queries/automation'
+import {useSaveRuleMutation, type AutomationRuleResponse, type WebhookReveal} from '@/client/queries/automation'
 import type {CustomFieldResponse} from '@/client/queries/customFields'
 import {isRequestContextAbort} from '@/client/requestContext'
 import {
@@ -69,6 +70,9 @@ const draft = ref<RuleDraft>(clone(initial))
 const ruleId = ref<number | null>(props.rule?.id ?? null)
 const savedSignature = ref(draftSignature(initial))
 const disabledReason = ref(props.rule?.disabled_reason ?? '')
+// The saved rule has an incoming webhook address; the address itself is only known to the session that created it.
+const hasWebhook = ref(props.rule?.has_webhook ?? false)
+const webhookReveal = ref<WebhookReveal | null>(null)
 /* eslint-enable vue/no-setup-props-reactivity-loss */
 
 const dirty = computed(() => draftSignature(draft.value) !== savedSignature.value)
@@ -170,12 +174,16 @@ async function save() {
 		if (props.projectId !== projectId) return
 		ruleId.value = result.id
 		disabledReason.value = result.disabled_reason
+		hasWebhook.value = result.has_webhook === true
+		if (result.webhook) webhookReveal.value = result.webhook
 		const next = draftFromRule(result)
 		draft.value = clone(next)
 		savedSignature.value = draftSignature(next)
 		showClientErrors.value = false
 		serverIssues.value = []
-		emit('saved', result)
+		// The address of a webhook is for this editor only.
+		const {webhook: _address, ...rule} = result
+		emit('saved', rule)
 	} catch (cause) {
 		if (isRequestContextAbort(cause)) return
 		const issues = issuesFromProblem(cause)
@@ -194,6 +202,7 @@ defineExpose({save, dirty, ruleId})
 
 const testable = computed(() => ruleId.value !== null && !dirty.value)
 const titleErrors = computed(() => errors.value.get('title') ?? [])
+const triggerHintKey = computed(() => `automation.triggerHint.${draft.value.trigger.type.replace(/\./g, '_')}`)
 const triggerErrors = computed(() => [...(errors.value.get('trigger') ?? []), ...(errors.value.get('trigger.type') ?? [])])
 const actionsErrors = computed(() => errors.value.get('actions') ?? [])
 </script>
@@ -311,6 +320,12 @@ const actionsErrors = computed(() => errors.value.get('actions') ?? [])
 				>
 					{{ message }}
 				</p>
+				<p
+					v-if="draft.trigger.type && $te(triggerHintKey)"
+					class="help"
+				>
+					{{ $t(triggerHintKey) }}
+				</p>
 				<template v-if="trigger && trigger.options.length > 0">
 					<ParamField
 						v-for="option in trigger.options"
@@ -318,10 +333,20 @@ const actionsErrors = computed(() => errors.value.get('actions') ?? [])
 						:param="option"
 						:siblings="trigger.options"
 						:values="draft.trigger.options"
+						:trigger-type="draft.trigger.type"
 						:path="`trigger.options.${option.name}`"
 						@update="setTriggerOption"
 					/>
 				</template>
+				<WebhookPanel
+					v-if="draft.trigger.type === 'webhook.incoming'"
+					:project-id="projectId"
+					:rule-id="ruleId"
+					:saved="hasWebhook"
+					:dirty="dirty"
+					:reveal="webhookReveal"
+					@revealed="webhookReveal = $event"
+				/>
 			</div>
 		</section>
 

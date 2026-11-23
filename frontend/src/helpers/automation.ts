@@ -1,6 +1,9 @@
+import {cronProblem} from '@/helpers/automationCron'
+
 // Pure helpers of the automation editor: the shapes of the catalog and of a rule document, the draft
 // operations (conditions tree, actions), serialization, validation and the mapping of server issues onto inputs.
-// Nothing in here knows a concrete trigger, field or action: everything comes from the catalog.
+// Apart from the few server rules mirrored in validateSpecial, nothing in here knows a concrete trigger, field or
+// action: everything comes from the catalog.
 
 export type ParamKindBy = {param: string, kinds: Record<string, string>}
 
@@ -569,13 +572,56 @@ function validateParams(
 	}
 }
 
+// The seconds-free length of a duration like 12h or -2w in minutes, or null when it is no duration.
+function offsetMinutes(value: unknown): number | null {
+	if (typeof value !== 'string') return null
+	const match = /^([+-]?)(\d{1,6})([mhdw])$/.exec(value.trim())
+	if (!match) return null
+	const unit = {m: 1, h: 60, d: 60 * 24, w: 60 * 24 * 7}[match[3] as 'm' | 'h' | 'd' | 'w']
+	return (match[1] === '-' ? -1 : 1) * Number(match[2]) * unit
+}
+
+// The shortest wait and the shortest "due soon" offset the server accepts.
+const MIN_MINUTES = 1
+
+// What the generic checks cannot see and the server checks for a few types (spec.triggerRules / actionRules): a
+// valid cron expression, durations of at least a minute and somebody to notify.
+function validateSpecial(
+	kind: 'trigger' | 'action',
+	type: string,
+	values: Record<string, unknown>,
+	path: string,
+	t: Translate,
+	out: Issue[],
+) {
+	const has = (name: string) => !isEmptyValue(values[name])
+	if (kind === 'trigger' && type === 'schedule' && typeof values.cron === 'string' && has('cron')) {
+		const problem = cronProblem(values.cron)
+		if (problem) out.push({path: `${path}.cron`, message: t(`automation.validation.cron.${problem}`)})
+	}
+	const duration = (name: string) => {
+		if (!has(name)) return
+		const minutes = offsetMinutes(values[name])
+		if (minutes === null) out.push({path: `${path}.${name}`, message: t('automation.validation.duration')})
+		else if (minutes < MIN_MINUTES) out.push({path: `${path}.${name}`, message: t('automation.validation.minDuration')})
+	}
+	if (kind === 'trigger' && type === 'task.due_soon') duration('offset')
+	if (kind === 'action' && type === 'wait') duration('duration')
+	if (kind === 'action' && type === 'notify' && !has('recipients') && !has('team_id')) {
+		out.push({path: `${path}.recipients`, message: t('automation.validation.recipients')})
+	}
+}
+
 // Client-side checks that mirror the structural rules of the server; the server remains the authority.
 export function validateDraft(draft: RuleDraft, catalog: CatalogResponse, t: Translate): Issue[] {
 	const out: Issue[] = []
 	if (draft.title.trim() === '') out.push({path: 'title', message: t('automation.validation.required')})
 	const trigger = triggerDef(catalog, draft.trigger.type)
 	if (!draft.trigger.type) out.push({path: 'trigger.type', message: t('automation.validation.required')})
-	else if (trigger) validateParams(trigger.options, draft.trigger.options, 'trigger.options', catalog, t, out)
+	else if (trigger) {
+		validateParams(trigger.options, draft.trigger.options, 'trigger.options', catalog, t, out)
+		validateSpecial('trigger', trigger.type, draft.trigger.options, 'trigger.options', t, out)
+	}
 
 	const conditions = pruneConditions(draft.conditions)
 	if (conditions) validateNode(conditions, 'conditions', catalog, t, out)
@@ -588,7 +634,10 @@ export function validateDraft(draft: RuleDraft, catalog: CatalogResponse, t: Tra
 			return
 		}
 		const def = actionDef(catalog, action.type)
-		if (def) validateParams(def.params, action.params, `${path}.params`, catalog, t, out)
+		if (def) {
+			validateParams(def.params, action.params, `${path}.params`, catalog, t, out)
+			validateSpecial('action', def.type, action.params, `${path}.params`, t, out)
+		}
 	})
 	return out
 }

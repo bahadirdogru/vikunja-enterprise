@@ -1742,6 +1742,11 @@
 		"22006": "Gizli anahtar geçerli değil: adda harf, rakam ve alt çizgi kullanın, rakamla başlamasın (en çok 64 karakter); değer en çok 8 KiB olabilir.",
 		"22007": "Bu gizli anahtar bulunamadı.",
 		"22008": "Gizli anahtarın şifresi artık çözülemiyor. Yeniden girin.",
+		"22009": "Bu otomasyon çalıştırılamaz: kapalı ya da elle tetikleyicisi yok.",
+		"22010": "Bu web kancası adresi mevcut değil.",
+		"22011": "İsteğin imzası geçerli değil.",
+		"22012": "Bu web kancasına çok fazla çağrı yapıldı. Daha sonra yeniden deneyin.",
+		"22013": "İsteğin gövdesi bir JSON nesnesi olmalı.",
 		"23001": "Rapor ayarlarından biri geçerli değil.",
 		"23002": "Bu grafik çok fazla zaman aralığına sahip olurdu. Daha kısa bir dönem veya daha büyük adımlar seçin.",
 		"23003": "Bu grafik çok fazla gruba sahip olurdu. Daha az grup gösterin.",
@@ -2663,7 +2668,11 @@
 			"flow": "Akış",
 			"script": "Betik",
 			"http": "HTTP",
-			"notify": "Bildirim"
+			"notify": "Bildirim",
+			"manual": "Elle",
+			"schedule": "Zamanlama",
+			"webhook": "Web kancası",
+			"wait": "Bekleme"
 		},
 		"action": {
 			"approval_request": "Onay iste",
@@ -2688,7 +2697,10 @@
 			"move": "Başka bir projeye taşı",
 			"stop_if": "Koşul sağlanırsa dur",
 			"script_run": "Betik çalıştır",
-			"http_request": "HTTP isteği gönder"
+			"http_request": "HTTP isteği gönder",
+			"create_task": "Görev oluştur",
+			"wait": "Bekle",
+			"notify": "Bildirim gönder"
 		},
 		"condition": {
 			"always": "Her zaman",
@@ -2754,7 +2766,12 @@
 			"method": "Yöntem",
 			"headers": "Başlıklar",
 			"body": "İçerik",
-			"secret": "İmza gizli anahtarı (isteğe bağlı)"
+			"secret": "İmza gizli anahtarı (isteğe bağlı)",
+			"priority": "Öncelik (0 ile 5 arası, isteğe bağlı)",
+			"duration": "Bekleme süresi",
+			"recipients": "Bildirilecekler",
+			"team_id": "Takım (isteğe bağlı)",
+			"message": "Mesaj"
 		},
 		"date": {
 			"helpAction": "2026-12-31 gibi bir tarih, +3d veya -2h gibi göreli bir değer (m, h, d, w) ya da tarihi temizlemek için \"none\".",
@@ -2799,7 +2816,18 @@
 		},
 		"validation": {
 			"required": "Bu alan zorunlu.",
-			"atLeastOneAction": "En az bir eylem ekleyin."
+			"atLeastOneAction": "En az bir eylem ekleyin.",
+			"duration": "Bir sayı ve bir birim kullanın: m, h, d veya w, örneğin 30m ya da 3d.",
+			"minDuration": "En az 1 dakika olmalı.",
+			"recipients": "En az bir alıcı ya da bir takım belirtin.",
+			"cron": {
+				"every": "Her ... aralıklı ifadeler desteklenmiyor. Beş alan ya da hazır ayarlardan birini kullanın.",
+				"timezone": "Saat dilimi öneki desteklenmiyor: zamanlamalar sunucunun saat diliminde çalışır.",
+				"fields": "Beş alan kullanın: dakika, saat, ayın günü, ay ve haftanın günü.",
+				"syntax": "Bu geçerli bir cron ifadesi değil.",
+				"range": "Bir değer aralığın dışında (dakika 0-59, saat 0-23, gün 1-31, ay 1-12, haftanın günü 0-6).",
+				"never": "Bu zamanlama hiçbir zaman gerçekleşmez (örneğin 30 Şubat)."
+			}
 		},
 		"test": {
 			"title": "Bir görevle dene",
@@ -2881,7 +2909,12 @@
 			"task_assignee_added": "Bir göreve biri atandığında",
 			"task_assignee_removed": "Bir görevden atama kaldırıldığında",
 			"task_comment_added": "Bir yorum eklendiğinde",
-			"task_attachment_added": "Bir ek eklendiğinde"
+			"task_attachment_added": "Bir ek eklendiğinde",
+			"manual": "Biri görevden elle çalıştırdığında",
+			"schedule": "Belirli bir zamanlamada",
+			"task_overdue": "Bir görevin süresi geçtiğinde",
+			"task_due_soon": "Bir bitiş tarihi yaklaştığında",
+			"webhook_incoming": "Harici bir hizmet bir web adresini çağırdığında"
 		},
 		"option": {
 			"outcome": "Sonuç",
@@ -2890,7 +2923,12 @@
 			"to_status_id": "Yeni durum (isteğe bağlı)",
 			"to_category": "Yeni kategori (isteğe bağlı)",
 			"form_id": "Form (isteğe bağlı)",
-			"field_id": "Özel alan (isteğe bağlı)"
+			"field_id": "Özel alan (isteğe bağlı)",
+			"label": "Düğme metni (isteğe bağlı)",
+			"cron": "Zamanlama (cron ifadesi)",
+			"scope": "Şunun için çalışır",
+			"offset": "Bitiş tarihinden ne kadar önce",
+			"secret": "İmza anahtarı (isteğe bağlı)"
 		},
 		"op": {
 			"eq": "eşittir",
@@ -2974,7 +3012,8 @@
 			"event_old_assignee": "Önce: atanan",
 			"event_new_assignee": "Sonra: atanan",
 			"event_new_comment": "Sonra: yorum",
-			"event_new_attachment_name": "Sonra: ek adı"
+			"event_new_attachment_name": "Sonra: ek adı",
+			"event_payload": "Web kancasına gönderilen veri"
 		},
 		"enum": {
 			"any": "Onaylayanlardan biri",
@@ -3009,7 +3048,9 @@
 			"POST": "POST",
 			"PUT": "PUT",
 			"PATCH": "PATCH",
-			"DELETE": "DELETE"
+			"DELETE": "DELETE",
+			"tasks": "Koşullara uyan her görev",
+			"project": "Proje, bir kez (görevsiz)"
 		},
 		"secrets": {
 			"title": "Gizli anahtarlar",
@@ -3044,6 +3085,74 @@
 				"title": "Bu gizli anahtar silinsin mi?",
 				"text": "“{name}” anahtarını kullanan kuralların tanımı korunur ama ihtiyaç duyan adımda hata verirler."
 			}
+		},
+		"cron": {
+			"help": "Beş alan: dakika, saat, ayın günü, ay, haftanın günü. Örneğin 0 9 * * 1 her pazartesi 09:00 demektir. Saatler sizin değil, sunucunun saat dilimindedir. Şunlar da kabul edilir: {'@hourly'}, {'@daily'}, {'@weekly'}, {'@monthly'} ve {'@yearly'}.",
+			"presets": {
+				"label": "Hazır ayarlar",
+				"hourly": "Her saat",
+				"daily": "Her gün",
+				"weekly": "Her hafta",
+				"monthly": "Her ay"
+			}
+		},
+		"hint": {
+			"manual": {
+				"label": "Görevdeki düğmenin metni. Boş bırakılırsa kuralın başlığı kullanılır."
+			},
+			"schedule": {
+				"scope": "Koşullara uyan her görev, her zamanlamada ayrı bir çalıştırma başlatır. Proje, bir kez seçeneği görevsiz tek bir çalıştırma başlatır: önce bir Görev oluştur eylemi ekleyin."
+			},
+			"task_due_soon": {
+				"offset": "Örneğin 24h veya 2d. En az 1 dakika."
+			},
+			"webhook_incoming": {
+				"secret": "Seçilirse her çağrı X-Vikunja-Signature: sha256=HEX başlığını taşımalıdır; HEX, istek gövdesinin bu anahtarla hesaplanan HMAC-SHA256 değeridir. Geçerli imzası olmayan çağrılar reddedilir."
+			},
+			"wait": {
+				"duration": "1 dakikadan yöneticinin belirlediği üst sınıra kadar (varsayılan 30 gün), örneğin 30m, 12h, 3d veya 2w. Bu eylemden sonraki eylemler daha sonra çalışır; koşullar yeniden denetlenmez."
+			},
+			"notify": {
+				"recipients": "Projeyi okuyamayan kişiler atlanır. En az bir alıcı ya da bir takım belirtin.",
+				"message": "Bildirimin metni. Yer tutucular kural çalışırken doldurulur."
+			},
+			"task_create": {
+				"title": "Yer tutucular, web kancasının verisi dahil, kullanılabilir. Görev bu projede oluşturulur.",
+				"due_offset": "Görevin oluşturulduğu andan itibaren sayılır, örneğin 3d."
+			}
+		},
+		"triggerHint": {
+			"manual": "Kural, görevi düzenleyebilen kişiler için görevin eylemler menüsünde Otomasyonu çalıştır olarak görünür. Eylemler kural sahibinin yetkileriyle çalışır.",
+			"schedule": "Zamanlamalar sizin değil, sunucunun saat diliminde çalışır. Kuralı kaydetmek geçmişi yeniden çalıştırmaz: son kayıttan itibaren sayılır.",
+			"task_overdue": "Kural etkinken süresi geçen her görev için bir kez tetiklenir. Kural oluşturulduğunda ya da etkinleştirildiğinde süresi zaten geçmiş olan görevler tetiklenmez. Bitiş tarihi değişen görev yeniden hazırlanır.",
+			"task_due_soon": "Kural etkinken bitiş tarihinden önceki aralığa giren her görev için bir kez tetiklenir. Kural oluşturulduğunda ya da etkinleştirildiğinde zaten bu aralıkta olan görevler tetiklenmez. Bitiş tarihi değişen görev yeniden hazırlanır.",
+			"webhook_incoming": "Harici bir hizmet, kuralın adresine bir JSON nesnesi göndererek kuralı başlatır. İçeriği koşullarda ve yer tutucularda event.payload olarak kullanılabilir."
+		},
+		"webhook": {
+			"afterSave": "Web kancasının adresi kuralı kaydettiğinizde oluşturulur.",
+			"onlyOnce": "Bu adresi şimdi kopyalayın. Gizli bir belirteç içerir ve bir daha gösterilemez. Adrese sahip olan herkes bu kuralı başlatabilir.",
+			"url": "Web kancası adresi",
+			"copy": "Kopyala",
+			"copied": "Adres kopyalandı.",
+			"copyFailed": "Adres kopyalanamadı. Seçip elle kopyalayın.",
+			"hidden": "Bu kuralın bir web kancası adresi var. Adres gizli bir belirteç içerir ve yalnızca özeti saklandığı için bir daha gösterilemez.",
+			"rotate": "Yeni adres oluştur",
+			"rotateAgain": "Bir yeni adres daha oluştur",
+			"rotateHelp": "Eski adres hemen çalışmaz hale gelir.",
+			"saveFirst": "Önce değişikliklerinizi kaydedin.",
+			"usage": "Gövdesi bir JSON nesnesi olan bir POST isteği gönderin (boş için {'{}'} kullanın). İstek hemen yanıtlanır ve kural arka planda çalışır.",
+			"signature": "Bir imza anahtarı seçildiyse çağrılar X-Vikunja-Signature: sha256=HEX başlığını taşımalıdır (ham gövdenin anahtarla hesaplanan HMAC-SHA256 değeri).",
+			"noReplayProtection": "Tekrar saldırısına karşı koruma yoktur: imza yalnızca gövdeyi kapsar, bu yüzden ele geçirilen bir istek anahtar ya da adres değiştirilene kadar yeniden gönderilebilir. Gövdeye benzersiz bir kimlik koyun, bir koşulla daha önce görülen kimlikleri eleyin ve sızıntıdan şüpheleniyorsanız adresi yenileyin.",
+			"rotateConfirm": {
+				"title": "Yeni web kancası adresi oluşturulsun mu?",
+				"text": "Geçerli adres hemen çalışmaz hale gelir. Onu kullanan her hizmete yeni adres verilmelidir."
+			}
+		},
+		"manual": {
+			"title": "Otomasyonu çalıştır",
+			"intro": "Bu görev için çalıştırılacak kuralı seçin. Kural arka planda, kural sahibinin yetkileriyle çalışır.",
+			"action": "Otomasyonu çalıştır…",
+			"queued": "“{title}” otomasyonu başlatıldı."
 		}
 	},
 	"forms": {

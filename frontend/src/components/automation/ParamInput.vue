@@ -15,6 +15,7 @@ import type {CustomFieldResponse} from '@/client/queries/customFields'
 import {useLabels} from '@/composables/useLabels'
 import {useProjects} from '@/composables/useProjects'
 import {useProjectUserSearch} from '@/composables/useUserSearch'
+import {useTeamSearch} from '@/composables/useTeams'
 import {enumLabel, groupKind, type ConditionNode} from '@/helpers/automation'
 import {secretPlaceholder} from '@/helpers/automationScript'
 import {dateSuggestions, isValidDateSpec, isValidOffset} from '@/helpers/automationValues'
@@ -63,6 +64,7 @@ const enumText = (value: string) => enumLabel(t, te, value)
 
 // Members of the project. The first page is enough for the 10-20 person teams this is made for.
 const memberSearch = useProjectUserSearch(() => context.projectId, '', () => props.kind === 'user' || props.kind === 'users')
+const teamSearch = useTeamSearch({search: '', enabled: () => props.kind === 'team'})
 const {labels} = useLabels()
 const {projectsArray} = useProjects()
 
@@ -98,6 +100,10 @@ const userChoices = computed<SelectChoice[]>(() => [
 		.filter(user => user.id !== undefined)
 		.map(user => ({value: user.id as number, label: getDisplayName(user), group: t('automation.param.members')})),
 ])
+
+const teamChoices = computed<SelectChoice[]>(() => teamSearch.teams.value
+	.filter(team => team.id !== undefined)
+	.map(team => ({value: team.id as number, label: team.name ?? `#${team.id}`})))
 
 const labelChoices = computed<SelectChoice[]>(() => labels.value
 	.filter(l => l.id !== undefined)
@@ -219,7 +225,7 @@ function onJson(event: Event) {
 
 const KNOWN = new Set([
 	'string', 'text', 'template', 'number', 'bool', 'date', 'duration', 'user', 'users', 'label', 'status',
-	'custom_field', 'project', 'enum', 'condition', 'code', 'secret', 'map', 'any',
+	'custom_field', 'project', 'team', 'enum', 'condition', 'code', 'secret', 'map', 'any',
 ])
 const isKnown = computed(() => KNOWN.has(props.kind))
 
@@ -433,6 +439,16 @@ function toggleEnum(value: string, checked: boolean) {
 			:id="id"
 			:model-value="modelValue"
 			:options="labelChoices"
+			:label="label"
+			:placeholder="emptyLabel"
+			:invalid="invalid"
+			@update:modelValue="emit('update:modelValue', $event)"
+		/>
+		<AutomationSelect
+			v-else-if="kind === 'team'"
+			:id="id"
+			:model-value="modelValue"
+			:options="teamChoices"
 			:label="label"
 			:placeholder="emptyLabel"
 			:invalid="invalid"

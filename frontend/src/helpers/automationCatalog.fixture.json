@@ -157,6 +157,80 @@
           "title_key": "automation.option.form_id"
         }
       ]
+    },
+    {
+      "type": "manual",
+      "title_key": "automation.trigger.manual",
+      "event": "rule.manual",
+      "options": [
+        {
+          "name": "label",
+          "kind": "string",
+          "required": false,
+          "title_key": "automation.option.label",
+          "description": "The text of the button in the task. Defaults to the title of the rule."
+        }
+      ]
+    },
+    {
+      "type": "schedule",
+      "title_key": "automation.trigger.schedule",
+      "event": "rule.schedule",
+      "options": [
+        {
+          "name": "cron",
+          "kind": "string",
+          "required": true,
+          "title_key": "automation.option.cron",
+          "description": "A cron expression with five fields (minute hour day-of-month month day-of-week), evaluated in the time zone of the server (service.timezone). Example: 0 9 * * 1 is every Monday at 09:00."
+        },
+        {
+          "name": "scope",
+          "kind": "enum",
+          "required": false,
+          "enum": [
+            "tasks",
+            "project"
+          ],
+          "title_key": "automation.option.scope",
+          "description": "tasks: one run per task of the project that matches the conditions (at most automation.ticker.maxtasks per tick). project: one run per tick without a task; use it with a create task action first.",
+          "default": "tasks"
+        }
+      ]
+    },
+    {
+      "type": "task.overdue",
+      "title_key": "automation.trigger.task_overdue",
+      "event": "rule.overdue",
+      "options": []
+    },
+    {
+      "type": "task.due_soon",
+      "title_key": "automation.trigger.task_due_soon",
+      "event": "rule.due_soon",
+      "options": [
+        {
+          "name": "offset",
+          "kind": "duration",
+          "required": true,
+          "title_key": "automation.option.offset",
+          "description": "How long before the due date the rule fires, e.g. 24h or 2d."
+        }
+      ]
+    },
+    {
+      "type": "webhook.incoming",
+      "title_key": "automation.trigger.webhook_incoming",
+      "event": "rule.webhook",
+      "options": [
+        {
+          "name": "secret",
+          "kind": "secret",
+          "required": false,
+          "title_key": "automation.option.secret",
+          "description": "The name of a project secret. When set, every call has to carry the header X-Vikunja-Signature: sha256=<hex HMAC-SHA256 of the body, keyed with the secret>."
+        }
+      ]
     }
   ],
   "fields": [
@@ -1131,6 +1205,25 @@
       "title_key": "automation.field.event_new_submitter_email"
     },
     {
+      "name": "event.payload.<path>",
+      "pattern": "event.payload.<path>",
+      "kind": "any",
+      "operators": [
+        "=",
+        "!=",
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "like",
+        "in",
+        "not in",
+        "is_empty",
+        "is_not_empty"
+      ],
+      "title_key": "automation.field.event_payload"
+    },
+    {
       "name": "cf_1",
       "kind": "number",
       "operators": [
@@ -1545,6 +1638,95 @@
       "description": "Asks people to approve the task: an ad-hoc approval request that changes no status. The request is made by the owner of the rule, who cannot be one of the approvers. The approvers need to be able to read the task."
     },
     {
+      "type": "task.create",
+      "title_key": "automation.action.create_task",
+      "params": [
+        {
+          "name": "title",
+          "kind": "template",
+          "required": true,
+          "title_key": "automation.param.title"
+        },
+        {
+          "name": "description",
+          "kind": "template",
+          "required": false,
+          "title_key": "automation.param.description"
+        },
+        {
+          "name": "priority",
+          "kind": "number",
+          "required": false,
+          "title_key": "automation.param.priority",
+          "description": "0 (none) to 5."
+        },
+        {
+          "name": "assignee",
+          "kind": "user",
+          "required": false,
+          "enum": [
+            "event_doer",
+            "task_creator"
+          ],
+          "title_key": "automation.param.assignee"
+        },
+        {
+          "name": "due_offset",
+          "kind": "duration",
+          "required": false,
+          "title_key": "automation.param.due_offset"
+        }
+      ],
+      "description": "Creates a task in the project of the rule, as the owner of the rule. When the run has no task (incoming webhook, schedule per project) the new task becomes the task of the actions after it. Text parameters are templates, so they can use {{event.payload.<path>}} of a webhook."
+    },
+    {
+      "type": "wait",
+      "title_key": "automation.action.wait",
+      "params": [
+        {
+          "name": "duration",
+          "kind": "duration",
+          "required": true,
+          "title_key": "automation.param.duration",
+          "description": "For example 30m, 12h, 3d or 2w."
+        }
+      ],
+      "description": "Pauses the run. The actions after this one run later; the pause is stored in the database, so it survives a restart. The conditions are not evaluated again. Minimum 1 minute, maximum automation.waitmax (30 days by default)."
+    },
+    {
+      "type": "notify",
+      "title_key": "automation.action.notify",
+      "params": [
+        {
+          "name": "recipients",
+          "kind": "users",
+          "required": false,
+          "multiple": true,
+          "enum": [
+            "event_doer",
+            "task_creator",
+            "assignees"
+          ],
+          "title_key": "automation.param.recipients",
+          "description": "User ids and/or the keywords event_doer, task_creator and assignees."
+        },
+        {
+          "name": "team_id",
+          "kind": "team",
+          "required": false,
+          "title_key": "automation.param.team_id",
+          "description": "Every member of this team gets the notification, too."
+        },
+        {
+          "name": "message",
+          "kind": "template",
+          "required": true,
+          "title_key": "automation.param.message"
+        }
+      ],
+      "description": "Sends an in-app notification (and an e-mail when the person has e-mail notifications on) to people who can read the project. Anybody without access to the project is skipped."
+    },
+    {
       "type": "http.request",
       "title_key": "automation.action.http_request",
       "params": [
@@ -1609,7 +1791,8 @@
     "event.approval.outcome",
     "event.form.title",
     "event.form.submitter_name",
-    "event.form.submitter_email"
+    "event.form.submitter_email",
+    "event.payload.<path>"
   ],
   "script": {
     "language": "javascript",

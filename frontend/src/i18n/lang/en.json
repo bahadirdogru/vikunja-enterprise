@@ -1860,6 +1860,11 @@
     "22006": "The secret is not valid: use letters, digits and underscores in the name, not starting with a digit (at most 64 characters), and a value of at most 8 KiB.",
     "22007": "This secret does not exist.",
     "22008": "The secret cannot be decrypted any more. Set it again.",
+    "22009": "This automation cannot be run: it is turned off or has no manual trigger.",
+    "22010": "This webhook address does not exist.",
+    "22011": "The signature of the request is not valid.",
+    "22012": "Too many calls to this webhook. Try again later.",
+    "22013": "The body of the request has to be a JSON object.",
     "23001": "A report setting is not valid.",
     "23002": "This chart would have too many time buckets. Choose a shorter period or larger steps.",
     "23003": "This chart would have too many groups. Show fewer groups.",
@@ -2849,7 +2854,11 @@
       "flow": "Flow",
       "script": "Script",
       "http": "HTTP",
-      "notify": "Notify"
+      "notify": "Notify",
+      "manual": "Manual",
+      "schedule": "Schedule",
+      "webhook": "Webhook",
+      "wait": "Wait"
     },
     "action": {
       "approval_request": "Request an approval",
@@ -2874,7 +2883,10 @@
       "move": "Move to another project",
       "stop_if": "Stop if a condition holds",
       "script_run": "Run a script",
-      "http_request": "Send an HTTP request"
+      "http_request": "Send an HTTP request",
+      "create_task": "Create a task",
+      "wait": "Wait",
+      "notify": "Send a notification"
     },
     "condition": {
       "always": "Always",
@@ -2940,7 +2952,12 @@
       "method": "Method",
       "headers": "Headers",
       "body": "Body",
-      "secret": "Signing secret (optional)"
+      "secret": "Signing secret (optional)",
+      "priority": "Priority (0 to 5, optional)",
+      "duration": "Wait for",
+      "recipients": "Notify",
+      "team_id": "Team (optional)",
+      "message": "Message"
     },
     "date": {
       "helpAction": "A date like 2026-12-31, a relative value like +3d or -2h (m, h, d, w) or \"none\" to clear the date.",
@@ -2985,7 +3002,18 @@
     },
     "validation": {
       "required": "This is required.",
-      "atLeastOneAction": "Add at least one action."
+      "atLeastOneAction": "Add at least one action.",
+      "duration": "Use a number and a unit: m, h, d or w, for example 30m or 3d.",
+      "minDuration": "Must be at least 1 minute.",
+      "recipients": "Name at least one recipient or a team.",
+      "cron": {
+        "every": "Intervals with every are not supported. Use five fields or one of the presets.",
+        "timezone": "A time zone prefix is not supported: schedules run in the time zone of the server.",
+        "fields": "Use five fields: minute, hour, day of the month, month and day of the week.",
+        "syntax": "This is not a valid cron expression.",
+        "range": "A value is out of range (minutes 0-59, hours 0-23, days 1-31, months 1-12, weekdays 0-6).",
+        "never": "This schedule never happens (for example the 30th of February)."
+      }
     },
     "test": {
       "title": "Test with a task",
@@ -3067,7 +3095,12 @@
       "task_assignee_added": "Someone is assigned to a task",
       "task_assignee_removed": "Someone is unassigned from a task",
       "task_comment_added": "A comment is added",
-      "task_attachment_added": "An attachment is added"
+      "task_attachment_added": "An attachment is added",
+      "manual": "A person runs it from a task",
+      "schedule": "On a schedule",
+      "task_overdue": "A task becomes overdue",
+      "task_due_soon": "A due date is approaching",
+      "webhook_incoming": "An external service calls a web address"
     },
     "option": {
       "outcome": "Outcome",
@@ -3076,7 +3109,12 @@
       "to_status_id": "To status (optional)",
       "to_category": "To category (optional)",
       "form_id": "Form (optional)",
-      "field_id": "Custom field (optional)"
+      "field_id": "Custom field (optional)",
+      "label": "Button text (optional)",
+      "cron": "Schedule (cron expression)",
+      "scope": "Runs for",
+      "offset": "How long before the due date",
+      "secret": "Signing secret (optional)"
     },
     "op": {
       "eq": "is",
@@ -3160,7 +3198,8 @@
       "event_old_assignee": "Before: assignee",
       "event_new_assignee": "After: assignee",
       "event_new_comment": "After: comment",
-      "event_new_attachment_name": "After: attachment name"
+      "event_new_attachment_name": "After: attachment name",
+      "event_payload": "Data sent to the webhook"
     },
     "enum": {
       "any": "Any one approver",
@@ -3195,7 +3234,9 @@
       "POST": "POST",
       "PUT": "PUT",
       "PATCH": "PATCH",
-      "DELETE": "DELETE"
+      "DELETE": "DELETE",
+      "tasks": "Each matching task",
+      "project": "The project, once (without a task)"
     },
     "secrets": {
       "title": "Secrets",
@@ -3230,6 +3271,74 @@
         "title": "Delete this secret?",
         "text": "Rules that use “{name}” keep their definition and fail at the step that needs it."
       }
+    },
+    "cron": {
+      "help": "Five fields: minute, hour, day of the month, month, day of the week. For example 0 9 * * 1 is every Monday at 09:00. Times are in the time zone of the server, not yours. Also accepted: {'@hourly'}, {'@daily'}, {'@weekly'}, {'@monthly'} and {'@yearly'}.",
+      "presets": {
+        "label": "Presets",
+        "hourly": "Every hour",
+        "daily": "Every day",
+        "weekly": "Every week",
+        "monthly": "Every month"
+      }
+    },
+    "hint": {
+      "manual": {
+        "label": "The text of the button on the task. Without it the title of the rule is used."
+      },
+      "schedule": {
+        "scope": "Each matching task starts one run per occurrence. The project, once starts one run without a task: put a Create a task action first."
+      },
+      "task_due_soon": {
+        "offset": "For example 24h or 2d. At least 1 minute."
+      },
+      "webhook_incoming": {
+        "secret": "When set, every call has to carry the header X-Vikunja-Signature: sha256=HEX, where HEX is the HMAC-SHA256 of the request body, keyed with this secret. Calls without a valid signature are refused."
+      },
+      "wait": {
+        "duration": "From 1 minute up to the maximum set by the administrator (30 days by default), for example 30m, 12h, 3d or 2w. The actions after this one run later; the conditions are not checked again."
+      },
+      "notify": {
+        "recipients": "People who cannot read the project are skipped. Name at least one recipient or a team.",
+        "message": "The text of the notification. Placeholders are replaced when the rule runs."
+      },
+      "task_create": {
+        "title": "Placeholders work, including the data of a webhook. The task is created in this project.",
+        "due_offset": "Counted from the moment the task is created, for example 3d."
+      }
+    },
+    "triggerHint": {
+      "manual": "The rule shows up as Run automation in the actions menu of a task, for people who can edit the task. The actions run with the permissions of the owner of the rule.",
+      "schedule": "Schedules run in the time zone of the server, not in yours. Saving the rule does not replay the past: it counts from the last save.",
+      "task_overdue": "Fires once for each task that crosses its due date while the rule is enabled. Tasks that are already overdue when the rule is created or enabled do not fire. A changed due date arms the task again.",
+      "task_due_soon": "Fires once for each task that enters the window before its due date while the rule is enabled. Tasks that are already inside the window when the rule is created or enabled do not fire. A changed due date arms the task again.",
+      "webhook_incoming": "An external service starts the rule by posting a JSON object to the address of the rule. Its content is available as event.payload in conditions and placeholders."
+    },
+    "webhook": {
+      "afterSave": "The address of the webhook is created when you save the rule.",
+      "onlyOnce": "Copy this address now. It contains a secret token and cannot be shown again. Anyone who has it can start this rule.",
+      "url": "Webhook address",
+      "copy": "Copy",
+      "copied": "The address was copied.",
+      "copyFailed": "The address could not be copied. Select it and copy it by hand.",
+      "hidden": "This rule has a webhook address. It contains a secret token that is stored only as a hash, so it cannot be shown again.",
+      "rotate": "Create a new address",
+      "rotateAgain": "Create another new address",
+      "rotateHelp": "The old address stops working immediately.",
+      "saveFirst": "Save your changes first.",
+      "usage": "Send a POST request with a JSON object as the body (use {'{}'} for none). The request is answered at once and the rule runs in the background.",
+      "signature": "With a signing secret chosen, calls must carry the header X-Vikunja-Signature: sha256=HEX (the HMAC-SHA256 of the raw body, keyed with the secret).",
+      "noReplayProtection": "There is no replay protection: the signature covers the body only, so a captured request can be sent again until the secret or the address is changed. Put a unique id in the body and let a condition drop ids it has seen, and rotate the address if you suspect a leak.",
+      "rotateConfirm": {
+        "title": "Create a new webhook address?",
+        "text": "The current address stops working at once. Every service that uses it has to be given the new one."
+      }
+    },
+    "manual": {
+      "title": "Run automation",
+      "intro": "Choose the rule to run for this task. It runs in the background with the permissions of the rule owner.",
+      "action": "Run automation…",
+      "queued": "The automation “{title}” was started."
     }
   },
   "forms": {

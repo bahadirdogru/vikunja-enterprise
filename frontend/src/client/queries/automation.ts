@@ -1,10 +1,13 @@
-import {keepPreviousData, queryOptions, useMutation} from '@tanstack/vue-query'
+import {keepPreviousData, queryOptions, useMutation, type QueryClient} from '@tanstack/vue-query'
 
 import {
 	automationCatalog,
+	automationManualList,
+	automationRunManually,
 	automationRunsList,
 	automationRunsRead,
 	automationRunsRetry,
+	automationWebhookToken,
 	automationsCreate,
 	automationsDelete,
 	automationsList,
@@ -13,6 +16,7 @@ import {
 } from '@/client/generated'
 import type {AutomationRun, AutomationRunStep, DryRunResult} from '@/client/generated'
 import {contextMutationOptions} from './contextMutation'
+import {useSecretMutation} from './secretMutation'
 import {fetchAllPages} from './fetchAllPages'
 import {toPaginated, type Paginated} from './pagination'
 import {i18n} from '@/i18n'
@@ -38,6 +42,8 @@ export type AutomationRuleResponse = {
 	actions: {type: string, params: Record<string, unknown>}[]
 	disabled_reason: string
 	consecutive_failures: number
+	// The rule has an incoming webhook address. The address itself is never part of the rule: see WebhookReveal.
+	has_webhook?: boolean
 	last_run_at: string | null
 	last_run_status: string
 	created: string
@@ -97,10 +103,25 @@ type RuleLike = {
 	actions?: {type?: string, params?: Record<string, unknown> | null}[] | null
 	disabled_reason?: string
 	consecutive_failures?: number
+	has_webhook?: boolean
 	last_run_at?: string
 	last_run_status?: string
 	created?: string
 	updated?: string
+	// Only in the answer that created or regenerated the address.
+	webhook_token?: string
+	webhook_url?: string
+}
+
+// The address of an incoming webhook, with its secret token. The server returns it once; it lives in the component
+// that shows it and nowhere else (no query cache entry, no store, no log).
+export type WebhookReveal = {url: string, token: string}
+
+// A saved rule; `webhook` is set when the save created the address of an incoming webhook.
+export type SavedRuleResponse = AutomationRuleResponse & {webhook?: WebhookReveal}
+
+export function webhookRevealOf(rule: Pick<RuleLike, 'webhook_token' | 'webhook_url'>): WebhookReveal | undefined {
+	return rule.webhook_token && rule.webhook_url ? {url: rule.webhook_url, token: rule.webhook_token} : undefined
 }
 
 export function normalizeRule(rule: RuleLike): AutomationRuleResponse {
@@ -118,6 +139,7 @@ export function normalizeRule(rule: RuleLike): AutomationRuleResponse {
 		actions: draft.actions,
 		disabled_reason: rule.disabled_reason ?? '',
 		consecutive_failures: rule.consecutive_failures ?? 0,
+		has_webhook: rule.has_webhook === true,
 		last_run_at: dateOrNull(rule.last_run_at),
 		last_run_status: rule.last_run_status ?? '',
 		created: rule.created ?? '',
@@ -178,6 +200,37 @@ export const automationKeys = {
 	runsScope: (projectId: number, ruleId: number) => ['automation', 'runs', projectId, ruleId] as const,
 	runs: (projectId: number, ruleId: number, page: number) => ['automation', 'runs', projectId, ruleId, page] as const,
 	run: (projectId: number, ruleId: number, runId: number) => ['automation', 'run', projectId, ruleId, runId] as const,
+	manual: (projectId: number) => ['automation', 'manual', projectId] as const,
+}
+
+// The rules of a project and the list of its manual rules change together.
+function invalidateRules(client: QueryClient, projectId: number) {
+	return Promise.all([
+		client.invalidateQueries({queryKey: automationKeys.rules(projectId), exact: true}),
+		client.invalidateQueries({queryKey: automationKeys.manual(projectId), exact: true}),
+	])
+}
+
+// An enabled rule with a manual trigger, as the button of a task shows it.
+export type ManualAutomation = {id: number, title: string, label: string}
+
+export function manualAutomationsQuery(projectId: number) {
+	return queryOptions({
+		queryKey: automationKeys.manual(projectId),
+		queryFn: async ({signal}): Promise<ManualAutomation[]> => {
+			const rules = (await automationManualList({path: {project: projectId}, signal})).data ?? []
+			return rules.map(rule => ({
+				id: rule.id ?? 0,
+				title: rule.title ?? '',
+				label: rule.label || rule.title || '',
+			})).filter(rule => rule.id > 0)
+		},
+		enabled: projectId > 0,
+		staleTime: 60 * 1000,
+		// A project without the right (or without the feature) simply has no button; nothing to toast.
+		retry: false,
+		meta: {handlesError: true},
+	})
 }
 
 export function automationCatalogQuery(projectId: number) {
@@ -239,12 +292,16 @@ export type SaveRuleInput = {projectId: number, ruleId: number | null, document:
 
 export function saveRuleMutationOptions() {
 	return contextMutationOptions({
-		mutationFn: async ({projectId, ruleId, document}: SaveRuleInput) => normalizeRule(
-			ruleId
+		mutationFn: async ({projectId, ruleId, document}: SaveRuleInput): Promise<SavedRuleResponse> => {
+			const data = ruleId
 				? (await automationsUpdate({path: {project: projectId, rule: ruleId}, body: toBody(document)})).data
-				: (await automationsCreate({path: {project: projectId}, body: toBody(document)})).data,
-		),
-		onSuccess: (saved, {projectId}, client) => {
+				: (await automationsCreate({path: {project: projectId}, body: toBody(document)})).data
+			const webhook = webhookRevealOf(data)
+			return {...normalizeRule(data), ...(webhook ? {webhook} : {})}
+		},
+		onSuccess: (result, {projectId}, client) => {
+			// The address of a webhook is shown once and is not kept in the cache.
+			const {webhook: _address, ...saved} = result
 			client.setQueryData<AutomationRuleResponse[]>(automationKeys.rules(projectId), current => {
 				if (!current) return current
 				return current.some(rule => rule.id === saved.id)
@@ -252,7 +309,7 @@ export function saveRuleMutationOptions() {
 					: [...current, saved]
 			})
 		},
-		onSettled: ({projectId}, client) => client.invalidateQueries({queryKey: automationKeys.rules(projectId), exact: true}),
+		onSettled: ({projectId}, client) => invalidateRules(client, projectId),
 		successMessage: () => i18n.global.t('automation.saveSuccess'),
 		// The editor maps validation errors onto the inputs itself.
 		toastError: () => false,
@@ -279,7 +336,7 @@ export function toggleRuleMutationOptions() {
 			client.setQueryData<AutomationRuleResponse[]>(automationKeys.rules(rule.project_id),
 				current => current?.map(r => r.id === saved.id ? saved : r))
 		},
-		onSettled: ({rule}, client) => client.invalidateQueries({queryKey: automationKeys.rules(rule.project_id), exact: true}),
+		onSettled: ({rule}, client) => invalidateRules(client, rule.project_id),
 	})
 }
 
@@ -292,7 +349,7 @@ export function deleteRuleMutationOptions() {
 			client.setQueryData<AutomationRuleResponse[]>(automationKeys.rules(projectId),
 				current => current?.filter(rule => rule.id !== ruleId))
 		},
-		onSettled: ({projectId}, client) => client.invalidateQueries({queryKey: automationKeys.rules(projectId), exact: true}),
+		onSettled: ({projectId}, client) => invalidateRules(client, projectId),
 		successMessage: () => i18n.global.t('automation.deleteSuccess'),
 	})
 }
@@ -318,8 +375,43 @@ export function retryRunMutationOptions() {
 	})
 }
 
+// The answer of a save can carry the address of an incoming webhook, which is a secret: read it from mutateAsync.
 export function useSaveRuleMutation() {
-	return useMutation(saveRuleMutationOptions())
+	return useSecretMutation(saveRuleMutationOptions())
+}
+
+// A new address (and secret token) for an incoming webhook; the old one stops working. The answer is a secret.
+export function rotateWebhookTokenMutationOptions() {
+	return contextMutationOptions({
+		mutationFn: async ({projectId, ruleId}: {projectId: number, ruleId: number}): Promise<WebhookReveal> => {
+			const data = (await automationWebhookToken({path: {project: projectId, rule: ruleId}})).data
+			return {url: data.url ?? '', token: data.token ?? ''}
+		},
+		onSettled: ({projectId}, client) => invalidateRules(client, projectId),
+		// The panel that asked shows the failure next to the button.
+		toastError: () => false,
+	})
+}
+
+export function useRotateWebhookTokenMutation() {
+	return useSecretMutation(rotateWebhookTokenMutationOptions())
+}
+
+// Starts a manual rule for a task. The run is queued; the history of the rule shows how it went.
+export type RunRuleInput = {projectId: number, ruleId: number, taskId: number, title: string}
+
+export function runRuleManuallyMutationOptions() {
+	return contextMutationOptions({
+		mutationFn: async ({projectId, ruleId, taskId}: RunRuleInput) =>
+			(await automationRunManually({path: {project: projectId, rule: ruleId}, body: {task_id: taskId}})).data,
+		onSettled: ({projectId, ruleId}, client) => client.invalidateQueries({queryKey: automationKeys.runsScope(projectId, ruleId)}),
+		successMessage: (_data, {title}) =>
+			i18n.global.t('automation.manual.queued', {title}),
+	})
+}
+
+export function useRunRuleManuallyMutation() {
+	return useMutation(runRuleManuallyMutationOptions())
 }
 
 export function useToggleRuleMutation() {

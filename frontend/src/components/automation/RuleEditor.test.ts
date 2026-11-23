@@ -8,6 +8,7 @@ const sdk = vi.hoisted(() => ({
 	projectTasksList: vi.fn(),
 	tasksList: vi.fn(),
 	automationsTest: vi.fn(),
+	automationWebhookToken: vi.fn(),
 }))
 vi.mock('@/client/generated', () => sdk)
 vi.mock('@/message', () => ({
@@ -69,9 +70,10 @@ describe('RuleEditor', () => {
 	it('generates the trigger and action pickers from the catalog', () => {
 		const wrapper = mountEditor()
 		const triggerOptions = wrapper.get('#automation-trigger-type').findAll('option').map(o => o.attributes('value')).filter(Boolean)
-		expect(triggerOptions).toEqual(catalog.triggers.map(t => t.type))
+		// grouped by the first segment of the type, so the order differs from the catalog's
+		expect([...triggerOptions].sort()).toEqual(catalog.triggers.map(t => t.type).sort())
 		const addOptions = wrapper.get('#automation-add-action').findAll('option').map(o => o.attributes('value')).filter(Boolean)
-		expect(addOptions).toEqual(catalog.actions.map(a => a.type))
+		expect([...addOptions].sort()).toEqual(catalog.actions.map(a => a.type).sort())
 		// long lists get a search field
 		expect(wrapper.findAll('input[type=search]').length).toBeGreaterThanOrEqual(2)
 	})
@@ -229,5 +231,126 @@ describe('RuleEditor', () => {
 		// a changed draft cannot be tested
 		await wrapper.get('#automation-title').setValue('Edited')
 		expect(wrapper.text()).toContain('unsaved changes')
+	})
+
+	describe('triggers and actions of the time, manual and webhook family', () => {
+		it('shows presets, the time zone note and the problem of a cron expression', async () => {
+			const wrapper = mountEditor()
+			await pick(wrapper, '#automation-trigger-type', 'schedule')
+			expect(wrapper.text()).toContain('time zone of the server')
+			expect(wrapper.text()).toContain('does not replay the past')
+			const buttons = wrapper.findAll('.cron-input__presets button').map(b => b.text())
+			expect(buttons).toEqual(['Every hour', 'Every day', 'Every week', 'Every month'])
+			await wrapper.findAll('.cron-input__presets button')[1].trigger('click')
+			expect((wrapper.get('#automation-trigger-options-cron').element as HTMLInputElement).value).toBe('@daily')
+			await wrapper.get('#automation-trigger-options-cron').setValue('61 * * * *')
+			expect(wrapper.text()).toContain('out of range')
+			expect(wrapper.get('#automation-trigger-options-cron').attributes('aria-invalid')).toBe('true')
+		})
+
+		it('does not save a rule with a bad cron expression, a too short wait or nobody to notify', async () => {
+			const wrapper = mountEditor()
+			await wrapper.get('#automation-title').setValue('Timed')
+			await pick(wrapper, '#automation-trigger-type', 'schedule')
+			await wrapper.get('#automation-trigger-options-cron').setValue('* * *')
+			await pick(wrapper, '#automation-add-action', 'wait')
+			await wrapper.get('#automation-actions-0-params-duration').setValue('30s')
+			await pick(wrapper, '#automation-add-action', 'notify')
+			await wrapper.get('#automation-actions-1-params-message').setValue('hi')
+			await wrapper.get('form').trigger('submit')
+			await flushPromises()
+			expect(sdk.automationsCreate).not.toHaveBeenCalled()
+			expect(wrapper.text()).toContain('Use five fields')
+			expect(wrapper.text()).toContain('Use a number and a unit')
+			expect(wrapper.text()).toContain('Name at least one recipient or a team.')
+		})
+
+		it('explains the arming of the overdue and due soon triggers and asks for the offset', async () => {
+			const wrapper = mountEditor()
+			await pick(wrapper, '#automation-trigger-type', 'task.overdue')
+			expect(wrapper.text()).toContain('already overdue when the rule is created or enabled do not fire')
+			await pick(wrapper, '#automation-trigger-type', 'task.due_soon')
+			expect(wrapper.text()).toContain('already inside the window')
+			expect(wrapper.find('#automation-trigger-options-offset').exists()).toBe(true)
+		})
+
+		it('has no options for the manual trigger apart from the button text', async () => {
+			const wrapper = mountEditor()
+			await pick(wrapper, '#automation-trigger-type', 'manual')
+			expect(wrapper.find('#automation-trigger-options-label').exists()).toBe(true)
+			expect(wrapper.text()).toContain('Run automation')
+		})
+
+		it('renders the parameters of create task, wait and notify from the catalog', async () => {
+			const wrapper = mountEditor()
+			await pick(wrapper, '#automation-add-action', 'task.create')
+			for (const name of ['title', 'description', 'priority', 'assignee', 'due_offset']) {
+				expect(wrapper.find(`#automation-actions-0-params-${name}`).exists()).toBe(true)
+			}
+			await pick(wrapper, '#automation-add-action', 'wait')
+			expect(wrapper.find('#automation-actions-1-params-duration').exists()).toBe(true)
+			expect(wrapper.text()).toContain('maximum set by the administrator')
+			await pick(wrapper, '#automation-add-action', 'notify')
+			expect(wrapper.find('#automation-actions-2-params-recipients').exists()).toBe(true)
+			expect(wrapper.find('#automation-actions-2-params-team_id').exists()).toBe(true)
+			expect(wrapper.find('#automation-actions-2-params-message').exists()).toBe(true)
+		})
+	})
+
+	describe('incoming webhook address', () => {
+		const writeText = vi.fn().mockResolvedValue(undefined)
+		const hook = {webhook_token: 'tok-1', webhook_url: 'https://vikunja.example/api/v2/automation/hooks/tok-1'}
+
+		beforeEach(() => {
+			writeText.mockClear()
+			Object.defineProperty(navigator, 'clipboard', {value: {writeText}, configurable: true})
+		})
+
+		async function saveNewWebhookRule(response: Record<string, unknown>) {
+			sdk.automationsCreate.mockResolvedValue({data: {
+				...storedRule, id: 31, title: 'Hook', trigger: {type: 'webhook.incoming', options: {}},
+				conditions: null, actions: [{type: 'task.create', params: {title: 'x'}}], has_webhook: true, ...response,
+			}})
+			const wrapper = mountEditor()
+			await wrapper.get('#automation-title').setValue('Hook')
+			await pick(wrapper, '#automation-trigger-type', 'webhook.incoming')
+			expect(wrapper.text()).toContain('created when you save the rule')
+			await pick(wrapper, '#automation-add-action', 'task.create')
+			await wrapper.get('#automation-actions-0-params-title').setValue('x')
+			await wrapper.get('form').trigger('submit')
+			await flushPromises()
+			return wrapper
+		}
+
+		it('shows the address once after the save, with a warning and a copy button', async () => {
+			const wrapper = await saveNewWebhookRule(hook)
+			expect(sdk.automationsCreate).toHaveBeenCalledTimes(1)
+			expect(wrapper.get('#automation-webhook-url').element).toHaveProperty('value', hook.webhook_url)
+			expect(wrapper.text()).toContain('cannot be shown again')
+			expect(wrapper.text()).toContain('no replay protection')
+			expect(wrapper.text()).toContain('X-Vikunja-Signature')
+			const copy = wrapper.findAll('button').find(b => b.text() === 'Copy')!
+			await copy.trigger('click')
+			await flushPromises()
+			expect(writeText).toHaveBeenCalledWith(hook.webhook_url)
+			// the token is not part of what the editor tells its parent
+			expect(JSON.stringify(wrapper.emitted('saved'))).not.toContain('tok-1')
+		})
+
+		it('does not show an address the server did not send and offers a new one instead', async () => {
+			sdk.automationWebhookToken.mockResolvedValue({data: {token: 'tok-2', url: 'https://vikunja.example/api/v2/automation/hooks/tok-2'}})
+			const wrapper = await saveNewWebhookRule({})
+			expect(wrapper.find('#automation-webhook-url').exists()).toBe(false)
+			expect(wrapper.text()).toContain('cannot be shown again')
+			await wrapper.findAll('button').find(b => b.text() === 'Create a new address')!.trigger('click')
+			await flushPromises()
+			// the confirmation dialog is teleported to the body
+			expect(document.body.textContent).toContain('The current address stops working at once.')
+			;(document.body.querySelector('dialog .actions > :last-child') as HTMLElement).click()
+			await flushPromises()
+			expect(sdk.automationWebhookToken).toHaveBeenCalledTimes(1)
+			expect(sdk.automationWebhookToken.mock.calls[0][0].path).toEqual({project: 3, rule: 31})
+			expect(wrapper.get('#automation-webhook-url').element).toHaveProperty('value', 'https://vikunja.example/api/v2/automation/hooks/tok-2')
+		})
 	})
 })

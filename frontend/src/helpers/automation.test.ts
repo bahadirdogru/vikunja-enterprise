@@ -32,6 +32,7 @@ import {
 	removeNode,
 	replaceNode,
 	setGroupKind,
+	triggerDef,
 	validateDraft,
 	wrapNode,
 	fieldDef,
@@ -395,5 +396,109 @@ describe('script reference from the catalog', () => {
 		expect(issues).toEqual([{path: 'actions[0].params.source', message: 'syntax error: Unexpected token ;', line: 2, column: 9}])
 		const mapped = mapIssues(issues!, new Set(['actions[0].params.source']))
 		expect(mapped.lines.get('actions[0].params.source')).toEqual({line: 2, column: 9})
+	})
+})
+
+describe('time, manual and webhook triggers and the wait, create task and notify actions', () => {
+	const issues = (draft: RuleDraft) => validateDraft(draft, catalog, t).map(i => `${i.path}: ${i.message}`)
+
+	it('knows the new triggers and actions from the catalog', () => {
+		for (const type of ['manual', 'schedule', 'task.overdue', 'task.due_soon', 'webhook.incoming']) {
+			expect(catalog.triggers.some(trigger => trigger.type === type), type).toBe(true)
+		}
+		for (const type of ['wait', 'task.create', 'notify']) {
+			expect(actionDef(catalog, type), type).toBeDefined()
+		}
+		expect(triggerDef(catalog, 'schedule')!.options.map(o => [o.name, o.kind])).toEqual([['cron', 'string'], ['scope', 'enum']])
+		expect(triggerDef(catalog, 'task.due_soon')!.options.map(o => [o.name, o.kind, o.required])).toEqual([['offset', 'duration', true]])
+		expect(triggerDef(catalog, 'webhook.incoming')!.options.map(o => [o.name, o.kind])).toEqual([['secret', 'secret']])
+		expect(triggerDef(catalog, 'task.overdue')!.options).toEqual([])
+		expect(actionDef(catalog, 'notify')!.params.map(p => [p.name, p.kind])).toEqual([['recipients', 'users'], ['team_id', 'team'], ['message', 'template']])
+	})
+
+	it('round-trips a schedule rule between the server document and the draft', () => {
+		const rule = {
+			title: 'Weekly digest', description: '', enabled: true,
+			trigger: {type: 'schedule', options: {cron: '0 9 * * 1', scope: 'project'}},
+			actions: [
+				{type: 'task.create', params: {title: 'Digest {{project.title}}', priority: 2, assignee: 'event_doer', due_offset: '3d'}},
+				{type: 'wait', params: {duration: '2h'}},
+				{type: 'notify', params: {recipients: ['assignees', 7], team_id: 4, message: 'Done'}},
+			],
+		}
+		const draft = draftFromRule(rule)
+		expect(draft.trigger).toEqual(rule.trigger)
+		expect(draftToDocument(draft)).toEqual({...rule, trigger: {type: 'schedule', options: {cron: '0 9 * * 1', scope: 'project'}}})
+		expect(issues(draft)).toEqual([])
+	})
+
+	it('drops empty optional values on the way to the server and keeps a manual trigger without options', () => {
+		const draft = draftWith({
+			trigger: {type: 'manual', options: {label: '  '}},
+			actions: [{type: 'notify', params: {recipients: [], team_id: 4, message: 'Hi'}}],
+		})
+		expect(draftToDocument(draft)).toEqual({
+			title: 'Rule', description: '', enabled: true,
+			trigger: {type: 'manual'},
+			actions: [{type: 'notify', params: {team_id: 4, message: 'Hi'}}],
+		})
+		const hook = draftWith({trigger: {type: 'webhook.incoming', options: {secret: 'HOOK'}}, actions: [{type: 'task.create', params: {title: 'x'}}]})
+		expect(draftToDocument(hook).trigger).toEqual({type: 'webhook.incoming', options: {secret: 'HOOK'}})
+		expect(issues(hook)).toEqual([])
+	})
+
+	it('checks the cron expression of a schedule like the server does', () => {
+		const schedule = (cron: string) => draftWith({trigger: {type: 'schedule', options: {cron}}, actions: [{type: 'wait', params: {duration: '1h'}}]})
+		expect(issues(schedule('0 9 * * 1'))).toEqual([])
+		expect(issues(schedule('@daily'))).toEqual([])
+		expect(issues(schedule('@every 5m'))).toEqual(['trigger.options.cron: automation.validation.cron.every'])
+		expect(issues(schedule('* * *'))).toEqual(['trigger.options.cron: automation.validation.cron.fields'])
+		expect(issues(schedule('0 0 30 2 *'))).toEqual(['trigger.options.cron: automation.validation.cron.never'])
+		expect(issues(schedule(''))).toEqual(['trigger.options.cron: automation.validation.required'])
+	})
+
+	it('requires the offset of due soon and a duration of at least a minute', () => {
+		const dueSoon = (offset: string) => draftWith({trigger: {type: 'task.due_soon', options: {offset}}, actions: [{type: 'task.add_comment', params: {text: 'x'}}]})
+		expect(issues(dueSoon('24h'))).toEqual([])
+		expect(issues(dueSoon('0m'))).toEqual(['trigger.options.offset: automation.validation.minDuration'])
+		expect(issues(dueSoon('-1d'))).toEqual(['trigger.options.offset: automation.validation.minDuration'])
+		expect(issues(dueSoon('soon'))).toEqual(['trigger.options.offset: automation.validation.duration'])
+		expect(issues(dueSoon(''))).toEqual(['trigger.options.offset: automation.validation.required'])
+
+		const wait = (duration: string) => draftWith({actions: [{type: 'wait', params: {duration}}]})
+		expect(issues(wait('1m'))).toEqual([])
+		expect(issues(wait('30d'))).toEqual([])
+		expect(issues(wait('0h'))).toEqual(['actions[0].params.duration: automation.validation.minDuration'])
+		expect(issues(wait('5 minutes'))).toEqual(['actions[0].params.duration: automation.validation.duration'])
+		expect(issues(wait(''))).toEqual(['actions[0].params.duration: automation.validation.required'])
+	})
+
+	it('wants a recipient or a team for notify, and a message and title where the catalog does', () => {
+		const notify = (params: Record<string, unknown>) => draftWith({actions: [{type: 'notify', params}]})
+		expect(issues(notify({message: 'x'}))).toEqual(['actions[0].params.recipients: automation.validation.recipients'])
+		expect(issues(notify({recipients: [], message: 'x'}))).toEqual(['actions[0].params.recipients: automation.validation.recipients'])
+		expect(issues(notify({recipients: ['assignees'], message: 'x'}))).toEqual([])
+		expect(issues(notify({team_id: 2, message: 'x'}))).toEqual([])
+		expect(issues(notify({recipients: ['assignees']}))).toEqual(['actions[0].params.message: automation.validation.required'])
+		expect(issues(draftWith({actions: [{type: 'task.create', params: {}}]}))).toEqual(['actions[0].params.title: automation.validation.required'])
+	})
+
+	it('lists the paths of the new options and params as known, so server issues find their inputs', () => {
+		const draft = draftWith({
+			trigger: {type: 'schedule', options: {cron: '0 9 * * 1'}},
+			actions: [{type: 'wait', params: {}}, {type: 'notify', params: {}}],
+		})
+		const known = knownPaths(draft, catalog)
+		for (const path of ['trigger.options.cron', 'trigger.options.scope', 'actions[0].params.duration', 'actions[1].params.recipients', 'actions[1].params.team_id', 'actions[1].params.message']) {
+			expect(known.has(path), path).toBe(true)
+		}
+		const mapped = mapIssues([{path: 'actions[0].params.duration', message: 'is longer than the 720h0m0s this server allows (automation.waitmax)'}], known)
+		expect(mapped.byPath.get('actions[0].params.duration')).toHaveLength(1)
+		expect(mapped.unmapped).toEqual([])
+	})
+
+	it('summarizes the new rules from the catalog titles', () => {
+		const draft = draftWith({trigger: {type: 'task.due_soon', options: {offset: '1d'}}, actions: [{type: 'wait', params: {duration: '1h'}}, {type: 'notify', params: {}}]})
+		expect(summarizeRule(draft, catalog, t, te)).toBe('automation.summary.line:{"trigger":"Due soon","actions":"Wait, Notify"}')
 	})
 })

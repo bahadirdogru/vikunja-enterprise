@@ -5,6 +5,7 @@ import {computed} from 'vue'
 import {useI18n} from 'vue-i18n'
 
 import AutomationSelect from '@/components/automation/AutomationSelect.vue'
+import CronInput from '@/components/automation/CronInput.vue'
 import ParamInput from '@/components/automation/ParamInput.vue'
 import {useAutomationContext} from '@/components/automation/context'
 import {
@@ -25,6 +26,8 @@ const props = defineProps<{
 	dateContext?: 'action' | 'condition'
 	// The action type the param belongs to (decides where {{secrets.NAME}} is accepted).
 	actionType?: string
+	// The type of the trigger the option belongs to; hints are looked up by owner (trigger or action type) and name.
+	triggerType?: string
 }>()
 
 const emit = defineEmits<{
@@ -63,6 +66,12 @@ const waitingForField = computed(() => kind.value === 'any' && !customField.valu
 const formChoices = computed(() => context.forms && props.param.name === 'form_id' && kind.value === 'number'
 	? context.forms.map(form => ({value: form.id, label: form.title}))
 	: null)
+
+// A schedule's cron expression gets presets and a check of its own.
+const isCron = computed(() => props.triggerType === 'schedule' && props.param.name === 'cron' && kind.value === 'string')
+
+// An explanation of the option or parameter, looked up by the type of its owner: automation.hint.<type>.<name>.
+const hintKey = computed(() => `automation.hint.${(props.triggerType ?? props.actionType ?? '').replace(/\./g, '_')}.${props.param.name}`)
 
 const isCondition = computed(() => kind.value === 'condition')
 </script>
@@ -115,6 +124,14 @@ const isCondition = computed(() => kind.value === 'condition')
 			:invalid="messages.length > 0"
 			@update:modelValue="emit('update', param.name, $event)"
 		/>
+		<CronInput
+			v-else-if="isCron"
+			:id="id"
+			:model-value="values[param.name]"
+			:label="labelText"
+			:invalid="messages.length > 0"
+			@update:modelValue="emit('update', param.name, $event)"
+		/>
 		<ParamInput
 			v-else-if="kind !== null"
 			:id="id"
@@ -132,6 +149,12 @@ const isCondition = computed(() => kind.value === 'condition')
 			@update:modelValue="emit('update', param.name, $event)"
 		/>
 
+		<p
+			v-if="$te(hintKey)"
+			class="help"
+		>
+			{{ $t(hintKey) }}
+		</p>
 		<p
 			v-for="message in messages"
 			:key="message"
