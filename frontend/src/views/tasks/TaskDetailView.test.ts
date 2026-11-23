@@ -13,6 +13,7 @@ const sdk = vi.hoisted(() => ({
 	projectViewTasksList: vi.fn(async () => ({data: {items: []}})),
 	projectViewBucketsTasksList: vi.fn(async () => ({data: {items: []}})),
 	bucketsList: vi.fn(async () => ({data: {items: []}})),
+	automationManualList: vi.fn(async () => ({data: [{id: 1, title: 'Escalate', label: 'Escalate'}]})),
 	workflowRead: vi.fn(async () => {
 		throw {status: 404, code: 21001}
 	}),
@@ -34,6 +35,8 @@ import {ApiError} from '@/client/problem'
 import BaseButton from '@/components/base/BaseButton.vue'
 import ProjectInTrashNotice from '@/components/project/ProjectInTrashNotice.vue'
 import TaskInTrashNotice from '@/components/tasks/partials/TaskInTrashNotice.vue'
+import {automationKeys} from '@/client/queries/automation'
+import RunAutomationDialog from '@/components/automation/RunAutomationDialog.vue'
 import {mapTaskEverywhere} from '@/client/queries/taskCache'
 import {taskKeys} from '@/client/queries/tasks'
 import EditLabels from '@/components/tasks/partials/EditLabels.vue'
@@ -349,5 +352,39 @@ describe('TaskDetailView property sidebar', () => {
 		const wrapper = await mountDetail(1, {stubs: renderButtons})
 
 		expect(wrapper.find('.property-repeat .property-value-button').text()).toBe(summary)
+	})
+})
+
+describe('TaskDetailView run automation dialog', () => {
+	beforeEach(() => {
+		sdk.tasksRead.mockReset()
+		sdk.tasksRead.mockImplementation(async ({path}: {path: {task: number}}) => ({data: serverTask(path.task)}))
+	})
+
+	async function openDialog() {
+		const wrapper = await mountDetail()
+		await flushPromises()
+		;(wrapper.vm as unknown as {runAutomationOpen: boolean}).runAutomationOpen = true
+		await flushPromises()
+		expect(wrapper.findComponent(RunAutomationDialog).exists()).toBe(true)
+		return wrapper
+	}
+
+	it('closes for good when the route moves to another task', async () => {
+		const wrapper = await openDialog()
+		await wrapper.setProps({taskId: 2})
+		await flushPromises()
+		expect(wrapper.findComponent(RunAutomationDialog).exists()).toBe(false)
+		expect((wrapper.vm as unknown as {runAutomationOpen: boolean}).runAutomationOpen).toBe(false)
+	})
+
+	it('does not reopen by itself when the list of rules empties and fills again', async () => {
+		const wrapper = await openDialog()
+		queryClient.setQueryData(automationKeys.manual(1), [])
+		await flushPromises()
+		expect(wrapper.findComponent(RunAutomationDialog).exists()).toBe(false)
+		queryClient.setQueryData(automationKeys.manual(1), [{id: 1, title: 'Escalate', label: 'Escalate'}])
+		await flushPromises()
+		expect(wrapper.findComponent(RunAutomationDialog).exists()).toBe(false)
 	})
 })

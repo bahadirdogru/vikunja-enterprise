@@ -989,6 +989,11 @@ const manualAutomationsResult = useQuery(computed(() => ({
 })))
 const manualAutomations = computed(() => manualAutomationsResult.data.value ?? [])
 const runAutomationOpen = ref(false)
+// The dialog belongs to one task and needs rules: without either it must not come back on its own later.
+watch(() => props.taskId, () => { runAutomationOpen.value = false })
+watch(() => manualAutomations.value.length, count => {
+	if (count === 0) runAutomationOpen.value = false
+})
 
 // A status change can flip done, and the requirements dialog can save fields the local draft keeps.
 async function refreshAfterStatusChange() {
