@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest'
 
-import {drilldownFilter, isNullSafeFilter} from './dashboardDrilldown'
+import {drilldownFilter, drilldownInputFor, isNullSafeFilter, reportRangePoint} from './dashboardDrilldown'
 import type {ChartGroup} from './charts'
 
 const g = (key: unknown, label = 'L', extra: Partial<ChartGroup> = {}): ChartGroup => ({key, label, value: 1, ...extra})
@@ -113,6 +113,38 @@ describe('drilldownFilter', () => {
 		expect(ok(drilldownFilter({baseFilter: '', groupBy: 'assignee', group: none(), timeField: 'created', point})).includeNulls).toBe(true)
 		expect(drilldownFilter({baseFilter: '', groupBy: 'assignee', group: none(), timeField: 'done_at', point}))
 			.toMatchObject({ok: false, reason: 'null_filter'})
+	})
+})
+
+describe('the tasks behind a number with a time range', () => {
+	const widget = {
+		type: 'number',
+		config: {request: {filter: 'done = false', time: {field: 'created', bucket: 'month', from: '2026-01-01', to: '2026-03-10'}}},
+	}
+	const range = reportRangePoint({from: '2026-01-01T00:00:00Z', to: '2026-03-11T00:00:00Z'})
+
+	it('adds the range the server counted', () => {
+		const r = ok(drilldownFilter(drilldownInputFor(widget, {point: range})))
+		expect(r.filter).toBe('done = false && created >= "2026-01-01T00:00:00Z" && created < "2026-03-11T00:00:00Z"')
+	})
+
+	it('waits for the range instead of listing every task', () => {
+		expect(drilldownFilter(drilldownInputFor(widget, {}))).toMatchObject({ok: false, reason: 'unknown_dimension'})
+	})
+
+	it('cannot list a range of a field that is no filter field', () => {
+		const entered = {type: 'number', config: {request: {time: {field: 'status_entered', bucket: 'day', from: 'a', to: 'b'}}}}
+		expect(drilldownFilter(drilldownInputFor(entered, {point: range}))).toMatchObject({ok: false, reason: 'status_entered'})
+	})
+
+	it('keeps a number without a time range as it was', () => {
+		const plain = {type: 'number', config: {request: {filter: 'done = false'}}}
+		expect(ok(drilldownFilter(drilldownInputFor(plain, {}))).filter).toBe('done = false')
+	})
+
+	it('reads no range from a report without one', () => {
+		expect(reportRangePoint(null)).toBeUndefined()
+		expect(reportRangePoint({from: 'a'})).toBeUndefined()
 	})
 })
 

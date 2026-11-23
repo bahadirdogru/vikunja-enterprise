@@ -4,7 +4,7 @@ import {useQueries, useQuery} from '@tanstack/vue-query'
 import {useI18n} from 'vue-i18n'
 
 import {reportOptionsQuery, taskReportQuery, type TaskReportResponse} from '@/client/queries/reports'
-import {drilldownFilter, drilldownInputFor, type DrilldownBlock} from '@/helpers/dashboardDrilldown'
+import {drilldownFilter, drilldownInputFor, reportRangePoint, type DrilldownBlock} from '@/helpers/dashboardDrilldown'
 import {defaultOrientation, type WidgetDisplay} from '@/helpers/dashboardDisplay'
 import {
 	configRequest,
@@ -93,6 +93,12 @@ function select(selection: ChartSelection) {
 	}
 }
 
+// A number with a time range lists the tasks of that range, so its click carries the range the server resolved.
+const numberSelection = computed<ChartSelection>(() => {
+	const point = reportRangePoint(report.value?.time)
+	return point ? {point} : {}
+})
+
 const orientation = computed(() => props.display.orientation ?? defaultOrientation(report.value?.groups ?? []))
 const stacked = computed(() => props.display.stacked ?? true)
 const legend = computed(() => props.display.legend)
@@ -177,8 +183,8 @@ const loading = computed(() => isPending.value && props.enabled)
 			:previous="report?.comparison?.value ?? null"
 			:loading="loading"
 			:selectable="canDrill"
-			:disabled-reason="reasonFor({})"
-			@select="select({})"
+			:disabled-reason="reasonFor(numberSelection)"
+			@select="select(numberSelection)"
 		/>
 		<BarChart
 			v-else-if="type === 'bar'"

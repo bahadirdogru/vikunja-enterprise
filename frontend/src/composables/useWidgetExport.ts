@@ -28,7 +28,7 @@ export function useWidgetExport(type: Ref<string>, config: Ref<Record<string, un
 	return {
 		busy,
 		canExportData: computed(() => canExportData(type.value)),
-		canExportTasks: computed(() => canExportTasks(type.value)),
+		canExportTasks: computed(() => canExportTasks(type.value, config.value)),
 		exportData: () => run(() => exportWidgetData(type.value, config.value, {
 			bucket: t('dashboards.export.bucket'),
 			created: t('dashboards.createdSeries'),

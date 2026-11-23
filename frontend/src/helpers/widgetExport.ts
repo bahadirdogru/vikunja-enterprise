@@ -1,7 +1,9 @@
 import {taskReportQuery, type TaskReportResponse} from '@/client/queries/reports'
+import type {ChartPoint} from '@/helpers/charts'
 import {fetchReportCsv, fetchTasksCsv, fetchWidgetReportCsv} from '@/client/queries/reportWidgets'
 import {queryClient} from '@/client/queryClient'
 import {toCsv} from '@/helpers/csv'
+import {drilldownFilter, reportRangePoint} from '@/helpers/dashboardDrilldown'
 import {
 	configRequest,
 	hasReportRequest,
@@ -32,21 +34,60 @@ export function canExportData(type: string): boolean {
 }
 
 // "The tasks behind this widget": every widget that has a filter (all but the note) can list them.
-export function canExportTasks(type: string): boolean {
-	return type !== 'text' && type !== 'task_list' && type !== 'time_tracking'
+export function canExportTasks(type: string, config: Record<string, unknown> = {}): boolean {
+	if (type === 'text' || type === 'task_list' || type === 'time_tracking') {
+		return false
+	}
+	if (type === 'number' && numberTime(config)) {
+		// A time range that no task filter can express (status_entered), or one the include-nulls flag would widen.
+		return drilldownFilter(numberRangeInput(type, config, {bucket: '', start: 'x', end: 'y', value: 0})).ok
+	}
+	return true
+}
+
+function numberTime(config: Record<string, unknown>): {field?: string} | undefined {
+	return (configRequest({config}) as ReportRequestDraft).time
+}
+
+function numberRangeInput(type: string, config: Record<string, unknown>, point: ChartPoint | undefined) {
+	const request = configRequest({config}) as ReportRequestDraft
+	return {
+		baseFilter: widgetFilter(type, config),
+		includeNulls: request.filter_include_nulls === true,
+		timeField: request.time?.field,
+		point,
+		requirePoint: true,
+	}
 }
 
 export function taskExportParams(type: string, config: Record<string, unknown>): {project_id?: number, filter?: string, filter_include_nulls?: boolean} {
 	const request = hasReportRequest(type) && type !== 'created_vs_done' ? configRequest({config}) : {}
+	let filter = widgetFilter(type, config)
+	if (type === 'workload') {
+		// The workload report only counts open tasks, whatever the filter says.
+		filter = filter.trim() === '' ? 'done = false' : `(${filter}) && done = false`
+	}
 	return {
 		project_id: widgetProjectId(type, config) || undefined,
-		filter: widgetFilter(type, config),
+		filter,
 		filter_include_nulls: (request as ReportRequestDraft).filter_include_nulls,
 	}
 }
 
 export async function exportWidgetTasks(type: string, config: Record<string, unknown>): Promise<WidgetExportFile> {
-	return {blob: await fetchTasksCsv(taskExportParams(type, config)), filename: 'tasks.csv'}
+	const params = taskExportParams(type, config)
+	if (type === 'number' && numberTime(config)) {
+		// The number counts the tasks of its time range, the one the server resolved.
+		const [request] = requestsForWidget(type, config)
+		const report = await queryClient.fetchQuery(taskReportQuery(request!))
+		const result = drilldownFilter(numberRangeInput(type, config, reportRangePoint(report.time)))
+		if (!result.ok) {
+			throw new Error(`The tasks of this number cannot be listed: ${result.reason}`)
+		}
+		params.filter = result.filter
+		params.filter_include_nulls = result.includeNulls
+	}
+	return {blob: await fetchTasksCsv(params), filename: 'tasks.csv'}
 }
 
 // The numbers the widget shows. The server writes the file for everything it computes, so the permissions of the

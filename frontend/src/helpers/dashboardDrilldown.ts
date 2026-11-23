@@ -29,6 +29,8 @@ export type DrilldownInput = {
 	cfOptionIds?: Record<string, number[]>
 	// cf_<id> -> custom field type, from the report options.
 	fieldTypes?: Record<string, string>
+	// The range of a number widget is one point that has to be there before the tasks can be listed.
+	requirePoint?: boolean
 	// Only asks whether a filter can exist at all, before the lookups of usernames and options ran.
 	assumeResolvable?: boolean
 }
@@ -158,6 +160,9 @@ export function drilldownFilter(input: DrilldownInput): DrilldownResult {
 		clauses.push(dimensionClause(input.thenBy, input.child, input))
 		parts.push(input.child.label)
 	}
+	if (input.requirePoint && !input.point) {
+		return {ok: false, reason: 'unknown_dimension'}
+	}
 	if (input.timeField && input.point) {
 		clauses.push(timeClause(input.timeField, input.point))
 		parts.push(input.point.bucket)
@@ -184,6 +189,12 @@ export function drilldownFilter(input: DrilldownInput): DrilldownResult {
 
 	const filters = [wrap(input.baseFilter), ...found.map(c => c.clause)].filter(f => f !== '')
 	return {ok: true, filter: filters.join(' && '), includeNulls: needsNulls || input.includeNulls === true, parts}
+}
+
+// The range a report counted, as the one "bucket" a number covers. The server resolved it, so relative dates, whole
+// buckets and a range cut at the end of the period are the same ones the number was computed over.
+export function reportRangePoint(time: {from?: string, to?: string} | null | undefined): ChartPoint | undefined {
+	return time?.from && time.to ? {bucket: '', start: time.from, end: time.to, value: 0} : undefined
 }
 
 export type DrilldownWidget = {
@@ -223,6 +234,12 @@ export function drilldownInputFor(
 		input.thenBy = request.then_by
 		input.group = selection.group
 		input.child = selection.child
+	}
+	if (widget.type === 'number' && request.time?.field) {
+		// The number only counts the tasks of its time range.
+		input.timeField = request.time.field
+		input.point = selection.point
+		input.requirePoint = true
 	}
 	if (widget.type === 'line') {
 		input.groupBy = request.group_by
