@@ -558,6 +558,32 @@ export type AuthorizeResponse = {
     state?: string;
 };
 
+export type AutomationHookResult = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * Always true: the run starts as soon as a worker picks the event up.
+     */
+    queued?: boolean;
+};
+
+export type AutomationManualRule = {
+    /**
+     * The id of the rule.
+     */
+    id?: number;
+    /**
+     * The text of the button: the label option of the trigger, the title of the rule when it has none.
+     */
+    label?: string;
+    /**
+     * The title of the rule.
+     */
+    title?: string;
+};
+
 export type AutomationRule = {
     /**
      * A URL to the JSON Schema for this object.
@@ -592,9 +618,21 @@ export type AutomationRule = {
      */
     enabled?: boolean;
     /**
+     * Whether the rule (trigger webhook.incoming) has a webhook URL.
+     */
+    readonly has_webhook?: boolean;
+    /**
      * The unique, numeric id of this rule.
      */
     readonly id?: number;
+    /**
+     * Schedule triggers: what the last firing did, e.g. that it was capped at automation.ticker.maxtasks tasks.
+     */
+    readonly last_fire_note?: string;
+    /**
+     * Schedule triggers: when the schedule last fired. Zero for other triggers and before the first firing.
+     */
+    readonly last_fired_at?: string;
     /**
      * When the rule last ran.
      */
@@ -627,6 +665,14 @@ export type AutomationRule = {
      * A timestamp when this rule was last updated. You cannot change this value.
      */
     readonly updated?: string;
+    /**
+     * The secret of the webhook URL. Only returned once, by the request that created or regenerated it: the server stores a hash only.
+     */
+    readonly webhook_token?: string;
+    /**
+     * The full URL of the incoming webhook. Only returned together with webhook_token.
+     */
+    readonly webhook_url?: string;
 };
 
 export type AutomationRuleReadBody = {
@@ -663,9 +709,21 @@ export type AutomationRuleReadBody = {
      */
     enabled?: boolean;
     /**
+     * Whether the rule (trigger webhook.incoming) has a webhook URL.
+     */
+    readonly has_webhook?: boolean;
+    /**
      * The unique, numeric id of this rule.
      */
     readonly id?: number;
+    /**
+     * Schedule triggers: what the last firing did, e.g. that it was capped at automation.ticker.maxtasks tasks.
+     */
+    readonly last_fire_note?: string;
+    /**
+     * Schedule triggers: when the schedule last fired. Zero for other triggers and before the first firing.
+     */
+    readonly last_fired_at?: string;
     /**
      * When the rule last ran.
      */
@@ -702,6 +760,14 @@ export type AutomationRuleReadBody = {
      * A timestamp when this rule was last updated. You cannot change this value.
      */
     readonly updated?: string;
+    /**
+     * The secret of the webhook URL. Only returned once, by the request that created or regenerated it: the server stores a hash only.
+     */
+    readonly webhook_token?: string;
+    /**
+     * The full URL of the incoming webhook. Only returned together with webhook_token.
+     */
+    readonly webhook_url?: string;
 };
 
 export type AutomationRun = {
@@ -765,6 +831,32 @@ export type AutomationRun = {
      * The task the event was about, 0 when none.
      */
     readonly task_id?: number;
+};
+
+export type AutomationRunQueued = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * The outbox event that starts the run.
+     */
+    event_id?: number;
+    /**
+     * Always queued.
+     */
+    status?: string;
+};
+
+export type AutomationRunRequest = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * The task to run the rule for. You need write access to it, and it has to belong to the project of the rule.
+     */
+    task_id: number;
 };
 
 export type AutomationRunRetry = {
@@ -869,9 +961,30 @@ export type AutomationTestRequest = {
      */
     readonly $schema?: string;
     /**
-     * The task to test the rule with. It has to belong to the project of the rule.
+     * For the trigger webhook.incoming: the simulated JSON body of the call, readable as event.payload.
      */
-    task_id: number;
+    payload?: {
+        [key: string]: unknown;
+    };
+    /**
+     * The task to test the rule with. It has to belong to the project of the rule. Required unless the trigger has no task (incoming webhook, a schedule per project): then it is ignored.
+     */
+    task_id?: number;
+};
+
+export type AutomationWebhookToken = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * The new secret of the webhook URL. The old URL stops working. It is only shown now: the server stores a hash.
+     */
+    readonly token?: string;
+    /**
+     * The new webhook URL.
+     */
+    readonly url?: string;
 };
 
 export type AvailableTransition = {
@@ -7230,6 +7343,13 @@ export type AuthorizeResponseWritable = {
     state?: string;
 };
 
+export type AutomationHookResultWritable = {
+    /**
+     * Always true: the run starts as soon as a worker picks the event up.
+     */
+    queued?: boolean;
+};
+
 export type AutomationRuleWritable = {
     /**
      * What the rule does, in order. A failing action stops the run.
@@ -7284,6 +7404,24 @@ export type AutomationRuleReadBodyWritable = {
     trigger?: Trigger;
 };
 
+export type AutomationRunQueuedWritable = {
+    /**
+     * The outbox event that starts the run.
+     */
+    event_id?: number;
+    /**
+     * Always queued.
+     */
+    status?: string;
+};
+
+export type AutomationRunRequestWritable = {
+    /**
+     * The task to run the rule for. You need write access to it, and it has to belong to the project of the rule.
+     */
+    task_id: number;
+};
+
 export type AutomationSecretWritable = {
     /**
      * The name scripts and templates use: letters, digits and underscores, not starting with a digit, at most 64 characters.
@@ -7293,9 +7431,15 @@ export type AutomationSecretWritable = {
 
 export type AutomationTestRequestWritable = {
     /**
-     * The task to test the rule with. It has to belong to the project of the rule.
+     * For the trigger webhook.incoming: the simulated JSON body of the call, readable as event.payload.
      */
-    task_id: number;
+    payload?: {
+        [key: string]: unknown;
+    };
+    /**
+     * The task to test the rule with. It has to belong to the project of the rule. Required unless the trigger has no task (incoming webhook, a schedule per project): then it is ignored.
+     */
+    task_id?: number;
 };
 
 export type AvailableTransitionWritable = {
@@ -10575,6 +10719,42 @@ export type AuthOpenidCallbackResponses = {
 
 export type AuthOpenidCallbackResponse = AuthOpenidCallbackResponses[keyof AuthOpenidCallbackResponses];
 
+export type AutomationHookIncomingData = {
+    body: Blob | File;
+    headers?: {
+        /**
+         * sha256=<hex HMAC-SHA256 of the body>; required when the rule names a secret.
+         */
+        'X-Vikunja-Signature'?: string;
+    };
+    path: {
+        /**
+         * The secret token of the webhook.
+         */
+        token: string;
+    };
+    query?: never;
+    url: '/automation/hooks/{token}';
+};
+
+export type AutomationHookIncomingErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type AutomationHookIncomingError = AutomationHookIncomingErrors[keyof AutomationHookIncomingErrors];
+
+export type AutomationHookIncomingResponses = {
+    /**
+     * Accepted
+     */
+    202: AutomationHookResult;
+};
+
+export type AutomationHookIncomingResponse = AutomationHookIncomingResponses[keyof AutomationHookIncomingResponses];
+
 export type AutomationCatalogData = {
     body?: never;
     path?: never;
@@ -13108,6 +13288,34 @@ export type AutomationsUpdateResponses = {
 
 export type AutomationsUpdateResponse = AutomationsUpdateResponses[keyof AutomationsUpdateResponses];
 
+export type AutomationRunManuallyData = {
+    body: AutomationRunRequestWritable;
+    path: {
+        project: number;
+        rule: number;
+    };
+    query?: never;
+    url: '/projects/{project}/automations/{rule}/run';
+};
+
+export type AutomationRunManuallyErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type AutomationRunManuallyError = AutomationRunManuallyErrors[keyof AutomationRunManuallyErrors];
+
+export type AutomationRunManuallyResponses = {
+    /**
+     * Accepted
+     */
+    202: AutomationRunQueued;
+};
+
+export type AutomationRunManuallyResponse = AutomationRunManuallyResponses[keyof AutomationRunManuallyResponses];
+
 export type AutomationRunsListData = {
     body?: never;
     path: {
@@ -13230,6 +13438,34 @@ export type AutomationsTestResponses = {
 };
 
 export type AutomationsTestResponse = AutomationsTestResponses[keyof AutomationsTestResponses];
+
+export type AutomationWebhookTokenData = {
+    body?: never;
+    path: {
+        project: number;
+        rule: number;
+    };
+    query?: never;
+    url: '/projects/{project}/automations/{rule}/webhook-token';
+};
+
+export type AutomationWebhookTokenErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type AutomationWebhookTokenError = AutomationWebhookTokenErrors[keyof AutomationWebhookTokenErrors];
+
+export type AutomationWebhookTokenResponses = {
+    /**
+     * Created
+     */
+    201: AutomationWebhookToken;
+};
+
+export type AutomationWebhookTokenResponse = AutomationWebhookTokenResponses[keyof AutomationWebhookTokenResponses];
 
 export type ProjectsBackgroundDeleteData = {
     body?: never;
@@ -13896,6 +14132,33 @@ export type FormsTokenResponses = {
 };
 
 export type FormsTokenResponse = FormsTokenResponses[keyof FormsTokenResponses];
+
+export type AutomationManualListData = {
+    body?: never;
+    path: {
+        project: number;
+    };
+    query?: never;
+    url: '/projects/{project}/manual-automations';
+};
+
+export type AutomationManualListErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type AutomationManualListError = AutomationManualListErrors[keyof AutomationManualListErrors];
+
+export type AutomationManualListResponses = {
+    /**
+     * OK
+     */
+    200: Array<AutomationManualRule> | null;
+};
+
+export type AutomationManualListResponse = AutomationManualListResponses[keyof AutomationManualListResponses];
 
 export type SharesListData = {
     body?: never;
