@@ -460,11 +460,21 @@ func tickSchedule(rule *models.AutomationRule) (int, error) {
 		return 0, err
 	}
 
+	// Scan without a write lock: the scan evaluates the conditions of up to maxscan tasks, and on SQLite a transaction
+	// that writes first would block every other writer for as long. A replica that loses the claim below discards
+	// what it found.
+	rs := db.NewReadSession()
+	targets, note, err := scheduleTargets(rs, rule, at)
+	rs.Close()
+	if err != nil {
+		return 0, err
+	}
+
 	s := db.NewSession()
 	defer s.Close()
-	// The claim comes first, so of several replicas only one scans the tasks: the occurrence is stored as the last
-	// fired time, only when it is newer than what is stored. Of several replicas, exactly one changes the row. The
-	// claim, the scan and the events share one transaction: a crash in between claims nothing.
+	// The claim stores the occurrence as the last fired time, only when it is newer than what is stored, so of several
+	// replicas exactly one changes the row. It shares the transaction with the events: a crash in between claims
+	// nothing.
 	affected, err := s.Where(builder.And(
 		builder.Eq{"id": rule.ID, "enabled": true},
 		builder.Or(builder.IsNull{"last_fired_at"}, builder.Lt{"last_fired_at": dbTime(due)}),
@@ -476,11 +486,6 @@ func tickSchedule(rule *models.AutomationRule) (int, error) {
 	if affected != 1 {
 		_ = s.Rollback()
 		return 0, nil
-	}
-	targets, note, err := scheduleTargets(s, rule, at)
-	if err != nil {
-		_ = s.Rollback()
-		return 0, err
 	}
 	if _, err = s.ID(rule.ID).Cols("last_fire_note").NoAutoTime().Update(&models.AutomationRule{LastFireNote: truncate(note, 250)}); err != nil {
 		_ = s.Rollback()

@@ -687,3 +687,20 @@ func TestSchedule_AGapedScheduleAfterAnOutageFiresOnce(t *testing.T) {
 	advance(24 * time.Hour)
 	assert.Zero(t, tick(t))
 }
+
+// Several replicas scan at once, only the one that wins the claim writes events: the others discard their scan.
+func TestSchedule_ReplicasThatLoseTheClaimInsertNothing(t *testing.T) {
+	reset(t)
+	clearTasks(t, projectOwned)
+	advance := fakeClock(t)
+	addRule(t, projectOwned, user1, rule(spec.TriggerSchedule, map[string]any{"cron": "*/5 * * * *"}, nil, setPriority(1)))
+	const tasks = 12
+	for i := 0; i < tasks; i++ {
+		newTask(t, projectOwned, "t", user1)
+	}
+	before := len(eventsNamed(t, spec.EventSchedule))
+	advance(6 * time.Minute)
+	assert.Equal(t, tasks, tickConcurrently(t, 4))
+	assert.Len(t, eventsNamed(t, spec.EventSchedule), before+tasks)
+	assert.Zero(t, tick(t))
+}

@@ -547,7 +547,7 @@ func (rc *runContext) executeStep(runCtx, parent context.Context, position int64
 	if has {
 		// The other worker's outcome decides: a recorded wait must suspend this worker too, or it would run on
 		// past the pause.
-		return strings.HasPrefix(recorded.Output, stopOutput), strings.HasPrefix(recorded.Output, waitOutput), s.Rollback()
+		return strings.HasPrefix(recorded.Output, stopOutput), recorded.ActionType == spec.ActionWait, s.Rollback()
 	}
 	markSession(s, origin{runID: rc.run.ID, depth: rc.run.Depth})
 	defer unmarkSession(s)
