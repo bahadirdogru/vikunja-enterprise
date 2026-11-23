@@ -120,12 +120,21 @@ func TestApprovals_Notifications(t *testing.T) {
 		assert.NotEqual(t, true, payloadOf(t, toOther[0])["to_requester"])
 		assert.Empty(t, approvalNotificationsOf(t, 6, "approval.resolved"), "the one who decided is not told")
 
+		// Both mails leave when the listener commits, in no particular order: look them up by recipient.
 		sent := mail.SentMails()
 		require.Len(t, sent, 2)
-		assert.Contains(t, sent[0].Subject, "was approved")
-		assert.Contains(t, sent[0].Message, "Your approval request")
-		assert.Contains(t, sent[1].Message, "by user6")
-		assert.Contains(t, sent[1].Message, "You do not need to decide any more.")
+		byRecipient := map[string]*mail.Opts{}
+		for _, m := range sent {
+			byRecipient[m.To] = m
+		}
+		toRequesterMail := byRecipient["user1@example.com"]
+		require.NotNil(t, toRequesterMail, "the requester gets a mail")
+		assert.Contains(t, toRequesterMail.Subject, "was approved")
+		assert.Contains(t, toRequesterMail.Message, "Your approval request")
+		toOtherMail := byRecipient["user2@example.com"]
+		require.NotNil(t, toOtherMail, "the approver who did not decide gets a mail")
+		assert.Contains(t, toOtherMail.Message, "by user6")
+		assert.Contains(t, toOtherMail.Message, "You do not need to decide any more.")
 	})
 
 	t.Run("a rejection and a cancellation by the requester", func(t *testing.T) {

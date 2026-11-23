@@ -201,7 +201,9 @@ func TestTeam_ReadAll(t *testing.T) {
 		team := &Team{}
 
 		// Enable ServiceEnablePublicTeams feature
+		previous := config.ServiceEnablePublicTeams.GetBool()
 		config.ServiceEnablePublicTeams.Set(true)
+		t.Cleanup(func() { config.ServiceEnablePublicTeams.Set(previous) })
 
 		// Fetch without public flag should be the same as before
 		team.IncludePublic = false
