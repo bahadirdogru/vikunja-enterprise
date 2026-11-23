@@ -200,7 +200,7 @@ func pendingAutomationWait(s *xorm.Session, runID int64) (until time.Time, waiti
 	}
 	until, err = time.Parse(time.RFC3339, strings.TrimPrefix(steps[0].Output, AutomationWaitOutput))
 	if err != nil {
-		return time.Time{}, false, nil
+		return time.Time{}, false, nil //nolint:nilerr // an output that is no time is no pending wait
 	}
 	return until, true, nil
 }

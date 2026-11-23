@@ -824,6 +824,7 @@ func TestManual_AnOutsiderGetsTheSameRefusalForAnArchivedProject(t *testing.T) {
 	require.Error(t, err)
 	_, missing := RunManually(user6, 99999, 1, 1)
 	require.Error(t, missing)
-	assert.IsType(t, models.ErrGenericForbidden{}, err)
-	assert.IsType(t, missing, err)
+	var forbidden models.ErrGenericForbidden
+	require.ErrorAs(t, err, &forbidden)
+	assert.ErrorAs(t, missing, &forbidden)
 }
