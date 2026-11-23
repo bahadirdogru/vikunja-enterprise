@@ -279,6 +279,7 @@ func (b *TaskBucket) Update(s *xorm.Session, a web.Auth) (err error) {
 	// Bound from the body; a no-op move would otherwise dispatch the client's task object.
 	b.Task = nil
 	b.Bucket = nil
+	b.Approval = nil
 
 	view, err := GetProjectViewByID(s, b.ProjectViewID)
 	if err != nil {

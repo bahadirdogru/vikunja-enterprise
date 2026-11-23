@@ -576,6 +576,16 @@ func (wf *Workflow) saveStatuses(s *xorm.Session, plan *workflowDocPlan) (map[in
 				if _, err := s.ID(st.ID).Cols("title", "color", "category", "position", "is_initial").Update(st); err != nil {
 					return nil, err
 				}
+				// The category decides the done flag of the tasks in the status, also when it is edited.
+				if stored.Category.isFinal() != st.Category.isFinal() {
+					taskIDs := []int64{}
+					if err := s.Table("task_statuses").Where("status_id = ?", st.ID).Cols("task_id").Find(&taskIDs); err != nil {
+						return nil, err
+					}
+					if err := setDoneOfTasks(s, taskIDs, st.Category.isFinal()); err != nil {
+						return nil, err
+					}
+				}
 			}
 			idMap[submittedID] = st.ID
 			continue
@@ -668,15 +678,21 @@ func moveTasksBetweenStatuses(s *xorm.Session, from, to *WorkflowStatus) error {
 	if from.Category.isFinal() == to.Category.isFinal() {
 		return nil
 	}
+	return setDoneOfTasks(s, taskIDs, to.Category.isFinal())
+}
+
+// setDoneOfTasks writes the done flag of tasks whose status, or the category of it, changed in bulk. Trashed
+// tasks too: they come back with a restore.
+func setDoneOfTasks(s *xorm.Session, taskIDs []int64, done bool) error {
 	doneAt := time.Time{}
-	if to.Category.isFinal() {
+	if done {
 		doneAt = time.Now()
 	}
 	for _, chunk := range chunkInt64s(taskIDs) {
-		_, err = s.Unscoped().
+		_, err := s.Unscoped().
 			Where(builder.In("id", chunk)).
 			Cols("done", "done_at").
-			Update(&Task{Done: to.Category.isFinal(), DoneAt: doneAt})
+			Update(&Task{Done: done, DoneAt: doneAt})
 		if err != nil {
 			return err
 		}

@@ -159,6 +159,8 @@ type TaskStatusChange struct {
 // the task does not move: the pending request is returned in Approval.
 // @Summary Change the status of a task
 func (c *TaskStatusChange) Create(s *xorm.Session, a web.Auth) error {
+	// Bound from the body; the route answers 202 when it is set.
+	c.Approval = nil
 	t := c.task
 	d, err := loadWorkflowDef(s, t.ProjectID)
 	if err != nil {

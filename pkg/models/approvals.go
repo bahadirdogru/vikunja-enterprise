@@ -499,11 +499,15 @@ func (r *ApprovalRequest) myApprovalsCond(s *xorm.Session, a web.Auth, cond buil
 		cond = cond.And(builder.Eq{"project_id": r.FilterProjectID})
 	}
 
-	// Trashed tasks are gone for the lists.
-	cond = cond.And(builder.In("task_id", builder.Select("id").From("tasks").Where(builder.IsNull{"deleted_at"})))
-
+	// The task decides who may read a request, not the project the request was made in: the task may have moved
+	// since (which cancelled the request but keeps it in the lists). Trashed tasks are gone for the lists.
+	requested := builder.Select("task_id").From("approval_requests").Where(cond)
 	projectIDs := []int64{}
-	if err := s.Table("approval_requests").Where(cond).Distinct("project_id").Find(&projectIDs); err != nil {
+	err := s.Table("tasks").
+		Where(builder.And(builder.IsNull{"deleted_at"}, builder.In("id", requested))).
+		Distinct("project_id").
+		Find(&projectIDs)
+	if err != nil {
 		return nil, err
 	}
 	readable := []int64{}
@@ -521,7 +525,10 @@ func (r *ApprovalRequest) myApprovalsCond(s *xorm.Session, a web.Auth, cond buil
 		// An empty In list is dropped by the builder; this matches nothing.
 		return cond.And(builder.Eq{"id": 0}), nil
 	}
-	return cond.And(builder.In("project_id", readable)), nil
+	return cond.And(builder.In("task_id", builder.Select("id").From("tasks").Where(builder.And(
+		builder.IsNull{"deleted_at"},
+		builder.In("project_id", readable),
+	)))), nil
 }
 
 // Create makes an ad-hoc request: a recorded decision on a task that changes no status.
