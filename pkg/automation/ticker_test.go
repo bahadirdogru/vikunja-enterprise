@@ -519,3 +519,91 @@ func TestLatestOccurrence_FindsTheLatestForDenseAndSparseSchedules(t *testing.T)
 		assert.Equal(t, want, latestOccurrence(sched, base, at), expr)
 	}
 }
+
+func TestDueSoon_DoesNotFireForTasksAlreadyInTheWindowWhenTheRuleStarts(t *testing.T) {
+	reset(t)
+	clearTasks(t, projectOwned)
+	advance := fakeClock(t)
+	existing := newTask(t, projectOwned, "already", user1)
+	updateTask(t, user1, existing.ID, dueIn(10*time.Hour), "due_date")
+	farAway := newTask(t, projectOwned, "far", user1)
+	updateTask(t, user1, farAway.ID, dueIn(72*time.Hour), "due_date")
+	ageTasks(t, projectOwned)
+	r := addRule(t, projectOwned, user1, rule(spec.TriggerTaskDueSoon, map[string]any{"offset": "24h"}, nil, setPriority(3)))
+
+	assert.Zero(t, tick(t), "the task that was in the window before the rule existed is not new")
+	fresh := newTask(t, projectOwned, "fresh", user1)
+	updateTask(t, user1, fresh.ID, dueIn(5*time.Hour), "due_date")
+	assert.Equal(t, 1, tick(t), "a task created after the rule is in the window")
+
+	advance(49 * time.Hour)
+	assert.Equal(t, 1, tick(t), "the far task entered the window since")
+	drain(t)
+	assert.EqualValues(t, 0, getTask(t, existing.ID).Priority)
+	assert.EqualValues(t, 3, getTask(t, fresh.ID).Priority)
+	assert.EqualValues(t, 3, getTask(t, farAway.ID).Priority)
+	assert.Len(t, allRuns(t, r.ID), 2)
+}
+
+// The line is when the rule was last enabled or changed its trigger, not when it was last saved.
+func TestRuleArming_OnlyEnablingAndTriggerChangesMoveIt(t *testing.T) {
+	reset(t)
+	r := addRule(t, projectOwned, user1, rule(spec.TriggerTaskOverdue, nil, nil, setPriority(1)))
+	long := time.Now().Add(-48 * time.Hour).UTC().Truncate(time.Second)
+	reseed := func() {
+		s := db.NewAutocommitSession()
+		defer s.Close()
+		_, err := s.ID(r.ID).Cols("armed_at").NoAutoTime().Update(&models.AutomationRule{ArmedAt: long})
+		require.NoError(t, err)
+		models.ResetAutomationCache()
+	}
+	armed := func() time.Time { return getRule(t, r.ID).ArmedAt }
+	save := func(change func(*models.AutomationRule)) {
+		stored := getRule(t, r.ID)
+		change(stored)
+		mustCommit(t, func(s *xorm.Session) error { return stored.Update(s, user1) })
+	}
+	assert.WithinDuration(t, time.Now(), armed(), time.Minute, "armed when created")
+
+	reseed()
+	save(func(x *models.AutomationRule) { x.Title = "new title"; x.Actions = []*spec.Action{setPriority(2)} })
+	assert.True(t, armed().Equal(long), "editing title and actions keeps the line")
+
+	save(func(x *models.AutomationRule) { x.Enabled = false })
+	assert.True(t, armed().Equal(long), "disabling keeps the line")
+	save(func(x *models.AutomationRule) { x.Enabled = true })
+	assert.WithinDuration(t, time.Now(), armed(), time.Minute, "enabling moves it")
+
+	reseed()
+	save(func(x *models.AutomationRule) {
+		x.Trigger = spec.Trigger{Type: spec.TriggerTaskDueSoon, Options: map[string]any{"offset": "2h"}}
+	})
+	assert.WithinDuration(t, time.Now(), armed(), time.Minute, "another trigger moves it")
+	reseed()
+	save(func(x *models.AutomationRule) { x.Trigger.Options = map[string]any{"offset": "3h"} })
+	assert.WithinDuration(t, time.Now(), armed(), time.Minute, "other options move it")
+}
+
+// A task that became overdue while the server was down still fires after the rule was edited.
+func TestOverdue_EditingTheRuleDoesNotDropTasksThatCrossedMeanwhile(t *testing.T) {
+	reset(t)
+	clearTasks(t, projectOwned)
+	advance := fakeClock(t)
+	r := addRule(t, projectOwned, user1, rule(spec.TriggerTaskOverdue, nil, nil, setPriority(5)))
+	task := newTask(t, projectOwned, "late", user1)
+	updateTask(t, user1, task.ID, dueIn(time.Hour), "due_date")
+	advance(2 * time.Hour)
+	// The rule is saved after the task became overdue, with the ticker not having run in between.
+	setRuleUpdated(t, r.ID, now())
+	assert.Equal(t, 1, tick(t))
+}
+
+// ageTasks makes the tasks older than any rule created by a test, which is what separates "was there before" from
+// "created after" at the resolution of the database.
+func ageTasks(t *testing.T, projectID int64) {
+	t.Helper()
+	s := db.NewAutocommitSession()
+	defer s.Close()
+	_, err := s.Exec("UPDATE tasks SET created = ? WHERE project_id = ?", time.Now().Add(-72*time.Hour).UTC().Format("2006-01-02 15:04:05"), projectID)
+	require.NoError(t, err)
+}

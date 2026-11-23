@@ -255,6 +255,9 @@ func planNotify(env *Env, p params) (*Plan, error) {
 		plan.Warnings = append(plan.Warnings, fmt.Sprintf("%d recipient(s) skipped: unknown or without access to the project", skipped))
 	}
 	plan.apply = func() (string, error) {
+		// The notification is persisted in the transaction of the step. Its mail is queued by the AfterInsert of the
+		// row, which xorm runs only when the transaction commits: a step that fails at the 50th recipient rolls
+		// back and sends nothing, so the retry does not send twice.
 		for _, target := range targets {
 			n := &models.AutomationNotifyNotification{
 				Message:   message,

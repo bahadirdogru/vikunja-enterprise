@@ -115,3 +115,49 @@ func TestSchedule_TasksCreatedByTheRuleAreNotItsTargetsAgain(t *testing.T) {
 	runTicks(t, advance, 10, time.Minute)
 	assert.EqualValues(t, 11, countProjectTasks(t, projectOwned), "the seed task is the only target of ten firings; the copies are not targets, or the number would double every minute")
 }
+
+// Payload paths with a hyphen are allowed by the conditions and are available to the placeholders too.
+func TestRender_PayloadPathsMayContainHyphens(t *testing.T) {
+	sub := &Subject{Event: &Payload{Hook: map[string]any{"order-id": float64(7), "ship-to": map[string]any{"zip-code": "12345"}}}}
+	var unknown []string
+	got := Render("#{{event.payload.order-id}} to {{ event.payload.ship-to.zip-code }} {{event.payload.nope-x}}", sub, &unknown)
+	assert.Equal(t, "#7 to 12345 ", got)
+	assert.Equal(t, []string{"event.payload.nope-x"}, unknown)
+}
+
+// A marker insert that fails for another reason than a lost claim is an error, not "someone else was faster".
+func TestClaimDue_ARealInsertErrorIsReturnedNotSwallowed(t *testing.T) {
+	reset(t)
+	clearTasks(t, projectOwned)
+	fakeClock(t)
+	r := addRule(t, projectOwned, user1, rule(spec.TriggerTaskOverdue, nil, nil, setPriority(5)))
+	task := newTask(t, projectOwned, "late", user1)
+	updateTask(t, user1, task.ID, dueIn(-time.Hour), "due_date")
+	stored := getTask(t, task.ID)
+
+	s := db.NewAutocommitSession()
+	_, err := s.Exec("CREATE TRIGGER automation_marker_boom BEFORE INSERT ON automation_due_markers BEGIN SELECT RAISE(ABORT, 'boom'); END")
+	require.NoError(t, err)
+	s.Close()
+	t.Cleanup(func() {
+		s := db.NewAutocommitSession()
+		defer s.Close()
+		_, _ = s.Exec("DROP TRIGGER IF EXISTS automation_marker_boom")
+	})
+	claimed, err := claimDue(getRule(t, r.ID), stored, now(), true)
+	require.Error(t, err)
+	assert.False(t, claimed)
+	assert.Contains(t, err.Error(), "boom")
+
+	// A marker that exists already is a lost claim and no error.
+	s = db.NewAutocommitSession()
+	_, err = s.Exec("DROP TRIGGER automation_marker_boom")
+	require.NoError(t, err)
+	s.Close()
+	claimed, err = claimDue(getRule(t, r.ID), stored, now(), true)
+	require.NoError(t, err)
+	assert.True(t, claimed)
+	claimed, err = claimDue(getRule(t, r.ID), stored, now(), true)
+	require.NoError(t, err)
+	assert.False(t, claimed)
+}

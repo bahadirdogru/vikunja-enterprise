@@ -285,7 +285,7 @@ func TestAutomation_RetentionCleanup(t *testing.T) {
 	require.NoError(t, s.Commit())
 	s.Close()
 	assert.EqualValues(t, 1, runs, "a running run is never cleaned up")
-	assert.EqualValues(t, 2, events)
+	assert.EqualValues(t, 1, events, "the event of a running run stays: the run may continue from it")
 	db.AssertMissing(t, "automation_runs", map[string]interface{}{"id": old.ID})
 	db.AssertMissing(t, "automation_run_steps", map[string]interface{}{"run_id": old.ID})
 	_ = running

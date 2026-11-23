@@ -24,7 +24,7 @@ import (
 	"time"
 )
 
-var placeholderPattern = regexp.MustCompile(`\{\{\s*([A-Za-z0-9_.]+)\s*\}\}`)
+var placeholderPattern = regexp.MustCompile(`\{\{\s*([A-Za-z0-9_.-]+)\s*\}\}`)
 
 // Render replaces the placeholders of a text parameter with values of the subject. It is a plain substitution: there
 // is no logic, no loop and nothing is executed. Unknown placeholders render empty and are added to unknown.

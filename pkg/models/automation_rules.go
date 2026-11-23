@@ -17,6 +17,7 @@
 package models
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -87,8 +88,12 @@ type AutomationRule struct {
 	ConsecutiveFailures int64     `xorm:"bigint not null default 0" json:"consecutive_failures" readOnly:"true" doc:"How many runs failed in a row. The rule is disabled when this reaches automation.maxconsecutivefailures."`
 	LastRunAt           time.Time `xorm:"DATETIME null" json:"last_run_at" readOnly:"true" doc:"When the rule last ran."`
 	LastRunStatus       string    `xorm:"varchar(20) null" json:"last_run_status" readOnly:"true" doc:"The status of the last run."`
-	LastFiredAt         time.Time `xorm:"DATETIME null" json:"last_fired_at" readOnly:"true" doc:"Schedule triggers: when the schedule last fired. Zero for other triggers and before the first firing."`
-	LastFireNote        string    `xorm:"varchar(250) null" json:"last_fire_note" readOnly:"true" doc:"Schedule triggers: what the last firing did, e.g. that it was capped at automation.ticker.maxtasks tasks."`
+	// ArmedAt is when the rule was created, last enabled or last got another trigger: the overdue and due soon
+	// triggers only fire for what happens after it, so enabling a rule does not replay the past and editing its
+	// actions does not move the line.
+	ArmedAt      time.Time `xorm:"DATETIME null" json:"-"`
+	LastFiredAt  time.Time `xorm:"DATETIME null" json:"last_fired_at" readOnly:"true" doc:"Schedule triggers: when the schedule last fired. Zero for other triggers and before the first firing."`
+	LastFireNote string    `xorm:"varchar(250) null" json:"last_fire_note" readOnly:"true" doc:"Schedule triggers: what the last firing did, e.g. that it was capped at automation.ticker.maxtasks tasks."`
 
 	// WebhookTokenHash is the SHA-256 of the secret in the URL of an incoming webhook; the token itself is never stored.
 	WebhookTokenHash string `xorm:"varchar(64) null INDEX" json:"-"`
@@ -409,6 +414,7 @@ func (r *AutomationRule) Create(s *xorm.Session, a web.Auth) error {
 	r.DisabledReason = ""
 	r.LastRunAt = time.Time{}
 	r.LastRunStatus = ""
+	r.ArmedAt = time.Now()
 	r.LastFiredAt = time.Time{}
 	r.LastFireNote = ""
 	r.WebhookTokenHash = ""
@@ -451,8 +457,12 @@ func (r *AutomationRule) Update(s *xorm.Session, a web.Auth) error {
 	if !r.Enabled && !existing.Enabled {
 		r.ConsecutiveFailures = existing.ConsecutiveFailures
 	}
+	r.ArmedAt = existing.ArmedAt
+	if (r.Enabled && !existing.Enabled) || !sameTrigger(r.Trigger, existing.Trigger) {
+		r.ArmedAt = time.Now()
+	}
 	if _, err = s.ID(r.ID).
-		Cols("title", "description", "enabled", "revision", "owner_id", "trigger", "conditions", "actions", "disabled_reason", "consecutive_failures", "webhook_token_hash").
+		Cols("title", "description", "enabled", "revision", "owner_id", "trigger", "conditions", "actions", "disabled_reason", "consecutive_failures", "webhook_token_hash", "armed_at").
 		Update(r); err != nil {
 		return err
 	}
@@ -513,4 +523,11 @@ func validateAutomationLimits(s *xorm.Session, r *AutomationRule) ([]spec.Issue,
 		}
 	}
 	return issues, nil
+}
+
+// sameTrigger compares two triggers by what is stored of them.
+func sameTrigger(a, b spec.Trigger) bool {
+	ja, errA := json.Marshal(a)
+	jb, errB := json.Marshal(b)
+	return errA == nil && errB == nil && string(ja) == string(jb)
 }

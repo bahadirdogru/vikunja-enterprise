@@ -38,6 +38,7 @@ func (automationEvents20261127100000) TableName() string {
 
 type automationRules20261127100000 struct {
 	ID               int64     `xorm:"bigint autoincr not null unique pk"`
+	ArmedAt          time.Time `xorm:"DATETIME null"`
 	LastFiredAt      time.Time `xorm:"DATETIME null"`
 	LastFireNote     string    `xorm:"varchar(250) null"`
 	WebhookTokenHash string    `xorm:"varchar(64) null INDEX"`

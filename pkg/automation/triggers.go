@@ -566,17 +566,26 @@ func tickDue(rule *models.AutomationRule) (int, error) {
 		builder.Eq{"project_id": rule.ProjectID, "done": false},
 		builder.NotNull{"due_date"},
 	)
+	// Both triggers fire for what happens after the rule was armed (created, last enabled or last got another
+	// trigger), never for the state it finds when it starts: overdue for tasks that became overdue since, due soon
+	// for tasks that entered the window since, or that were created after.
+	armed := rule.ArmedAt
+	if armed.IsZero() {
+		armed = rule.Updated
+	}
 	switch rule.Trigger.Type {
 	case spec.TriggerTaskOverdue:
-		// Tasks that were overdue before the rule was saved are not "becoming" overdue.
-		cond = builder.And(cond, builder.Lt{"due_date": dbTime(at)}, builder.Gte{"due_date": dbTime(rule.Updated)})
+		cond = builder.And(cond, builder.Lt{"due_date": dbTime(at)}, builder.Gte{"due_date": dbTime(armed)})
 	case spec.TriggerTaskDueSoon:
 		offsetText, _ := rule.Trigger.Options["offset"].(string)
 		offset, err := spec.ParseOffset(offsetText)
 		if err != nil {
 			return 0, err
 		}
-		cond = builder.And(cond, builder.Gt{"due_date": dbTime(at)}, builder.Lte{"due_date": dbTime(at.Add(offset))})
+		cond = builder.And(cond,
+			builder.Gt{"due_date": dbTime(at)}, builder.Lte{"due_date": dbTime(at.Add(offset))},
+			builder.Or(builder.Gte{"due_date": dbTime(armed.Add(offset))}, builder.Gte{"created": dbTime(armed)}),
+		)
 	}
 	tasks := []*models.Task{}
 	q := s.Where(cond).And("NOT EXISTS (SELECT 1 FROM automation_due_markers m WHERE m.rule_id = ? AND m.task_id = tasks.id AND m.due_date = tasks.due_date)", rule.ID).
@@ -631,9 +640,17 @@ func claimDue(rule *models.AutomationRule, task *models.Task, at time.Time, matc
 	if !has {
 		marker = &models.AutomationDueMarker{RuleID: rule.ID, TaskID: task.ID, DueDate: task.DueDate, Fired: at}
 		if _, err = s.Insert(marker); err != nil {
-			// The unique index: someone else inserted the marker first.
 			_ = s.Rollback()
-			return false, nil
+			// The unique index on (rule, task) means someone else inserted the marker first. The drivers report
+			// that differently, so look: when the marker is there the claim is lost, otherwise the error is real.
+			check := db.NewReadSession()
+			defer check.Close()
+			exists, getErr := check.Where("rule_id = ? AND task_id = ?", rule.ID, task.ID).Exist(&models.AutomationDueMarker{})
+			if getErr == nil && exists {
+				return false, nil
+			}
+			log.Errorf("[automation] ticker: could not claim task %d for rule %d: %v", task.ID, rule.ID, err)
+			return false, err
 		}
 	} else {
 		affected, err := s.Where(builder.And(builder.Eq{"id": marker.ID}, builder.Neq{"due_date": dbTime(task.DueDate)})).
