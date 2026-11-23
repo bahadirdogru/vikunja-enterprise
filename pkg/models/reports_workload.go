@@ -118,6 +118,11 @@ func RunWorkloadReport(ctx context.Context, s *xorm.Session, a web.Auth, req *Wo
 	if filter == "" {
 		filter = "done = false"
 	} else {
+		// The user filter has to be complete on its own: a text like "done = true) || (done = true" would balance
+		// the parentheses of the combined filter and let done tasks through.
+		if _, err = getTaskFiltersFromFilterString(filter, loc.String()); err != nil {
+			return nil, err
+		}
 		filter = "(" + filter + ") && done = false"
 	}
 

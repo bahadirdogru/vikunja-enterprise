@@ -566,6 +566,18 @@ func TestReport_StatusTime(t *testing.T) {
 		assert.True(t, limited.Truncated)
 	})
 
+	t.Run("the filter cannot let done tasks through", func(t *testing.T) {
+		for _, f := range []string{"done = true", "done = true || done = true", "done = true) || (done = true", "1 = 1) || (done = true", "done = true)) || ((done = true"} {
+			rep, err := runWorkload(cfUser1, WorkloadRequest{ProjectID: env.project, Filter: f})
+			if err != nil {
+				continue
+			}
+			assert.Equal(t, int64(0), rep.Totals.Total, "filter %q", f)
+		}
+		_, err := runWorkload(cfUser1, WorkloadRequest{ProjectID: env.project, Filter: "done = true) || (done = true"})
+		require.Error(t, err, "a filter that is not complete on its own")
+	})
+
 	t.Run("permissions", func(t *testing.T) {
 		_, err := runStatusTime(cfUser2, StatusTimeRequest{ProjectID: env.project})
 		require.Error(t, err, "a project the viewer cannot read")
