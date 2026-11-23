@@ -897,6 +897,20 @@ func TestReport_TimeTracking(t *testing.T) {
 		assert.Equal(t, int64(1800), got["2026-01-21"])
 	})
 
+	t.Run("by label, an entry with several folded labels counts once in other", func(t *testing.T) {
+		// The entry of t3 (30 minutes, from the subtest above) gets two labels that are both folded. Label 1 is kept.
+		// Other: the entry of t2 (label 2), the entry of t3 (labels 4 and 5) and the two entries without label.
+		insertRow(t, &LabelTask{TaskID: id["t3"], LabelID: 4})
+		insertRow(t, &LabelTask{TaskID: id["t3"], LabelID: 5})
+		rep, err := runTimeTracking(cfUser1, rng(TimeTrackingRequest{GroupBy: "label", Limit: 1}))
+		require.NoError(t, err)
+		require.Len(t, rep.Groups, 2)
+		assert.Equal(t, int64(5400+7200), rep.Groups[0].Seconds)
+		require.True(t, rep.Groups[1].Other)
+		assert.Equal(t, int64(7200+1800+3600+600), rep.Groups[1].Seconds)
+		assert.Equal(t, int64(4), rep.Groups[1].Entries)
+	})
+
 	t.Run("the entry list and the report agree", func(t *testing.T) {
 		for _, viewer := range []web.Auth{cfUser1, cfUser2, &user.User{ID: 3}, &user.User{ID: 5}} {
 			s := db.NewSession()

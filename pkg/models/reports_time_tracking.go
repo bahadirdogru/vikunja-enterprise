@@ -208,6 +208,7 @@ func RunTimeTrackingReport(ctx context.Context, s *xorm.Session, a web.Auth, req
 		none    bool
 		seconds int64
 		entries int64
+		members map[*TimeEntry]struct{}
 	}
 	groups := map[string]*acc{}
 	order := []string{}
@@ -220,6 +221,13 @@ func RunTimeTrackingReport(ctx context.Context, s *xorm.Session, a web.Auth, req
 		}
 		g.seconds += seconds(e)
 		g.entries++
+		if rep.MultiValued {
+			// Entries of several groups must count once when the groups are folded into other.
+			if g.members == nil {
+				g.members = map[*TimeEntry]struct{}{}
+			}
+			g.members[e] = struct{}{}
+		}
 	}
 
 	taskProject := map[int64]int64{}
@@ -355,9 +363,11 @@ func RunTimeTrackingReport(ctx context.Context, s *xorm.Session, a web.Auth, req
 	}
 
 	list := make([]*TimeTrackingGroup, 0, len(order))
+	members := map[*TimeTrackingGroup]map[*TimeEntry]struct{}{}
 	for _, canon := range order {
 		g := groups[canon]
 		list = append(list, &TimeTrackingGroup{Key: g.key, Label: g.label, Color: g.color, Seconds: g.seconds, Entries: g.entries, None: g.none})
+		members[list[len(list)-1]] = g.members
 	}
 	sort.SliceStable(list, func(i, j int) bool {
 		if list[i].Seconds != list[j].Seconds {
@@ -367,7 +377,18 @@ func RunTimeTrackingReport(ctx context.Context, s *xorm.Session, a web.Auth, req
 	})
 	if len(list) > limit {
 		other := &TimeTrackingGroup{Label: "Other", Other: true}
+		counted := map[*TimeEntry]struct{}{}
 		for _, g := range list[limit:] {
+			if rep.MultiValued {
+				for e := range members[g] {
+					if _, dup := counted[e]; !dup {
+						counted[e] = struct{}{}
+						other.Seconds += seconds(e)
+						other.Entries++
+					}
+				}
+				continue
+			}
 			other.Seconds += g.Seconds
 			other.Entries += g.Entries
 		}
