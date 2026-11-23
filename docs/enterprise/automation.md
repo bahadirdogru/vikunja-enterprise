@@ -705,10 +705,10 @@ longer administers the project disables the rule (`owner_not_admin` /
   project secret (401 otherwise, compared in constant time; checked before the rate
   limit counts). **There is no replay protection**: the signature covers the body only,
   without a timestamp or nonce, so whoever captured a signed request can send it again
-  until the secret is changed. Senders that need it should put a unique id in the body
-  and the rule should drop ids it has seen (a condition on `event.payload.<id>`), and
-  the secret should be rotated when a capture is suspected. The wire format is kept as
-  it is. Calls are limited per
+  until the secret or the address is changed. Rules keep no state between runs, so they
+  cannot filter out requests they have seen. The address (or the secret) should be
+  rotated when a capture is suspected, and a proxy that verifies requests should sit in
+  front of Vikunja where more is needed. The wire format is kept as it is. Calls are limited per
   rule (`automation.webhook.ratelimit` per minute, 429 + `Retry-After`; counted from
   the outbox, so with simultaneous calls it can overshoot by a few) and per IP by the
   router (the floor of the public form endpoints). The route sets no cookies and
