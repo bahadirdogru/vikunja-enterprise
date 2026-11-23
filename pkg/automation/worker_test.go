@@ -255,3 +255,28 @@ func TestWorker_CleanupDeletesOldFinishedWork(t *testing.T) {
 	require.Len(t, remaining, 1)
 	assert.Equal(t, models.AutomationEventPending, remaining[0].Status)
 }
+
+// An event that goes dead because of rule B must not fail the run of rule A that waits for its resume event.
+func TestWorker_ADeadEventDoesNotFailTheWaitingRunOfAnotherRule(t *testing.T) {
+	reset(t)
+	resetCounters()
+	advance := fakeClock(t)
+	config.AutomationMaxAttempts.Set(1)
+	a := insertRawRule(t, projectOwned, user1, spec.TriggerTaskCreated,
+		rawAct(spec.ActionWait, "duration", "1h"),
+		rawAct("test.count", "key", "after"),
+	)
+	b := insertRawRule(t, projectOwned, user1, spec.TriggerTaskCreated, rawAct("test.flaky", "key", "b", "fails", 100))
+	newTask(t, projectOwned, "task", user1)
+	drain(t)
+
+	assert.Equal(t, models.AutomationEventDead, allEvents(t)[0].Status)
+	assert.Equal(t, models.AutomationRunFailed, allRuns(t, b.ID)[0].Status)
+	assert.Equal(t, models.AutomationRunRunning, allRuns(t, a.ID)[0].Status, "the waiting run is not failed")
+
+	advance(2 * time.Hour)
+	drain(t)
+	run := allRuns(t, a.ID)[0]
+	assert.Equal(t, models.AutomationRunSuccess, run.Status, run.Error)
+	assert.Equal(t, 1, counter("after"))
+}

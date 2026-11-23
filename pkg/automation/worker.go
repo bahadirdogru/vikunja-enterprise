@@ -202,6 +202,18 @@ func failRunningRuns(s *xorm.Session, ev *models.AutomationEvent, cause error) {
 		return
 	}
 	for _, run := range runs {
+		if ev.Name != spec.EventResume {
+			// The event went dead because of another rule: a run of this event that waits is continued by its own
+			// resume event and is none of this failure's business.
+			steps := []*models.AutomationRunStep{}
+			if err := s.Where("run_id = ?", run.ID).Find(&steps); err != nil {
+				log.Errorf("[automation] could not load the steps of run %d: %v", run.ID, err)
+				continue
+			}
+			if _, waiting := pendingWait(steps); waiting {
+				continue
+			}
+		}
 		rule, err := models.GetAutomationRule(s, run.RuleID)
 		if err != nil {
 			rule = &models.AutomationRule{ID: run.RuleID}
