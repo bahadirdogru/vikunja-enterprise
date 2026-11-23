@@ -621,14 +621,17 @@ longer administers the project disables the rule (`owner_not_admin` /
 - **Manual** (`manual`, option `label`): `POST .../{rule}/run` needs write access to
   the task and the task to belong to the project of the rule. The actions still run
   with the permissions of the owner of the rule, never more than the owner has.
-  Disabled rules and rules with another trigger are 409.
+  Access to the project is checked first: whoever cannot write in it gets the same 403
+  whether the project, the rule or the task exist, are enabled or have a manual
+  trigger. For people with access, disabled rules and rules with another trigger are 409.
 - **Schedule** (`schedule`, options `cron`, `scope`): a five field cron expression
-  or `@daily` and friends, evaluated in the **time zone of the server**
-  (`service.timezone`), on wall clock time. `scope: tasks` (default) starts one run per
+  or `@hourly`, `@daily`, `@weekly`, `@monthly`, `@yearly`, evaluated in the **time zone of the server**
+  (`service.timezone`), on wall clock time. `@every ...` and `TZ=` / `CRON_TZ=` prefixes are
+  rejected: an interval would fire on every tick, and a zone of its own would break the daylight saving handling. `scope: tasks` (default) starts one run per
   task of the project that matches the conditions; `scope: project` starts one run
   with no task (use `task.create` first). Nothing fires for the time before the rule
   was last saved (enabling does not replay the past), and a server that was down fires
-  once for all the occurrences it missed. Daylight saving: a wall clock time that does
+  once for all the occurrences it missed, however long it was down. Daylight saving: a wall clock time that does
   not exist (02:30 on the night the clocks jump forward) is skipped that day, an hourly
   job loses only the hour that does not exist; a wall clock time that happens twice
   (the clocks go back) fires once, for the first of them.
@@ -636,7 +639,12 @@ longer administers the project disables the rule (`owner_not_admin` /
   at least 1m): fire for not done tasks of the project the first time they cross the
   line. A marker per (rule, task) stores the due date it fired for, so a task fires
   once per due date and a changed due date arms it again. Tasks that were already
-  overdue when the rule was saved do not fire. Conditions are checked before a run is
+  overdue when the rule was armed do not fire, and neither do tasks that were in the
+  due soon window then. A rule is armed when it is created, enabled again or gets another
+  trigger (type or options); editing its title, conditions or actions does not move the
+  line, so a task that crossed meanwhile still fires. Due soon fires for tasks that
+  entered the window after that or were created after that. (The schedule keeps counting
+  from the last save.) Conditions are checked before a run is
   queued (script conditions only in the run); a non matching task is marked too.
 - **The ticker**: every process runs it every `automation.ticker.interval`
   (30s). It only reads while nothing is due. A firing is claimed in the database in the
@@ -647,7 +655,18 @@ longer administers the project disables the rule (`owner_not_admin` /
   schedule and the note is on the rule as `last_fire_note`; overdue and due soon
   continue on the next tick) and a schedule looks at no more than
   `automation.ticker.maxscan` tasks. The per-minute run limit does not apply to the
-  time based triggers; this cap does.
+  time based triggers; this cap does. A schedule claims its occurrence before it
+  scans the tasks, so only one replica does the scan.
+  **Loops**: a task created by a run (`task.create`, the subtask and related task
+  actions, scripts) is remembered with that run (`automation_task_origins`). The time
+  based events for such a task carry the run as their origin and one more level of
+  depth, so a rule never fires for what its own run created and a chain of rules that
+  create tasks for each other ends at `automation.maxdepth`. `http.request` and
+  `http.fetch` refuse URLs that are incoming webhooks of this server (the host of
+  `service.publicurl` and the path `/api/v2/automation/hooks/`), also after redirects.
+  Limits that need a value above 0 (`automation.ticker.maxscan`,
+  `automation.webhook.maxbody`, `automation.maxpendingwaits`) are replaced with their
+  defaults at startup when set to 0 or less.
 - **Incoming webhook** (`webhook.incoming`, option `secret`):
   `POST /api/v2/automation/hooks/{token}` with a JSON object (`{}` for none; at most
   `automation.webhook.maxbody` bytes, 413 above) starts the rule asynchronously (202).
@@ -659,7 +678,13 @@ longer administers the project disables the rule (`owner_not_admin` /
   It is not logged. Unknown tokens, disabled rules and rules with another trigger are
   all the same 404. With a `secret` option the call has to carry
   `X-Vikunja-Signature: sha256=<hex HMAC-SHA256 of the raw body>` keyed with that
-  project secret (401 otherwise, compared in constant time). Calls are limited per
+  project secret (401 otherwise, compared in constant time; checked before the rate
+  limit counts). **There is no replay protection**: the signature covers the body only,
+  without a timestamp or nonce, so whoever captured a signed request can send it again
+  until the secret is changed. Senders that need it should put a unique id in the body
+  and the rule should drop ids it has seen (a condition on `event.payload.<id>`), and
+  the secret should be rotated when a capture is suspected. The wire format is kept as
+  it is. Calls are limited per
   rule (`automation.webhook.ratelimit` per minute, 429 + `Retry-After`; counted from
   the outbox, so with simultaneous calls it can overshoot by a few) and per IP by the
   router (the floor of the public form endpoints). The route sets no cookies and
@@ -670,7 +695,12 @@ longer administers the project disables the rule (`owner_not_admin` /
   generic notification list (the frontend renderer is not part of 3d).
 - **Wait**: the run stays `running`, a `rule.resume` event due after the delay
   continues it with the actions after the wait; conditions are not evaluated again.
-  A rule that was disabled or deleted meanwhile aborts the run.
+  A rule that was disabled or deleted meanwhile aborts the run. Only the resume event
+  continues past a wait: another delivery of the original event never does. A project
+  can have `automation.maxpendingwaits` (1000) runs waiting; a wait over that fails.
+  The retention cleanup keeps the event of a run that is still running, and the daily
+  cleanup fails runs that are running for longer than `automation.waitmax` per wait
+  action of their rule plus a day (the resume event was lost).
 
 ## UI
 
