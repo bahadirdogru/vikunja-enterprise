@@ -528,13 +528,55 @@ func TestWait_AnotherDeliveryOfTheOriginalEventDoesNotSkipThePause(t *testing.T)
 	require.Equal(t, "task.created", original.Name)
 
 	// Put the original event back in the queue, as a retry of a sibling rule's failure would.
-	s := db.NewSession()
+	s := db.NewAutocommitSession()
 	_, err := s.ID(original.ID).Cols("status").Update(&models.AutomationEvent{Status: models.AutomationEventPending})
 	require.NoError(t, err)
 	s.Close()
 	drain(t)
 	assert.EqualValues(t, 0, getTask(t, task.ID).Priority, "still waiting")
 	assert.Equal(t, models.AutomationRunRunning, allRuns(t, r.ID)[0].Status)
+}
+
+// A late delivery of the original event (after the wait is over, before the resume event ran) must not continue the
+// run: the post-wait steps belong to the resume event and are applied once.
+func TestWait_AnotherDeliveryOfTheOriginalEventAfterTheWaitDoesNotContinue(t *testing.T) {
+	reset(t)
+	advance := fakeClock(t)
+	r := addRule(t, projectOwned, user1, rule(spec.TriggerTaskCreated, nil, nil,
+		act(spec.ActionWait, map[string]any{"duration": "1h"}), act(spec.ActionAddComment, map[string]any{"text": "after the wait"})))
+	task := newTask(t, projectOwned, "w", user1)
+	drain(t)
+	original := allEvents(t)[0]
+	require.Equal(t, "task.created", original.Name)
+	resume := lastEventOf(t, spec.EventResume)
+
+	setStatus := func(id int64, status string) {
+		s := db.NewAutocommitSession()
+		defer s.Close()
+		_, err := s.ID(id).Cols("status").Update(&models.AutomationEvent{Status: status})
+		require.NoError(t, err)
+	}
+	advance(2 * time.Hour)
+	setStatus(resume.ID, models.AutomationEventDead) // keep the resume event out of reach for now
+	setStatus(original.ID, models.AutomationEventPending)
+	assert.Equal(t, 1, drain(t))
+	assert.Len(t, runSteps(t, allRuns(t, r.ID)[0].ID), 1, "only the wait: the original event does not continue past it")
+	assert.Equal(t, models.AutomationRunRunning, allRuns(t, r.ID)[0].Status)
+
+	setStatus(resume.ID, models.AutomationEventPending)
+	assert.Equal(t, 1, drain(t))
+	// Delivered again once more, by either event.
+	setStatus(resume.ID, models.AutomationEventPending)
+	setStatus(original.ID, models.AutomationEventPending)
+	drain(t)
+	run := allRuns(t, r.ID)[0]
+	assert.Equal(t, models.AutomationRunSuccess, run.Status, run.Error)
+	assert.Len(t, runSteps(t, run.ID), 2)
+	s := db.NewSession()
+	defer s.Close()
+	n, err := s.Where("task_id = ? AND comment LIKE ?", task.ID, "%after the wait%").Count(&models.TaskComment{})
+	require.NoError(t, err)
+	assert.EqualValues(t, 1, n, "the step after the wait was applied once")
 }
 
 func TestWait_Validation(t *testing.T) {

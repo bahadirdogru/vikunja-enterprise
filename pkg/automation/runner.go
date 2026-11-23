@@ -439,12 +439,12 @@ func (rc *runContext) execute(ctx context.Context, s *xorm.Session, fresh bool) 
 		}
 	}
 
-	// A run that waits is continued by its resume event. Another delivery of the original event (a retry of a
-	// different rule's failure, say) must not skip the pause.
-	if rc.ev.Name != spec.EventResume {
-		if until, waiting := pendingWait(existing); waiting && until.After(now()) {
-			return nil
-		}
+	// A run that waits is continued by its resume event, and only by it. Another delivery of the original event (a
+	// retry of a different rule's failure, say) must not continue past the wait, however late it comes: it would run
+	// next to the resume event. A resume event that is delivered again while a later wait of the run is pending
+	// must not run past that one either.
+	if until, waiting := pendingWait(existing); waiting && (rc.ev.Name != spec.EventResume || until.After(now())) {
+		return nil
 	}
 
 	for position, act := range rc.rule.Actions {
