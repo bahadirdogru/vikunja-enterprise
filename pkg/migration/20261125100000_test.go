@@ -56,8 +56,10 @@ func TestFormsMigration20261125100000(t *testing.T) {
 	}
 
 	now := time.Now()
-	_, err = x.Insert(&forms20261125100000{ProjectID: 1, Title: "a", Token: "t1", Access: "public", OwnerID: 1, Fields: "[]", Created: now, Updated: now})
+	// Settings is set on both rows: the migration struct holds the json column as a string, and PostgreSQL rejects
+	// the empty string as json, which would make the second insert fail for the wrong reason.
+	_, err = x.Insert(&forms20261125100000{ProjectID: 1, Title: "a", Token: "t1", Access: "public", OwnerID: 1, Fields: "[]", Settings: "{}", Created: now, Updated: now})
 	require.NoError(t, err)
-	_, err = x.Insert(&forms20261125100000{ProjectID: 1, Title: "b", Token: "t1", Access: "public", OwnerID: 1, Fields: "[]", Created: now, Updated: now})
+	_, err = x.Insert(&forms20261125100000{ProjectID: 1, Title: "b", Token: "t1", Access: "public", OwnerID: 1, Fields: "[]", Settings: "{}", Created: now, Updated: now})
 	require.Error(t, err, "the unique index rejects a second form with the same token")
 }
