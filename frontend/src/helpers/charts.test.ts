@@ -8,6 +8,7 @@ import {
 	bandScale,
 	donutArcs,
 	formatAxisNumber,
+	formatAxisValue,
 	formatBucket,
 	formatSeconds,
 	groupColor,
@@ -68,6 +69,9 @@ describe('formatting', () => {
 		expect(formatAxisNumber(1234.5, 'en')).toBe('1,234.5')
 		expect(formatAxisNumber(15000, 'en')).toBe('15K')
 		expect(formatAxisNumber(1234, 'tr-TR')).toBe('1.234')
+		expect(formatAxisValue(15000, 'tasks', 'en')).toBe('15K')
+		expect(formatAxisValue(21600, 'seconds', 'en')).toBe('6 h')
+		expect(formatAxisValue(90, 'seconds', 'en')).toBe('2 min')
 	})
 
 	it('formats durations', () => {

@@ -3,7 +3,7 @@ import {computed, ref, useId} from 'vue'
 
 import {
 	bandScale,
-	formatAxisNumber,
+	formatAxisValue,
 	assignColors,
 	groupLabel,
 	groupKeyId,
@@ -91,8 +91,13 @@ const maxValue = computed(() => {
 	return Math.max(0, ...model.value.bars.flatMap(b => [...b.values.values()]))
 })
 
-const ticks = computed(() => niceTicks(0, maxValue.value || 1, horizontal.value ? 4 : 5))
-const tickLabels = computed(() => ticks.value.ticks.map(v => formatAxisNumber(v, locale.value)))
+// Durations get ticks on whole hours or minutes, not on 5.6 hours.
+const tickUnit = computed(() => props.unit !== 'seconds' ? 1 : maxValue.value >= 7200 ? 3600 : maxValue.value >= 120 ? 60 : 1)
+const ticks = computed(() => {
+	const nice = niceTicks(0, (maxValue.value || 1) / tickUnit.value, horizontal.value ? 4 : 5)
+	return {...nice, ticks: nice.ticks.map(v => v * tickUnit.value), min: nice.min * tickUnit.value, max: nice.max * tickUnit.value}
+})
+const tickLabels = computed(() => ticks.value.ticks.map(v => formatAxisValue(v, props.unit, locale.value)))
 
 const tickMarks = computed(() => {
 	const f = frame.value
@@ -107,7 +112,7 @@ const frame = computed(() => {
 	const longest = Math.max(1, ...props.groups.map(g => Array.from(lbl(g)).length))
 	if (horizontal.value) {
 		const labelWidth = Math.min(longest * CHAR_WIDTH + 10, width * 0.4)
-		return {left: labelWidth, right: width - 40, top: 4, bottom: height - 22, labelWidth}
+		return {left: labelWidth, right: width - (props.unit === 'seconds' ? 60 : 40), top: 4, bottom: height - 22, labelWidth}
 	}
 	const tickWidth = Math.max(...tickLabels.value.map(l => l.length)) * CHAR_WIDTH + 10
 	return {left: tickWidth, right: width - 6, top: 16, bottom: height - 24, labelWidth: 0}
@@ -177,11 +182,11 @@ const marks = computed<Mark[]>(() => {
 		const top = along(total)
 		const valueLabel = !nested.value || props.stacked
 			? horizontal.value
-				? {x: top + 4, y: band.center, text: formatAxisNumber(total, locale.value), anchor: 'start'}
-				: {x: band.center, y: top - 4, text: formatAxisNumber(total, locale.value), anchor: 'middle'}
+				? {x: top + 4, y: band.center, text: formatAxisValue(total, props.unit, locale.value), anchor: 'start'}
+				: {x: band.center, y: top - 4, text: formatAxisValue(total, props.unit, locale.value), anchor: 'middle'}
 			: null
 		const box = horizontal.value
-			? {x: f.left, y: band.start, width: f.right - f.left + 40, height: band.size}
+			? {x: f.left, y: band.start, width: f.right - f.left + (props.unit === 'seconds' ? 60 : 40), height: band.size}
 			: {x: band.start, y: f.top, width: band.size, height: f.bottom - f.top}
 		const selection: ChartSelection = {group}
 		return {

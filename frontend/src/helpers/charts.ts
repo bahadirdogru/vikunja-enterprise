@@ -222,6 +222,11 @@ export function formatSeconds(seconds: number, locale?: string): string {
 	return `${formatNumber(seconds, locale)} s`
 }
 
+// Axis ticks and value labels: durations read as hours and minutes, not as a bare number of seconds.
+export function formatAxisValue(value: number, unit: string | undefined, locale?: string): string {
+	return unit === 'seconds' ? formatSeconds(value, locale) : formatAxisNumber(value, locale)
+}
+
 export function formatValue(value: number, unit: string | undefined, locale?: string): string {
 	return unit === 'seconds' ? formatSeconds(value, locale) : formatNumber(value, locale)
 }
