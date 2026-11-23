@@ -28,11 +28,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func countProjectTasks(t *testing.T, projectID int64) int64 {
+func countProjectTasks(t *testing.T) int64 {
 	t.Helper()
 	s := db.NewSession()
 	defer s.Close()
-	n, err := s.Where("project_id = ?", projectID).Count(&models.Task{})
+	n, err := s.Where("project_id = ?", projectOwned).Count(&models.Task{})
 	require.NoError(t, err)
 	return n
 }
@@ -62,11 +62,11 @@ func TestOverdue_TasksCreatedByTheRuleDoNotFireItAgain(t *testing.T) {
 
 	runTicks(t, advance, 12, 2*time.Minute)
 	runTicks(t, advance, 1, 2*time.Hour)
-	before := countProjectTasks(t, projectOwned)
+	before := countProjectTasks(t)
 	runTicks(t, advance, 12, 2*time.Minute)
 
 	assert.EqualValues(t, 2, before, "the late task and the one task the rule created for it")
-	assert.Equal(t, before, countProjectTasks(t, projectOwned), "no further tasks")
+	assert.Equal(t, before, countProjectTasks(t), "no further tasks")
 	var skipped int
 	for _, run := range allRuns(t, r.ID) {
 		if run.SkipReason == SkipSelfTrigger {
@@ -85,7 +85,7 @@ func TestDueSoon_TasksCreatedByTheRuleDoNotFireItAgain(t *testing.T) {
 	updateTask(t, user1, task.ID, dueIn(time.Hour), "due_date")
 
 	runTicks(t, advance, 30, 20*time.Second)
-	assert.EqualValues(t, 2, countProjectTasks(t, projectOwned))
+	assert.EqualValues(t, 2, countProjectTasks(t))
 }
 
 // Two rules that create tasks for each other are stopped by the depth limit.
@@ -99,9 +99,9 @@ func TestOverdue_ChainsOfCreatedTasksAcrossRulesAreBoundedByTheDepth(t *testing.
 	updateTask(t, user1, task.ID, dueIn(time.Hour), "due_date")
 
 	runTicks(t, advance, 40, 2*time.Minute)
-	settled := countProjectTasks(t, projectOwned)
+	settled := countProjectTasks(t)
 	runTicks(t, advance, 20, 2*time.Minute)
-	assert.Equal(t, settled, countProjectTasks(t, projectOwned), "the chain ended")
+	assert.Equal(t, settled, countProjectTasks(t), "the chain ended")
 	assert.Less(t, settled, int64(30))
 }
 
@@ -113,7 +113,7 @@ func TestSchedule_TasksCreatedByTheRuleAreNotItsTargetsAgain(t *testing.T) {
 	newTask(t, projectOwned, "seed", user1)
 
 	runTicks(t, advance, 10, time.Minute)
-	assert.EqualValues(t, 11, countProjectTasks(t, projectOwned), "the seed task is the only target of ten firings; the copies are not targets, or the number would double every minute")
+	assert.EqualValues(t, 11, countProjectTasks(t), "the seed task is the only target of ten firings; the copies are not targets, or the number would double every minute")
 }
 
 // Payload paths with a hyphen are allowed by the conditions and are available to the placeholders too.

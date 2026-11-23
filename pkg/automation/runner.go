@@ -376,6 +376,32 @@ func (rc *runContext) checkOwner(s *xorm.Session) (ok bool, err error) {
 	return true, nil
 }
 
+// checkConditions evaluates the conditions of the rule for a run that has not done anything yet. finished is set
+// when the run was ended because of them (or because the task is gone).
+func (rc *runContext) checkConditions(runCtx context.Context, s *xorm.Session) (finished bool, err error) {
+	subject, err := LoadSubject(s, rc.payload.TaskID, rc.payload, now())
+	if err == nil {
+		err = requireReadableSubject(s, rc.owner, subject)
+	}
+	if err != nil {
+		if errors.Is(err, ErrTaskGone) {
+			return true, rc.finish(s, models.AutomationRunSkipped, SkipTaskNotFound, nil)
+		}
+		return false, err
+	}
+	// The environment lets script conditions read as the owner; they never get a host that can write.
+	condEnv := &Env{Ctx: runCtx, S: s, Auth: rc.owner, Rule: rc.rule, Event: rc.payload, Now: now(), Sub: subject}
+	subject.Script = condEnv.scriptCondition
+	holds, err := Evaluate(rc.rule.Conditions, subject)
+	if err != nil {
+		return true, rc.finish(s, models.AutomationRunFailed, "", err)
+	}
+	if !holds {
+		return true, rc.finish(s, models.AutomationRunSkipped, SkipConditions, nil)
+	}
+	return false, nil
+}
+
 func (rc *runContext) execute(ctx context.Context, s *xorm.Session, fresh bool) error {
 	if fresh {
 		if done, err := rc.preChecks(s); done || err != nil {
@@ -417,33 +443,12 @@ func (rc *runContext) execute(ctx context.Context, s *xorm.Session, fresh bool) 
 
 	// Conditions look at the state before the first action; a resumed run has changed the task already.
 	if len(existing) == 0 {
-		subject, err := LoadSubject(s, rc.payload.TaskID, rc.payload, now())
-		if err == nil {
-			err = requireReadableSubject(s, rc.owner, subject)
-		}
-		if err != nil {
-			if errors.Is(err, ErrTaskGone) {
-				return rc.finish(s, models.AutomationRunSkipped, SkipTaskNotFound, nil)
-			}
+		if finished, err := rc.checkConditions(runCtx, s); finished || err != nil {
 			return err
-		}
-		// The environment lets script conditions read as the owner; they never get a host that can write.
-		condEnv := &Env{Ctx: runCtx, S: s, Auth: rc.owner, Rule: rc.rule, Event: rc.payload, Now: now(), Sub: subject}
-		subject.Script = condEnv.scriptCondition
-		holds, err := Evaluate(rc.rule.Conditions, subject)
-		if err != nil {
-			return rc.finish(s, models.AutomationRunFailed, "", err)
-		}
-		if !holds {
-			return rc.finish(s, models.AutomationRunSkipped, SkipConditions, nil)
 		}
 	}
 
-	// A run that waits is continued by its resume event, and only by it. Another delivery of the original event (a
-	// retry of a different rule's failure, say) must not continue past the wait, however late it comes: it would run
-	// next to the resume event. A resume event that is delivered again while a later wait of the run is pending
-	// must not run past that one either.
-	if until, waiting := pendingWait(existing); waiting && (rc.ev.Name != spec.EventResume || until.After(now())) {
+	if rc.heldByWait(existing) {
 		return nil
 	}
 
@@ -479,6 +484,15 @@ func (rc *runContext) execute(ctx context.Context, s *xorm.Session, fresh bool) 
 		}
 	}
 	return rc.finish(s, models.AutomationRunSuccess, "", nil)
+}
+
+// heldByWait reports whether the run has to stay where it is because it waits. A run that waits is continued by its
+// resume event, and only by it. Another delivery of the original event (a retry of a different rule's failure, say)
+// must not continue past the wait, however late it comes: it would run next to the resume event. A resume event that
+// is delivered again while a later wait of the run is pending must not run past that one either.
+func (rc *runContext) heldByWait(steps []*models.AutomationRunStep) bool {
+	until, waiting := pendingWait(steps)
+	return waiting && (rc.ev.Name != spec.EventResume || until.After(now()))
 }
 
 // pendingWait reports whether the last successful step of the run is a wait, and until when.
