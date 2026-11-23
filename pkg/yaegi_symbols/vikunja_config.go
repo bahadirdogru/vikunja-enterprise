@@ -197,6 +197,7 @@ func init() {
 		"ReportsCacheTTL":                            reflect.ValueOf(config.ReportsCacheTTL),
 		"ReportsMaxBuckets":                          reflect.ValueOf(config.ReportsMaxBuckets),
 		"ReportsMaxGroups":                           reflect.ValueOf(config.ReportsMaxGroups),
+		"ReportsMaxRows":                             reflect.ValueOf(config.ReportsMaxRows),
 		"ReportsTimeout":                             reflect.ValueOf(config.ReportsTimeout),
 		"ResetForTests":                              reflect.ValueOf(config.ResetForTests),
 		"ResolvePath":                                reflect.ValueOf(config.ResolvePath),
