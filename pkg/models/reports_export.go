@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"code.vikunja.io/api/pkg/config"
+	"code.vikunja.io/api/pkg/db"
 	"code.vikunja.io/api/pkg/user"
 	"code.vikunja.io/api/pkg/web"
 
@@ -180,7 +181,7 @@ func ExportTasksCSV(ctx context.Context, s *xorm.Session, a web.Auth, req *TaskE
 
 	ctx, cancel := context.WithTimeout(ctx, config.ReportsTimeout.GetDuration())
 	defer cancel()
-	s = s.Context(ctx)
+	db.SetSessionContext(ctx, s)
 
 	tf := &TaskCollection{
 		ProjectID:          req.ProjectID,

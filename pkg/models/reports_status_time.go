@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"code.vikunja.io/api/pkg/config"
+	"code.vikunja.io/api/pkg/db"
 	"code.vikunja.io/api/pkg/web"
 
 	"xorm.io/builder"
@@ -182,7 +183,7 @@ func RunStatusTimeReport(ctx context.Context, s *xorm.Session, a web.Auth, req *
 
 	ctx, cancel := context.WithTimeout(ctx, config.ReportsTimeout.GetDuration())
 	defer cancel()
-	s = s.Context(ctx)
+	db.SetSessionContext(ctx, s)
 
 	tf := &TaskCollection{
 		ProjectID:          req.ProjectID,

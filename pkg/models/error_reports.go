@@ -291,7 +291,7 @@ type ErrReportTooManyRows struct {
 
 // IsErrReportTooManyRows checks if an error is ErrReportTooManyRows.
 func IsErrReportTooManyRows(err error) bool {
-	_, ok := err.(ErrReportTooManyRows)
+	_, ok := errors.AsType[ErrReportTooManyRows](err)
 	return ok
 }
 

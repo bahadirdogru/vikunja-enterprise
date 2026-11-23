@@ -18,12 +18,14 @@ package models
 
 import (
 	"context"
+	"errors"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"code.vikunja.io/api/pkg/config"
+	"code.vikunja.io/api/pkg/db"
 	"code.vikunja.io/api/pkg/web"
 
 	"xorm.io/xorm"
@@ -135,11 +137,11 @@ func RunWorkloadReport(ctx context.Context, s *xorm.Session, a web.Auth, req *Wo
 		plan.req.Measure, plan.req.Field = ReportMeasureSum, req.EstimateField
 		plan.measure = ReportMeasureSum
 		if err = plan.buildMeasure(a, reader); err != nil {
-			if e, ok := err.(ErrReportInvalidParameter); ok {
+			if e, ok := errors.AsType[ErrReportInvalidParameter](err); ok {
 				e.Param = "estimate_field"
 				return nil, e
 			}
-			if e, ok := err.(ErrReportFieldKindNotSupported); ok {
+			if e, ok := errors.AsType[ErrReportFieldKindNotSupported](err); ok {
 				e.Param = "estimate_field"
 				return nil, e
 			}
@@ -157,7 +159,7 @@ func RunWorkloadReport(ctx context.Context, s *xorm.Session, a web.Auth, req *Wo
 
 	ctx, cancel := context.WithTimeout(ctx, config.ReportsTimeout.GetDuration())
 	defer cancel()
-	s = s.Context(ctx)
+	db.SetSessionContext(ctx, s)
 
 	tf := &TaskCollection{
 		ProjectID:          req.ProjectID,
