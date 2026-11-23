@@ -488,6 +488,7 @@ func TestReport_StatusTime(t *testing.T) {
 
 	t.Run("a median of an odd number of tasks", func(t *testing.T) {
 		insertHistory(t, id["t5"], nil, todo, "Todo", "2026-02-27 00:00:00")
+		insertRow(t, &TaskStatus{TaskID: id["t5"], WorkflowID: readWorkflow(t, env.project).ID, StatusID: todo, Entered: repTime("2026-02-27 00:00:00")})
 		rep, err := runStatusTime(cfUser1, StatusTimeRequest{ProjectID: env.project})
 		require.NoError(t, err)
 		todoStat := statStats(rep.Statuses)["Todo"]
@@ -498,14 +499,16 @@ func TestReport_StatusTime(t *testing.T) {
 		defer cleanup.Close()
 		_, err = cleanup.Where("task_id = ?", id["t5"]).Delete(&TaskStatusHistory{})
 		require.NoError(t, err)
+		_, err = cleanup.Where("task_id = ?", id["t5"]).Delete(&TaskStatus{})
+		require.NoError(t, err)
 		require.NoError(t, cleanup.Commit())
 	})
 
 	t.Run("the window cuts visits", func(t *testing.T) {
-		rep, err := runStatusTime(cfUser1, StatusTimeRequest{ProjectID: env.project, From: "2026-01-07", To: "2026-01-08", Timezone: "UTC"})
+		rep, err := runStatusTime(cfUser1, StatusTimeRequest{ProjectID: env.project, From: "2026-01-07", To: "2026-01-07", Timezone: "UTC"})
 		require.NoError(t, err)
 		st := statStats(rep.Statuses)
-		// t1 only: Todo 2026-01-07 00:00 .. 09:00, Doing 09:00 .. 2026-01-08 00:00.
+		// A plain date to names the whole day. t1 only: Todo 2026-01-07 00:00 .. 09:00, Doing 09:00 .. 2026-01-08 00:00.
 		assert.Equal(t, int64(1), rep.Tasks)
 		assert.InDelta(t, 9*3600, st["Todo"].TotalSeconds, 0.01)
 		assert.InDelta(t, 15*3600, st["Doing"].TotalSeconds, 0.01)
@@ -977,4 +980,153 @@ func TestReport_TimeTracking(t *testing.T) {
 		assert.Equal(t, []string{"User", "Seconds", "Hours", "Entries"}, rec[0])
 		assert.Len(t, rec, len(rep.Groups)+1)
 	})
+}
+
+// dropWorkflow removes the workflow of a project like deleting it does: the statuses and the current statuses of the
+// tasks go, the history stays.
+func dropWorkflow(t *testing.T, projectID int64) {
+	t.Helper()
+	s := db.NewSession()
+	defer s.Close()
+	wf := &Workflow{}
+	has, err := s.Where("project_id = ?", projectID).Get(wf)
+	require.NoError(t, err)
+	require.True(t, has)
+	for _, bean := range []any{&TaskStatus{}, &WorkflowStatus{}, &WorkflowTransition{}} {
+		_, err = s.Where("workflow_id = ?", wf.ID).Delete(bean)
+		require.NoError(t, err)
+	}
+	_, err = s.Where("id = ?", wf.ID).Delete(&Workflow{})
+	require.NoError(t, err)
+	require.NoError(t, s.Commit())
+}
+
+func statusIDsOf(rep *StatusTimeReport) map[int64]bool {
+	out := map[int64]bool{}
+	for _, st := range rep.Statuses {
+		out[st.StatusID] = true
+	}
+	return out
+}
+
+func TestReport_StatusTimeForeignHistory(t *testing.T) {
+	env := setupReportEnv(t)
+	id := env.tasks
+	i64 := cfPtr[int64]
+	now := time.Now().Add(time.Hour)
+	statusTimeNow = func() time.Time { return now }
+	t.Cleanup(func() { statusTimeNow = time.Now })
+
+	insertHistory(t, id["t1"], nil, env.stTodo, "Todo", "2026-01-06 09:00:00")
+	insertHistory(t, id["t1"], i64(env.stTodo), env.stDoing, "Doing", "2026-01-07 09:00:00")
+
+	t.Run("a deleted workflow leaves nothing to count", func(t *testing.T) {
+		dropWorkflow(t, env.project)
+		rep, err := runStatusTime(cfUser1, StatusTimeRequest{ProjectID: env.project})
+		require.NoError(t, err)
+		assert.Equal(t, int64(0), rep.Tasks)
+		assert.Empty(t, rep.Statuses)
+	})
+
+	t.Run("a workflow created again does not extend the old statuses", func(t *testing.T) {
+		mustSaveWorkflow(t, baseWorkflowDoc(env.project), cfUser1)
+		wf := readWorkflow(t, env.project)
+		rep, err := runStatusTime(cfUser1, StatusTimeRequest{ProjectID: env.project})
+		require.NoError(t, err)
+		require.NotEmpty(t, rep.Statuses)
+		for _, st := range rep.Statuses {
+			assert.Equal(t, wf.ID, statusWorkflowID(t, st.StatusID), "status %d belongs to the new workflow", st.StatusID)
+			assert.Less(t, st.MaxSeconds, float64(3*3600), "a task started in the new workflow a moment ago")
+		}
+	})
+
+	t.Run("history of the project a task came from stays out", func(t *testing.T) {
+		other := repNewProject(t, "Other workflow")
+		mustSaveWorkflow(t, baseWorkflowDoc(other), cfUser1)
+		owf := readWorkflow(t, other)
+		moved := repInsertTask(t, other, 1, &Task{Created: repTime("2026-01-01 00:00:00")})
+		insertRow(t, &TaskStatus{TaskID: moved, WorkflowID: owf.ID, StatusID: statusIDByTitle(owf, "Todo"), Entered: repTime("2026-01-01 00:00:00")})
+		insertHistory(t, moved, nil, statusIDByTitle(owf, "Todo"), "Todo", "2026-01-01 00:00:00")
+		insertHistory(t, moved, i64(statusIDByTitle(owf, "Todo")), statusIDByTitle(owf, "Doing"), "Doing", "2026-01-02 00:00:00")
+
+		// Move it into the reported project the way a task update does.
+		s := db.NewSession()
+		defer s.Close()
+		_, err := s.Where("id = ?", moved).Cols("project_id", "index").Update(&Task{ProjectID: env.project, Index: 99})
+		require.NoError(t, err)
+		require.NoError(t, resetTaskStatusForMove(s, cfUser1, &Task{ID: moved, ProjectID: env.project}))
+		require.NoError(t, s.Commit())
+
+		wf := readWorkflow(t, env.project)
+		rep, err := runStatusTime(cfUser1, StatusTimeRequest{ProjectID: env.project})
+		require.NoError(t, err)
+		for id := range statusIDsOf(rep) {
+			assert.Equal(t, wf.ID, statusWorkflowID(t, id), "no status of the other project is reported")
+		}
+		todo := statStats(rep.Statuses)["Todo"]
+		require.NotNil(t, todo)
+		assert.Less(t, todo.MaxSeconds, float64(3*3600), "it entered the project a moment ago")
+	})
+}
+
+func statusWorkflowID(t *testing.T, statusID int64) int64 {
+	t.Helper()
+	s := db.NewSession()
+	defer s.Close()
+	st := &WorkflowStatus{}
+	has, err := s.Where("id = ?", statusID).Get(st)
+	require.NoError(t, err)
+	require.True(t, has, "status %d exists", statusID)
+	return st.WorkflowID
+}
+
+func TestReport_StatusTimeWorkflowAddedLate(t *testing.T) {
+	env := setupReportEnv(t)
+	id := env.tasks
+	now := repTime("2026-03-01 00:00:00")
+	statusTimeNow = func() time.Time { return now }
+	t.Cleanup(func() { statusTimeNow = time.Now })
+
+	// The workflow was added on 2026-01-01, t1 (created 2026-01-05 10:00) got Todo without a history entry and moved
+	// to Doing on 2026-01-10. Its Todo time starts when both the workflow and the task existed.
+	s := db.NewSession()
+	_, err := s.Exec("UPDATE workflows SET created = ? WHERE project_id = ?", "2026-01-01 00:00:00", env.project)
+	require.NoError(t, err)
+	_, err = s.Exec("UPDATE task_statuses SET status_id = ?, entered = ? WHERE task_id = ?", env.stDoing, "2026-01-10 00:00:00", id["t1"])
+	require.NoError(t, err)
+	require.NoError(t, s.Commit())
+	s.Close()
+	insertHistory(t, id["t1"], cfPtr(env.stTodo), env.stDoing, "Doing", "2026-01-10 00:00:00")
+
+	rep, err := runStatusTime(cfUser1, StatusTimeRequest{ProjectID: env.project, Timezone: "UTC"})
+	require.NoError(t, err)
+	st := statStats(rep.Statuses)
+	require.Contains(t, st, "Todo")
+	assert.InDelta(t, repTime("2026-01-10 00:00:00").Sub(repTime("2026-01-05 10:00:00")).Seconds(), st["Todo"].TotalSeconds, 0.01)
+	assert.Equal(t, int64(1), st["Todo"].Tasks)
+	assert.Equal(t, int64(0), st["Todo"].OpenTasks)
+	assert.Contains(t, st, "Doing")
+}
+
+func TestReport_StatusTimeUnnamedGroups(t *testing.T) {
+	env := setupReportEnv(t)
+	id := env.tasks
+	now := repTime("2026-03-01 00:00:00")
+	statusTimeNow = func() time.Time { return now }
+	t.Cleanup(func() { statusTimeNow = time.Now })
+
+	// t3 only has a label that does not exist anymore: it counts with the tasks that have no label.
+	insertRow(t, &LabelTask{TaskID: id["t3"], LabelID: 99999})
+	rep, err := runStatusTime(cfUser1, StatusTimeRequest{ProjectID: env.project, GroupBy: "label"})
+	require.NoError(t, err)
+	var none *StatusTimeGroup
+	for _, g := range rep.Groups {
+		assert.NotEqual(t, any(int64(99999)), g.Key)
+		if g.None {
+			none = g
+		}
+	}
+	require.NotNil(t, none)
+	assert.Equal(t, int64(1), none.Tasks)
+	assert.Equal(t, int64(3), rep.Tasks)
 }

@@ -173,6 +173,7 @@ func RunStatusTimeReport(ctx context.Context, s *xorm.Session, a web.Auth, req *
 		if err != nil {
 			return nil, err
 		}
+		to = reportRangeEnd(req.To, to)
 		if to.Before(winTo) {
 			winTo = to
 		}
@@ -196,32 +197,57 @@ func RunStatusTimeReport(ctx context.Context, s *xorm.Session, a web.Auth, req *
 		return nil, wrapReportError(err)
 	}
 
-	maxRows := config.ReportsMaxRows.GetInt()
-	histCount, err := s.Where(builder.In("task_id", base)).Count(&TaskStatusHistory{})
+	// Only the statuses of the current workflow of the project count. A task can carry history of a workflow that
+	// was deleted and created again, or of the project it was moved in from; none of it belongs to this report.
+	wf := &Workflow{}
+	hasWorkflow, err := s.Where("project_id = ?", req.ProjectID).Get(wf)
 	if err != nil {
 		return nil, wrapReportError(err)
 	}
-	if histCount > int64(maxRows) {
-		return nil, ErrReportTooManyRows{Rows: histCount, Max: maxRows}
-	}
+	meta := map[int64]*statusTimeMeta{}
 	history := []*TaskStatusHistory{}
-	if err = s.Where(builder.In("task_id", base)).OrderBy("task_id ASC, created ASC, id ASC").Find(&history); err != nil {
-		return nil, wrapReportError(err)
-	}
 	current := []*TaskStatus{}
-	if err = s.Where(builder.In("task_id", base)).Find(&current); err != nil {
-		return nil, wrapReportError(err)
+	if hasWorkflow {
+		statuses := []*WorkflowStatus{}
+		if err = s.Where("workflow_id = ?", wf.ID).Find(&statuses); err != nil {
+			return nil, wrapReportError(err)
+		}
+		for _, st := range statuses {
+			meta[st.ID] = &statusTimeMeta{title: st.Title, color: st.Color, category: string(st.Category), position: st.Position, known: true}
+		}
+
+		histCount, err := s.Where(builder.In("task_id", base)).Count(&TaskStatusHistory{})
+		if err != nil {
+			return nil, wrapReportError(err)
+		}
+		if err = checkReportRows(histCount); err != nil {
+			return nil, err
+		}
+		curCount, err := s.Where(builder.In("task_id", base)).Count(&TaskStatus{})
+		if err != nil {
+			return nil, wrapReportError(err)
+		}
+		if err = checkReportRows(curCount); err != nil {
+			return nil, err
+		}
+		if err = s.Where(builder.In("task_id", base)).OrderBy("task_id ASC, created ASC, id ASC").Find(&history); err != nil {
+			return nil, wrapReportError(err)
+		}
+		if err = s.Where(builder.In("task_id", base)).Find(&current); err != nil {
+			return nil, wrapReportError(err)
+		}
 	}
 
 	byTask := map[int64][]*TaskStatusHistory{}
-	titles := map[int64]string{}
 	for _, h := range history {
 		byTask[h.TaskID] = append(byTask[h.TaskID], h)
-		titles[h.ToStatusID] = h.ToTitle
 	}
 	currentOf := map[int64]*TaskStatus{}
 	for _, c := range current {
-		currentOf[c.TaskID] = c
+		// A row of another workflow is a leftover of a project the task was moved in from.
+		if c.WorkflowID == wf.ID {
+			currentOf[c.TaskID] = c
+		}
 	}
 
 	// intervals per task
@@ -238,19 +264,65 @@ func RunStatusTimeReport(ctx context.Context, s *xorm.Session, a web.Auth, req *
 		}
 		taskIntervals[taskID] = append(taskIntervals[taskID], statusInterval{statusID: status, start: start, end: end, open: open})
 	}
+
+	type leadingVisit struct {
+		statusID int64
+		floor    time.Time
+		end      time.Time
+	}
+	leading := map[int64]leadingVisit{}
+	counted := map[int64]bool{}
 	for taskID, hs := range byTask {
 		for i, h := range hs {
-			if i+1 < len(hs) {
+			if _, ok := meta[h.ToStatusID]; !ok {
+				continue
+			}
+			if !counted[taskID] {
+				counted[taskID] = true
+				// A workflow added to a project with tasks gives them a status without a history entry, so the first
+				// change of such a task leaves a status the history never entered.
+				if h.FromStatusID != nil {
+					if _, ok := meta[*h.FromStatusID]; ok {
+						lv := leadingVisit{statusID: *h.FromStatusID, end: h.Created}
+						if i > 0 {
+							lv.floor = hs[i-1].Created
+						}
+						leading[taskID] = lv
+					}
+				}
+			}
+			switch {
+			case i+1 < len(hs):
+				// The next event ends the visit, whatever status it enters.
 				build(taskID, h.ToStatusID, h.Created, hs[i+1].Created, false)
-			} else {
+			case currentOf[taskID] != nil && currentOf[taskID].StatusID == h.ToStatusID:
 				build(taskID, h.ToStatusID, h.Created, now, true)
 			}
+			// The last entry of a task that is not in that status anymore has no known end and is left out.
 		}
 	}
-	// A task without history (it got its status before the history existed) is counted from the time it entered it.
+	// A task without a counted history entry (it got its status before the history existed, or when the workflow was
+	// created) is counted from the time it entered its status.
 	for taskID, c := range currentOf {
-		if len(byTask[taskID]) == 0 {
+		if _, ok := meta[c.StatusID]; ok && !counted[taskID] {
 			build(taskID, c.StatusID, c.Entered, now, true)
+		}
+	}
+	if len(leading) > 0 {
+		created, err := loadTaskCreated(s, leading)
+		if err != nil {
+			return nil, wrapReportError(err)
+		}
+		for taskID, lv := range leading {
+			// The best start the data has: the status exists since the workflow does, and the task since it was created.
+			start := wf.Created
+			if c := created[taskID]; c.After(start) {
+				start = c
+			}
+			if lv.floor.After(start) {
+				start = lv.floor
+			}
+			build(taskID, lv.statusID, start, lv.end, false)
 		}
 	}
 
@@ -274,15 +346,6 @@ func RunStatusTimeReport(ctx context.Context, s *xorm.Session, a web.Auth, req *
 		rep.From = winFrom.In(loc).Format(time.RFC3339)
 	}
 
-	// Status metadata of every status that occurs, also removed ones.
-	statusIDs := make([]int64, 0, len(overall))
-	for id := range overall {
-		statusIDs = append(statusIDs, id)
-	}
-	meta, err := loadStatusTimeMeta(s, statusIDs, titles)
-	if err != nil {
-		return nil, wrapReportError(err)
-	}
 	rep.Statuses = statusStats(overall, meta)
 
 	if req.GroupBy == "" {
@@ -294,15 +357,41 @@ func RunStatusTimeReport(ctx context.Context, s *xorm.Session, a web.Auth, req *
 	if err != nil {
 		return nil, wrapReportError(err)
 	}
+	// A user or label that is gone, or that the viewer cannot see, has no name to show: its tasks are counted with
+	// the tasks that have none.
+	allKeys := map[int64]bool{}
+	for _, taskID := range taskIDs {
+		for _, k := range groupsOf[taskID] {
+			allKeys[k] = true
+		}
+	}
+	keys := make([]reportKey, 0, len(allKeys))
+	for k := range allKeys {
+		keys = append(keys, reportKey{canon: strconv.FormatInt(k, 10), value: k})
+	}
+	resolve := resolveUserLabels
+	if req.GroupBy == StatusTimeGroupLabel {
+		resolve = resolveLabelLabels
+	}
+	labels, err := resolve(s, keys)
+	if err != nil {
+		return nil, wrapReportError(err)
+	}
+
 	perGroup := map[int64]statusAggSet{}
 	const noneKey = int64(0)
 	groupTasks := map[int64]map[int64]bool{}
 	for _, taskID := range taskIDs {
-		keys := groupsOf[taskID]
-		if len(keys) == 0 {
-			keys = []int64{noneKey}
+		taskKeys := []int64{}
+		for _, k := range groupsOf[taskID] {
+			if _, ok := labels[strconv.FormatInt(k, 10)]; ok {
+				taskKeys = append(taskKeys, k)
+			}
 		}
-		for _, k := range keys {
+		if len(taskKeys) == 0 {
+			taskKeys = []int64{noneKey}
+		}
+		for _, k := range taskKeys {
 			set, ok := perGroup[k]
 			if !ok {
 				set = statusAggSet{}
@@ -316,34 +405,14 @@ func RunStatusTimeReport(ctx context.Context, s *xorm.Session, a web.Auth, req *
 		}
 	}
 
-	keys := make([]reportKey, 0, len(perGroup))
-	for k := range perGroup {
-		if k == noneKey {
-			continue
-		}
-		keys = append(keys, reportKey{canon: strconv.FormatInt(k, 10), value: k})
-	}
-	resolve := resolveUserLabels
-	if req.GroupBy == StatusTimeGroupLabel {
-		resolve = resolveLabelLabels
-	}
-	labels, err := resolve(s, keys)
-	if err != nil {
-		return nil, wrapReportError(err)
-	}
-
 	for k, set := range perGroup {
 		g := &StatusTimeGroup{Tasks: int64(len(groupTasks[k])), Statuses: statusStats(set, meta)}
 		if k == noneKey {
 			g.None = true
 			g.Label = "None"
 		} else {
+			l := labels[strconv.FormatInt(k, 10)]
 			g.Key = k
-			l, ok := labels[strconv.FormatInt(k, 10)]
-			if !ok {
-				// The user or label is gone or not visible: the tasks stay, the name is not shown.
-				continue
-			}
 			g.Label, g.Color = l.label, l.color
 		}
 		rep.Groups = append(rep.Groups, g)
@@ -361,22 +430,41 @@ func RunStatusTimeReport(ctx context.Context, s *xorm.Session, a web.Auth, req *
 	return rep, nil
 }
 
-func loadStatusTimeMeta(s *xorm.Session, ids []int64, historyTitles map[int64]string) (map[int64]*statusTimeMeta, error) {
-	meta := map[int64]*statusTimeMeta{}
-	for _, id := range ids {
-		meta[id] = &statusTimeMeta{title: historyTitles[id], position: 1e18 + float64(id)}
+// loadTaskCreated reads the creation time of the tasks in chunks.
+func loadTaskCreated[V any](s *xorm.Session, tasks map[int64]V) (map[int64]time.Time, error) {
+	ids := make([]int64, 0, len(tasks))
+	for id := range tasks {
+		ids = append(ids, id)
 	}
-	if len(ids) == 0 {
-		return meta, nil
+	out := make(map[int64]time.Time, len(ids))
+	for start := 0; start < len(ids); start += 500 {
+		rows := []*Task{}
+		if err := s.Unscoped().In("id", ids[start:min(start+500, len(ids))]).Cols("id", "created").Find(&rows); err != nil {
+			return nil, err
+		}
+		for _, t := range rows {
+			out[t.ID] = t.Created
+		}
 	}
-	statuses := []*WorkflowStatus{}
-	if err := s.Where(builder.In("id", ids)).Find(&statuses); err != nil {
-		return nil, err
+	return out, nil
+}
+
+// countReportRows refuses to read more rows of the table of bean, restricted to the tasks of base, than
+// reports.maxrows allows.
+func countReportRows(s *xorm.Session, base *builder.Builder, bean any) error {
+	n, err := s.Where(builder.In("task_id", base)).Count(bean)
+	if err != nil {
+		return err
 	}
-	for _, st := range statuses {
-		meta[st.ID] = &statusTimeMeta{title: st.Title, color: st.Color, category: string(st.Category), position: st.Position, known: true}
+	return checkReportRows(n)
+}
+
+// checkReportRows refuses a read of more rows than reports.maxrows allows.
+func checkReportRows(rows int64) error {
+	if max := config.ReportsMaxRows.GetInt(); rows > int64(max) {
+		return ErrReportTooManyRows{Rows: rows, Max: max}
 	}
-	return meta, nil
+	return nil
 }
 
 func statusStats(set statusAggSet, meta map[int64]*statusTimeMeta) []*StatusTimeStat {
@@ -420,6 +508,9 @@ func statusStats(set statusAggSet, meta map[int64]*statusTimeMeta) []*StatusTime
 func loadStatusTimeGroupKeys(s *xorm.Session, base *builder.Builder, groupBy string) (map[int64][]int64, error) {
 	out := map[int64][]int64{}
 	if groupBy == StatusTimeGroupLabel {
+		if err := countReportRows(s, base, &LabelTask{}); err != nil {
+			return nil, err
+		}
 		rows := []*LabelTask{}
 		if err := s.Where(builder.In("task_id", base)).OrderBy("id ASC").Find(&rows); err != nil {
 			return nil, err
@@ -428,6 +519,9 @@ func loadStatusTimeGroupKeys(s *xorm.Session, base *builder.Builder, groupBy str
 			out[r.TaskID] = append(out[r.TaskID], r.LabelID)
 		}
 		return out, nil
+	}
+	if err := countReportRows(s, base, &TaskAssginee{}); err != nil {
+		return nil, err
 	}
 	rows := []*TaskAssginee{}
 	if err := s.Where(builder.In("task_id", base)).OrderBy("id ASC").Find(&rows); err != nil {

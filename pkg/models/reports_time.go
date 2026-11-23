@@ -217,3 +217,13 @@ func reportLocation(name string, userTimezone string) (*time.Location, error) {
 	}
 	return loc, nil
 }
+
+// reportRangeEnd is the end of a range whose to was given as raw. A plain date names a whole day, so the range ends
+// after it; every other form (a timestamp, now-1d) names the instant itself.
+func reportRangeEnd(raw string, to time.Time) time.Time {
+	if reportPlainDate.MatchString(strings.TrimSpace(raw)) {
+		y, m, d := to.Date()
+		return reportDayStart(y, m, d+1, to.Location())
+	}
+	return to
+}
