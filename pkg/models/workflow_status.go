@@ -227,7 +227,35 @@ func assignStatusesToNewTasks(s *xorm.Session, projectID int64, tasks []*Task, a
 	if err != nil || d == nil {
 		return err
 	}
+	for i, t := range tasks {
+		if err = d.checkDoneStart(s, a, t); err != nil {
+			return ErrInvalidTaskInBulkCreation{Index: i, Err: err}
+		}
+	}
 	return d.assignStartStatuses(s, tasks, a)
+}
+
+// checkDoneStart guards the shortcut of statusForTask: a task that is done when it enters the workflow (created
+// done, created in a done bucket, moved in from another project) starts in the first done status. That is the
+// transition from the initial status to it, so the actor has to be allowed to perform it. Otherwise creating a
+// done task, or moving a task out of the project and back in, would walk around restricted transitions,
+// permissions, required fields and approvals. Like every done change that is a side effect it never creates an
+// approval request. t has to reflect the stored state of the task.
+func (d *workflowDef) checkDoneStart(s *xorm.Session, a web.Auth, t *Task) error {
+	if !t.Done {
+		return nil
+	}
+	from, to := d.initialStatus(), d.statusForTask(true)
+	if from == nil || to == nil || from.ID == to.ID {
+		return nil
+	}
+	if err := d.checkTransition(s, a, t, from, to, ""); err != nil {
+		return err
+	}
+	if d.approvalRuleFor(from, to) != nil {
+		return ErrApprovalRequired{TaskID: t.ID, FromStatusID: from.ID, ToStatusID: to.ID}
+	}
+	return nil
 }
 
 func (d *workflowDef) assignStartStatuses(s *xorm.Session, tasks []*Task, a web.Auth) error {
@@ -261,6 +289,9 @@ func resetTaskStatusForMove(s *xorm.Session, a web.Auth, t *Task) error {
 	}
 	d, err := loadWorkflowDef(s, t.ProjectID)
 	if err != nil || d == nil {
+		return err
+	}
+	if err = d.checkDoneStart(s, a, t); err != nil {
 		return err
 	}
 	return d.assignStartStatuses(s, []*Task{t}, a)

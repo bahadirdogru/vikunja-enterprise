@@ -517,6 +517,29 @@ func TestHumaApprovals(t *testing.T) {
 		db.AssertCount(t, "approval_requests", builder.Eq{"task_id": id}, 0)
 	})
 
+	t.Run("a task cannot be created done or moved in done past the approval", func(t *testing.T) {
+		rec := humaRequest(t, e, http.MethodPost, "/api/v2/projects/11/tasks", `{"title":"done at once","done":true}`, user1, "")
+		require.Equal(t, http.StatusConflict, rec.Code, rec.Body.String())
+		p := decodeProblem(t, rec.Body.Bytes())
+		assert.Equal(t, models.ErrCodeApprovalRequired, p.Code)
+		assert.EqualValues(t, 4, p.Details["to_status_id"])
+		db.AssertCount(t, "tasks", builder.Eq{"title": "done at once"}, 0)
+
+		// Task 2 is done in project 1, which user1 owns and which has no workflow.
+		rec = humaRequest(t, e, http.MethodPut, "/api/v2/tasks/2", `{"title":"task #2 done","done":true,"project_id":11}`, user1, "")
+		require.Equal(t, http.StatusConflict, rec.Code, rec.Body.String())
+		assert.Equal(t, models.ErrCodeApprovalRequired, decodeProblem(t, rec.Body.Bytes()).Code)
+		db.AssertExists(t, "tasks", map[string]interface{}{"id": 2, "project_id": 1}, false)
+		db.AssertCount(t, "task_statuses", builder.Eq{"task_id": 2}, 0)
+	})
+
+	t.Run("an approval sent in the body of a status change does not turn the answer into a 202", func(t *testing.T) {
+		id := newTask(t, "echo")
+		res, dto := statusChange(t, id, `{"to_status_id":2,"approval":{"id":1,"status":"pending"}}`, user1)
+		require.Equal(t, http.StatusOK, res.code, string(res.body))
+		assert.Nil(t, dto.Approval)
+	})
+
 	t.Run("a kanban move into a column that needs approval answers 202 and the card stays", func(t *testing.T) {
 		rec := humaRequest(t, e, http.MethodPost, "/api/v2/projects/11/views",
 			`{"title":"By status","view_kind":"kanban","bucket_configuration_mode":"status"}`, user1, "")

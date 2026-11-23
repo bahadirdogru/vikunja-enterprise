@@ -422,6 +422,7 @@ not copied.
 |---|---|
 | `POST /tasks/{task}/status` | `202`, the pending request in `approval`, `status` is the status the task is still in. `200` when the status changed, as before. |
 | Done checkbox: `PUT /tasks/{task}` with `done`, kanban moves into a done bucket of a manual view, bulk updates | **Refused**: `409` / `24007` with `task_id`, `from_status_id`, `to_status_id`; the whole update is rolled back and **no request is created**. Silently ignoring `done: true` would look like a bug to clients; creating a request as a side effect of a failed update would be a surprise. The client asks explicitly with `POST /tasks/{task}/status`. The same holds for un-doing. |
+| A task created done (`done: true` or the done bucket of a manual view), a done task moved in from another project | **Refused** like the checkbox: `409` / `24007`, nothing is created or moved. The task starts in the first done status only when its creator or mover could perform the done transition without an approval. |
 | Kanban status-mode move (`PUT .../buckets/{bucket}/tasks`) | A drag is an explicit status change: the request is created, the card does not move, `202` with `approval` and the column the card is still in as `bucket`. |
 | Task created in a status column | The task is created in the initial status, the request for the column is created, `bucket_id` of the response is the initial column. |
 | Automation `task.set_status`, script `vikunja.status.set` | Creates the request as the owner of the rule and finishes the step successfully with the output `approval requested (#id)`. The dry run says `would request approval for the status change to <id>`. Nobody to ask fails the step (`24006`). |
@@ -432,7 +433,8 @@ not copied.
 
 - `GET /approvals?status=&role=approver|requester&project_id=&page=&per_page=`
   — "my approvals": the requests where the caller is approver or requester and can
-  still read the task, newest first, each with the approvers, the statuses and a
+  still read the task (in the project the task is in now, not the one the
+  request was made in), newest first, each with the approvers, the statuses and a
   compact `task` (`id`, `title`, `identifier`, `project_id`, `project_title`).
 - `GET /approvals/{request}` — readable by everyone who can read the task.
 - `GET /tasks/{task}/approvals?status=`, `POST /tasks/{task}/approvals` (ad-hoc, `201`).

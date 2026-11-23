@@ -61,7 +61,13 @@ transition and for the move after a rejection), created.
 
 ## Behaviour
 
-- A new task in a project with a workflow gets the initial status.
+- A new task in a project with a workflow gets the initial status. A task that
+  is created done (`done: true`, or the done bucket of a manual kanban view)
+  starts in the first `done` status, which counts as the transition from the
+  initial status: the creator has to pass its checks (allowed pair,
+  permission and team, required fields and comment), otherwise nothing is
+  created and the request answers with the error of the check; when the
+  transition needs an approval it answers `409` / `24007`.
 - Changing status goes through **one** function that checks, in order: target
   status exists and is not archived → transition allowed
   (`restrict_transitions`) → permission (`min_permission`, teams) → required
@@ -84,7 +90,13 @@ transition and for the move after a rejection), created.
   existing checkbox performs the transition to the first `done` status and is
   subject to the same checks; un-doing moves it back to the initial status.
 - Moving a task to another project: status resets to that project's initial
-  status (or none if it has no workflow); history is kept.
+  status (or none if it has no workflow); history is kept. A task that is done
+  when it arrives starts in the first `done` status under the same checks as a
+  task that is created done; a move that fails them is refused as a whole, so
+  taking a task out of the project and back in does not get around the rules.
+- Changing the category of a status in the workflow document sets the done
+  flag of the tasks in it when the new category counts differently (no
+  history entry, the status did not change).
 - Enabling a workflow on an existing project assigns the initial status to
   open tasks and the first `done` status to done tasks.
 - Deleting the workflow removes statuses/transitions and current task

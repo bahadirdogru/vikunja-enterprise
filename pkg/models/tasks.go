@@ -1257,10 +1257,6 @@ func createTasksInViews(s *xorm.Session, projectID int64, tasks []*Task, a web.A
 		return err
 	}
 
-	if err = assignStatusesToNewTasks(s, projectID, tasks, a); err != nil {
-		return err
-	}
-
 	// Link shares can't have subscriptions
 	_, creatorIsUser := a.(*user.User)
 
@@ -1297,6 +1293,11 @@ func createTasksInViews(s *xorm.Session, projectID int64, tasks []*Task, a web.A
 			Task: t,
 			Doer: createdBy,
 		})
+	}
+
+	// After the assignees are stored: a task created done has to meet the requirements of the done transition.
+	if err = assignStatusesToNewTasks(s, projectID, tasks, a); err != nil {
+		return err
 	}
 
 	events.DispatchOnCommit(s, &TasksBatchCreatedEvent{
