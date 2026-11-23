@@ -159,7 +159,7 @@ is `401` code `25004`, which the UI turns into a login redirect.
 | Submissions per client IP and hour on public forms, counted in the database from the salted hash | `forms.public.ratelimit` (10) |
 | Submissions per public form and hour | `forms.public.formratelimit` (300) |
 | Request floor per IP and minute on the public routes (router middleware, `ratelimit.store`) | `forms.public.requestratelimit` (60) |
-| JSON body size, 413 above | `forms.maxbodysize` (262144 bytes) |
+| JSON body size, 413 above (also the `data` part of the multipart route) | `forms.maxbodysize` (262144 bytes) |
 | Attachments on public forms | `forms.public.attachments` (false) |
 | Files per submission | `forms.maxattachments` (5) |
 | Size per file (the smaller of this and `files.maxsize` applies) | `forms.maxattachmentsize` (10MB) |
@@ -187,7 +187,9 @@ status override (a system transition without checks) and the attachments, record
 are never substituted. Rich text is HTML sanitized by an allow-list (basic formatting, links with http, https
 and mailto, no images, styles or handlers); text that is not HTML is escaped into paragraphs. Titles and custom
 field text are stored as plain text without control characters. A "Submitted by name <email>" paragraph is added to
-the description when a name or an e-mail address is known.
+the description when a name or an e-mail address is known. `submitter.name` / `submitter.email` of a request are only
+taken when the form collects them (`collect_name` / `collect_email`); otherwise they are ignored and a signed-in
+submitter is recorded with the name of the account.
 
 ### Events, automation, notifications
 

@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"strconv"
 	"strings"
@@ -29,6 +30,7 @@ import (
 	"code.vikunja.io/api/pkg/config"
 	"code.vikunja.io/api/pkg/db"
 	"code.vikunja.io/api/pkg/events"
+	"code.vikunja.io/api/pkg/files"
 	"code.vikunja.io/api/pkg/notifications"
 	"code.vikunja.io/api/pkg/user"
 	"code.vikunja.io/api/pkg/web"
@@ -1247,7 +1249,7 @@ func TestFormSubmit_Attachments(t *testing.T) {
 func TestFormSubmit_NotificationAndEvent(t *testing.T) {
 	formsReset(t)
 	f := baseForm(FormAccessPublic)
-	f.Settings = &FormSettings{NotifyUserIDs: []int64{1}}
+	f.Settings = &FormSettings{NotifyUserIDs: []int64{1}, CollectName: true}
 	createForm(t, f)
 	_, err := submit(t, f, map[string]any{"title": "Ping"}, func(r *FormSubmitRequest) { r.SubmitterName = "Ada" })
 	require.NoError(t, err)
@@ -1417,3 +1419,129 @@ func TestForm_Lifecycle(t *testing.T) {
 
 var _ io.Reader = (*bytes.Reader)(nil)
 var _ = (*xorm.Session)(nil)
+
+func TestFormSubmit_SubmitterDetailsOnlyWhenAsked(t *testing.T) {
+	formsReset(t)
+	submissionOf := func(t *testing.T, task *Task) *FormSubmission {
+		t.Helper()
+		s := db.NewSession()
+		defer s.Close()
+		sub := &FormSubmission{}
+		has, err := s.Where("task_id = ?", task.ID).Get(sub)
+		require.NoError(t, err)
+		require.True(t, has)
+		return sub
+	}
+	claimed := func(r *FormSubmitRequest) {
+		r.SubmitterName = "The Boss"
+		r.SubmitterEmail = "not an address <script>"
+	}
+
+	t.Run("a public form that does not ask takes neither a name nor an address", func(t *testing.T) {
+		f := createForm(t, baseForm(FormAccessPublic, fld("title", "T", true), fld("description", "D", false)))
+		_, err := submit(t, f, map[string]any{"title": "x", "description": "hello"}, claimed)
+		require.NoError(t, err)
+		task := lastTask(t)
+		assert.Equal(t, "<p>hello</p>", task.Description)
+		sub := submissionOf(t, task)
+		assert.Empty(t, sub.SubmitterName)
+		assert.Empty(t, sub.SubmitterEmail)
+	})
+
+	t.Run("a signed-in submitter cannot claim to be somebody else", func(t *testing.T) {
+		s := db.NewSession()
+		u1, err := user.GetUserByID(s, 1)
+		s.Close()
+		require.NoError(t, err)
+		f := createForm(t, baseForm(FormAccessMembers))
+		_, err = submit(t, f, map[string]any{"title": "x"}, asAuth(u1), claimed)
+		require.NoError(t, err)
+		task := lastTask(t)
+		assert.NotContains(t, task.Description, "The Boss")
+		assert.NotContains(t, task.Description, "not an address")
+		sub := submissionOf(t, task)
+		assert.Equal(t, "user1", sub.SubmitterName)
+		assert.Equal(t, u1.Email, sub.SubmitterEmail)
+		require.NotNil(t, sub.SubmitterID)
+		assert.EqualValues(t, 1, *sub.SubmitterID)
+	})
+
+	t.Run("only the detail the form asks for is taken", func(t *testing.T) {
+		f := baseForm(FormAccessPublic)
+		f.Settings = &FormSettings{CollectName: true}
+		createForm(t, f)
+		_, err := submit(t, f, map[string]any{"title": "x"}, claimed)
+		require.NoError(t, err)
+		sub := submissionOf(t, lastTask(t))
+		assert.Equal(t, "The Boss", sub.SubmitterName)
+		assert.Empty(t, sub.SubmitterEmail)
+	})
+}
+
+func TestFormSubmit_AttachmentDenylistIgnoresTrailingDotsAndSpaces(t *testing.T) {
+	formsReset(t)
+	f := createForm(t, baseForm(FormAccessUsers, fld("title", "T", true), fld("attachments", "Files", false)))
+	// Windows drops trailing dots and spaces when the file is saved, so "run.bat." lands as "run.bat".
+	for _, name := range []string{"run.bat.", "run.bat ", "run.BAT. .", "page.html.."} {
+		_, err := submit(t, f, map[string]any{"title": "x"}, asAuth(fU2), func(r *FormSubmitRequest) {
+			r.Files = []*AttachmentToUpload{upload(name, []byte("echo hello"))}
+		})
+		require.Error(t, err, name)
+		assert.Equal(t, map[string]string{"attachments": "file_type_not_allowed"}, fieldErrors(t, err), name)
+	}
+}
+
+// failingUpload can be sniffed and fails when it is stored: reads fail after the second rewind.
+type failingUpload struct {
+	*bytes.Reader
+	rewinds int
+}
+
+func (f *failingUpload) Seek(offset int64, whence int) (int64, error) {
+	f.rewinds++
+	return f.Reader.Seek(offset, whence)
+}
+
+func (f *failingUpload) Read(p []byte) (int, error) {
+	if f.rewinds >= 2 {
+		return 0, errors.New("the storage is gone")
+	}
+	return f.Reader.Read(p)
+}
+
+func TestFormSubmit_FailureAfterTheTaskLeavesNothing(t *testing.T) {
+	formsReset(t)
+	f := createForm(t, baseForm(FormAccessUsers, fld("title", "T", true), fld("attachments", "Files", false)))
+	s := db.NewSession()
+	var maxFileID int64
+	_, err := s.SQL("SELECT COALESCE(MAX(id), 0) FROM files").Get(&maxFileID)
+	s.Close()
+	require.NoError(t, err)
+	// The fixtures reset the rows but not the storage: blobs earlier tests left under the next ids go first.
+	for id := maxFileID + 1; id <= maxFileID+3; id++ {
+		_ = files.DeleteBlob(id)
+	}
+	before := []int64{countRows(t, &Task{}), countRows(t, &TaskAttachment{}), countRows(t, &FormSubmission{}), countRows(t, &files.File{}), countRows(t, &TaskCustomFieldValue{})}
+	events.ClearDispatchedEvents()
+
+	// The first file is stored, the second one breaks after the task, its values and the first attachment exist.
+	_, err = submit(t, f, map[string]any{"title": "half"}, asAuth(fU2), func(r *FormSubmitRequest) {
+		r.Files = []*AttachmentToUpload{
+			upload("ok.txt", []byte("hello")),
+			{Reader: &failingUpload{Reader: bytes.NewReader([]byte("world"))}, Filename: "broken.txt", Size: 5},
+		}
+	})
+	require.Error(t, err)
+	var invalid ErrFormSubmissionInvalid
+	require.NotErrorAs(t, err, &invalid, "the file passed validation and failed in storage")
+
+	after := []int64{countRows(t, &Task{}), countRows(t, &TaskAttachment{}), countRows(t, &FormSubmission{}), countRows(t, &files.File{}), countRows(t, &TaskCustomFieldValue{})}
+	assert.Equal(t, before, after, "tasks, attachments, submissions, files, values")
+	assert.Zero(t, reloadForm(t, f.ID).SubmissionCount)
+	assert.Empty(t, events.GetDispatchedEvents("form.submitted"))
+	assert.Empty(t, events.GetDispatchedEvents("task.created"))
+	for id := maxFileID + 1; id <= maxFileID+3; id++ {
+		err := (&files.File{ID: id}).LoadFileByID()
+		assert.True(t, files.IsErrFileDoesNotExist(err), "the blob %d of the rolled back file is still stored: %v", id, err)
+	}
+}

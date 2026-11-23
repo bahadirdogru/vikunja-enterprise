@@ -385,3 +385,89 @@ func TestHumaForms_PublicAttachments(t *testing.T) {
 	rec = humaRequest(t, e, http.MethodPost, "/api/v2/forms/"+token+"/submissions/multipart", body, "", ct)
 	assert.Equal(t, http.StatusUnprocessableEntity, rec.Code)
 }
+
+func TestHumaForms_PublicRoutesNeverFallBackToAnonymous(t *testing.T) {
+	e, err := setupTestEnv()
+	require.NoError(t, err)
+	user1 := humaTokenFor(t, &testuser1)
+	fields := `[{"target":"title","label":"Title","required":true}]`
+	_, pub := newPublicForm(t, e, user1, "public", fields, `{}`)
+	_, mem := newPublicForm(t, e, user1, "members", fields, `{}`)
+
+	t.Run("credentials that are not a user session are refused, also on a public form", func(t *testing.T) {
+		for _, header := range []string{
+			"Bearer tk_2eef46f40ebab3304919ab2e7e39993f75f29d2e", // a valid API token: the routes are not in any scope
+			"Bearer tk_loremipsumdolorsitamet",
+			"Basic dXNlcjE6MTIzNDU2Nzg=",
+			"Bearer",
+			user1, // no scheme
+		} {
+			for _, token := range []string{pub, mem} {
+				req := httptest.NewRequest(http.MethodPost, "/api/v2/forms/"+token+"/submissions", strings.NewReader(`{"values":{"title":"x"}}`))
+				req.Header.Set("Content-Type", "application/json")
+				req.Header.Set("Authorization", header)
+				rec := httptest.NewRecorder()
+				e.ServeHTTP(rec, req)
+				assert.Equal(t, http.StatusUnauthorized, rec.Code, "%s: %s", header, rec.Body.String())
+			}
+		}
+	})
+
+	t.Run("only the three exact routes are public", func(t *testing.T) {
+		for _, c := range []struct{ method, path string }{
+			{http.MethodGet, "/api/v2/forms/" + pub + "/"},
+			{http.MethodGet, "/api/v2/forms/" + pub + "/submissions"},
+			{http.MethodGet, "/api/v2/forms/" + pub + "/submissions/multipart"},
+			{http.MethodGet, "/api/v2/forms"},
+			{http.MethodGet, "/api/v2/forms/" + pub + "/../../projects/1/forms"},
+			{http.MethodGet, "/api/v2/forms/" + pub + "/..%2F..%2Fprojects%2F1%2Fforms"},
+			{http.MethodGet, "/api/v2/projects/1/forms"},
+			{http.MethodGet, "/api/v2/projects/1/forms/1/submissions"},
+			{http.MethodPut, "/api/v2/forms/" + pub},
+			{http.MethodPatch, "/api/v2/forms/" + pub},
+			{http.MethodDelete, "/api/v2/forms/" + pub},
+		} {
+			rec := humaRequest(t, e, c.method, c.path, "", "", "")
+			assert.NotEqual(t, http.StatusOK, rec.Code, "%s %s: %s", c.method, c.path, rec.Body.String())
+			assert.NotContains(t, rec.Body.String(), pub, "%s %s", c.method, c.path)
+		}
+	})
+}
+
+func TestHumaForms_SignedInSubmitterCannotClaimAnotherIdentity(t *testing.T) {
+	e, err := setupTestEnv()
+	require.NoError(t, err)
+	user1 := humaTokenFor(t, &testuser1)
+	id, mem := newPublicForm(t, e, user1, "members", `[{"target":"title","label":"Title","required":true}]`, `{}`)
+
+	rec := humaRequest(t, e, http.MethodPost, "/api/v2/forms/"+mem+"/submissions", `{"values":{"title":"Hello"},"submitter":{"name":"The Boss","email":"boss@example.com"}}`, user1, "")
+	require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+	rec = humaRequest(t, e, http.MethodGet, fmt.Sprintf("/api/v2/projects/1/forms/%d/submissions", id), "", user1, "")
+	require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+	assert.Contains(t, rec.Body.String(), `"submitter_name":"user1"`)
+	assert.NotContains(t, rec.Body.String(), "Boss")
+	assert.NotContains(t, rec.Body.String(), "boss@example.com")
+}
+
+func TestHumaForms_MultipartDataIsLimitedLikeTheJSONBody(t *testing.T) {
+	e, err := setupTestEnv()
+	require.NoError(t, err)
+	user1 := humaTokenFor(t, &testuser1)
+	config.FormsPublicAttachments.Set(true)
+	defer config.FormsPublicAttachments.Set(false)
+	_, token := newPublicForm(t, e, user1, "public", `[{"target":"title","label":"Title","required":true},{"target":"attachments","label":"Files"}]`, `{}`)
+
+	var buf bytes.Buffer
+	w := multipart.NewWriter(&buf)
+	// 300 KiB of unknown keys: the JSON route refuses this body with 413 (forms.maxbodysize is 256 KiB).
+	var data strings.Builder
+	data.WriteString(`{"values":{"title":"x"`)
+	for i := 0; data.Len() < 300*1024; i++ {
+		fmt.Fprintf(&data, `,"k%d":0`, i)
+	}
+	data.WriteString(`}}`)
+	require.NoError(t, w.WriteField("data", data.String()))
+	require.NoError(t, w.Close())
+	rec := humaRequest(t, e, http.MethodPost, "/api/v2/forms/"+token+"/submissions/multipart", buf.String(), "", w.FormDataContentType())
+	assert.Equal(t, http.StatusRequestEntityTooLarge, rec.Code, "%d bytes answered", rec.Body.Len())
+}

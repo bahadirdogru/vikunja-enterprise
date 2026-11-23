@@ -505,17 +505,21 @@ func submitForm(s *xorm.Session, req *FormSubmitRequest) (*FormSubmitResult, err
 	}
 
 	submitter := formSubmitterUser(req.Auth)
-	name, email := req.SubmitterName, req.SubmitterEmail
+	// What the submitter says about themselves only counts when the form asks for it: it is validated only then,
+	// and a signed-in submitter is otherwise recorded with what the auth of the request knows.
+	var name, email string
 	var fieldErrs []FormFieldError
-	name = cleanFormText(name, false)
-	email = cleanFormText(email, false)
-	if submitter != nil {
-		if name == "" && !form.Settings.CollectName {
-			name = submitter.GetName()
-		}
-		if email == "" && !form.Settings.CollectEmail {
-			email = submitter.Email
-		}
+	switch {
+	case form.Settings.CollectName:
+		name = cleanFormText(req.SubmitterName, false)
+	case submitter != nil:
+		name = submitter.GetName()
+	}
+	switch {
+	case form.Settings.CollectEmail:
+		email = cleanFormText(req.SubmitterEmail, false)
+	case submitter != nil:
+		email = submitter.Email
 	}
 	fieldErrs = append(fieldErrs, validateSubmitter(form.Settings, name, email)...)
 
@@ -933,7 +937,8 @@ func validateFormFiles(field *FormField, req *FormSubmitRequest) []FormFieldErro
 		if f.Size > maxSize {
 			return one("file_too_large", fmt.Sprintf("A file may be at most %d bytes.", maxSize))
 		}
-		if slices.Contains(formDeniedExtensions, strings.ToLower(filepath.Ext(f.Filename))) {
+		// Windows drops trailing dots and spaces from a name, so "run.bat." is saved as "run.bat".
+		if slices.Contains(formDeniedExtensions, strings.ToLower(filepath.Ext(strings.TrimRight(f.Filename, ". ")))) {
 			return one("file_type_not_allowed", "This type of file is not accepted.")
 		}
 		mime, err := mimetype.DetectReader(f.Reader)
