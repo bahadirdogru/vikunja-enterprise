@@ -1,6 +1,6 @@
 # Forms and approvals — design
 
-Status: approvals (5a, backend) and forms (5c, backend) are implemented; the UIs (5b, 5d) are not. Both build on custom fields, workflow and automation.
+Status: approvals (5a, backend; 5b, UI) and forms (5c, backend; 5d, UI) are implemented. Both build on custom fields, workflow and automation.
 
 # Forms
 
@@ -228,6 +228,59 @@ post to the JSON endpoint.
 - The form page itself is a clean, standalone page (no app chrome for public
   forms), mobile first, with the instance's logo, per-field errors and a
   confirmation screen.
+
+## UI status (5d)
+
+Done (web client, `frontend/`):
+
+- **Forms page** (project settings -> Forms, project admins only, route `project.settings.forms`). The list shows
+  title, access badge (members / signed-in users / public), the open/closed switch (saved at once), the submission
+  count, a warning badge with the translated reason when the system switched the form off, and copy link, open,
+  edit, submissions, duplicate (the copy starts closed) and delete (confirm; the tasks stay). Without forms the
+  page says what forms do and offers three starters ("Simple request", "Request with a due date", "Bug report")
+  built from what the project offers.
+- **Builder** (tabs Fields, Settings, Share; the live preview sits on the right, below on narrow screens).
+  Everything comes from `GET .../forms/options`; no target list is hard-coded. Fields: reorder with buttons, label,
+  help, required, "do not show" (a hidden field takes its default), a typed default (custom fields reuse the custom
+  field editors, labels use a picker, dates a date input), the label subset of a shown labels field, and an add menu
+  grouped into task and custom fields where every target can be added once. On a public form a target that may not
+  be asked but may be preset (labels, user fields) is added as a hidden field; one that can be neither (attachments
+  when the instance forbids them) is disabled with the reason. Switching to public lists the fields that block it.
+  The title rule (asked and required, or hidden with a value) is explained inline, with the placeholders. Settings:
+  access with a warning box for public, initial status (only with a workflow), default assignees, success message,
+  redirect, "submit another", close date, maximum, who is notified, name/e-mail (off / optional / required, public
+  only). Share: link and copy, "create a new link" (confirm), iframe snippet. Client checks mirror the server;
+  server issues (`400` / `25002`, `details.issues[].path`) are mapped to the control and tab (the tab is
+  switched, the field opened, the control focused, tabs show a badge with the count). Unsaved changes are guarded
+  (route leave, tab close, back to the list). Saving keeps the builder open.
+- **Submissions** (paged table: date, submitter name / e-mail or "signed in", link to the task, empty state).
+- **Public page** `/forms/:token`. A route with `meta.standalone` is rendered by `App.vue` without header, sidebar
+  or the login layout, and the router guard lets it through for visitors without a session. The page loads the
+  definition without credentials (the `publicClient`, no `Authorization`); only when a form for signed-in users
+  answers `25004` and the browser has a token, it asks again with the session. A logged-out visitor therefore
+  sends only the instance `/info` the app always loads, the definition and, later, the submission.
+  Fields are native inputs by `kind` (radios or checkboxes up to six options, selects above, stars as radios,
+  range, date or date-time input, textarea with a counter near `max_length`, file picker honouring the limits);
+  labels above, help below, required marked with an asterisk and "(required)" for screen readers, errors tied with
+  `aria-describedby`, an `aria-live` summary, focus on the first invalid field, 44px targets. A honeypot input is
+  `tabindex=-1`, `autocomplete=off` and inside an `aria-hidden` box. 422 answers (`25006`) are mapped to the
+  inputs; 404, 410 (closed / full / disabled, with the form title), 401 (a button that returns to the form after
+  login through the saved last-visited route), 403, 429 (retry time from `details.retry_after`) and network errors
+  have their own states. A submission with files uses the multipart endpoint, one without uses JSON. Success shows
+  the message (or a default), "submit another" resets the form, a redirect (http/https only) shows the target host
+  and goes after four seconds. The language follows `navigator.language` when nobody is logged in (the app's own
+  pre-login rule) and dark mode follows `prefers-color-scheme`.
+- **Notifications and automation.** `form.submitted` has text and a link to the task. The catalog fixture and the
+  English and Turkish strings cover the trigger, its `form_id` option and the new condition fields; the generic
+  editor renders `form_id` as a select over the project's forms (a number input when the list is not known).
+
+Behaviour worth knowing:
+
+- Date defaults and date answers: a date without a time is sent as noon in the viewer's time zone (RFC 3339), a date
+  with a time as that time. The server accepts no relative dates (`+3d`), so the builder offers none.
+- Submitter name / e-mail are only part of a public form; the builder sends them as off for other access modes and a
+  signed-in submitter is not asked.
+- No QR code: it needs an encoder and no dependency may be added.
 
 # Approvals
 
@@ -555,6 +608,7 @@ Behaviour worth knowing:
 
 - 5a (done): approvals backend (requests, approvers, workflow integration,
   events, automation triggers and action, notifications, reminders).
-- 5b: approvals UI.
+- 5b (done): approvals UI.
 - 5c (done): forms backend (definition, public submission path, limits, event, notification, lifecycle).
-- 5d: forms UI (builder, public form page).
+- 5d (done): forms UI (builder, public form page).
+
