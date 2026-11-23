@@ -361,6 +361,10 @@ watch(() => props.token, () => {
 }
 
 .fp {
+	// The accent color sets the link colors per theme (see accentStyle); without one the application's primary stays.
+	--link: var(--fp-link, var(--primary));
+	--link-hover: var(--fp-link-hover, hsla(var(--primary-h), var(--primary-s), var(--primary-l), .75));
+
 	min-block-size: 100vh;
 	background: var(--site-background);
 	color: var(--text);
@@ -534,5 +538,13 @@ watch(() => props.token, () => {
 	.fp__bar {
 		animation: none;
 	}
+}
+</style>
+
+<style lang="scss">
+// Not scoped: the dark theme is a class on the root element, which a scoped rule cannot reach.
+html.dark .fp {
+	--link: var(--fp-link-dark, var(--primary));
+	--link-hover: var(--fp-link-dark-hover, hsla(var(--primary-h), var(--primary-s), var(--primary-l), .75));
 }
 </style>

@@ -463,6 +463,35 @@ export function redirectTarget(url: string): URL | null {
 // --primary and its derived variables are declared on :root as hsla(var(--primary-h) ...) and resolved there, so
 // changing only the hue/saturation/lightness parts below the root has no effect on descendants: every variable that
 // colors the page is emitted resolved, with the formulas of styles/custom-properties/colors.scss.
+// Relative luminance of an hsl() color, h in degrees, s and l in 0..1.
+function hslLuminance(h: number, s: number, l: number): number {
+	const a = s * Math.min(l, 1 - l)
+	const channel = (n: number) => {
+		const k = (n + h / 30) % 12
+		return l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1))
+	}
+	const lin = (c: number) => c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+	return 0.2126 * lin(channel(0)) + 0.7152 * lin(channel(8)) + 0.0722 * lin(channel(4))
+}
+
+// The card of the public page: white, or the dark grey of the dark theme (--grey-50 there, hsl(221, 39%, 11%)).
+const CARD_LIGHT_LUMINANCE = 1
+const CARD_DARK_LUMINANCE = hslLuminance(221, 0.393, 0.11)
+
+// The lightness nearest to the accent's at which text of the accent color is readable (4.5:1) on the card. Links are text,
+// so a pale accent is darkened on the white card and a dark accent lightened on the dark one.
+function readableLightness(h: number, s: number, l: number, cardLuminance: number): number {
+	const direction = cardLuminance > 0.5 ? -1 : 1
+	let lightness = l
+	for (let i = 0; i < 100; i++) {
+		const luminance = hslLuminance(h, s, lightness)
+		const [hi, lo] = luminance > cardLuminance ? [luminance, cardLuminance] : [cardLuminance, luminance]
+		if ((hi + 0.05) / (lo + 0.05) >= 4.5 || lightness <= 0 || lightness >= 1) break
+		lightness = Math.min(1, Math.max(0, lightness + direction * 0.01))
+	}
+	return lightness
+}
+
 export function accentStyle(accent: string): Record<string, string> {
 	const m = /^#([0-9a-f]{6})$/i.exec(accent)
 	if (!m) return {}
@@ -489,6 +518,7 @@ export function accentStyle(accent: string): Record<string, string> {
 	const sat = `${Math.round(s * 100)}%`
 	const light = Math.round(l * 100)
 	const hsla = (lightness: number, alpha = 1) => `hsla(${hue}, ${sat}, ${lightness}%, ${alpha})`
+	const link = (card: number) => Math.round(readableLightness(h, s, l, card) * 100)
 	return {
 		'--primary-h': hue,
 		'--primary-s': sat,
@@ -497,8 +527,13 @@ export function accentStyle(accent: string): Record<string, string> {
 		'--primary': hsla(light),
 		'--primary-light': hsla(96),
 		'--primary-dark': hsla(Math.max(light - 12, 0)),
-		'--link': hsla(light),
-		'--link-hover': hsla(light, 0.75),
-		'--fp-button-text': luminance > 0.4 ? '#000000' : '#ffffff',
+		// The page picks one of these per theme (PublicFormPage.vue): a link has to be readable on the card, a button only
+		// has to have readable text.
+		'--fp-link': hsla(link(CARD_LIGHT_LUMINANCE)),
+		'--fp-link-hover': hsla(link(CARD_LIGHT_LUMINANCE), 0.75),
+		'--fp-link-dark': hsla(link(CARD_DARK_LUMINANCE)),
+		'--fp-link-dark-hover': hsla(link(CARD_DARK_LUMINANCE), 0.75),
+		// Whichever of black and white has the better contrast on the accent.
+		'--fp-button-text': luminance > 0.179 ? '#000000' : '#ffffff',
 	}
 }

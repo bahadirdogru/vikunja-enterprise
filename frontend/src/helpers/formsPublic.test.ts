@@ -239,8 +239,10 @@ describe('definitionFromDraft (the preview)', () => {
 
 describe('accentStyle', () => {
 	it('turns a hex color into primary variables with readable text', () => {
-		expect(accentStyle('#ff0000')).toMatchObject({'--primary-h': '0deg', '--primary-s': '100%', '--primary-l': '50%', '--fp-button-text': '#ffffff'})
+		expect(accentStyle('#ff0000')).toMatchObject({'--primary-h': '0deg', '--primary-s': '100%', '--primary-l': '50%', '--fp-button-text': '#000000'})
 		expect(accentStyle('#ffff00')['--fp-button-text']).toBe('#000000')
+		expect(accentStyle('#1973ff')['--fp-button-text']).toBe('#000000')
+		expect(accentStyle('#b3261e')['--fp-button-text']).toBe('#ffffff')
 	})
 
 	it('emits the resolved colors, because the root variables are already resolved for descendants', () => {
@@ -248,9 +250,18 @@ describe('accentStyle', () => {
 			'--primary': 'hsla(0deg, 100%, 50%, 1)',
 			'--primary-dark': 'hsla(0deg, 100%, 38%, 1)',
 			'--primary-light': 'hsla(0deg, 100%, 96%, 1)',
-			'--link': 'hsla(0deg, 100%, 50%, 1)',
-			'--link-hover': 'hsla(0deg, 100%, 50%, 0.75)',
 		})
+	})
+
+	it('darkens a pale accent for links on the white card and lightens a dark one for the dark card', () => {
+		const lightness = (value: string | undefined) => Number(/(\d+)%, 1\)/.exec(value ?? '')?.[1])
+		const pale = accentStyle('#ffe066')
+		expect(lightness(pale['--fp-link'])).toBeLessThan(lightness(pale['--primary']))
+		expect(lightness(pale['--fp-link-dark'])).toBe(lightness(pale['--primary']))
+		const dark = accentStyle('#4a0d0a')
+		expect(lightness(dark['--fp-link'])).toBe(lightness(dark['--primary']))
+		expect(lightness(dark['--fp-link-dark'])).toBeGreaterThan(lightness(dark['--primary']))
+		expect(accentStyle('#ff0000')['--fp-link-hover']).toMatch(/, 0\.75\)$/)
 	})
 
 	it('ignores empty and malformed values', () => {
