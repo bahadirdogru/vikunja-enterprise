@@ -393,7 +393,7 @@ func lastOccurrenceWithin(sched interface{ Next(time.Time) time.Time }, base, at
 
 func tickSchedule(rule *models.AutomationRule) (int, error) {
 	expr, _ := rule.Trigger.Options["cron"].(string)
-	sched, err := spec.CronParser.Parse(strings.TrimSpace(expr))
+	sched, err := spec.ParseCron(expr)
 	if err != nil {
 		return 0, fmt.Errorf("invalid cron expression: %w", err)
 	}

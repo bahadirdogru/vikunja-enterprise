@@ -18,6 +18,7 @@ package spec
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"regexp"
@@ -141,7 +142,23 @@ func Validate(d *Doc, maxActions int) []Issue {
 }
 
 // CronParser is the parser of the schedule trigger: the standard five fields, plus the descriptors like @daily.
+// Use ParseCron, which also refuses what this parser accepts but a schedule must not contain.
 var CronParser = cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor)
+
+// ParseCron parses the cron expression of a schedule. Besides what the parser rejects it refuses @every (an
+// interval from the start, which would fire on every tick) and the TZ= / CRON_TZ= prefixes (the schedule runs in the
+// time zone of the server; a zone of its own would break the handling of clock changes).
+func ParseCron(expr string) (cron.Schedule, error) {
+	expr = strings.TrimSpace(expr)
+	lower := strings.ToLower(expr)
+	switch {
+	case strings.HasPrefix(lower, "@every"):
+		return nil, errors.New("@every is not supported: use five fields or @hourly, @daily, @weekly, @monthly or @yearly")
+	case strings.HasPrefix(lower, "tz=") || strings.HasPrefix(lower, "cron_tz="):
+		return nil, errors.New("a time zone prefix is not supported: schedules run in the time zone of the server")
+	}
+	return CronParser.Parse(expr)
+}
 
 // MinWait is the shortest pause of the wait action.
 const MinWait = time.Minute
@@ -151,7 +168,7 @@ func (v *validator) triggerRules(t *Trigger) {
 	switch t.Type {
 	case TriggerSchedule:
 		if expr, ok := t.Options["cron"].(string); ok {
-			if _, err := CronParser.Parse(strings.TrimSpace(expr)); err != nil {
+			if _, err := ParseCron(expr); err != nil {
 				v.add("trigger.options.cron", "is not a valid cron expression: %s", err.Error())
 			}
 		}

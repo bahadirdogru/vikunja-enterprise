@@ -218,14 +218,16 @@ func validateSchedules(t *testing.T) {
 	s := db.NewSession()
 	defer s.Close()
 	defer func() { _ = s.Rollback() }()
-	for _, expr := range []string{"", "* * *", "61 * * * *", "every day"} {
+	for _, expr := range []string{"", "* * *", "61 * * * *", "every day", "@every 1s", "@EVERY 1h", "CRON_TZ=Asia/Tokyo 0 9 * * *", "TZ=UTC 0 9 * * *"} {
 		bad := rule(spec.TriggerSchedule, map[string]any{"cron": expr}, nil, setPriority(1))
 		bad.ProjectID = projectOwned
 		assert.True(t, models.IsErrAutomationRuleInvalid(bad.Create(s, user1)), "%q", expr)
 	}
-	good := rule(spec.TriggerSchedule, map[string]any{"cron": "@daily"}, nil, setPriority(1))
-	good.ProjectID = projectOwned
-	require.NoError(t, good.Create(s, user1))
+	for _, expr := range []string{"@hourly", "@daily", "@weekly", "@monthly", "@yearly", "@annually", "*/5 * * * *"} {
+		good := rule(spec.TriggerSchedule, map[string]any{"cron": expr}, nil, setPriority(1))
+		good.ProjectID = projectOwned
+		require.NoError(t, good.Create(s, user1), expr)
+	}
 
 	// Project scope needs a create task action before anything that works on a task.
 	scoped := rule(spec.TriggerSchedule, map[string]any{"cron": "@daily", "scope": spec.ScopeProject}, nil, setPriority(1))
@@ -487,6 +489,8 @@ func TestSchedule_AGapOfAYearFiresOnceNotOnEveryTick(t *testing.T) {
 	reset(t)
 	clearTasks(t, projectOwned)
 	advance := fakeClock(t)
+	// Sit 20s into a minute, whatever the real time is.
+	advance(now().Truncate(time.Minute).Add(time.Minute + 20*time.Second).Sub(now()))
 	addRule(t, projectOwned, user1, rule(spec.TriggerSchedule, map[string]any{"cron": "* * * * *"}, nil, setPriority(1)))
 	newTask(t, projectOwned, "t", user1)
 
