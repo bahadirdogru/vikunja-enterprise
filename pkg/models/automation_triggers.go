@@ -217,6 +217,10 @@ func ListAutomationManualRules(s *xorm.Session, a web.Auth, projectID int64) ([]
 	if !can {
 		return nil, ErrGenericForbidden{}
 	}
+	// A run is refused while automation is off server-wide (22009), so the button would only ever fail.
+	if !config.AutomationEnabled.GetBool() {
+		return []*AutomationManualRule{}, nil
+	}
 	rules := []*AutomationRule{}
 	if err = s.Where("project_id = ? AND enabled = ?", projectID, true).OrderBy("id ASC").Cols("id", "title", "trigger").Find(&rules); err != nil {
 		return nil, err

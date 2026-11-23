@@ -192,6 +192,29 @@ func TestManual_ListShowsEnabledManualRulesToWriters(t *testing.T) {
 	assert.Error(t, err, "no access to the project")
 }
 
+func TestManual_ListIsEmptyWhileAutomationIsOff(t *testing.T) {
+	reset(t)
+	manual := addRule(t, projectOwned, user1, rule(spec.TriggerManual, map[string]any{"label": "Raise"}, nil, setPriority(1)))
+	task := newTask(t, projectOwned, "t", user1)
+
+	s := db.NewReadSession()
+	defer s.Close()
+	list, err := models.ListAutomationManualRules(s, user1, projectOwned)
+	require.NoError(t, err)
+	require.Len(t, list, 1)
+
+	config.AutomationEnabled.Set(false)
+	list, err = models.ListAutomationManualRules(s, user1, projectOwned)
+	require.NoError(t, err)
+	assert.Empty(t, list, "a run is refused while automation is off, so no entry is offered")
+	// Access is still checked first.
+	_, err = models.ListAutomationManualRules(s, user2, projectOwned)
+	assert.True(t, models.IsErrGenericForbidden(err))
+	// The two answers agree.
+	_, err = RunManually(user1, projectOwned, manual.ID, task.ID)
+	assert.True(t, models.IsErrAutomationRuleNotRunnable(err), "%v", err)
+}
+
 // ---- the loop guard still holds ----
 
 func TestManual_SelfTriggerGuardStillApplies(t *testing.T) {
@@ -705,6 +728,33 @@ func TestNotify_Team(t *testing.T) {
 	drain(t)
 	require.Equal(t, models.AutomationRunSuccess, allRuns(t, r.ID)[0].Status, allRuns(t, r.ID)[0].Error)
 	assert.Len(t, notificationsOf(t, user1.ID), before+1, "the creator of the team is a member")
+}
+
+func TestNotify_TeamOfTheOwnerOnly(t *testing.T) {
+	reset(t)
+	foreign := &models.Team{Name: "not mine"}
+	mustCommit(t, func(s *xorm.Session) error { return foreign.Create(s, fullUser(t, user2.ID)) })
+	own := &models.Team{Name: "mine"}
+	mustCommit(t, func(s *xorm.Session) error { return own.Create(s, fullUser(t, user1.ID)) })
+
+	s := db.NewSession()
+	defer s.Close()
+	notifyTeam := func(teamID int64) *models.AutomationRule {
+		r := rule(spec.TriggerManual, nil, nil, notifyAction(map[string]any{"team_id": float64(teamID), "message": "x"}))
+		r.ProjectID = projectOwned
+		return r
+	}
+
+	err := notifyTeam(foreign.ID).Create(s, user1)
+	require.True(t, models.IsErrAutomationRuleInvalid(err), "a team the owner is not a member of: %v", err)
+	var invalid models.ErrAutomationRuleInvalid
+	require.ErrorAs(t, err, &invalid)
+	require.Len(t, invalid.Issues, 1)
+	assert.Equal(t, "actions[0].params.team_id", invalid.Issues[0].Path)
+	assert.Contains(t, invalid.Issues[0].Message, "team")
+
+	assert.True(t, models.IsErrAutomationRuleInvalid(notifyTeam(foreign.ID+1000).Create(s, user1)), "a team that does not exist")
+	assert.NoError(t, notifyTeam(own.ID).Create(s, user1), "a team of the owner")
 }
 
 func TestNotify_Validation(t *testing.T) {

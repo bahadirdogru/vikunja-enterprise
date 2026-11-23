@@ -341,6 +341,38 @@ func validateAutomationReferences(s *xorm.Session, a web.Auth, projectID int64, 
 			issues = append(issues, spec.Issue{Path: r.path, Message: "the project does not exist or you have no write access to it"})
 		}
 	}
+
+	teamIssues, err := validateAutomationTeams(s, a, doc)
+	if err != nil {
+		return nil, err
+	}
+	issues = append(issues, teamIssues...)
+	return issues, nil
+}
+
+// validateAutomationTeams checks that the team a notify action addresses is one the owner can see: the run reads its
+// members as the owner. Teams are not remapped when a rule is copied, so they are not part of the reference walk.
+func validateAutomationTeams(s *xorm.Session, a web.Auth, doc *spec.Doc) ([]spec.Issue, error) {
+	issues := []spec.Issue{}
+	for i, act := range doc.Actions {
+		if act == nil || act.Type != spec.ActionNotify {
+			continue
+		}
+		teamID, ok := spec.ToInt64(act.Params["team_id"])
+		if !ok || teamID <= 0 {
+			continue
+		}
+		can, _, err := (&Team{ID: teamID}).CanRead(s, a)
+		if err != nil {
+			return nil, err
+		}
+		if !can {
+			issues = append(issues, spec.Issue{
+				Path:    fmt.Sprintf("actions[%d].params.team_id", i),
+				Message: "the team does not exist or you are not a member of it",
+			})
+		}
+	}
 	return issues, nil
 }
 
