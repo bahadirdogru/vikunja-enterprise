@@ -4000,6 +4000,33 @@ export type RenewTokenBodyBody = {
     readonly token?: string;
 };
 
+export type ReportComparison = {
+    /**
+     * value of the report minus the value of the previous period.
+     */
+    delta?: number;
+    /**
+     * The change in percent of the previous value. null when the previous value is 0.
+     */
+    delta_percent?: number | null;
+    /**
+     * Start of the previous period, RFC 3339.
+     */
+    from?: string;
+    /**
+     * End of the previous period (exclusive), RFC 3339.
+     */
+    to?: string;
+    /**
+     * The number of distinct tasks of the previous period.
+     */
+    total?: number;
+    /**
+     * The measure over the previous period.
+     */
+    value?: number;
+};
+
 export type ReportGroup = {
     /**
      * The groups of then_by inside this group.
@@ -4132,6 +4159,10 @@ export type ReportRequest = {
      */
     readonly $schema?: string;
     /**
+     * previous_period also computes the measure for the period of equal length right before the time range (the same number of buckets, shifted back) and returns it as comparison. When time.to lies inside its last bucket both periods are counted for the same elapsed time. Needs time and cannot be combined with group_by.
+     */
+    compare?: 'previous_period';
+    /**
      * The numeric field sum, avg, min and max work on: percent_done, time_spent (seconds of finished time entries) or cf_<id> of a number, currency, rating or progress field. Tasks without a value are ignored.
      */
     field?: string;
@@ -4202,7 +4233,7 @@ export type ReportTimeInfo = {
     from?: string;
     timezone?: string;
     /**
-     * End of the last bucket (exclusive), RFC 3339.
+     * End of the counted range (exclusive), RFC 3339: the end of the last bucket, or the end of the range when compare cuts the period.
      */
     to?: string;
 };
@@ -4430,6 +4461,144 @@ export type Status = {
      * When the last migration started. Zero value if the user never migrated from this service.
      */
     readonly started_at?: string;
+};
+
+export type StatusTimeGroup = {
+    color?: string;
+    /**
+     * The user or label id, null for the tasks without one.
+     */
+    key?: unknown;
+    label?: string;
+    /**
+     * True for the tasks that have no assignee or label.
+     */
+    none?: boolean;
+    statuses?: Array<StatusTimeStat> | null;
+    /**
+     * The number of tasks of the group that spent time in any status.
+     */
+    tasks?: number;
+};
+
+export type StatusTimeReport = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * The start of the window, RFC 3339. Empty when the whole history is counted.
+     */
+    from?: string;
+    group_by?: string;
+    /**
+     * The same per assignee or label, largest first. Empty without group_by.
+     */
+    groups?: Array<StatusTimeGroup> | null;
+    /**
+     * True when a task can be part of several groups.
+     */
+    multi_valued?: boolean;
+    /**
+     * Every status the tasks were in, in the order of the workflow.
+     */
+    statuses?: Array<StatusTimeStat> | null;
+    /**
+     * The number of tasks that were counted.
+     */
+    tasks?: number;
+    timezone?: string;
+    /**
+     * The end of the window, RFC 3339. Open visits are counted until then.
+     */
+    to?: string;
+    /**
+     * True when groups beyond the limit were left out.
+     */
+    truncated?: boolean;
+};
+
+export type StatusTimeRequest = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * A task filter, the same syntax as in views, incl. status, status_category and cf_<id>.
+     */
+    filter?: string;
+    /**
+     * If true, tasks whose filtered field is empty are included.
+     */
+    filter_include_nulls?: boolean;
+    /**
+     * Only count time after this moment: an RFC 3339 timestamp, a date like 2026-01-31, or now-90d. All of the history when omitted.
+     */
+    from?: string;
+    /**
+     * Also split the result by assignee or label. A task with several of them counts in each group.
+     */
+    group_by?: 'assignee' | 'label';
+    /**
+     * With group_by: keep this many groups, the ones with the most tasks (20 when omitted).
+     */
+    limit?: number;
+    /**
+     * The project: statuses belong to the workflow of one project.
+     */
+    project_id?: number;
+    /**
+     * An IANA time zone that plain dates are read in. Defaults to the time zone setting of the user.
+     */
+    timezone?: string;
+    /**
+     * Only count time before this moment, same formats as from, now when omitted. A plain date includes that day. Later moments are cut to now.
+     */
+    to?: string;
+};
+
+export type StatusTimeStat = {
+    /**
+     * The time per task: all visits of a task added up, averaged over the tasks.
+     */
+    average_seconds?: number;
+    /**
+     * The category of the status.
+     */
+    category?: string;
+    /**
+     * A hex color including #, when the status has one.
+     */
+    color?: string;
+    /**
+     * The longest time a single task spent in the status.
+     */
+    max_seconds?: number;
+    /**
+     * The median of the time per task.
+     */
+    median_seconds?: number;
+    /**
+     * How many of the tasks are still in the status. Their time runs until now.
+     */
+    open_tasks?: number;
+    /**
+     * The workflow status, archived ones included. Statuses of other workflows (a deleted one, or the project a task came from) are not counted.
+     */
+    status_id?: number;
+    /**
+     * The number of tasks that spent time in the status.
+     */
+    tasks?: number;
+    title?: string;
+    /**
+     * All time spent in the status.
+     */
+    total_seconds?: number;
+    /**
+     * How often tasks entered the status; a task that came back counts again.
+     */
+    visits?: number;
 };
 
 export type Subscription = {
@@ -4828,6 +4997,29 @@ export type TaskDuplicate = {
     readonly duplicated_task?: Task;
 };
 
+export type TaskExportRequest = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * A task filter, the same syntax as in views, incl. status, status_category and cf_<id>.
+     */
+    filter?: string;
+    /**
+     * If true, tasks whose filtered field is empty are included.
+     */
+    filter_include_nulls?: boolean;
+    /**
+     * Limit the export to one project. Without it every project the requester can read is included. -1 is the favorites pseudo project.
+     */
+    project_id?: number;
+    /**
+     * An IANA time zone the dates of the file are written in. Defaults to the time zone setting of the user, or the instance time zone for link shares.
+     */
+    timezone?: string;
+};
+
 export type TaskPosition = {
     /**
      * A URL to the JSON Schema for this object.
@@ -5054,6 +5246,10 @@ export type TaskReport = {
      * A URL to the JSON Schema for this object.
      */
     readonly $schema?: string;
+    /**
+     * The previous period, when compare is previous_period.
+     */
+    comparison?: ReportComparison;
     /**
      * Time series only: tasks that were left out because the date field is empty.
      */
@@ -5525,6 +5721,106 @@ export type TimeEntryReadBody = {
      * The user who logged this time entry. Set by the server.
      */
     readonly user?: User;
+};
+
+export type TimeTrackingGroup = {
+    /**
+     * A hex color including #, when the group has one.
+     */
+    color?: string;
+    /**
+     * The number of time entries.
+     */
+    entries?: number;
+    /**
+     * The user, project or label id, the date of a day, null for the none and other groups.
+     */
+    key?: unknown;
+    label?: string;
+    /**
+     * True for the entries without project or label.
+     */
+    none?: boolean;
+    /**
+     * True for the group the groups beyond the limit are folded into.
+     */
+    other?: boolean;
+    /**
+     * The tracked time of finished entries.
+     */
+    seconds?: number;
+};
+
+export type TimeTrackingReport = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * The number of finished time entries in the range.
+     */
+    entries?: number;
+    /**
+     * Start of the first day, RFC 3339.
+     */
+    from?: string;
+    group_by?: string;
+    /**
+     * The groups, the most time first; days in order, empty days with 0.
+     */
+    groups?: Array<TimeTrackingGroup> | null;
+    /**
+     * True when an entry can be part of several groups (labels).
+     */
+    multi_valued?: boolean;
+    /**
+     * Timers that run and are not counted until they are stopped.
+     */
+    running?: number;
+    /**
+     * All tracked time in the range, each entry once.
+     */
+    seconds?: number;
+    timezone?: string;
+    /**
+     * End of the last day (exclusive), RFC 3339.
+     */
+    to?: string;
+    /**
+     * True when groups were folded into other.
+     */
+    truncated?: boolean;
+};
+
+export type TimeTrackingRequest = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * The start of the range: an RFC 3339 timestamp, a date like 2026-01-31 or now-30d. The day that contains it is the first one. now-30d when omitted.
+     */
+    from?: string;
+    /**
+     * What to add the time up by, user when omitted. Days are the local days of the time zone, an entry belongs to the day it started on. A task with several labels counts its time for each of them.
+     */
+    group_by?: 'user' | 'project' | 'label' | 'day';
+    /**
+     * Not for days: keep this many groups, the ones with the most time (20 when omitted); the rest is folded into one other group.
+     */
+    limit?: number;
+    /**
+     * Only the time tracked on this project and its tasks. Without it every entry you can read is included.
+     */
+    project_id?: number;
+    /**
+     * An IANA time zone that decides where days begin. Defaults to the time zone setting of the user.
+     */
+    timezone?: string;
+    /**
+     * The end of the range, same formats as from, now when omitted. The day that contains it is the last one.
+     */
+    to?: string;
 };
 
 export type Token = {
@@ -6658,6 +6954,91 @@ export type WorkflowTransition = {
      * The workflow this transition belongs to.
      */
     readonly workflow_id?: number;
+};
+
+export type WorkloadReport = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * overdue (due before now), this_week (until Monday), next_week, later and no_due_date.
+     */
+    buckets?: Array<string> | null;
+    estimate_field?: string;
+    /**
+     * True: a task with several assignees counts for each of them.
+     */
+    multi_valued?: boolean;
+    /**
+     * One row per assignee, the most loaded first, and the unassigned row last.
+     */
+    rows?: Array<WorkloadRow> | null;
+    timezone?: string;
+    /**
+     * The distinct tasks, a task with several assignees is in each of their rows but once here.
+     */
+    totals?: WorkloadRow;
+    /**
+     * True when assignees beyond the limit were left out.
+     */
+    truncated?: boolean;
+};
+
+export type WorkloadRequest = {
+    /**
+     * A URL to the JSON Schema for this object.
+     */
+    readonly $schema?: string;
+    /**
+     * cf_<id> of a number, currency, rating or progress custom field whose values are added up per assignee and due bucket, e.g. an estimate in hours.
+     */
+    estimate_field?: string;
+    /**
+     * A task filter, the same syntax as in views. Only open tasks (done = false) are counted on top of it.
+     */
+    filter?: string;
+    /**
+     * If true, tasks whose filtered field is empty are included.
+     */
+    filter_include_nulls?: boolean;
+    /**
+     * Keep this many assignees, the ones with the most open tasks (20 when omitted). The unassigned row is always added.
+     */
+    limit?: number;
+    /**
+     * Limit the report to one project. Without it every project the requester can read is included. -1 is the favorites pseudo project.
+     */
+    project_id?: number;
+    /**
+     * An IANA time zone that decides when a week starts (Monday). Defaults to the time zone setting of the user.
+     */
+    timezone?: string;
+};
+
+export type WorkloadRow = {
+    /**
+     * Open tasks per due bucket, in the order of buckets.
+     */
+    counts?: Array<number> | null;
+    estimate_total?: number;
+    /**
+     * The sum of the estimate field per due bucket, when estimate_field is set. Tasks without a value add nothing.
+     */
+    estimates?: Array<number> | null;
+    /**
+     * The user id, null for the unassigned row.
+     */
+    key?: unknown;
+    label?: string;
+    /**
+     * True for the row of tasks nobody is assigned to.
+     */
+    none?: boolean;
+    /**
+     * Open tasks of the assignee.
+     */
+    total?: number;
 };
 
 export type ApiTokenWritable = {
@@ -8298,6 +8679,10 @@ export type ReportOptionsWritable = {
 
 export type ReportRequestWritable = {
     /**
+     * previous_period also computes the measure for the period of equal length right before the time range (the same number of buckets, shifted back) and returns it as comparison. When time.to lies inside its last bucket both periods are counted for the same elapsed time. Needs time and cannot be combined with group_by.
+     */
+    compare?: 'previous_period';
+    /**
      * The numeric field sum, avg, min and max work on: percent_done, time_spent (seconds of finished time entries) or cf_<id> of a number, currency, rating or progress field. Tasks without a value are ignored.
      */
     field?: string;
@@ -8371,6 +8756,74 @@ export type SavedFilterReadBodyWritable = {
      * The title of the filter.
      */
     title?: string;
+};
+
+export type StatusTimeReportWritable = {
+    /**
+     * The start of the window, RFC 3339. Empty when the whole history is counted.
+     */
+    from?: string;
+    group_by?: string;
+    /**
+     * The same per assignee or label, largest first. Empty without group_by.
+     */
+    groups?: Array<StatusTimeGroup> | null;
+    /**
+     * True when a task can be part of several groups.
+     */
+    multi_valued?: boolean;
+    /**
+     * Every status the tasks were in, in the order of the workflow.
+     */
+    statuses?: Array<StatusTimeStat> | null;
+    /**
+     * The number of tasks that were counted.
+     */
+    tasks?: number;
+    timezone?: string;
+    /**
+     * The end of the window, RFC 3339. Open visits are counted until then.
+     */
+    to?: string;
+    /**
+     * True when groups beyond the limit were left out.
+     */
+    truncated?: boolean;
+};
+
+export type StatusTimeRequestWritable = {
+    /**
+     * A task filter, the same syntax as in views, incl. status, status_category and cf_<id>.
+     */
+    filter?: string;
+    /**
+     * If true, tasks whose filtered field is empty are included.
+     */
+    filter_include_nulls?: boolean;
+    /**
+     * Only count time after this moment: an RFC 3339 timestamp, a date like 2026-01-31, or now-90d. All of the history when omitted.
+     */
+    from?: string;
+    /**
+     * Also split the result by assignee or label. A task with several of them counts in each group.
+     */
+    group_by?: 'assignee' | 'label';
+    /**
+     * With group_by: keep this many groups, the ones with the most tasks (20 when omitted).
+     */
+    limit?: number;
+    /**
+     * The project: statuses belong to the workflow of one project.
+     */
+    project_id?: number;
+    /**
+     * An IANA time zone that plain dates are read in. Defaults to the time zone setting of the user.
+     */
+    timezone?: string;
+    /**
+     * Only count time before this moment, same formats as from, now when omitted. A plain date includes that day. Later moments are cut to now.
+     */
+    to?: string;
 };
 
 export type TaskWritable = {
@@ -8463,6 +8916,25 @@ export type TaskDuplicateWritable = {
     [key: string]: never;
 };
 
+export type TaskExportRequestWritable = {
+    /**
+     * A task filter, the same syntax as in views, incl. status, status_category and cf_<id>.
+     */
+    filter?: string;
+    /**
+     * If true, tasks whose filtered field is empty are included.
+     */
+    filter_include_nulls?: boolean;
+    /**
+     * Limit the export to one project. Without it every project the requester can read is included. -1 is the favorites pseudo project.
+     */
+    project_id?: number;
+    /**
+     * An IANA time zone the dates of the file are written in. Defaults to the time zone setting of the user, or the instance time zone for link shares.
+     */
+    timezone?: string;
+};
+
 export type TaskPositionWritable = {
     /**
      * The task's sort position within the view, as a float so a task can be placed between any two others. To drop a task between two neighbours, set this to their midpoint. Values below the minimum spacing trigger a server-side recalculation of all positions in the view, so the stored value may differ from what you sent.
@@ -8532,6 +9004,10 @@ export type TaskRelationWritable = {
 };
 
 export type TaskReportWritable = {
+    /**
+     * The previous period, when compare is previous_period.
+     */
+    comparison?: ReportComparison;
     /**
      * Time series only: tasks that were left out because the date field is empty.
      */
@@ -8706,6 +9182,70 @@ export type TimeEntryReadBodyWritable = {
      * The task this entry is attached to; 0 means none. At most one of task_id / project_id may be set. On update, omitting both keeps the current container; sending either replaces it.
      */
     task_id?: number;
+};
+
+export type TimeTrackingReportWritable = {
+    /**
+     * The number of finished time entries in the range.
+     */
+    entries?: number;
+    /**
+     * Start of the first day, RFC 3339.
+     */
+    from?: string;
+    group_by?: string;
+    /**
+     * The groups, the most time first; days in order, empty days with 0.
+     */
+    groups?: Array<TimeTrackingGroup> | null;
+    /**
+     * True when an entry can be part of several groups (labels).
+     */
+    multi_valued?: boolean;
+    /**
+     * Timers that run and are not counted until they are stopped.
+     */
+    running?: number;
+    /**
+     * All tracked time in the range, each entry once.
+     */
+    seconds?: number;
+    timezone?: string;
+    /**
+     * End of the last day (exclusive), RFC 3339.
+     */
+    to?: string;
+    /**
+     * True when groups were folded into other.
+     */
+    truncated?: boolean;
+};
+
+export type TimeTrackingRequestWritable = {
+    /**
+     * The start of the range: an RFC 3339 timestamp, a date like 2026-01-31 or now-30d. The day that contains it is the first one. now-30d when omitted.
+     */
+    from?: string;
+    /**
+     * What to add the time up by, user when omitted. Days are the local days of the time zone, an entry belongs to the day it started on. A task with several labels counts its time for each of them.
+     */
+    group_by?: 'user' | 'project' | 'label' | 'day';
+    /**
+     * Not for days: keep this many groups, the ones with the most time (20 when omitted); the rest is folded into one other group.
+     */
+    limit?: number;
+    /**
+     * Only the time tracked on this project and its tasks. Without it every entry you can read is included.
+     */
+    project_id?: number;
+    /**
+     * An IANA time zone that decides where days begin. Defaults to the time zone setting of the user.
+     */
+    timezone?: string;
+    /**
+     * The end of the range, same formats as from, now when omitted. The day that contains it is the last one.
+     */
+    to?: string;
 };
 
 export type TokenRequestWritable = {
@@ -9273,6 +9813,58 @@ export type WorkflowTransitionWritable = {
      * The status tasks enter. A negative id refers to a new status of the same document.
      */
     to_status_id?: number;
+};
+
+export type WorkloadReportWritable = {
+    /**
+     * overdue (due before now), this_week (until Monday), next_week, later and no_due_date.
+     */
+    buckets?: Array<string> | null;
+    estimate_field?: string;
+    /**
+     * True: a task with several assignees counts for each of them.
+     */
+    multi_valued?: boolean;
+    /**
+     * One row per assignee, the most loaded first, and the unassigned row last.
+     */
+    rows?: Array<WorkloadRow> | null;
+    timezone?: string;
+    /**
+     * The distinct tasks, a task with several assignees is in each of their rows but once here.
+     */
+    totals?: WorkloadRow;
+    /**
+     * True when assignees beyond the limit were left out.
+     */
+    truncated?: boolean;
+};
+
+export type WorkloadRequestWritable = {
+    /**
+     * cf_<id> of a number, currency, rating or progress custom field whose values are added up per assignee and due bucket, e.g. an estimate in hours.
+     */
+    estimate_field?: string;
+    /**
+     * A task filter, the same syntax as in views. Only open tasks (done = false) are counted on top of it.
+     */
+    filter?: string;
+    /**
+     * If true, tasks whose filtered field is empty are included.
+     */
+    filter_include_nulls?: boolean;
+    /**
+     * Keep this many assignees, the ones with the most open tasks (20 when omitted). The unassigned row is always added.
+     */
+    limit?: number;
+    /**
+     * Limit the report to one project. Without it every project the requester can read is included. -1 is the favorites pseudo project.
+     */
+    project_id?: number;
+    /**
+     * An IANA time zone that decides when a week starts (Monday). Defaults to the time zone setting of the user.
+     */
+    timezone?: string;
 };
 
 export type AdminInviteLinksListData = {
@@ -14715,6 +15307,56 @@ export type AuthRegisterResponses = {
 
 export type AuthRegisterResponse = AuthRegisterResponses[keyof AuthRegisterResponses];
 
+export type ReportsStatusTimeData = {
+    body: StatusTimeRequestWritable;
+    path?: never;
+    query?: never;
+    url: '/reports/status-time';
+};
+
+export type ReportsStatusTimeErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type ReportsStatusTimeError = ReportsStatusTimeErrors[keyof ReportsStatusTimeErrors];
+
+export type ReportsStatusTimeResponses = {
+    /**
+     * OK
+     */
+    200: StatusTimeReport;
+};
+
+export type ReportsStatusTimeResponse = ReportsStatusTimeResponses[keyof ReportsStatusTimeResponses];
+
+export type ReportsStatusTimeExportData = {
+    body: StatusTimeRequestWritable;
+    path?: never;
+    query?: never;
+    url: '/reports/status-time/export';
+};
+
+export type ReportsStatusTimeExportErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type ReportsStatusTimeExportError = ReportsStatusTimeExportErrors[keyof ReportsStatusTimeExportErrors];
+
+export type ReportsStatusTimeExportResponses = {
+    /**
+     * The report as a CSV file.
+     */
+    200: string;
+};
+
+export type ReportsStatusTimeExportResponse = ReportsStatusTimeExportResponses[keyof ReportsStatusTimeExportResponses];
+
 export type ReportsTasksData = {
     body: ReportRequestWritable;
     path?: never;
@@ -14739,6 +15381,56 @@ export type ReportsTasksResponses = {
 };
 
 export type ReportsTasksResponse = ReportsTasksResponses[keyof ReportsTasksResponses];
+
+export type ReportsTasksExportData = {
+    body: ReportRequestWritable;
+    path?: never;
+    query?: never;
+    url: '/reports/tasks/export';
+};
+
+export type ReportsTasksExportErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type ReportsTasksExportError = ReportsTasksExportErrors[keyof ReportsTasksExportErrors];
+
+export type ReportsTasksExportResponses = {
+    /**
+     * The report as a CSV file.
+     */
+    200: string;
+};
+
+export type ReportsTasksExportResponse = ReportsTasksExportResponses[keyof ReportsTasksExportResponses];
+
+export type ReportsTasksExportRowsData = {
+    body: TaskExportRequestWritable;
+    path?: never;
+    query?: never;
+    url: '/reports/tasks/export/rows';
+};
+
+export type ReportsTasksExportRowsErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type ReportsTasksExportRowsError = ReportsTasksExportRowsErrors[keyof ReportsTasksExportRowsErrors];
+
+export type ReportsTasksExportRowsResponses = {
+    /**
+     * The tasks as a CSV file.
+     */
+    200: string;
+};
+
+export type ReportsTasksExportRowsResponse = ReportsTasksExportRowsResponses[keyof ReportsTasksExportRowsResponses];
 
 export type ReportsTasksOptionsData = {
     body?: never;
@@ -14769,6 +15461,106 @@ export type ReportsTasksOptionsResponses = {
 };
 
 export type ReportsTasksOptionsResponse = ReportsTasksOptionsResponses[keyof ReportsTasksOptionsResponses];
+
+export type ReportsTimeTrackingData = {
+    body: TimeTrackingRequestWritable;
+    path?: never;
+    query?: never;
+    url: '/reports/time-tracking';
+};
+
+export type ReportsTimeTrackingErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type ReportsTimeTrackingError = ReportsTimeTrackingErrors[keyof ReportsTimeTrackingErrors];
+
+export type ReportsTimeTrackingResponses = {
+    /**
+     * OK
+     */
+    200: TimeTrackingReport;
+};
+
+export type ReportsTimeTrackingResponse = ReportsTimeTrackingResponses[keyof ReportsTimeTrackingResponses];
+
+export type ReportsTimeTrackingExportData = {
+    body: TimeTrackingRequestWritable;
+    path?: never;
+    query?: never;
+    url: '/reports/time-tracking/export';
+};
+
+export type ReportsTimeTrackingExportErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type ReportsTimeTrackingExportError = ReportsTimeTrackingExportErrors[keyof ReportsTimeTrackingExportErrors];
+
+export type ReportsTimeTrackingExportResponses = {
+    /**
+     * The report as a CSV file.
+     */
+    200: string;
+};
+
+export type ReportsTimeTrackingExportResponse = ReportsTimeTrackingExportResponses[keyof ReportsTimeTrackingExportResponses];
+
+export type ReportsWorkloadData = {
+    body: WorkloadRequestWritable;
+    path?: never;
+    query?: never;
+    url: '/reports/workload';
+};
+
+export type ReportsWorkloadErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type ReportsWorkloadError = ReportsWorkloadErrors[keyof ReportsWorkloadErrors];
+
+export type ReportsWorkloadResponses = {
+    /**
+     * OK
+     */
+    200: WorkloadReport;
+};
+
+export type ReportsWorkloadResponse = ReportsWorkloadResponses[keyof ReportsWorkloadResponses];
+
+export type ReportsWorkloadExportData = {
+    body: WorkloadRequestWritable;
+    path?: never;
+    query?: never;
+    url: '/reports/workload/export';
+};
+
+export type ReportsWorkloadExportErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type ReportsWorkloadExportError = ReportsWorkloadExportErrors[keyof ReportsWorkloadExportErrors];
+
+export type ReportsWorkloadExportResponses = {
+    /**
+     * The report as a CSV file.
+     */
+    200: string;
+};
+
+export type ReportsWorkloadExportResponse = ReportsWorkloadExportResponses[keyof ReportsWorkloadExportResponses];
 
 export type TokenRoutesData = {
     body?: never;
