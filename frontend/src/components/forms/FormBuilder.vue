@@ -1146,6 +1146,12 @@ function setAccess(access: FormAccess) {
 		gap: .5rem;
 	}
 
+	&__accent .input {
+		flex: 1 1 8rem;
+		inline-size: auto;
+		min-inline-size: 0;
+	}
+
 	&__swatch {
 		inline-size: 2.5rem;
 		block-size: 2.5rem;
