@@ -27,10 +27,11 @@ const MAX_DAYS = [0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
 type Parsed = {values: Set<number>, star: boolean}
 
+// robfig reads numbers with strconv.Atoi, which allows a leading plus sign.
 function parseNumber(raw: string, spec: FieldSpec): number | null {
 	const lower = raw.toLowerCase()
 	if (spec.names && lower in spec.names) return spec.names[lower]
-	return /^\d+$/.test(raw) ? Number(raw) : null
+	return /^\+?\d+$/.test(raw) ? Number(raw) : null
 }
 
 // One comma separated part: *, ?, a, a-b, optionally followed by /step.
@@ -39,19 +40,21 @@ function parsePart(part: string, spec: FieldSpec): Parsed | CronProblem {
 	if (rest.length > 0 || rangeText === '') return 'syntax'
 	let step = 1
 	if (stepText !== undefined) {
-		if (!/^\d+$/.test(stepText)) return 'syntax'
+		if (!/^\+?\d+$/.test(stepText)) return 'syntax'
 		step = Number(stepText)
 		if (step === 0) return 'range'
 	}
+	const bounds = rangeText.split('-')
 	let low: number
 	let high: number
 	let star = false
-	if (rangeText === '*' || rangeText === '?') {
+	if (bounds[0] === '*' || bounds[0] === '?') {
+		// robfig ignores whatever follows a hyphen after a star ("*-5" is a star).
 		low = spec.min
 		high = spec.max
-		star = true
+		// A step above one makes it a restriction: it no longer counts as a star for the day rule.
+		star = step === 1
 	} else {
-		const bounds = rangeText.split('-')
 		if (bounds.length > 2) return 'syntax'
 		const first = parseNumber(bounds[0], spec)
 		if (first === null) return 'syntax'
@@ -75,6 +78,8 @@ function parseField(text: string, spec: FieldSpec): Parsed | CronProblem {
 	const values = new Set<number>()
 	let star = false
 	for (const part of text.split(',')) {
+		// robfig skips empty parts ("1,,2").
+		if (part === '') continue
 		const parsed = parsePart(part, spec)
 		if (typeof parsed === 'string') return parsed
 		parsed.values.forEach(v => values.add(v))
@@ -101,9 +106,14 @@ export function cronProblem(expression: string): CronProblem | null {
 		parsed.push(field)
 	}
 	const [, , dom, month, dow] = parsed
-	// With a restricted day of the month and an unrestricted weekday both have to match (the weekday only when it is
-	// restricted too, then either does). So the day has to exist in one of the months: 30 February never happens.
-	if (!dom.star && dow.star && ![...month.values].some(m => [...dom.values].some(d => d <= MAX_DAYS[m]))) return 'never'
+	// With a restricted day of the month and a star weekday both have to match (when both are restricted, either
+	// does). So the day has to exist in one of the months: 30 February never happens. An empty field (only commas)
+	// is left to the server.
+	if (
+		!dom.star && dow.star
+		&& dom.values.size > 0 && month.values.size > 0
+		&& ![...month.values].some(m => [...dom.values].some(d => d <= MAX_DAYS[m]))
+	) return 'never'
 	return null
 }
 

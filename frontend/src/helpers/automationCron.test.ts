@@ -1,6 +1,7 @@
 import {describe, expect, it} from 'vitest'
 
 import {CRON_PRESETS, cronProblem} from './automationCron'
+import shared from './automationCron.cases.json'
 
 describe('cronProblem', () => {
 	it.each([
@@ -15,6 +16,8 @@ describe('cronProblem', () => {
 		'@hourly', '@daily', '@weekly', '@monthly', '@yearly', '@annually', '@midnight',
 		// a weekday restriction lets the day of the month match either way
 		'0 0 31 2 1',
+		// robfig reads numbers with Atoi, ignores what follows a star hyphen and counts */N (N > 1) as a restriction
+		'+5 * * * *', '*/+2 * * * *', '*-5 * * * *', '0 0 30 2 */2',
 	])('accepts %s', expression => {
 		expect(cronProblem(expression)).toBeNull()
 	})
@@ -45,6 +48,12 @@ describe('cronProblem', () => {
 		['0 0 31 4,6,9,11 *', 'never'],
 	])('rejects %s as %s', (expression, problem) => {
 		expect(cronProblem(expression)).toBe(problem)
+	})
+
+	// The same table is run against spec.ParseCron in pkg/automation/spec, so the client never rejects what the server
+	// accepts and rejects what the server would.
+	it.each(shared.cases)('agrees with the server on "$expr" (valid: $valid)', ({expr, valid}) => {
+		expect(cronProblem(expr) === null).toBe(valid)
 	})
 
 	it('offers presets the server accepts', () => {
