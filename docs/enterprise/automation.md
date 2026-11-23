@@ -1,11 +1,11 @@
 # Automation and scripting — design
 
-Status: **3a, 3b and 3d (backend) implemented.** 3a: outbox, workers, rules, conditions, the
+Status: **3a, 3b and 3d implemented (backend and UI).** 3a: outbox, workers, rules, conditions, the
 non-script actions, run history, limits, API v2, catalog, dry run. 3b: JavaScript
 script actions and script conditions, the `http.request` action, `http.fetch` in
 scripts and project secrets. 3d adds the schedule, overdue, due soon, manual and
-incoming webhook triggers and the wait, create task and notify actions (backend and
-API only, no UI yet). 3c is still design. Builds on custom fields and
+incoming webhook triggers and the wait, create task and notify actions; their UI is
+described under "UI status (3d)". 3c is still design. Builds on custom fields and
 workflow (their events are the most useful triggers). Where this document
 describes something that is not implemented yet it says so; the section "What 3a
 and 3b do and do not do" lists the differences in one place.
@@ -160,7 +160,7 @@ between projects).
 | People | assignee added / removed *(3a)* |
 | Content | comment added *(3a)*, attachment added *(3a)*, label added / removed, relation added |
 | Time | task became overdue *(3d)*, due date approaching (N hours/days before) *(3d)*, reminder fired, schedule (cron expression, in the time zone of the server) *(3d)* |
-| Manual | a button on the task ("Run automation") *(3d, API only)* |
+| Manual | a button on the task ("Run automation") *(3d)* |
 | External | incoming webhook with a per-rule secret URL *(3d)* |
 
 Trigger types in the API: `task.created`, `task.updated` (option `fields`),
@@ -716,7 +716,8 @@ longer administers the project disables the rule (`owner_not_admin` /
 - **Notify** only reaches users who can read the project of the rule (and so its
   tasks), at most 100 per step; others are skipped with a warning and the step fails
   when nobody is left. The notification is `automation.notify` and is shown by the
-  generic notification list (the frontend renderer is not part of 3d).
+  notification list, which shows the message and links to the task (or the project when the
+  run had none).
 - **Wait**: the run stays `running`, a `rule.resume` event due after the delay
   continues it with the actions after the wait; conditions are not evaluated again.
   A rule that was disabled or deleted meanwhile aborts the run. Only the resume event
@@ -795,8 +796,56 @@ Known limits / deferred:
   `automation.scripts.enabled` has the value `false`. The UI treats that (or a
   catalog without `script`) as "scripts unavailable": the script action and the
   script condition are not offered, existing ones are shown read-only with a note.
-- No drag-and-drop reordering (buttons only), no manual-trigger button on the
-  task (the API of 3d exists, the UI does not).
+- No drag-and-drop reordering (buttons only).
+
+### UI status (3d)
+
+Built in `frontend/` (generated client regenerated for the 3d routes; the catalog snapshot
+and the English and Turkish strings cover the new triggers, options, parameters, enum
+values and the error codes 22009 to 22013):
+
+- **Rule editor.** The five triggers and the three actions are selectable and are
+  rendered from the catalog like any other. `schedule`: a cron input with the presets
+  hourly / daily / weekly / monthly, a check of the expression in the browser
+  (`helpers/automationCron.ts`, mirrors `spec.ParseCron`: five fields with ranges,
+  steps, lists and month / weekday names, the descriptors, `@every` and `TZ=` refused,
+  a day that no month has refused) and a note that times are in the time zone of the
+  server. `task.overdue` / `task.due_soon`: a hint that tasks that are already overdue or
+  inside the window when the rule is created or enabled do not fire; `offset` is a
+  duration input (at least one minute). `manual`: the optional button text. `webhook.incoming`: see below.
+  `wait`: duration of at least one minute; `task.create`: title, description, priority,
+  assignee and due offset; `notify`: recipients (people and the keywords), a team
+  (`team` parameter kind, a select over the teams of the person) and the message with the
+  placeholder menu. Client side checks (cron, durations, a recipient or a team) are a
+  copy of the server's rules in `validateSpecial` in `helpers/automation.ts`; the
+  server stays the authority and its issues are mapped onto the same inputs. Hints are
+  looked up as `automation.hint.<type with _>.<name>` and `automation.triggerHint.<type>`.
+- **Incoming webhook address.** The save that creates the address returns it once
+  (`webhook_url`); the editor shows it with a copy button and the warning that it cannot be shown
+  again, together with the notes on the signature header and the missing replay
+  protection. Later the editor says that the address exists and offers "Create a new
+  address" (a confirmation, the old address stops working, disabled while the rule has
+  unsaved changes). The address lives only in the component that shows it: the save and
+  the token request run through `useSecretMutation` (no mutation cache entry), the rule
+  list cache gets the rule without it, nothing is logged or stored. Closing the editor
+  forgets it. The signing secret option is the usual select over the project secrets.
+- **Manual run.** The actions menu of a task has "Run automation..." when the project has
+  enabled manual rules (`GET .../manual-automations`, only asked for people who can write);
+  a dialog lists the rules by their button text and queues the run
+  (`POST .../automations/{rule}/run`). Success is a toast, failures are the usual error
+  toast with the localized code (22009 and the others); the dialog stays open on a failure.
+- **Notification.** `automation.notify` shows the message of the rule and links to the
+  task, or to the project when the run had no task; it has no doer.
+
+Not built / deferred: the maximum of a wait and the time zone of the server are not in the
+catalog or `/info`, so the editor can only say "at most what the administrator allows
+(30 days by default)" and "the time zone of the server" and leaves the check to the
+server; no per-rule display of the last scan note (`last_fire_note`) or of the number of
+waiting runs; the editor does not warn that an action needs a task when a project scope
+schedule or a webhook starts the rule (the server rejects it on save and the message is
+shown under the action); the dry run of a webhook rule cannot take a payload; the list of
+rules shows no marker for the new trigger types beyond their title; not checked in a
+browser against a running server.
 
 ## What 3a and 3b do and do not do
 
@@ -822,9 +871,7 @@ due markers table, the incoming webhook endpoint with token regeneration and
 optional HMAC signature, `event.payload.*` in templates and conditions.
 
 Not implemented: the e-mail action, the owner notification on auto-disable, label /
-relation / move / reminder triggers, the frontend (3c, and the 3d UI: the manual
-button, the webhook URL display, the editor forms, the notification renderer), the
-generated frontend client for the new routes, a templates gallery, round robin and
+relation / move / reminder triggers, the rest of the frontend (3c), a templates gallery for the 3d types, round robin and
 duplicate / delete task actions.
 `vikunja.notify(userIds, text)` of the first design is not part of the script API: it
 needs the notification type of 3a. Scripts cannot create or delete relations, labels,
@@ -866,5 +913,5 @@ guessing. Editing the action that failed and retrying works.
 - 3b: script condition/action, `http.request`, `http.fetch`, secrets. **Done.**
 - 3c: UI.
 - 3d: schedule, due-date-approaching, manual and incoming webhook triggers;
-  wait action; notify action. **Backend done** (UI and the generated client
-  follow with 3c; templates gallery not started).
+  wait action; notify action. **Done**, backend and UI (editor forms, webhook address,
+  manual run, notification); templates gallery for them not started.
