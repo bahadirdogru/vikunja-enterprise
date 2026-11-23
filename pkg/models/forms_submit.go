@@ -184,6 +184,15 @@ type FormPublicDefinition struct {
 	Success     FormPublicSuccess      `json:"success" doc:"What to do after a submission."`
 	Submitter   FormPublicSubmitter    `json:"submitter" doc:"Which details of the submitter are asked."`
 	Attachments *FormPublicAttachments `json:"attachments,omitempty" doc:"The file limits. Only present when the form asks for attachments."`
+	Branding    FormPublicBranding     `json:"branding" doc:"How the public page looks. All parts are optional."`
+}
+
+// FormPublicBranding is what the public page needs to look like the form's owner, not like the application.
+type FormPublicBranding struct {
+	Name        string `json:"name" doc:"The brand name to show, empty for none."`
+	AccentColor string `json:"accent_color" doc:"The accent color as #rrggbb, empty for the default."`
+	HasLogo     bool   `json:"has_logo" doc:"Whether a logo exists. Load it from GET /forms/{token}/logo."`
+	HideFooter  bool   `json:"hide_footer" doc:"Whether the 'Powered by' footer link is hidden."`
 }
 
 // FormAttachmentLimits returns the number of files and the size of a file a submission may carry.
@@ -295,6 +304,12 @@ func buildFormDefinition(s *xorm.Session, f *Form) (*FormPublicDefinition, error
 			Message:       f.Settings.SuccessMessage,
 			RedirectURL:   f.Settings.RedirectURL,
 			SubmitAnother: f.Settings.SubmitAnother,
+		},
+		Branding: FormPublicBranding{
+			Name:        f.BrandName,
+			AccentColor: f.AccentColor,
+			HasLogo:     f.BrandLogoFileID != 0,
+			HideFooter:  f.HideFooter,
 		},
 		Submitter: FormPublicSubmitter{
 			CollectName:   f.Settings.CollectName,

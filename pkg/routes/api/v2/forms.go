@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"code.vikunja.io/api/pkg/models"
 	"code.vikunja.io/api/pkg/web/handler"
@@ -107,6 +108,26 @@ func RegisterFormRoutes(api huma.API) {
 		Path:        "/projects/{project}/forms/{form}/token",
 		Tags:        tags,
 	}, formsToken)
+
+	Register(api, withFormLogoLimits(huma.Operation{
+		OperationID:   "forms-logo-upload",
+		Summary:       "Upload the logo of a form",
+		Description:   "Uploads an image via multipart/form-data under the \"logo\" field and sets it as the logo shown on the public page of the form. PNG, JPEG, GIF and WebP up to 1 MiB are accepted (SVG is not); the image is decoded, scaled down to at most 512 pixels and stored as PNG, which drops metadata and keeps transparency. It replaces the previous logo. A file that is no usable image fails with 400 and code 25009 (details.reason: too_large, not_an_image or unsupported_type). Returns the updated form. Needs admin access to the project.\n\nThe logo is served without authentication at GET /forms/{token}/logo, for everyone who knows the token of the form.",
+		Method:        http.MethodPut,
+		Path:          "/projects/{project}/forms/{form}/logo",
+		DefaultStatus: http.StatusOK,
+		Tags:          tags,
+	}), formsLogoUpload)
+
+	Register(api, huma.Operation{
+		OperationID:   "forms-logo-delete",
+		Summary:       "Remove the logo of a form",
+		Description:   "Removes the logo of a form. Succeeds when the form has none. Returns the updated form. Needs admin access to the project.",
+		Method:        http.MethodDelete,
+		Path:          "/projects/{project}/forms/{form}/logo",
+		DefaultStatus: http.StatusOK,
+		Tags:          tags,
+	}, formsLogoDelete)
 
 	Register(api, huma.Operation{
 		OperationID: "form-submissions-list",
@@ -232,6 +253,52 @@ func formsToken(ctx context.Context, in *struct {
 		return nil, translateDomainError(err)
 	}
 	return &singleBody[models.FormToken]{Body: t}, nil
+}
+
+type formLogoUploadInput struct {
+	ProjectID int64 `path:"project"`
+	ID        int64 `path:"form"`
+	// The allow-list mirrors models.PrepareFormLogo; the byte-level check there is the real gate.
+	RawBody huma.MultipartFormFiles[struct {
+		Logo huma.FormFile `form:"logo" contentType:"image/png,image/jpeg,image/gif,image/webp,application/octet-stream" required:"true" doc:"The logo image. PNG, JPEG, GIF or WebP, at most 1 MiB."`
+	}]
+}
+
+// withFormLogoLimits bounds the upload to the logo size plus the multipart overhead.
+func withFormLogoLimits(op huma.Operation) huma.Operation {
+	op.MaxBodyBytes = models.FormLogoMaxBytes + 1024*1024
+	op.BodyReadTimeout = 30 * time.Second
+	return op
+}
+
+func formsLogoUpload(ctx context.Context, in *formLogoUploadInput) (*singleBody[models.Form], error) {
+	a, err := authFromCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	src := in.RawBody.Data().Logo
+	defer func() { _ = src.Close() }()
+
+	form, err := models.UploadFormLogo(ctx, a, in.ProjectID, in.ID, src)
+	if err != nil {
+		return nil, translateDomainError(err)
+	}
+	return &singleBody[models.Form]{Body: form}, nil
+}
+
+func formsLogoDelete(ctx context.Context, in *struct {
+	ProjectID int64 `path:"project"`
+	ID        int64 `path:"form"`
+}) (*singleBody[models.Form], error) {
+	a, err := authFromCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	form, err := models.DeleteFormLogo(ctx, a, in.ProjectID, in.ID)
+	if err != nil {
+		return nil, translateDomainError(err)
+	}
+	return &singleBody[models.Form]{Body: form}, nil
 }
 
 func formSubmissionsList(ctx context.Context, in *struct {

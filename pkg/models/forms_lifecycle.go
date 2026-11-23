@@ -31,6 +31,15 @@ func deleteFormsForProject(s *xorm.Session, projectID int64) error {
 	if _, err := s.Where(builder.In("form_id", ids)).Delete(&FormSubmission{}); err != nil {
 		return err
 	}
+	forms := []*Form{}
+	if err := s.Where("project_id = ? AND brand_logo_file_id IS NOT NULL AND brand_logo_file_id > 0", projectID).Cols("id", "brand_logo_file_id").Find(&forms); err != nil {
+		return err
+	}
+	for _, form := range forms {
+		if err := deleteFormLogoFile(s, form.BrandLogoFileID); err != nil {
+			return err
+		}
+	}
 	_, err := s.Where("project_id = ?", projectID).Delete(&Form{})
 	return err
 }
@@ -194,6 +203,10 @@ func duplicateFormsForProject(s *xorm.Session, doerID, sourceProjectID, targetPr
 			Settings:       &settings,
 			DisabledReason: reason,
 			MaxSubmissions: f.MaxSubmissions,
+			// The logo file is not copied; the copy has to get its own upload.
+			BrandName:   f.BrandName,
+			AccentColor: f.AccentColor,
+			HideFooter:  f.HideFooter,
 		}
 		if _, err = s.Insert(clone); err != nil {
 			return err

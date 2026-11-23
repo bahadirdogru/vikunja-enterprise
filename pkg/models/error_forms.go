@@ -298,3 +298,47 @@ func (err ErrFormsDisabled) HTTPError() web.HTTPError {
 		Message:  "Forms are disabled on this instance.",
 	}
 }
+
+// The reasons a logo upload is refused.
+const (
+	FormLogoTooLarge        = "too_large"
+	FormLogoNotAnImage      = "not_an_image"
+	FormLogoUnsupportedType = "unsupported_type"
+)
+
+// ErrFormLogoInvalid represents an error where an uploaded form logo is refused.
+type ErrFormLogoInvalid struct {
+	Reason string
+}
+
+// IsErrFormLogoInvalid checks if an error is ErrFormLogoInvalid.
+func IsErrFormLogoInvalid(err error) bool {
+	_, ok := err.(ErrFormLogoInvalid)
+	return ok
+}
+
+func (err ErrFormLogoInvalid) Error() string {
+	return fmt.Sprintf("Form logo is not valid [Reason: %s]", err.Reason)
+}
+
+// ErrCodeFormLogoInvalid holds the unique world-error code of this error
+const ErrCodeFormLogoInvalid = 25009
+
+// HTTPError holds the http error description
+func (err ErrFormLogoInvalid) HTTPError() web.HTTPError {
+	message := "The logo is not a usable image."
+	switch err.Reason {
+	case FormLogoTooLarge:
+		message = "The logo is too large. It may be at most 1 MiB."
+	case FormLogoNotAnImage:
+		message = "The logo is not an image."
+	case FormLogoUnsupportedType:
+		message = "The logo has to be a PNG, JPEG, GIF or WebP image."
+	}
+	return web.HTTPError{
+		HTTPCode: http.StatusBadRequest,
+		Code:     ErrCodeFormLogoInvalid,
+		Message:  message,
+		Details:  map[string]any{"reason": err.Reason},
+	}
+}

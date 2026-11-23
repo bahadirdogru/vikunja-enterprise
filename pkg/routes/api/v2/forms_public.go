@@ -32,6 +32,7 @@ import (
 	"code.vikunja.io/api/pkg/web"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/danielgtaylor/huma/v2/adapters/humaecho"
 )
 
 // The routes of this file are public: they opt out of the global auth (publicSecurity) and are listed in
@@ -82,6 +83,24 @@ func RegisterFormPublicRoutes(api huma.API) {
 		Tags:        tags,
 		Security:    publicSecurity,
 	}, formPublicRead)
+
+	Register(api, huma.Operation{
+		OperationID: "form-public-logo",
+		Summary:     "Get the logo of a form",
+		Description: "Streams the logo of the form as a PNG image. It is served to everyone who knows the token of the form, whatever the access mode of the form is, because a browser cannot send credentials with an image request; the logo is not project data. Sends an ETag and answers 304 to a matching If-None-Match. 404 for an unknown token and for a form without a logo.",
+		Method:      http.MethodGet,
+		Path:        "/forms/{token}/logo",
+		Tags:        tags,
+		Security:    publicSecurity,
+		Responses: map[string]*huma.Response{
+			"200": {
+				Description: "The logo as a PNG image.",
+				Content: map[string]*huma.MediaType{
+					"image/png": {Schema: &huma.Schema{Type: huma.TypeString, Format: "binary"}},
+				},
+			},
+		},
+	}, formPublicLogo)
 
 	Register(api, withFormBodyLimit(huma.Operation{
 		OperationID:   "form-public-submit",
@@ -158,6 +177,31 @@ func formPublicRead(ctx context.Context, in *struct {
 		return nil, formError(ctx, err)
 	}
 	return &formDefinitionBody{Body: def}, nil
+}
+
+func formPublicLogo(ctx context.Context, in *struct {
+	Token string `path:"token" doc:"The secret token of the form."`
+}) (*huma.StreamResponse, error) {
+	logo, err := models.OpenFormLogo(in.Token)
+	if err != nil {
+		return nil, formError(ctx, err)
+	}
+	return &huma.StreamResponse{Body: func(hctx huma.Context) {
+		defer func() { _ = logo.File.File.Close() }()
+		c := humaecho.Unwrap(hctx)
+		w, r := (*c).Response(), (*c).Request()
+		// Replaces the global no-store: the logo may be cached, but is revalidated.
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("ETag", logo.ETag)
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		if r.Header.Get("If-None-Match") == logo.ETag {
+			w.WriteHeader(http.StatusNotModified)
+			return
+		}
+		w.Header().Set("Content-Type", "image/png")
+		w.WriteHeader(http.StatusOK)
+		_, _ = io.Copy(w, logo.File.File)
+	}}, nil
 }
 
 func formPublicSubmit(ctx context.Context, in *struct {

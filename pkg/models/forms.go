@@ -135,6 +135,12 @@ type Form struct {
 	Enabled     bool       `xorm:"bool default false" json:"enabled" doc:"Whether the form takes submissions. A form the system disabled has a disabled_reason; saving it with enabled=true clears the reason."`
 	OwnerID     int64      `xorm:"bigint not null" json:"owner_id" readOnly:"true" doc:"The user the tasks are created as. Always the user who last saved the form. The form is disabled when this user can no longer write to the project."`
 
+	BrandName       string `xorm:"varchar(100) null" json:"brand_name" maxLength:"100" doc:"Optional name shown on the public page instead of the application name. Plain text."`
+	AccentColor     string `xorm:"varchar(7) null" json:"accent_color" maxLength:"7" doc:"Optional accent color of the public page as a hex color, #rrggbb (the # may be left out). Empty for the default."`
+	HideFooter      bool   `xorm:"bool default false" json:"hide_footer" doc:"Hides the small 'Powered by' link in the footer of the public page."`
+	BrandLogoFileID int64  `xorm:"bigint null" json:"-"`
+	HasBrandLogo    bool   `xorm:"-" json:"has_brand_logo" readOnly:"true" doc:"Whether the form has a logo. Upload it with PUT .../logo, remove it with DELETE .../logo."`
+
 	Fields   []*FormField  `xorm:"json not null" json:"fields" doc:"What the form asks, in order."`
 	Settings *FormSettings `xorm:"json null" json:"settings" doc:"Settings of the form."`
 
@@ -240,6 +246,7 @@ func normalizeForm(f *Form) {
 			f.Fields[i] = &FormField{}
 		}
 	}
+	f.HasBrandLogo = f.BrandLogoFileID != 0
 	if f.Settings == nil {
 		f.Settings = &FormSettings{}
 	}
@@ -310,6 +317,7 @@ func (f *Form) Validate(s *xorm.Session, a web.Auth) error {
 	if f.Access == FormAccessPublic && !config.FormsPublicEnabled.GetBool() {
 		issues.add("access", "public forms are disabled on this instance")
 	}
+	f.validateBranding(&issues)
 	if len(f.Fields) > formMaxFields {
 		issues.add("fields", "a form may have at most %d fields", formMaxFields)
 		return issues.err()
@@ -667,6 +675,8 @@ func (f *Form) Create(s *xorm.Session, a web.Auth) error {
 	f.OwnerID = ownerID
 	f.DisabledReason = ""
 	f.SubmissionCount = 0
+	// The logo is uploaded separately.
+	f.BrandLogoFileID = 0
 	if _, err = s.Insert(f); err != nil {
 		return err
 	}
@@ -739,7 +749,8 @@ func (f *Form) Update(s *xorm.Session, a web.Auth) error {
 	// Saving by hand clears what the system stored.
 	f.DisabledReason = ""
 	if _, err = s.ID(f.ID).
-		Cols("title", "description", "access", "enabled", "owner_id", "fields", "settings", "disabled_reason", "max_submissions").
+		Cols("title", "description", "access", "enabled", "owner_id", "fields", "settings", "disabled_reason", "max_submissions",
+			"brand_name", "accent_color", "hide_footer").
 		Update(f); err != nil {
 		return err
 	}
@@ -758,6 +769,11 @@ func (f *Form) Update(s *xorm.Session, a web.Auth) error {
 func (f *Form) Delete(s *xorm.Session, _ web.Auth) error {
 	if _, err := s.Where("form_id = ?", f.ID).Delete(&FormSubmission{}); err != nil {
 		return err
+	}
+	if stored, err := getFormInProject(s, f.ID, f.ProjectID); err == nil {
+		if err = deleteFormLogoFile(s, stored.BrandLogoFileID); err != nil {
+			return err
+		}
 	}
 	_, err := s.ID(f.ID).Delete(&Form{})
 	return err

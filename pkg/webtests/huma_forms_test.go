@@ -20,6 +20,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"image"
+	"image/png"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -165,7 +167,7 @@ func TestHumaForms_PublicRoutes(t *testing.T) {
 		assert.Empty(t, rec.Header().Values("Set-Cookie"))
 		assert.Empty(t, rec.Header().Get("Access-Control-Allow-Origin"))
 		out := formsDecode(t, rec)
-		assert.ElementsMatch(t, []string{"title", "description", "fields", "success", "submitter"}, formsKeys(out))
+		assert.ElementsMatch(t, []string{"title", "description", "fields", "success", "submitter", "branding"}, formsKeys(out))
 		assert.NotContains(t, rec.Body.String(), "internal")
 		assert.NotContains(t, rec.Body.String(), "project_id")
 		assert.Len(t, out["fields"], 2)
@@ -182,6 +184,7 @@ func TestHumaForms_PublicRoutes(t *testing.T) {
 		for _, token := range []string{"%00", "abc%00def", "%ff%fe", "caf%C3%A9"} {
 			for _, c := range []struct{ method, suffix, body, contentType string }{
 				{http.MethodGet, "", "", ""},
+				{http.MethodGet, "/logo", "", ""},
 				{http.MethodPost, "/submissions", `{"values":{"title":"x"}}`, ""},
 				{http.MethodPost, "/submissions/multipart", "--b\r\nContent-Disposition: form-data; name=\"data\"\r\n\r\n{\"values\":{\"title\":\"x\"}}\r\n--b--\r\n", "multipart/form-data; boundary=b"},
 			} {
@@ -484,4 +487,108 @@ func TestHumaForms_MultipartDataIsLimitedLikeTheJSONBody(t *testing.T) {
 	require.NoError(t, w.Close())
 	rec := humaRequest(t, e, http.MethodPost, "/api/v2/forms/"+token+"/submissions/multipart", buf.String(), "", w.FormDataContentType())
 	assert.Equal(t, http.StatusRequestEntityTooLarge, rec.Code, "%d bytes answered", rec.Body.Len())
+}
+
+func TestHumaForms_Branding(t *testing.T) {
+	e, err := setupTestEnv()
+	require.NoError(t, err)
+	user1 := humaTokenFor(t, &testuser1)
+	user2 := humaTokenFor(t, &testuser2)
+
+	body := `{"title":"Branded","access":"members","enabled":true,"brand_name":"Damla Yayinevi","accent_color":"#1973FF","hide_footer":true,"fields":[{"target":"title","label":"Title","required":true}]}`
+	rec := humaRequest(t, e, http.MethodPost, "/api/v2/projects/1/forms", body, user1, "")
+	require.Equal(t, http.StatusCreated, rec.Code, rec.Body.String())
+	created := formsDecode(t, rec)
+	id := int64(created["id"].(float64))
+	token := created["token"].(string)
+	assert.Equal(t, "Damla Yayinevi", created["brand_name"])
+	assert.Equal(t, "#1973ff", created["accent_color"])
+	assert.Equal(t, true, created["hide_footer"])
+	assert.Equal(t, false, created["has_brand_logo"])
+	logoPath := fmt.Sprintf("/api/v2/projects/1/forms/%d/logo", id)
+
+	multipartLogo := func(content []byte) (string, string) {
+		var buf bytes.Buffer
+		w := multipart.NewWriter(&buf)
+		part, err := w.CreateFormFile("logo", "logo.png")
+		require.NoError(t, err)
+		_, _ = part.Write(content)
+		require.NoError(t, w.Close())
+		return buf.String(), w.FormDataContentType()
+	}
+	var pngBytes bytes.Buffer
+	require.NoError(t, png.Encode(&pngBytes, image.NewNRGBA(image.Rect(0, 0, 30, 30))))
+
+	t.Run("the definition names the branding, never the file", func(t *testing.T) {
+		rec := humaRequest(t, e, http.MethodGet, "/api/v2/forms/"+token, "", user1, "")
+		require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+		branding := formsDecode(t, rec)["branding"].(map[string]any)
+		assert.ElementsMatch(t, []string{"name", "accent_color", "has_logo", "hide_footer"}, formsKeys(branding))
+		assert.Equal(t, false, branding["has_logo"])
+	})
+
+	t.Run("no logo is a 404 on the public route", func(t *testing.T) {
+		assert.Equal(t, http.StatusNotFound, humaRequest(t, e, http.MethodGet, "/api/v2/forms/"+token+"/logo", "", "", "").Code)
+	})
+
+	t.Run("a bad color is refused with a path", func(t *testing.T) {
+		rec := humaRequest(t, e, http.MethodPatch, fmt.Sprintf("/api/v2/projects/1/forms/%d", id), `{"accent_color":"nope"}`, user1, "application/merge-patch+json")
+		require.Equal(t, http.StatusBadRequest, rec.Code, rec.Body.String())
+		assert.Contains(t, rec.Body.String(), "accent_color")
+	})
+
+	t.Run("only project admins upload and remove", func(t *testing.T) {
+		data, ct := multipartLogo(pngBytes.Bytes())
+		assert.Equal(t, http.StatusForbidden, humaRequest(t, e, http.MethodPut, logoPath, data, user2, ct).Code)
+		assert.Equal(t, http.StatusUnauthorized, humaRequest(t, e, http.MethodPut, logoPath, data, "", ct).Code)
+		assert.Equal(t, http.StatusForbidden, humaRequest(t, e, http.MethodDelete, logoPath, "", user2, "").Code)
+	})
+
+	t.Run("a file that is no image is a typed 400", func(t *testing.T) {
+		for _, content := range []string{"hello", `<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>`} {
+			data, ct := multipartLogo([]byte(content))
+			rec := humaRequest(t, e, http.MethodPut, logoPath, data, user1, ct)
+			require.Equal(t, http.StatusBadRequest, rec.Code, rec.Body.String())
+			assert.EqualValues(t, models.ErrCodeFormLogoInvalid, formsDecode(t, rec)["code"])
+		}
+		data, ct := multipartLogo(append(pngBytes.Bytes(), bytes.Repeat([]byte{0}, models.FormLogoMaxBytes)...))
+		rec := humaRequest(t, e, http.MethodPut, logoPath, data, user1, ct)
+		require.Equal(t, http.StatusBadRequest, rec.Code, rec.Body.String())
+		assert.Contains(t, rec.Body.String(), "too_large")
+	})
+
+	t.Run("upload, serve by token without credentials, revalidate, remove", func(t *testing.T) {
+		data, ct := multipartLogo(pngBytes.Bytes())
+		rec := humaRequest(t, e, http.MethodPut, logoPath, data, user1, ct)
+		require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+		assert.Equal(t, true, formsDecode(t, rec)["has_brand_logo"])
+
+		// The form needs a login, the logo does not: an image request carries no credentials.
+		rec = humaRequest(t, e, http.MethodGet, "/api/v2/forms/"+token+"/logo", "", "", "")
+		require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+		assert.Equal(t, "image/png", rec.Header().Get("Content-Type"))
+		assert.Equal(t, "nosniff", rec.Header().Get("X-Content-Type-Options"))
+		assert.Empty(t, rec.Header().Values("Set-Cookie"))
+		_, format, err := image.DecodeConfig(bytes.NewReader(rec.Body.Bytes()))
+		require.NoError(t, err)
+		assert.Equal(t, "png", format)
+		etag := rec.Header().Get("Etag")
+		require.NotEmpty(t, etag)
+
+		req := httptest.NewRequest(http.MethodGet, "/api/v2/forms/"+token+"/logo", nil)
+		req.Header.Set("If-None-Match", etag)
+		cached := httptest.NewRecorder()
+		e.ServeHTTP(cached, req)
+		assert.Equal(t, http.StatusNotModified, cached.Code)
+
+		assert.Equal(t, http.StatusNotFound, humaRequest(t, e, http.MethodGet, "/api/v2/forms/not-a-token/logo", "", "", "").Code)
+
+		rec = humaRequest(t, e, http.MethodGet, "/api/v2/forms/"+token, "", user1, "")
+		assert.Equal(t, true, formsDecode(t, rec)["branding"].(map[string]any)["has_logo"])
+
+		rec = humaRequest(t, e, http.MethodDelete, logoPath, "", user1, "")
+		require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+		assert.Equal(t, false, formsDecode(t, rec)["has_brand_logo"])
+		assert.Equal(t, http.StatusNotFound, humaRequest(t, e, http.MethodGet, "/api/v2/forms/"+token+"/logo", "", "", "").Code)
+	})
 }

@@ -525,7 +525,7 @@ func TestFormDefinition_DoesNotLeak(t *testing.T) {
 	def, err := GetFormDefinition(f.Token, nil)
 	require.NoError(t, err)
 	top := marshalKeys(t, def)
-	assert.ElementsMatch(t, []string{"title", "description", "fields", "success", "submitter"}, keysOf(top))
+	assert.ElementsMatch(t, []string{"title", "description", "fields", "success", "submitter", "branding"}, keysOf(top))
 	assert.ElementsMatch(t, []string{"message", "redirect_url", "submit_another"}, keysOf(top["success"].(map[string]any)))
 	assert.ElementsMatch(t, []string{"collect_name", "name_required", "collect_email", "email_required"}, keysOf(top["submitter"].(map[string]any)))
 

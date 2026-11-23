@@ -342,6 +342,7 @@ var unauthenticatedAPIPaths = map[string]bool{
 	// Public forms (Huma ops that opt out of the global auth). They are in optionalAuthAPIPaths too: a request that
 	// carries an Authorization header is authenticated, because forms for signed-in users use the same routes.
 	"/api/v2/forms/:token":                       true,
+	"/api/v2/forms/:token/logo":                  true,
 	"/api/v2/forms/:token/submissions":           true,
 	"/api/v2/forms/:token/submissions/multipart": true,
 
@@ -360,6 +361,7 @@ var unauthenticatedAPIPaths = map[string]bool{
 // optionalAuthAPIPaths are the public paths that still authenticate a request which sends credentials.
 var optionalAuthAPIPaths = map[string]bool{
 	"/api/v2/forms/:token":                       true,
+	"/api/v2/forms/:token/logo":                  true,
 	"/api/v2/forms/:token/submissions":           true,
 	"/api/v2/forms/:token/submissions/multipart": true,
 }
