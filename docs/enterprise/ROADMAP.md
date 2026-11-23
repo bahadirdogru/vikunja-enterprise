@@ -25,21 +25,23 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
 | 1b | Custom fields: frontend (project settings page, task detail editors, en + tr) | Done |
 | 1c | Custom fields: filter (`cf_<id>`) and sort in the API, values removed when a task changes project | Done |
 | 1d | Custom fields: values in task lists (`expand=custom_fields`), table columns, kanban card fields | Done |
-| 1e | Custom fields: filter UI with field names instead of `cf_<id>` | Planned |
+| 1e | Custom fields: filter UI with field names instead of `cf_<id>` (stored filters keep `cf_<id>`) | Done |
 | 2a | Workflow backend: statuses, transitions, required fields, teams, history, done sync, `/api/v2` ([workflow.md](workflow.md)) | Done |
 | 2b | Workflow UI: editor (list + matrix) in project settings, status menu, requirements dialog and history on the task | Done |
 | 2c | Workflow in views: kanban status mode (columns = statuses, drag = transition), table column, list/card badges, filter and sort by `status` / `status_category` | Done |
 | 3a | Automation core: transactional outbox, workers, rules, conditions, non-script actions, run history, limits, dry run, catalog ([automation.md](automation.md)) | Done |
 | 3b | Automation scripting: JavaScript action and condition, `http.request` action, encrypted project secrets, script editor with API reference | Done |
 | 3c | Automation UI: rule list, catalog-driven When / If / Then editor, dry run, runs with steps and retry | Done |
-| 3d | Automation: schedule / manual / incoming webhook triggers, wait action, templates | Planned |
+| 3d | Automation: schedule / overdue / due soon / manual / incoming webhook triggers, wait / `task.create` / notify actions, ticker, loop guards, editor support, manual run from a task | Done (UI not checked in a browser; no templates gallery for the new types) |
 | 4a | Dashboards: task aggregation API (`POST /api/v2/reports/tasks`), options endpoint, dashboards/widgets CRUD ([dashboards.md](dashboards.md)) | Done |
 | 4b | Dashboards UI: SVG charts, dashboard pages with drag/resize grid, widget editor with live preview, drill-down | Done |
-| 4c | Dashboards: status time, workload, time tracking widgets, CSV export | Planned |
+| 4c | Dashboards: time in status, workload, time tracking widgets, CSV export, previous-period comparison on number widgets | Done (UI not checked in a browser; default dashboards for new workflow projects open) |
 | 5a | Approvals backend: requests and decisions, approval on workflow transitions, ad-hoc approvals, automation triggers/action, notifications ([forms-approvals.md](forms-approvals.md)) | Done |
 | 5b | Approvals UI: transition approval settings, task banner with approve / reject, approvals page with badge, kanban and list markers, notifications | Done |
 | 5c | Forms backend: definitions, public and signed-in submission path, limits, attachments, `form.submitted` trigger | Done |
 | 5d | Forms UI: forms list, builder with live preview, submissions, standalone public form page | Done |
+| 5e | Forms: brand name, accent colour, footer and logo for public forms (backend + builder settings + public page) | Done (UI not checked in a browser) |
+| 5f | Approvals: the `409` / `24007` refusal names the target status and a pending request; the UI offers "Request approval" | Done |
 | – | Organisation / tenant layer, AI features | Deferred |
 
 ## Log
@@ -170,16 +172,53 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   now refused, also through CalDAV. Frontend: eslint, stylelint and vue-tsc
   are clean on the fork's files; the unit suite was not run in this pass.
 
+- Custom field names in the filter input (1e). The input shows and accepts
+  field names and option titles and sends `cf_<id>` and option ids; saved
+  filters keep the id form, so renaming a field breaks nothing.
+- Approvals: the `24007` refusal of a plain `done: true` update now carries
+  the target status and a pending request in `details`; the client rolls the
+  change back and offers "Request approval" (or opens the task when a request
+  is pending).
+- Form branding added (backend + UI): brand name, accent colour, footer and
+  a logo (PNG, JPEG, GIF or WebP, no SVG; scaled down, size and pixel
+  limits). Type-checked and unit-tested, not checked in a browser.
+- Automation 3d added (backend + UI, en + tr). Triggers: schedule (cron, time
+  zone of the server), task overdue, due soon, manual, incoming webhook
+  (secret URL, optional HMAC signature). Actions: `wait`, `task.create`,
+  `notify`. A ticker claims firings in the database so replicas never fire
+  twice; arming markers keep tasks that were already overdue from firing;
+  loop guards (task origins, depth, a header the API refuses with 508 on
+  requests the engine sends). Editor forms, webhook address shown once,
+  "Run automation..." on a task, `automation.notify` notification. Not
+  checked in a browser. No replay protection on the webhook signature.
+- Dashboards 4c added (backend + UI): time in status, workload and time
+  tracking widgets, CSV export from the widget menu and the drill-down,
+  previous-period comparison on number widgets (a partial period is compared
+  with the same elapsed share of the previous one). Not checked in a browser.
+  Default dashboards for new projects with a workflow are not created.
+- Review-pass operational notes: run code generators with `LC_ALL=C` on
+  machines with a Turkish locale (the dotless `i` breaks generated
+  identifiers). Vitest's on-disk module cache is disabled in
+  `frontend/vite.config.ts` (`fsModuleCache: false`) because cached
+  transforms broke the i18n virtual modules on repeat runs.
+
 ## Remaining
 
-- 1e: custom field filter UI with field names instead of `cf_<id>`.
-- 3d: schedule / manual / incoming webhook / overdue triggers, wait action,
-  in-app notify action.
-- 4c: status time, workload and time tracking widgets, CSV export, number
-  comparison.
-- MCP exposure of the fork's endpoints; MySQL only exercised for reports,
-  approvals and forms; the arm64 image has not been started on real ARM
-  hardware.
+- Default dashboards for new projects with a workflow (4c).
+- MCP exposure of the fork's endpoints; the new automation routes are not in
+  the MCP allow-list.
+- MySQL only exercised for reports, approvals and forms; the arm64 image has
+  not been started on real ARM hardware.
+- The newest UI (form branding, 4c widgets and export, automation 3d editor
+  and manual run) is type-checked and unit-tested but not checked in a
+  browser.
+- Automation: the catalog does not expose `automation.waitmax` or
+  `service.timezone` to the editor; the stuck-run reaper does not disable
+  rules or update metrics; the `stop` step is still recognised by an output
+  prefix; no templates gallery for the 3d types; no e-mail action.
+- Reports: the time tracking report builds `IN` lists from task ids
+  (parameter-limit risk); bar and donut widgets with a time range ignore it
+  in drill-down and export (only number widgets are fixed).
 
 Open after the review pass, not fixed because they need a decision:
 
@@ -188,6 +227,8 @@ Open after the review pass, not fixed because they need a decision:
   worker for good. Scripts are enabled by default.
 - Automation: retrying one failed run re-queues the whole event, so rules
   created after the event run for it too. No cap on rules per project.
+- Automation: the incoming webhook signature covers the body only, so a
+  captured request can be replayed until the secret or address changes.
 - Approvals: a decision and a direct status change of the same task
   deadlock on PostgreSQL (the status change fails with 40P01). Locking the
   task first in the decision path fixed it on PostgreSQL in a trial; MySQL
