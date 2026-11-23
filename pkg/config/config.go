@@ -256,6 +256,7 @@ const (
 	AutomationTickMaxTasks        Key = `automation.ticker.maxtasks`
 	AutomationTickMaxScan         Key = `automation.ticker.maxscan`
 	AutomationWaitMax             Key = `automation.waitmax`
+	AutomationMaxPendingWaits     Key = `automation.maxpendingwaits`
 	AutomationWebhookMaxBody      Key = `automation.webhook.maxbody`
 	AutomationWebhookRateLimit    Key = `automation.webhook.ratelimit`
 
@@ -607,9 +608,10 @@ func initDefaultConfig() {
 	AutomationRetention.setDefault(30)
 	AutomationTickInterval.setDefault(30 * time.Second)
 	AutomationTickMaxTasks.setDefault(100)
-	AutomationTickMaxScan.setDefault(5000)
+	AutomationTickMaxScan.setDefault(defaultAutomationTickMaxScan)
 	AutomationWaitMax.setDefault(30 * 24 * time.Hour)
-	AutomationWebhookMaxBody.setDefault(64 * 1024)
+	AutomationMaxPendingWaits.setDefault(defaultAutomationMaxPendingWaits)
+	AutomationWebhookMaxBody.setDefault(defaultAutomationWebhookMaxBody)
 	AutomationWebhookRateLimit.setDefault(60)
 
 	// Reports
@@ -1020,6 +1022,31 @@ func InitConfig() {
 	err = SetMaxFileSizeMBytesFromString(FilesMaxSize.GetString())
 	if err != nil {
 		log.Fatalf("Could not parse files.maxsize: %s", err)
+	}
+
+	ClampAutomationLimits()
+}
+
+// The defaults the automation limits fall back to when they are set to a value that has no meaning.
+const (
+	defaultAutomationTickMaxScan     = 5000
+	defaultAutomationWebhookMaxBody  = 64 * 1024
+	defaultAutomationMaxPendingWaits = 1000
+)
+
+// ClampAutomationLimits replaces automation limits that are zero or negative, where that has no defined meaning,
+// with their defaults. "No limit" is not offered for these: they protect the server from work that is not bounded
+// otherwise.
+func ClampAutomationLimits() {
+	for key, fallback := range map[Key]int{
+		AutomationTickMaxScan:     defaultAutomationTickMaxScan,
+		AutomationWebhookMaxBody:  defaultAutomationWebhookMaxBody,
+		AutomationMaxPendingWaits: defaultAutomationMaxPendingWaits,
+	} {
+		if key.GetInt() <= 0 {
+			log.Warningf("Configured %s is %d, which is not a limit: using %d", key, key.GetInt(), fallback)
+			key.Set(fallback)
+		}
 	}
 }
 

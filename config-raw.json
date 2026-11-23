@@ -1234,19 +1234,24 @@
                         {
                             "key": "maxtasks",
                             "default_value": "100",
-                            "comment": "The maximum number of runs one rule starts per tick (schedule: matching tasks; overdue / due soon: tasks). When more tasks match, the rest is not started in this tick (a schedule tick records that it was capped on the rule; overdue and due soon pick up the rest on the next tick)."
+                            "comment": "The maximum number of runs one rule starts per tick (schedule: matching tasks; overdue / due soon: tasks). 0 means no cap (the scan limit still applies). When more tasks match, the rest is not started in this tick (a schedule tick records that it was capped on the rule; overdue and due soon pick up the rest on the next tick)."
                         },
                         {
                             "key": "maxscan",
                             "default_value": "5000",
-                            "comment": "The maximum number of tasks a schedule tick looks at to find the ones that match the conditions of the rule."
+                            "comment": "The maximum number of tasks a schedule tick looks at to find the ones that match the conditions of the rule, and of tasks one tick of an overdue or due soon rule looks at. Must be greater than 0: a value of 0 or less is replaced with the default."
                         }
                     ]
                 },
                 {
                     "key": "waitmax",
                     "default_value": "720h",
-                    "comment": "The longest duration the wait action of a rule may pause a run (default 30 days)."
+                    "comment": "The longest duration the wait action of a rule may pause a run (default 30 days). 0 means no limit."
+                },
+                {
+                    "key": "maxpendingwaits",
+                    "default_value": "1000",
+                    "comment": "The maximum number of runs of one project that wait at the same time (the wait action). A wait step over the limit fails. Must be greater than 0: a value of 0 or less is replaced with the default."
                 },
                 {
                     "key": "webhook",
@@ -1255,12 +1260,12 @@
                         {
                             "key": "maxbody",
                             "default_value": "65536",
-                            "comment": "The maximum size of the JSON body of an incoming webhook in bytes."
+                            "comment": "The maximum size of the JSON body of an incoming webhook in bytes. Must be greater than 0: a value of 0 or less is replaced with the default."
                         },
                         {
                             "key": "ratelimit",
                             "default_value": "60",
-                            "comment": "The maximum number of incoming webhook calls per rule and minute. Calls above the limit are answered with 429."
+                            "comment": "The maximum number of incoming webhook calls per rule and minute. Calls above the limit are answered with 429. 0 turns the limit off."
                         }
                     ]
                 },

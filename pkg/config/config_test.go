@@ -278,3 +278,25 @@ func TestGetLegalLinks(t *testing.T) {
 		}, GetLegalLinks())
 	})
 }
+
+func TestAutomationLimitsAreClamped(t *testing.T) {
+	t.Run("zero and negative values fall back to the defaults", func(t *testing.T) {
+		initConfigFromYAML(t, "automation:\n  ticker:\n    maxscan: 0\n  webhook:\n    maxbody: -1\n  maxpendingwaits: -5\n")
+
+		assert.Equal(t, defaultAutomationTickMaxScan, AutomationTickMaxScan.GetInt())
+		assert.Equal(t, defaultAutomationWebhookMaxBody, AutomationWebhookMaxBody.GetInt())
+		assert.Equal(t, defaultAutomationMaxPendingWaits, AutomationMaxPendingWaits.GetInt())
+	})
+	t.Run("positive values are kept", func(t *testing.T) {
+		initConfigFromYAML(t, "automation:\n  ticker:\n    maxscan: 77\n  webhook:\n    maxbody: 1024\n  maxpendingwaits: 3\n")
+
+		assert.Equal(t, 77, AutomationTickMaxScan.GetInt())
+		assert.Equal(t, 1024, AutomationWebhookMaxBody.GetInt())
+		assert.Equal(t, 3, AutomationMaxPendingWaits.GetInt())
+	})
+	t.Run("the defaults need no clamping", func(t *testing.T) {
+		initConfigFromYAML(t, "")
+
+		assert.Equal(t, defaultAutomationTickMaxScan, AutomationTickMaxScan.GetInt())
+	})
+}
