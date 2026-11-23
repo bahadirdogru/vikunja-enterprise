@@ -3188,7 +3188,28 @@
 			"help": "İnsanların göreceği görünüm bu. Deneyebilirsiniz; hiçbir şey gönderilmez.",
 			"nothingSent": "Bu bir önizlemedir. Hiçbir şey gönderilmedi."
 		},
+		"branding": {
+			"title": "Markalama",
+			"help": "Herkese açık sayfanın uygulama yerine sizin markanızı göstermesini sağlayın.",
+			"name": "Marka adı",
+			"accent": "Vurgu rengi",
+			"accentPicker": "Vurgu rengini seçin",
+			"logo": "Logo",
+			"logoUpload": "Logo yükle",
+			"logoReplace": "Logoyu değiştir",
+			"logoRemove": "Logoyu kaldır",
+			"logoHelp": "PNG, JPEG, GIF veya WebP, en fazla 1 MB. Hemen kaydedilir.",
+			"logoAfterSave": "Önce formu kaydedin, ardından logo ekleyebilirsiniz.",
+			"logoSaved": "Logo kaydedildi.",
+			"logoRemoved": "Logo kaldırıldı.",
+			"logoErrors": {
+				"type": "Logo PNG, JPEG, GIF veya WebP görseli olmalıdır.",
+				"size": "Logo çok büyük. En fazla 1 MB olabilir."
+			},
+			"hideFooter": "Alt bilgideki \"Powered by\" bağlantısını gizle"
+		},
 		"errors": {
+			"accentColor": "#1973ff gibi bir renk girin.",
 			"string": "Bir metin girin.",
 			"tooLong": "En fazla {max} karakter.",
 			"placeholder": "Bilinmeyen yer tutucu: {name}.",
@@ -3214,6 +3235,7 @@
 			"maxSubmissions": "0 ya da bir tam sayı girin."
 		},
 		"public": {
+			"poweredBy": "Vikunja ile oluşturuldu",
 			"pageTitle": "Form",
 			"required": "zorunlu",
 			"clear": "Temizle",

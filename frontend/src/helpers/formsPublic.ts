@@ -35,6 +35,8 @@ export type PublicDefinition = {
 	success: {message: string, redirect_url: string, submit_another: boolean}
 	submitter: {collect_name: boolean, name_required: boolean, collect_email: boolean, email_required: boolean}
 	attachments: {max_files: number, max_file_size: number} | null
+	// All optional: without them the page shows the form title only.
+	branding: {name: string, accent_color: string, has_logo: boolean, hide_footer: boolean}
 }
 
 export function normalizeDefinition(data: FormPublicDefinition): PublicDefinition {
@@ -66,6 +68,12 @@ export function normalizeDefinition(data: FormPublicDefinition): PublicDefinitio
 		attachments: data.attachments
 			? {max_files: data.attachments.max_files ?? 0, max_file_size: data.attachments.max_file_size ?? 0}
 			: null,
+		branding: {
+			name: data.branding?.name ?? '',
+			accent_color: data.branding?.accent_color ?? '',
+			has_logo: data.branding?.has_logo ?? false,
+			hide_footer: data.branding?.hide_footer ?? false,
+		},
 	}
 }
 
@@ -397,6 +405,7 @@ export function definitionFromDraft(
 			email_required: isPublic && s.email_mode === 'required',
 		},
 		attachments: fields.some(field => field.kind === 'files') ? {max_files: 5, max_file_size: 10 * 1024 * 1024} : null,
+		branding: {name: draft.brand_name.trim(), accent_color: draft.accent_color, has_logo: false, hide_footer: draft.hide_footer},
 	}
 }
 
@@ -444,5 +453,40 @@ export function redirectTarget(url: string): URL | null {
 		return (target.protocol === 'http:' || target.protocol === 'https:') && target.host !== '' ? target : null
 	} catch {
 		return null
+	}
+}
+
+// ---- branding ------------------------------------------------------------------------------------------------------
+
+// The CSS variables that turn the page's primary color into the accent color. Empty for no or an invalid accent.
+// The text on the accent is chosen for contrast.
+export function accentStyle(accent: string): Record<string, string> {
+	const m = /^#([0-9a-f]{6})$/i.exec(accent)
+	if (!m) return {}
+	const n = parseInt(m[1] as string, 16)
+	const r = (n >> 16) / 255
+	const g = ((n >> 8) & 255) / 255
+	const b = (n & 255) / 255
+	const max = Math.max(r, g, b)
+	const min = Math.min(r, g, b)
+	const l = (max + min) / 2
+	const d = max - min
+	let h = 0
+	let s = 0
+	if (d !== 0) {
+		s = d / (1 - Math.abs(2 * l - 1))
+		if (max === r) h = ((g - b) / d) % 6
+		else if (max === g) h = (b - r) / d + 2
+		else h = (r - g) / d + 4
+		h = (h * 60 + 360) % 360
+	}
+	const lin = (c: number) => c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+	const luminance = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+	return {
+		'--primary-h': `${Math.round(h)}deg`,
+		'--primary-s': `${Math.round(s * 100)}%`,
+		'--primary-l': `${Math.round(l * 100)}%`,
+		'--primary-a': '1',
+		'--button-text-color': luminance > 0.4 ? '#000000' : '#ffffff',
 	}
 }

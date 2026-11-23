@@ -12,11 +12,19 @@ import UserValueInput from '@/components/custom-fields/UserValueInput.vue'
 import XButton from '@/components/input/Button.vue'
 import AsyncEditor from '@/components/input/AsyncEditor'
 import Message from '@/components/misc/Message.vue'
-import {useSaveFormMutation, type FormResponse} from '@/client/queries/forms'
+import {
+	publicFormLogoUrl,
+	useDeleteFormLogoMutation,
+	useSaveFormMutation,
+	useUploadFormLogoMutation,
+	type FormResponse,
+} from '@/client/queries/forms'
 import {isRequestContextAbort} from '@/client/requestContext'
 import {
 	FORM_ACCESS_MODES,
 	FORM_ERROR,
+	LOGO_TYPES,
+	MAX_BRAND_NAME,
 	addState,
 	cloneDraft,
 	controlId,
@@ -27,6 +35,7 @@ import {
 	findTarget,
 	issuesFromProblem,
 	locateIssue,
+	logoProblem,
 	mapIssues,
 	moveField,
 	newField,
@@ -172,6 +181,56 @@ async function save(): Promise<boolean> {
 		return false
 	}
 }
+
+// ---- logo -------------------------------------------------------------------------------------------------------
+// The logo is its own upload and needs a saved form: it is stored right away, not with the draft.
+const uploadLogo = useUploadFormLogoMutation()
+const deleteLogo = useDeleteFormLogoMutation()
+const logoError = ref('')
+const logoVersion = ref(0)
+const logoInput = ref<HTMLInputElement | null>(null)
+const logoBusy = computed(() => uploadLogo.isPending.value || deleteLogo.isPending.value)
+const logoPreview = computed(() => savedForm.value?.has_brand_logo && savedForm.value.token
+	? publicFormLogoUrl(savedForm.value.token, String(logoVersion.value))
+	: '')
+const logoAccept = LOGO_TYPES.join(',')
+
+async function onLogoChosen(event: Event) {
+	const input = event.target as HTMLInputElement
+	const file = input.files?.[0]
+	input.value = ''
+	const form = savedForm.value
+	if (!file || !form) return
+	logoError.value = ''
+	const problem = logoProblem(file)
+	if (problem) {
+		logoError.value = t(`forms.branding.logoErrors.${problem}`)
+		return
+	}
+	try {
+		savedForm.value = await uploadLogo.mutateAsync({projectId: props.projectId, formId: form.id, logo: file})
+		logoVersion.value += 1
+	} catch (cause) {
+		if (isRequestContextAbort(cause)) return
+		const reason = (cause as {details?: {reason?: string}} | null)?.details?.reason
+		if (reason === 'too_large') logoError.value = t('forms.branding.logoErrors.size')
+		else if (reason === 'not_an_image' || reason === 'unsupported_type') logoError.value = t('forms.branding.logoErrors.type')
+		else logoError.value = getErrorText(cause)
+	}
+}
+
+async function removeLogo() {
+	const form = savedForm.value
+	if (!form) return
+	logoError.value = ''
+	try {
+		savedForm.value = await deleteLogo.mutateAsync({projectId: props.projectId, formId: form.id})
+	} catch (cause) {
+		if (!isRequestContextAbort(cause)) logoError.value = getErrorText(cause)
+	}
+}
+
+const colorPickerValue = computed(() => /^#[0-9a-fA-F]{6}$/.test(draft.value.accent_color) ? draft.value.accent_color : '#1973ff')
 
 defineExpose({save, dirty, savedForm})
 
@@ -848,6 +907,144 @@ function setAccess(access: FormAccess) {
 					>
 						{{ $t('forms.settings.attachmentsNote') }}
 					</p>
+
+					<!-- branding -->
+					<fieldset class="fb__branding">
+						<legend class="label">
+							{{ $t('forms.branding.title') }}
+						</legend>
+						<p class="help">
+							{{ $t('forms.branding.help') }}
+						</p>
+
+						<div class="field">
+							<label
+								class="label"
+								for="fb-s-brand_name"
+							>{{ $t('forms.branding.name') }}</label>
+							<input
+								id="fb-s-brand_name"
+								v-model="draft.brand_name"
+								class="input"
+								type="text"
+								:maxlength="MAX_BRAND_NAME"
+								:aria-invalid="errorsFor('fb-s-brand_name').length > 0 || undefined"
+							>
+							<p
+								v-for="message in errorsFor('fb-s-brand_name')"
+								:key="message"
+								class="help is-danger"
+								role="alert"
+							>
+								{{ message }}
+							</p>
+						</div>
+
+						<div class="field">
+							<label
+								class="label"
+								for="fb-s-accent_color"
+							>{{ $t('forms.branding.accent') }}</label>
+							<div class="fb__accent">
+								<input
+									class="fb__swatch"
+									type="color"
+									:value="colorPickerValue"
+									:aria-label="$t('forms.branding.accentPicker')"
+									@input="draft.accent_color = ($event.target as HTMLInputElement).value"
+								>
+								<input
+									id="fb-s-accent_color"
+									v-model="draft.accent_color"
+									class="input"
+									type="text"
+									maxlength="7"
+									placeholder="#1973ff"
+									:aria-invalid="errorsFor('fb-s-accent_color').length > 0 || undefined"
+								>
+								<XButton
+									v-if="draft.accent_color"
+									type="button"
+									variant="tertiary"
+									@click="draft.accent_color = ''"
+								>
+									{{ $t('forms.settings.clear') }}
+								</XButton>
+							</div>
+							<p
+								v-for="message in errorsFor('fb-s-accent_color')"
+								:key="message"
+								class="help is-danger"
+								role="alert"
+							>
+								{{ message }}
+							</p>
+						</div>
+
+						<div class="field">
+							<span class="label">{{ $t('forms.branding.logo') }}</span>
+							<template v-if="savedForm">
+								<div class="fb__logo">
+									<img
+										v-if="logoPreview"
+										class="fb__logo-preview"
+										:src="logoPreview"
+										:alt="$t('forms.branding.logo')"
+									>
+									<input
+										ref="logoInput"
+										class="fb__logo-input"
+										type="file"
+										:accept="logoAccept"
+										tabindex="-1"
+										@change="onLogoChosen"
+									>
+									<XButton
+										type="button"
+										variant="secondary"
+										:loading="logoBusy"
+										@click="logoInput?.click()"
+									>
+										{{ logoPreview ? $t('forms.branding.logoReplace') : $t('forms.branding.logoUpload') }}
+									</XButton>
+									<XButton
+										v-if="logoPreview"
+										type="button"
+										variant="tertiary"
+										:disabled="logoBusy"
+										@click="removeLogo"
+									>
+										{{ $t('forms.branding.logoRemove') }}
+									</XButton>
+								</div>
+								<p class="help">
+									{{ $t('forms.branding.logoHelp') }}
+								</p>
+							</template>
+							<p
+								v-else
+								class="help"
+							>
+								{{ $t('forms.branding.logoAfterSave') }}
+							</p>
+							<p
+								v-if="logoError"
+								class="help is-danger"
+								role="alert"
+							>
+								{{ logoError }}
+							</p>
+						</div>
+
+						<label class="checkbox">
+							<input
+								id="fb-s-hide_footer"
+								v-model="draft.hide_footer"
+								type="checkbox"
+							>
+							{{ $t('forms.branding.hideFooter') }}
+						</label>
+					</fieldset>
 				</section>
 
 				<!-- share -->
@@ -929,6 +1126,45 @@ function setAccess(access: FormAccess) {
 		@media screen and (min-width: $desktop) {
 			grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 		}
+	}
+
+	&__branding {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		border: 0;
+		padding: 0;
+		margin: 0;
+		min-inline-size: 0;
+	}
+
+	&__accent,
+	&__logo {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: .5rem;
+	}
+
+	&__swatch {
+		inline-size: 2.5rem;
+		block-size: 2.5rem;
+		padding: 0;
+		border: 1px solid var(--grey-300);
+		border-radius: $radius;
+		background: none;
+		cursor: pointer;
+	}
+
+	&__logo-preview {
+		max-inline-size: 8rem;
+		max-block-size: 3rem;
+		background: var(--grey-100);
+		border-radius: $radius;
+	}
+
+	&__logo-input {
+		display: none;
 	}
 
 	&__main,

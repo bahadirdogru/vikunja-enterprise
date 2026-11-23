@@ -10,8 +10,9 @@ import {useQuery, useQueryClient} from '@tanstack/vue-query'
 import FormRenderer from '@/components/forms/FormRenderer.vue'
 import Logo from '@/components/home/Logo.vue'
 import XButton from '@/components/input/Button.vue'
-import {formKeys, publicFormQuery, submitPublicForm, type PublicSubmitResult} from '@/client/queries/forms'
+import {formKeys, publicFormLogoUrl, publicFormQuery, submitPublicForm, type PublicSubmitResult} from '@/client/queries/forms'
 import {
+	accentStyle,
 	classifyPublicProblem,
 	redirectTarget,
 	serverErrorsFrom,
@@ -53,6 +54,12 @@ const submitProblem = ref<PublicProblem | null>(null)
 const result = ref<PublicSubmitResult | null>(null)
 const renderer = ref<InstanceType<typeof FormRenderer> | null>(null)
 const resultBox = ref<HTMLElement | null>(null)
+
+// The brand and the accent color are only known once the form is loaded; until then (and for errors) the page looks
+// like the application.
+const brand = computed(() => definition.value?.branding ?? {name: '', accent_color: '', has_logo: false, hide_footer: false})
+const accent = computed(() => accentStyle(brand.value.accent_color))
+const logoUrl = computed(() => publicFormLogoUrl(props.token))
 
 useTitle(computed(() => {
 	if (definition.value) return definition.value.title
@@ -172,13 +179,31 @@ watch(() => props.token, () => {
 </script>
 
 <template>
-	<div class="fp">
+	<div
+		class="fp"
+		:style="accent"
+	>
 		<a
 			href="#fp-main"
 			class="fp__skip"
 		>{{ $t('misc.skipToContent') }}</a>
 		<header class="fp__brand">
-			<Logo class="fp__logo" />
+			<template v-if="brand.name || brand.has_logo">
+				<img
+					v-if="brand.has_logo"
+					class="fp__brand-logo"
+					:src="logoUrl"
+					:alt="brand.name"
+				>
+				<span
+					v-if="brand.name"
+					class="fp__brand-name"
+				>{{ brand.name }}</span>
+			</template>
+			<Logo
+				v-else
+				class="fp__logo"
+			/>
 		</header>
 
 		<main
@@ -316,6 +341,16 @@ watch(() => props.token, () => {
 				/>
 			</template>
 		</main>
+		<footer
+			v-if="!brand.hide_footer"
+			class="fp__footer"
+		>
+			<a
+				href="https://vikunja.io"
+				target="_blank"
+				rel="noopener noreferrer"
+			>{{ $t('forms.public.poweredBy') }}</a>
+		</footer>
 	</div>
 </template>
 
@@ -347,6 +382,35 @@ watch(() => props.token, () => {
 		inline-size: 100%;
 		max-inline-size: 40rem;
 		padding-block: .5rem 1rem;
+		display: flex;
+		align-items: center;
+		gap: .75rem;
+	}
+
+	&__brand-logo {
+		max-inline-size: 11rem;
+		max-block-size: 3.5rem;
+		inline-size: auto;
+		block-size: auto;
+	}
+
+	&__brand-name {
+		font-size: 1.25rem;
+		font-weight: 600;
+		overflow-wrap: anywhere;
+	}
+
+	&__footer {
+		inline-size: 100%;
+		max-inline-size: 40rem;
+		padding-block-start: 1rem;
+		font-size: .8rem;
+		text-align: center;
+		color: var(--grey-500);
+
+		a {
+			color: inherit;
+		}
 	}
 
 	&__logo {

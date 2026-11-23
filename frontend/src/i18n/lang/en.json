@@ -3374,7 +3374,28 @@
       "help": "This is what people see. You can try it out; nothing is sent.",
       "nothingSent": "This is a preview. Nothing was sent."
     },
+    "branding": {
+      "title": "Branding",
+      "help": "Make the public page look like yours instead of the application.",
+      "name": "Brand name",
+      "accent": "Accent color",
+      "accentPicker": "Pick the accent color",
+      "logo": "Logo",
+      "logoUpload": "Upload a logo",
+      "logoReplace": "Replace the logo",
+      "logoRemove": "Remove the logo",
+      "logoHelp": "PNG, JPEG, GIF or WebP, up to 1 MB. It is saved right away.",
+      "logoAfterSave": "Save the form first, then you can add a logo.",
+      "logoSaved": "The logo was saved.",
+      "logoRemoved": "The logo was removed.",
+      "logoErrors": {
+        "type": "The logo has to be a PNG, JPEG, GIF or WebP image.",
+        "size": "The logo is too large. It may be at most 1 MB."
+      },
+      "hideFooter": "Hide the \"Powered by\" link in the footer"
+    },
     "errors": {
+      "accentColor": "Enter a color like #1973ff.",
       "string": "Enter text.",
       "tooLong": "At most {max} characters.",
       "placeholder": "Unknown placeholder {name}.",
@@ -3400,6 +3421,7 @@
       "maxSubmissions": "Enter 0 or a whole number."
     },
     "public": {
+      "poweredBy": "Powered by Vikunja",
       "pageTitle": "Form",
       "required": "required",
       "clear": "Clear",

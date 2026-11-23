@@ -2,6 +2,7 @@ import {describe, expect, it} from 'vitest'
 
 import optionsFixture from './forms.options.fixture.json'
 import {
+	accentStyle,
 	classifyPublicProblem,
 	definitionFromDraft,
 	initialAnswers,
@@ -32,6 +33,7 @@ function definition(...fields: PublicField[]): PublicDefinition {
 		success: {message: '', redirect_url: '', submit_another: false},
 		submitter: {collect_name: false, name_required: false, collect_email: false, email_required: false},
 		attachments: null,
+		branding: {name: '', accent_color: '', has_logo: false, hide_footer: false},
 	}
 }
 
@@ -46,6 +48,7 @@ describe('normalizeDefinition', () => {
 		expect(result.success).toEqual({message: 'Thanks', redirect_url: '', submit_another: true})
 		expect(result.submitter.collect_name).toBe(false)
 		expect(result.attachments).toBeNull()
+		expect(result.branding).toEqual({name: '', accent_color: '', has_logo: false, hide_footer: false})
 	})
 })
 
@@ -231,5 +234,17 @@ describe('definitionFromDraft (the preview)', () => {
 		expect(result.fields[2]!.options.length).toBe(3)
 		expect(result.submitter).toMatchObject({collect_name: true, name_required: true, collect_email: false})
 		expect(result.attachments).not.toBeNull()
+	})
+})
+
+describe('accentStyle', () => {
+	it('turns a hex color into primary variables with readable text', () => {
+		expect(accentStyle('#ff0000')).toMatchObject({'--primary-h': '0deg', '--primary-s': '100%', '--primary-l': '50%', '--button-text-color': '#ffffff'})
+		expect(accentStyle('#ffff00')['--button-text-color']).toBe('#000000')
+	})
+
+	it('ignores empty and malformed values', () => {
+		expect(accentStyle('')).toEqual({})
+		expect(accentStyle('red')).toEqual({})
 	})
 })

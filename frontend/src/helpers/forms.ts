@@ -139,8 +139,29 @@ export type FormDraft = {
 	description: string
 	access: FormAccess
 	enabled: boolean
+	// Branding of the public page. The logo is uploaded on its own, not as part of the draft.
+	brand_name: string
+	accent_color: string
+	hide_footer: boolean
 	fields: FieldDraft[]
 	settings: SettingsDraft
+}
+
+export const MAX_BRAND_NAME = 100
+export const MAX_LOGO_BYTES = 1024 * 1024
+export const LOGO_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'] as const
+
+const ACCENT_COLOR = /^#[0-9a-fA-F]{6}$/
+
+// Empty means the default color.
+export function isValidAccentColor(value: string): boolean {
+	return value === '' || ACCENT_COLOR.test(value)
+}
+
+// The reason a file cannot be a logo, or null. The server checks again, by content.
+export function logoProblem(file: {size: number, type: string}): 'type' | 'size' | null {
+	if (!(LOGO_TYPES as readonly string[]).includes(file.type)) return 'type'
+	return file.size > MAX_LOGO_BYTES ? 'size' : null
 }
 
 let keyCounter = 0
@@ -165,7 +186,17 @@ export function emptySettings(): SettingsDraft {
 }
 
 export function emptyDraft(): FormDraft {
-	return {title: '', description: '', access: 'members', enabled: true, fields: [], settings: emptySettings()}
+	return {
+		title: '',
+		description: '',
+		access: 'members',
+		enabled: true,
+		brand_name: '',
+		accent_color: '',
+		hide_footer: false,
+		fields: [],
+		settings: emptySettings(),
+	}
 }
 
 export function newField(info: TargetInfo, t: Translate, access: FormAccess): FieldDraft {
@@ -198,6 +229,9 @@ export function draftFromForm(form: Form): FormDraft {
 		description: form.description ?? '',
 		access: (form.access ?? 'members') as FormAccess,
 		enabled: form.enabled ?? false,
+		brand_name: form.brand_name ?? '',
+		accent_color: form.accent_color ?? '',
+		hide_footer: form.hide_footer ?? false,
 		fields: (form.fields ?? []).map(field => ({
 			key: newFieldKey(),
 			target: field.target ?? '',
@@ -240,6 +274,9 @@ export function documentFromDraft(draft: FormDraft): FormWritable {
 		description: draft.description,
 		access: draft.access,
 		enabled: draft.enabled,
+		brand_name: draft.brand_name.trim(),
+		accent_color: draft.accent_color,
+		hide_footer: draft.hide_footer,
 		fields: draft.fields.map(field => ({
 			target: field.target,
 			label: field.label.trim(),
@@ -383,6 +420,8 @@ export function validateDraft(draft: FormDraft, options: FormOptionsResponse, t:
 	if (title === '') add('title', t('forms.errors.titleRequired'))
 	else if (charCount(title) > MAX_TITLE) add('title', t('forms.errors.tooLong', {max: MAX_TITLE}))
 	if (draft.access === 'public' && !options.public_enabled) add('access', t('forms.errors.publicDisabled'))
+	if (charCount(draft.brand_name.trim()) > MAX_BRAND_NAME) add('brand_name', t('forms.errors.tooLong', {max: MAX_BRAND_NAME}))
+	if (!isValidAccentColor(draft.accent_color)) add('accent_color', t('forms.errors.accentColor'))
 	if (draft.fields.length > MAX_FIELDS) {
 		add('fields', t('forms.errors.tooManyFields', {max: MAX_FIELDS}))
 		return issues
@@ -495,6 +534,9 @@ export function locateIssue(path: string): Locator {
 	if (path === 'title') return {tab: null, fieldIndex: null, control: 'title'}
 	if (path === 'description') return {tab: null, fieldIndex: null, control: 'description'}
 	if (path === 'access') return {tab: 'settings', fieldIndex: null, control: 'access'}
+	if (path === 'brand_name' || path === 'accent_color' || path === 'hide_footer') {
+		return {tab: 'settings', fieldIndex: null, control: path}
+	}
 	const settings = /^settings\.([a-z_]+)/.exec(path)
 	if (settings) {
 		return {tab: 'settings', fieldIndex: null, control: SETTINGS_CONTROLS[settings[1] as string] ?? 'access'}
