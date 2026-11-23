@@ -30,6 +30,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"xorm.io/builder"
+	"xorm.io/xorm/schemas"
 )
 
 // Fixture topology (pkg/db/fixtures): user1 owns project 1 (fields 1-4, tasks 1 and 2), has read
@@ -784,4 +785,71 @@ func TestCustomField_Lifecycle(t *testing.T) {
 		// The source project is untouched.
 		db.AssertExists(t, "custom_fields", map[string]interface{}{"id": 1, "project_id": 1}, false)
 	})
+}
+
+// The permission check reads the task without a lock. A move that lands between the check and the write must not
+// leave a value for a field of the project the task left.
+func TestCustomFieldValue_TaskMovedBetweenCheckAndWrite(t *testing.T) {
+	db.LoadAndAssertFixtures(t)
+	s := db.NewSession()
+	defer s.Close()
+
+	// Field 3 belongs to project 1, like task 1.
+	v := &CustomFieldValue{TaskID: 1, CustomFieldID: 3, Value: 5.0}
+	can, err := v.CanUpdate(s, cfUser1)
+	require.NoError(t, err)
+	require.True(t, can)
+
+	require.NoError(t, (&Task{ID: 1, ProjectID: 7}).Update(s, cfUser1))
+
+	err = v.Update(s, cfUser1)
+	require.Error(t, err)
+	assert.True(t, IsErrCustomFieldDoesNotExist(err))
+	n, err := s.Where("task_id = ? AND custom_field_id = ?", 1, 3).Count(&TaskCustomFieldValue{})
+	require.NoError(t, err)
+	assert.EqualValues(t, 0, n)
+}
+
+// Two requests that set the same single-value field at the same time must leave one row: a second row breaks
+// sort_by=cf_<id> (a scalar sub-select) and counts twice in reports.
+func TestCustomFieldValue_ConcurrentSetKeepsOneRow(t *testing.T) {
+	if db.Type() == schemas.SQLITE {
+		t.Skip("SQLite has one writer at a time")
+	}
+	db.LoadAndAssertFixtures(t)
+
+	s1 := db.NewSession()
+	defer s1.Close()
+	v1 := &CustomFieldValue{TaskID: 2, CustomFieldID: 3, Value: 1.0}
+	can, err := v1.CanUpdate(s1, cfUser1)
+	require.NoError(t, err)
+	require.True(t, can)
+	require.NoError(t, v1.Update(s1, cfUser1))
+
+	done := make(chan error, 1)
+	go func() {
+		s2 := db.NewSession()
+		defer s2.Close()
+		v2 := &CustomFieldValue{TaskID: 2, CustomFieldID: 3, Value: 2.0}
+		if _, err := v2.CanUpdate(s2, cfUser1); err != nil {
+			done <- err
+			return
+		}
+		if err := v2.Update(s2, cfUser1); err != nil {
+			done <- err
+			return
+		}
+		done <- s2.Commit()
+	}()
+
+	// The second request is now past its checks and waits for the first one.
+	time.Sleep(500 * time.Millisecond)
+	require.NoError(t, s1.Commit())
+	require.NoError(t, <-done)
+
+	s := db.NewSession()
+	defer s.Close()
+	n, err := s.Where("task_id = ? AND custom_field_id = ?", 2, 3).Count(&TaskCustomFieldValue{})
+	require.NoError(t, err)
+	assert.EqualValues(t, 1, n)
 }

@@ -530,6 +530,17 @@ func (v *CustomFieldValue) Delete(s *xorm.Session, a web.Auth) error {
 }
 
 func (v *CustomFieldValue) store(s *xorm.Session, a web.Auth, raw any) error {
+	// The checks before read the task without a lock. Holding its row from here on makes writers of one task wait
+	// for each other, so two of them cannot both find no row and store one each for a single-value field, and a
+	// task that was moved in the meantime does not get a value for a field of the project it left.
+	locked, err := GetTaskSimple(lockingSession(s), &Task{ID: v.task.ID})
+	if err != nil {
+		return err
+	}
+	if locked.ProjectID != v.field.ProjectID {
+		return ErrCustomFieldDoesNotExist{CustomFieldID: v.field.ID}
+	}
+
 	newRows, err := buildCustomFieldValueRows(s, v.field, v.task, raw)
 	if err != nil {
 		return err
