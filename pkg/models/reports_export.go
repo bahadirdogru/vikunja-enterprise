@@ -205,7 +205,9 @@ func ExportTasksCSV(ctx context.Context, s *xorm.Session, a web.Auth, req *TaskE
 	}
 
 	tasks := []*Task{}
-	if err = s.Where(builder.In("id", base)).OrderBy("id ASC").Find(&tasks); err != nil {
+	if err = s.Where(builder.In("id", base)).OrderBy("id ASC").
+		Cols("id", "project_id", "index", "title", "done", "priority", "percent_done", "start_date", "due_date", "end_date",
+			"done_at", "created", "created_by_id").Find(&tasks); err != nil {
 		return nil, wrapReportError(err)
 	}
 
@@ -276,6 +278,77 @@ func (c *taskExportColumns) userName(id int64) string {
 	return ""
 }
 
+// exportIDChunk is how many ids go into one IN list: well below the 999 parameters of the oldest supported SQLite.
+const exportIDChunk = 500
+
+// uniqueIDs drops the duplicates of ids, keeping the order.
+func uniqueIDs(ids []int64) []int64 {
+	seen := make(map[int64]struct{}, len(ids))
+	out := make([]int64, 0, len(ids))
+	for _, id := range ids {
+		if _, ok := seen[id]; !ok {
+			seen[id] = struct{}{}
+			out = append(out, id)
+		}
+	}
+	return out
+}
+
+// forIDChunks calls fn with the distinct ids in chunks that fit an IN list on every database.
+func forIDChunks(ids []int64, fn func(chunk []int64) error) error {
+	ids = uniqueIDs(ids)
+	for start := 0; start < len(ids); start += exportIDChunk {
+		if err := fn(ids[start:min(start+exportIDChunk, len(ids))]); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// findByIDs loads the rows with these ids, however many there are.
+func findByIDs[T any](s *xorm.Session, ids []int64) ([]*T, error) {
+	out := []*T{}
+	err := forIDChunks(ids, func(chunk []int64) error {
+		rows := []*T{}
+		if err := s.Where(builder.In("id", chunk)).Find(&rows); err != nil {
+			return err
+		}
+		out = append(out, rows...)
+		return nil
+	})
+	return out, err
+}
+
+func usersByIDs(s *xorm.Session, ids []int64) (map[int64]*user.User, error) {
+	out := map[int64]*user.User{}
+	err := forIDChunks(ids, func(chunk []int64) error {
+		users, err := user.GetUsersByIDs(s, chunk)
+		if err != nil {
+			return err
+		}
+		for id, u := range users {
+			out[id] = u
+		}
+		return nil
+	})
+	return out, err
+}
+
+func projectsByIDs(s *xorm.Session, ids []int64) (map[int64]*Project, error) {
+	out := map[int64]*Project{}
+	err := forIDChunks(ids, func(chunk []int64) error {
+		projects, err := GetProjectsMapByIDs(s, chunk)
+		if err != nil {
+			return err
+		}
+		for id, p := range projects {
+			out[id] = p
+		}
+		return nil
+	})
+	return out, err
+}
+
 // loadColumns loads everything the rows need with a fixed number of statements: the related rows are selected through
 // the same subquery as the tasks, never through a list of task ids.
 //
@@ -306,7 +379,7 @@ func (ex *taskExportCtx) loadColumns(tasks []*Task) (*taskExportColumns, error) 
 		}
 	}
 	var err error
-	if cols.projects, err = GetProjectsMapByIDs(s, projectIDs); err != nil {
+	if cols.projects, err = projectsByIDs(s, projectIDs); err != nil {
 		return nil, err
 	}
 
@@ -320,7 +393,7 @@ func (ex *taskExportCtx) loadColumns(tasks []*Task) (*taskExportColumns, error) 
 			userIDs = append(userIDs, a.UserID)
 		}
 	}
-	if cols.users, err = user.GetUsersByIDs(s, userIDs); err != nil {
+	if cols.users, err = usersByIDs(s, userIDs); err != nil {
 		return nil, err
 	}
 	for _, a := range assignees {
@@ -338,14 +411,12 @@ func (ex *taskExportCtx) loadColumns(tasks []*Task) (*taskExportColumns, error) 
 		labelIDs = append(labelIDs, l.LabelID)
 	}
 	labelTitles := map[int64]string{}
-	if len(labelIDs) > 0 {
-		labels := []*Label{}
-		if err = s.Where(builder.In("id", labelIDs)).Find(&labels); err != nil {
-			return nil, err
-		}
-		for _, l := range labels {
-			labelTitles[l.ID] = l.Title
-		}
+	labels, err := findByIDs[Label](s, labelIDs)
+	if err != nil {
+		return nil, err
+	}
+	for _, l := range labels {
+		labelTitles[l.ID] = l.Title
 	}
 	for _, l := range labelRows {
 		if title, ok := labelTitles[l.LabelID]; ok {
@@ -362,8 +433,8 @@ func (ex *taskExportCtx) loadColumns(tasks []*Task) (*taskExportColumns, error) 
 		for _, r := range statusRows {
 			ids = append(ids, r.StatusID)
 		}
-		statuses := []*WorkflowStatus{}
-		if err = s.Where(builder.In("id", ids)).Find(&statuses); err != nil {
+		statuses, err := findByIDs[WorkflowStatus](s, ids)
+		if err != nil {
 			return nil, err
 		}
 		titles := map[int64]string{}
@@ -395,8 +466,8 @@ func (ex *taskExportCtx) loadCustomFields(cols *taskExportColumns) error {
 			fieldIDs = append(fieldIDs, r.CustomFieldID)
 		}
 	}
-	fields := []*CustomField{}
-	if err := s.Where(builder.In("id", fieldIDs)).Find(&fields); err != nil {
+	fields, err := findByIDs[CustomField](s, fieldIDs)
+	if err != nil {
 		return err
 	}
 	byID := map[int64]*CustomField{}
@@ -423,17 +494,15 @@ func (ex *taskExportCtx) loadCustomFields(cols *taskExportColumns) error {
 			}
 		}
 	}
-	if len(optionIDs) > 0 {
-		options := []*CustomFieldOption{}
-		if err := s.Where(builder.In("id", optionIDs)).Find(&options); err != nil {
-			return err
-		}
-		for _, o := range options {
-			cols.options[o.ID] = o.Title
-		}
+	options, err := findByIDs[CustomFieldOption](s, optionIDs)
+	if err != nil {
+		return err
+	}
+	for _, o := range options {
+		cols.options[o.ID] = o.Title
 	}
 	if len(userIDs) > 0 {
-		extra, err := user.GetUsersByIDs(s, userIDs)
+		extra, err := usersByIDs(s, userIDs)
 		if err != nil {
 			return err
 		}

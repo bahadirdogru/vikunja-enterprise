@@ -1130,3 +1130,31 @@ func TestReport_StatusTimeUnnamedGroups(t *testing.T) {
 	assert.Equal(t, int64(1), none.Tasks)
 	assert.Equal(t, int64(3), rep.Tasks)
 }
+
+func TestReport_ExportIDChunks(t *testing.T) {
+	ids := make([]int64, 0, 3000)
+	for i := range 1500 {
+		ids = append(ids, int64(i+1), int64(i+1))
+	}
+	seen := map[int64]bool{}
+	chunks := 0
+	require.NoError(t, forIDChunks(ids, func(chunk []int64) error {
+		chunks++
+		assert.LessOrEqual(t, len(chunk), exportIDChunk, "an IN list must stay below 999 parameters")
+		for _, id := range chunk {
+			assert.False(t, seen[id], "an id is looked up once")
+			seen[id] = true
+		}
+		return nil
+	}))
+	assert.Len(t, seen, 1500)
+	assert.Equal(t, 3, chunks)
+
+	db.LoadAndAssertFixtures(t)
+	s := db.NewSession()
+	defer s.Close()
+	labels, err := findByIDs[Label](s, ids)
+	require.NoError(t, err)
+	assert.NotEmpty(t, labels, "the fixture labels are found among 1500 ids")
+	assert.Len(t, uniqueIDs(ids), 1500)
+}
