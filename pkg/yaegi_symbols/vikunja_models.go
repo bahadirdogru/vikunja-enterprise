@@ -63,6 +63,7 @@ func init() {
 		"AutomationStepSkipped":                            reflect.ValueOf(constant.MakeFromLiteral("\"skipped\"", token.STRING, 0)),
 		"AutomationStepSuccess":                            reflect.ValueOf(constant.MakeFromLiteral("\"success\"", token.STRING, 0)),
 		"AutomationSubscribedEvents":                       reflect.ValueOf(models.AutomationSubscribedEvents),
+		"AutomationWaitOutput":                             reflect.ValueOf(constant.MakeFromLiteral("\"wait: \"", token.STRING, 0)),
 		"AutomationWebhookURL":                             reflect.ValueOf(models.AutomationWebhookURL),
 		"BucketConfigurationModeFilter":                    reflect.ValueOf(models.BucketConfigurationModeFilter),
 		"BucketConfigurationModeManual":                    reflect.ValueOf(models.BucketConfigurationModeManual),
