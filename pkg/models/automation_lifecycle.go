@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"code.vikunja.io/api/pkg/automation/spec"
+	"code.vikunja.io/api/pkg/config"
 
 	"xorm.io/builder"
 	"xorm.io/xorm"
@@ -202,9 +203,12 @@ func cleanupAutomation(s *xorm.Session, olderThan time.Time) (events, runs int64
 	if err != nil {
 		return
 	}
+	// The event of a run that still waits stays: the run continues from its payload.
+	waitingEvents := builder.Select("event_id").From("automation_runs").Where(builder.Eq{"status": AutomationRunRunning})
 	events, err = s.Where(builder.And(
 		builder.Lt{"created": olderThan.UTC().Format(dbTimeFormat)},
 		builder.In("status", AutomationEventDone, AutomationEventDead),
+		builder.NotIn("id", waitingEvents),
 	)).Delete(&AutomationEvent{})
 	if err != nil {
 		return
@@ -224,4 +228,50 @@ func cleanupAutomation(s *xorm.Session, olderThan time.Time) (events, runs int64
 // CleanupAutomation is the retention job: it deletes finished events, runs and steps older than the cutoff.
 func CleanupAutomation(s *xorm.Session, olderThan time.Time) (events, runs int64, err error) {
 	return cleanupAutomation(s, olderThan)
+}
+
+// automationStuckRunGrace is how long past its longest possible wait a run may stay running before it is ended.
+const automationStuckRunGrace = 24 * time.Hour
+
+// ReapStuckAutomationRuns fails the runs that have been running for longer than they can wait: a run is only kept
+// alive by an event, and when that is gone (dead, deleted, a rule that was removed) nothing ends it. A run may wait
+// automation.waitmax per wait action of its rule; with a rule that is gone or without waits it is one waitmax.
+// Returns the number of runs ended. Nothing is reaped when waits are not limited.
+func ReapStuckAutomationRuns(s *xorm.Session, now time.Time) (int64, error) {
+	maxWait := config.AutomationWaitMax.GetDuration()
+	if maxWait <= 0 {
+		return 0, nil
+	}
+	oldest := now.Add(-(maxWait + automationStuckRunGrace))
+	candidates := []*AutomationRun{}
+	if err := s.Where(builder.And(
+		builder.Eq{"status": AutomationRunRunning},
+		builder.Lt{"started": oldest.UTC().Format(dbTimeFormat)},
+	)).Limit(1000).Find(&candidates); err != nil {
+		return 0, err
+	}
+	var reaped int64
+	for _, run := range candidates {
+		waits := int64(0)
+		if rule, err := GetAutomationRule(s, run.RuleID); err == nil {
+			for _, a := range rule.Actions {
+				if a != nil && a.Type == spec.ActionWait {
+					waits++
+				}
+			}
+		}
+		if !run.Started.Before(now.Add(-(time.Duration(max(waits, 1))*maxWait + automationStuckRunGrace))) {
+			continue
+		}
+		n, err := s.Where(builder.Eq{"id": run.ID, "status": AutomationRunRunning}).Cols("status", "error", "finished").NoAutoTime().Update(&AutomationRun{
+			Status:   AutomationRunFailed,
+			Error:    "the run did not finish in time and was ended: it was waiting longer than automation.waitmax allows",
+			Finished: now,
+		})
+		if err != nil {
+			return reaped, err
+		}
+		reaped += n
+	}
+	return reaped, nil
 }

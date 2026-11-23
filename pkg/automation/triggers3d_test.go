@@ -723,3 +723,92 @@ func TestNotify_Validation(t *testing.T) {
 	fine.ProjectID = projectOwned
 	assert.NoError(t, fine.Create(s, user1))
 }
+
+func TestWait_AProjectCannotPileUpWaitingRuns(t *testing.T) {
+	reset(t)
+	fakeClock(t)
+	config.AutomationMaxPendingWaits.Set(2)
+	defer config.AutomationMaxPendingWaits.Set(1000)
+	r := addRule(t, projectOwned, user1, rule(spec.TriggerTaskCreated, nil, nil,
+		act(spec.ActionWait, map[string]any{"duration": "1h"}), setPriority(5)))
+	for i := 0; i < 3; i++ {
+		newTask(t, projectOwned, "w", user1)
+	}
+	drain(t)
+
+	statuses := map[string]int{}
+	var failed *models.AutomationRun
+	for _, run := range allRuns(t, r.ID) {
+		statuses[run.Status]++
+		if run.Status == models.AutomationRunFailed {
+			failed = run
+		}
+	}
+	assert.Equal(t, map[string]int{models.AutomationRunRunning: 2, models.AutomationRunFailed: 1}, statuses)
+	require.NotNil(t, failed)
+	assert.Contains(t, failed.Error, "automation.maxpendingwaits")
+	assert.Len(t, eventsNamed(t, spec.EventResume), 2)
+}
+
+func TestWait_CleanupKeepsTheEventAndRunOfAWaitingRun(t *testing.T) {
+	reset(t)
+	advance := fakeClock(t)
+	r := addRule(t, projectOwned, user1, rule(spec.TriggerTaskCreated, nil, nil,
+		act(spec.ActionWait, map[string]any{"duration": "2d"}), setPriority(5)))
+	task := newTask(t, projectOwned, "w", user1)
+	drain(t)
+
+	// The retention (a day, say) is shorter than the wait: the original event is old and done, but the run needs it.
+	advance(24 * time.Hour)
+	events, runs, err := Cleanup(now().Add(time.Hour))
+	require.NoError(t, err)
+	assert.EqualValues(t, 0, runs)
+	assert.EqualValues(t, 0, events)
+	assert.Len(t, eventsNamed(t, "task.created"), 1)
+
+	advance(25 * time.Hour)
+	assert.Equal(t, 1, drain(t))
+	assert.EqualValues(t, 5, getTask(t, task.ID).Priority, "the run continued from the kept event")
+	assert.Equal(t, models.AutomationRunSuccess, allRuns(t, r.ID)[0].Status)
+
+	// Once the run is over, the event goes with the next cleanup.
+	events, runs, err = Cleanup(now().Add(time.Hour))
+	require.NoError(t, err)
+	assert.EqualValues(t, 1, runs)
+	assert.Positive(t, events)
+}
+
+func TestWait_RunsStuckInRunningAreEndedWellPastTheLongestWait(t *testing.T) {
+	reset(t)
+	advance := fakeClock(t)
+	config.AutomationWaitMax.Set(2 * time.Hour)
+	defer config.AutomationWaitMax.Set(30 * 24 * time.Hour)
+	r := addRule(t, projectOwned, user1, rule(spec.TriggerTaskCreated, nil, nil,
+		act(spec.ActionWait, map[string]any{"duration": "1h"}), setPriority(5)))
+	newTask(t, projectOwned, "stuck", user1)
+	drain(t)
+	// The resume event is lost: nothing will ever continue the run.
+	s := db.NewAutocommitSession()
+	_, err := s.Where("name = ?", spec.EventResume).Cols("status").Update(&models.AutomationEvent{Status: models.AutomationEventDead})
+	require.NoError(t, err)
+	s.Close()
+
+	advance(10 * time.Hour)
+	n, err := ReapStuckRuns(now())
+	require.NoError(t, err)
+	assert.EqualValues(t, 0, n, "within the longest wait plus the grace period")
+	assert.Equal(t, models.AutomationRunRunning, allRuns(t, r.ID)[0].Status)
+
+	advance(30 * time.Hour)
+	n, err = ReapStuckRuns(now())
+	require.NoError(t, err)
+	assert.EqualValues(t, 1, n)
+	run := allRuns(t, r.ID)[0]
+	assert.Equal(t, models.AutomationRunFailed, run.Status)
+	assert.Contains(t, run.Error, "automation.waitmax")
+	assert.False(t, run.Finished.IsZero())
+
+	n, err = ReapStuckRuns(now())
+	require.NoError(t, err)
+	assert.EqualValues(t, 0, n)
+}

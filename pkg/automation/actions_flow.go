@@ -27,6 +27,8 @@ import (
 	"code.vikunja.io/api/pkg/models"
 	"code.vikunja.io/api/pkg/notifications"
 	"code.vikunja.io/api/pkg/user"
+
+	"xorm.io/builder"
 )
 
 // maxNotifyRecipients bounds the people one notify step reaches (a team can be large).
@@ -117,6 +119,18 @@ func planWait(env *Env, p params) (*Plan, error) {
 	plan.apply = func() (string, error) {
 		if env.RunID == 0 || env.Event == nil {
 			return "", actionErrorf("a wait needs a run")
+		}
+		// Every waiting run has a resume event that is not done yet: they are what a project may not pile up.
+		limit := int64(config.AutomationMaxPendingWaits.GetInt())
+		waiting, err := env.S.Where(builder.And(
+			builder.Eq{"project_id": env.Rule.ProjectID, "name": spec.EventResume},
+			builder.In("status", models.AutomationEventPending, models.AutomationEventProcessing),
+		)).Count(&models.AutomationEvent{})
+		if err != nil {
+			return "", err
+		}
+		if limit > 0 && waiting >= limit {
+			return "", actionErrorf("%d runs of this project are waiting already, which is the most this server allows (automation.maxpendingwaits)", waiting)
 		}
 		payload := *env.Event
 		payload.RuleID = env.Rule.ID

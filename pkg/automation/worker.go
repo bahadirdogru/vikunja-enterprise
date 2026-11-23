@@ -430,9 +430,26 @@ func Cleanup(olderThan time.Time) (events, runs int64, err error) {
 	return events, runs, s.Commit()
 }
 
+// ReapStuckRuns fails the runs that are running for longer than a wait can last.
+func ReapStuckRuns(at time.Time) (int64, error) {
+	s := db.NewSession()
+	defer s.Close()
+	n, err := models.ReapStuckAutomationRuns(s, at)
+	if err != nil {
+		_ = s.Rollback()
+		return 0, err
+	}
+	return n, s.Commit()
+}
+
 // RegisterCleanupCron schedules the retention job.
 func RegisterCleanupCron() {
 	err := cron.Schedule("17 3 * * *", func() {
+		if n, err := ReapStuckRuns(now()); err != nil {
+			log.Errorf("[automation] could not end stuck runs: %v", err)
+		} else if n > 0 {
+			log.Warningf("[automation] ended %d runs that waited longer than automation.waitmax allows", n)
+		}
 		days := config.AutomationRetention.GetInt()
 		if days <= 0 {
 			return
