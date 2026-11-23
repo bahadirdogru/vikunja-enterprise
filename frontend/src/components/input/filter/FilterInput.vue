@@ -6,7 +6,7 @@ import {useLabels} from '@/composables/useLabels'
 import {useProjects} from '@/composables/useProjects'
 import {queryClient} from '@/client/queryClient'
 import {workflowKeys, workflowQuery} from '@/client/queries/workflow'
-import {customFieldsQuery} from '@/client/queries/customFields'
+import {customFieldsQuery, type CustomFieldResponse} from '@/client/queries/customFields'
 import type {WorkflowResponse} from '@/helpers/workflow'
 import {
 	buildCustomFieldRefs,
@@ -48,6 +48,10 @@ const projectList = useProjects()
 // and other cross-project places those of every project the user can see.
 const customFieldRefs = shallowRef<CustomFieldFilterRef[]>([])
 let customFieldsLoad: Promise<CustomFieldFilterRef[]> | undefined
+// Every fetch takes a number; only the latest one may write its result (the project can change while it is in flight).
+let customFieldsSeq = 0
+// Without a project every non-archived project is asked; this many requests run at the same time.
+const CUSTOM_FIELD_FETCH_CONCURRENCY = 6
 
 // Date picker functionality
 const currentOldDatepickerValue = ref('')
@@ -221,10 +225,22 @@ async function fetchCustomFields(): Promise<CustomFieldFilterRef[]> {
 		? [props.projectId]
 		: (projectList.projectsArray ?? []).filter(project => project.id > 0 && !project.is_archived).map(project => project.id)
 
-	const results = await Promise.allSettled(projectIds.map(id => queryClient.ensureQueryData(customFieldsQuery(id))))
-	const fields = results.flatMap(result => result.status === 'fulfilled' ? result.value : [])
-	const refs = buildCustomFieldRefs(fields, id => projectList.projects[id]?.title)
-	if (!editor.value) {
+	const seq = ++customFieldsSeq
+	const results: CustomFieldResponse[][] = []
+	let next = 0
+	const worker = async () => {
+		while (next < projectIds.length && seq === customFieldsSeq) {
+			const id = projectIds[next++] as number
+			try {
+				results.push(await queryClient.ensureQueryData(customFieldsQuery(id)))
+			} catch {
+				// A project whose fields cannot be loaded just has no names.
+			}
+		}
+	}
+	await Promise.all(Array.from({length: Math.min(CUSTOM_FIELD_FETCH_CONCURRENCY, projectIds.length)}, worker))
+	const refs = buildCustomFieldRefs(results.flat(), id => projectList.projects[id]?.title)
+	if (!editor.value || seq !== customFieldsSeq) {
 		return refs
 	}
 	customFieldRefs.value = refs

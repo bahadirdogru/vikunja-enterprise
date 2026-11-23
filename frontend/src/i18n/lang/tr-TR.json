@@ -1670,6 +1670,7 @@
 		"25006": "Bazı yanıtlar geçerli değil.",
 		"25007": "Çok fazla gönderim yapıldı. Daha sonra tekrar deneyin.",
 		"25008": "Bu sunucuda formlar kapalı.",
+		"25009": "Logo kullanılamadı. En fazla 1 MB ve 4096 x 4096 piksel boyutunda bir PNG, JPEG, GIF veya WebP görseli kullanın.",
 		"1001": "Bu kullanıcı adı zaten kapılmış.",
 		"1002": "Bu e-posta adresiyle kayıtlı bir hesap zaten var.",
 		"1004": "Kullanıcı adı ve şifre belirtilmedi.",

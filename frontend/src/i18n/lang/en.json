@@ -1781,6 +1781,7 @@
     "25006": "Some answers are not valid.",
     "25007": "Too many submissions. Try again later.",
     "25008": "Forms are switched off on this server.",
+    "25009": "The logo could not be used. Use a PNG, JPEG, GIF or WebP image of at most 1 MB and 4096 x 4096 pixels.",
     "error": "Error",
     "success": "Success",
     "0001": "You're not allowed to do that.",

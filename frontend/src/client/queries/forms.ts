@@ -228,6 +228,8 @@ export function deleteFormLogoMutationOptions() {
 		},
 		onSettled: ({projectId}, client) => client.invalidateQueries({queryKey: formKeys.list(projectId), exact: true}),
 		successMessage: () => i18n.global.t('forms.branding.logoRemoved'),
+		// The builder shows the reason next to the control.
+		toastError: () => false,
 	})
 }
 
