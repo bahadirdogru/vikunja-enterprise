@@ -83,7 +83,16 @@ func TestAutomationTriggersMigration20261127100000(t *testing.T) {
 	for _, c := range []string{"last_fired_at", "last_fire_note", "webhook_token_hash"} {
 		require.NotNilf(t, rules.GetColumn(c), c)
 	}
-	require.NotNil(t, automationTable20261127100000(t, x, "automation_events").GetColumn("rule_id"))
+	events := automationTable20261127100000(t, x, "automation_events")
+	require.NotNil(t, events.GetColumn("rule_id"))
+	found := false
+	for _, index := range events.Indexes {
+		if slices.Equal(index.Cols, []string{"rule_id", "created"}) {
+			found = true
+		}
+	}
+	require.True(t, found, "the index for the webhook rate limit (rule_id, created) exists")
+	require.NotNil(t, automationTable20261127100000(t, x, "automation_task_origins"))
 
 	// The existing row survives with the new columns empty.
 	got := &automationRules20261127100000{}

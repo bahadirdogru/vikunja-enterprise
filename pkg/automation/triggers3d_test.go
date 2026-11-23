@@ -341,6 +341,30 @@ func TestWebhook_RateLimitPerRule(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestWebhook_UnsignedCallsAreRefusedBeforeTheRateLimit(t *testing.T) {
+	reset(t)
+	config.AutomationWebhookRateLimit.Set(1)
+	defer config.AutomationWebhookRateLimit.Set(60)
+	mustCommit(t, func(s *xorm.Session) error {
+		return (&models.AutomationSecret{ProjectID: projectOwned, Name: "HOOK_KEY", NewValue: "s3cret"}).Update(s, user1)
+	})
+	_, token := hookRule(t, map[string]any{"secret": "HOOK_KEY"}, createFromPayload())
+	body := []byte(`{}`)
+	mac := hmac.New(sha256.New, []byte("s3cret"))
+	mac.Write(body)
+	good := "sha256=" + hex.EncodeToString(mac.Sum(nil))
+
+	_, err := ReceiveWebhook(&WebhookCall{Token: token, Body: body, Signature: good})
+	require.NoError(t, err)
+	// The budget is used up: the sender is limited, anyone else is just refused.
+	_, err = ReceiveWebhook(&WebhookCall{Token: token, Body: body, Signature: good})
+	assert.True(t, models.IsErrAutomationHookRateLimited(err), "%v", err)
+	_, err = ReceiveWebhook(&WebhookCall{Token: token, Body: body, Signature: "sha256=00"})
+	assert.True(t, models.IsErrAutomationHookSignatureInvalid(err), "%v", err)
+	_, err = ReceiveWebhook(&WebhookCall{Token: token, Body: body})
+	assert.True(t, models.IsErrAutomationHookSignatureInvalid(err), "%v", err)
+}
+
 func TestWebhook_SignatureWithAProjectSecret(t *testing.T) {
 	reset(t)
 	mustCommit(t, func(s *xorm.Session) error {

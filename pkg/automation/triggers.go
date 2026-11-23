@@ -203,6 +203,14 @@ func ReceiveWebhook(call *WebhookCall) (*models.AutomationEvent, error) {
 		return nil, models.ErrAutomationHookNotFound{}
 	}
 
+	// The signature first: a call that is not from the sender costs a hash and nothing else, and it neither is
+	// counted against the sender's budget nor learns whether the budget is used up.
+	if name, _ := rule.Trigger.Options["secret"].(string); name != "" {
+		if err := checkWebhookSignature(s, rule, name, call); err != nil {
+			return nil, err
+		}
+	}
+
 	if limit := int64(config.AutomationWebhookRateLimit.GetInt()); limit > 0 {
 		recent, err := s.Where(builder.And(
 			builder.Eq{"rule_id": rule.ID, "name": spec.EventWebhook},
@@ -213,12 +221,6 @@ func ReceiveWebhook(call *WebhookCall) (*models.AutomationEvent, error) {
 		}
 		if recent >= limit {
 			return nil, models.ErrAutomationHookRateLimited{RetryAfterSeconds: int64(webhookRateWindow / time.Second)}
-		}
-	}
-
-	if name, _ := rule.Trigger.Options["secret"].(string); name != "" {
-		if err := checkWebhookSignature(s, rule, name, call); err != nil {
-			return nil, err
 		}
 	}
 
