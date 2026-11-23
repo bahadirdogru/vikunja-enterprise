@@ -202,9 +202,14 @@ func (err ErrApprovalNoApprovers) HTTPError() web.HTTPError {
 // ErrApprovalRequired represents an error where a task update asked for a status change that needs an approval.
 // Nothing was written, no request was created: the client has to use POST /tasks/{task}/status.
 type ErrApprovalRequired struct {
-	TaskID       int64
-	FromStatusID int64
-	ToStatusID   int64
+	TaskID           int64
+	FromStatusID     int64
+	FromStatusTitle  string
+	ToStatusID       int64
+	ToStatusTitle    string
+	ToStatusCategory string
+	// PendingApprovalID is the open request for the same task and target status, 0 if there is none.
+	PendingApprovalID int64
 }
 
 // IsErrApprovalRequired checks if an error is ErrApprovalRequired.
@@ -227,9 +232,14 @@ func (err ErrApprovalRequired) HTTPError() web.HTTPError {
 		Code:     ErrCodeApprovalRequired,
 		Message:  "Moving the task to this status needs an approval. Nothing was changed. Request it with POST /tasks/{task}/status.",
 		Details: map[string]any{
-			"task_id":        err.TaskID,
-			"from_status_id": err.FromStatusID,
-			"to_status_id":   err.ToStatusID,
+			"task_id":             err.TaskID,
+			"from_status_id":      err.FromStatusID,
+			"from_status_title":   err.FromStatusTitle,
+			"to_status_id":        err.ToStatusID,
+			"to_status_title":     err.ToStatusTitle,
+			"to_status_category":  err.ToStatusCategory,
+			"pending_approval_id": err.PendingApprovalID,
+			"approval_pending":    err.PendingApprovalID != 0,
 		},
 	}
 }

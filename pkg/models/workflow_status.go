@@ -411,7 +411,7 @@ func (d *workflowDef) changeTaskStatus(s *xorm.Session, a web.Auth, c *statusCha
 		}
 		if rule := d.approvalRuleFor(from, to); rule != nil && !c.BypassApproval {
 			if c.FailOnApproval {
-				return nil, ErrApprovalRequired{TaskID: t.ID, FromStatusID: from.ID, ToStatusID: to.ID}
+				return nil, newErrApprovalRequired(s, t, from, to)
 			}
 			req, created, err := d.requestTransitionApproval(s, a, t, from, to, rule, c.Comment)
 			if err != nil {

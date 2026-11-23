@@ -47,6 +47,31 @@ func (d *workflowDef) approvalRuleFor(from, to *WorkflowStatus) *WorkflowTransit
 	return rule
 }
 
+// newErrApprovalRequired builds the refusal of a plain update (the done flag) that needs an approval. Besides
+// the ids it names the target status and tells whether a request for it is already pending, so a client can offer
+// to request the approval, or say that one is waiting, without another round trip. The lookup is read only: the
+// refusal never creates a request.
+func newErrApprovalRequired(s *xorm.Session, task *Task, from, to *WorkflowStatus) ErrApprovalRequired {
+	err := ErrApprovalRequired{
+		TaskID:           task.ID,
+		FromStatusID:     from.ID,
+		FromStatusTitle:  from.Title,
+		ToStatusID:       to.ID,
+		ToStatusTitle:    to.Title,
+		ToStatusCategory: string(to.Category),
+	}
+	pending := &ApprovalRequest{}
+	has, lookupErr := s.Where(builder.And(
+		builder.Eq{"task_id": task.ID},
+		builder.Eq{"to_status_id": to.ID},
+		builder.Eq{"status": ApprovalStatusPending},
+	)).Cols("id").Get(pending)
+	if lookupErr == nil && has {
+		err.PendingApprovalID = pending.ID
+	}
+	return err
+}
+
 // resolveTransitionApprovers resolves the approver sources of a transition to the users who are asked now:
 // de-duplicated in the order of the sources, active, able to read the task, and without the requester unless the
 // transition allows self-approval.

@@ -421,7 +421,7 @@ not copied.
 | Caller | Transition needs approval |
 |---|---|
 | `POST /tasks/{task}/status` | `202`, the pending request in `approval`, `status` is the status the task is still in. `200` when the status changed, as before. |
-| Done checkbox: `PUT /tasks/{task}` with `done`, kanban moves into a done bucket of a manual view, bulk updates | **Refused**: `409` / `24007` with `task_id`, `from_status_id`, `to_status_id`; the whole update is rolled back and **no request is created**. Silently ignoring `done: true` would look like a bug to clients; creating a request as a side effect of a failed update would be a surprise. The client asks explicitly with `POST /tasks/{task}/status`. The same holds for un-doing. |
+| Done checkbox: `PUT /tasks/{task}` with `done`, kanban moves into a done bucket of a manual view, bulk updates | **Refused**: `409` / `24007` with `details` `task_id`, `from_status_id`, `from_status_title`, `to_status_id`, `to_status_title`, `to_status_category`, `pending_approval_id` (0 when none) and `approval_pending` (an open request for the same task and target status already exists, so the client says so instead of offering a second request; looking it up creates nothing); the whole update is rolled back and **no request is created**. Silently ignoring `done: true` would look like a bug to clients; creating a request as a side effect of a failed update would be a surprise. The client asks explicitly with `POST /tasks/{task}/status`. The same holds for un-doing. |
 | A task created done (`done: true` or the done bucket of a manual view), a done task moved in from another project | **Refused** like the checkbox: `409` / `24007`, nothing is created or moved. The task starts in the first done status only when its creator or mover could perform the done transition without an approval. |
 | Kanban status-mode move (`PUT .../buckets/{bucket}/tasks`) | A drag is an explicit status change: the request is created, the card does not move, `202` with `approval` and the column the card is still in as `bucket`. |
 | Task created in a status column | The task is created in the initial status, the request for the column is created, `bucket_id` of the response is the initial column. |
@@ -604,8 +604,17 @@ Behaviour worth knowing:
   cancelled), because the endpoint takes a single status; there is no
   combined "all resolved" list.
 - Plain updates with `done: true` (checkbox of a list row, a drop into a done
-  bucket of a manual board) still answer `409` / `24007`; the message says to
-  use the status menu. Only the task detail done button asks for the approval.
+  bucket of a manual board) still answer `409` / `24007`; the backend stays
+  strict. The client handles that refusal in one place (the task update and
+  the kanban move mutations): the optimistic change is rolled back, so the
+  checkbox goes back, and a message names the status ("The task was not marked
+  as done: "Done" needs an approval first.") with the action **Request
+  approval**. The action starts the same transition as the status menu of the
+  task (`POST /tasks/{task}/status`), including the dialog for missing fields
+  and a required comment. If the refusal says a request is already pending,
+  the message says so and offers to open the task instead. The same applies to
+  re-opening a task whose transition back needs an approval. The task detail
+  done button asks for the approval directly, as before.
 - Paging of "Waiting for me" is done in the client.
 
 # Steps

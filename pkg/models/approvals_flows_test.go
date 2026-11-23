@@ -258,6 +258,34 @@ func TestApprovals_Callers(t *testing.T) {
 		assert.Empty(t, approvalRowsOfTask(t, env.task.ID), "a failed update must not create a request")
 	})
 
+	t.Run("the refusal says which status needs the approval and whether a request is already open", func(t *testing.T) {
+		env := doneNeedsApproval(t)
+
+		err := updateTaskAs(t, &Task{ID: env.task.ID, Title: env.task.Title, Done: true}, apU1)
+		require.Error(t, err)
+		required, ok := err.(ErrApprovalRequired)
+		require.True(t, ok, "got %T", err)
+		details, _ := required.HTTPError().Details.(map[string]any)
+		assert.Equal(t, env.done, details["to_status_id"])
+		assert.NotEmpty(t, details["to_status_title"], "the client names the status it asks for")
+		assert.Equal(t, "done", details["to_status_category"])
+		assert.NotEmpty(t, details["from_status_title"])
+		assert.EqualValues(t, 0, details["pending_approval_id"])
+		assert.Equal(t, false, details["approval_pending"])
+
+		res, err := changeTaskStatusAs(t, env.task.ID, env.done, "", apU1)
+		require.NoError(t, err)
+		require.NotNil(t, res.Approval)
+
+		err = updateTaskAs(t, &Task{ID: env.task.ID, Title: env.task.Title, Done: true}, apU1)
+		required, ok = err.(ErrApprovalRequired)
+		require.True(t, ok, "got %T", err)
+		details, _ = required.HTTPError().Details.(map[string]any)
+		assert.Equal(t, res.Approval.ID, details["pending_approval_id"])
+		assert.Equal(t, true, details["approval_pending"])
+		assert.Len(t, approvalRowsOfTask(t, env.task.ID), 1, "refusing the update must not create a second request")
+	})
+
 	t.Run("the explicit status change creates the request and the approval completes the task", func(t *testing.T) {
 		env := doneNeedsApproval(t)
 		res, err := changeTaskStatusAs(t, env.task.ID, env.done, "", apU1)

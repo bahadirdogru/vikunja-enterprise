@@ -80,7 +80,8 @@ transition and for the move after a rejection), created.
   approval request, and its result says so (`Approval` set, `Changed` false).
   `POST /tasks/{task}/status` answers `202` then. Callers that change the
   status as a side effect (the done checkbox) are refused with `409` / `24007`
-  and create nothing; automation and scripts create the request as the rule
+  (with the target status and an already pending request in `details`, the UI
+  turns it into a "Request approval" action) and create nothing; automation and scripts create the request as the rule
   owner; system transitions (re-opening a repeating task, the move after a
   rejection, removing a status) never ask. When the request is approved the
   same function runs again as the requester with only the approval requirement
