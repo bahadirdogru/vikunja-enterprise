@@ -657,3 +657,33 @@ func TestOverdue_ADueDateBackdatedAfterArmingFires(t *testing.T) {
 	mustCommit(t, func(s *xorm.Session) error { return stored.Update(s, user1) })
 	assert.Zero(t, tick(t))
 }
+
+// A schedule with gaps (the first ten days of a month) and a long outage: the walk hits its cap inside the last block
+// of occurrences, and what it found first is not the latest one.
+func TestSchedule_ACappedWalkStillFindsTheLatestOccurrence(t *testing.T) {
+	loc := time.UTC
+	sched, err := spec.CronParser.Parse("* * 1-10 * *")
+	require.NoError(t, err)
+	base := time.Date(2026, 1, 11, 0, 0, 0, 0, loc)
+	at := time.Date(2026, 3, 14, 12, 0, 0, 0, loc)
+	assert.Equal(t, time.Date(2026, 3, 10, 23, 59, 0, 0, loc), latestOccurrence(sched, base, at))
+}
+
+func TestSchedule_AGapedScheduleAfterAnOutageFiresOnce(t *testing.T) {
+	reset(t)
+	clearTasks(t, projectOwned)
+	advance := fakeClock(t)
+	loc := config.GetTimeZone()
+	addRule(t, projectOwned, user1, rule(spec.TriggerSchedule, map[string]any{"cron": "* * 1-10 * *"}, nil, setPriority(1)))
+	newTask(t, projectOwned, "t", user1)
+
+	n := now().In(loc)
+	target := time.Date(n.Year(), n.Month()+3, 14, 12, 0, 0, 0, loc)
+	advance(target.Sub(n))
+	assert.Equal(t, 1, tick(t))
+	assert.Zero(t, tick(t))
+	advance(time.Hour)
+	assert.Zero(t, tick(t))
+	advance(24 * time.Hour)
+	assert.Zero(t, tick(t))
+}

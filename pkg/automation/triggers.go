@@ -113,11 +113,12 @@ func RunManually(a web.Auth, projectID, ruleID, taskID int64) (*models.Automatio
 	// project gets the same answer whether the project, the rule or the task exist, are enabled or have a manual
 	// trigger.
 	canWrite, err := (&models.Project{ID: projectID}).CanWrite(s, a)
-	if err != nil && !models.IsErrProjectDoesNotExist(err) {
-		return nil, err
-	}
-	if err != nil || !canWrite {
+	// An archived project answers an outsider with "archived" next to "no": both are the same refusal here.
+	if !canWrite && (err == nil || models.IsErrProjectDoesNotExist(err) || models.IsErrProjectIsArchived(err)) {
 		return nil, models.ErrGenericForbidden{}
+	}
+	if err != nil {
+		return nil, err
 	}
 
 	rule, err := models.GetAutomationRule(s, ruleID)
@@ -368,6 +369,9 @@ func ownerMayFire(rule *models.AutomationRule) (bool, error) {
 // maxOccurrenceSteps bounds how many occurrences latestOccurrence walks through in one go.
 const maxOccurrenceSteps = 10000
 
+// maxOccurrenceRounds bounds how often a capped walk is continued from the occurrence it found.
+const maxOccurrenceRounds = 1000
+
 // latestOccurrence returns the last cron occurrence in (base, at], zero when there is none. A server that was down
 // for a while fires once for everything it missed, not once per missed occurrence, however long it was away.
 func latestOccurrence(sched interface{ Next(time.Time) time.Time }, base, at time.Time) time.Time {
@@ -380,14 +384,36 @@ func latestOccurrence(sched interface{ Next(time.Time) time.Time }, base, at tim
 	for window := time.Minute; ; window *= 8 {
 		start := at.Add(-window)
 		if !start.After(base) {
-			// The window reaches back to the start: nothing is left to skip. What the first walk found is a valid
-			// occurrence; the next tick continues from it.
-			return last
+			// The window reaches back to the start: keep walking from what the first walk found. A schedule with
+			// gaps (day 1-10 of the month) can have its latest occurrence far behind the cap, so a found
+			// occurrence is only the latest once a walk from it is not capped.
+			return continueWalk(sched, last, at)
 		}
-		if found, _ := lastOccurrenceWithin(sched, start, at, maxOccurrenceSteps); !found.IsZero() {
-			return found
+		found, windowCapped := lastOccurrenceWithin(sched, start, at, maxOccurrenceSteps)
+		if found.IsZero() {
+			continue
+		}
+		if windowCapped {
+			return continueWalk(sched, found, at)
+		}
+		return found
+	}
+}
+
+// continueWalk walks on from an occurrence until the walk is not capped, which is when the last occurrence found is
+// the latest one before at. After maxOccurrenceRounds it gives up and returns what it has: the next tick goes on.
+func continueWalk(sched interface{ Next(time.Time) time.Time }, from, at time.Time) time.Time {
+	last := from
+	for round := 0; round < maxOccurrenceRounds; round++ {
+		found, capped := lastOccurrenceWithin(sched, last, at, maxOccurrenceSteps)
+		if !found.IsZero() {
+			last = found
+		}
+		if !capped {
+			break
 		}
 	}
+	return last
 }
 
 // lastOccurrenceWithin walks the occurrences after base up to at and returns the last one. capped is set when the

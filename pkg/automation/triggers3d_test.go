@@ -812,3 +812,15 @@ func TestWait_RunsStuckInRunningAreEndedWellPastTheLongestWait(t *testing.T) {
 	require.NoError(t, err)
 	assert.EqualValues(t, 0, n)
 }
+
+// An archived project must not tell an outsider that it exists: the refusal is the one of a project that is not there.
+func TestManual_AnOutsiderGetsTheSameRefusalForAnArchivedProject(t *testing.T) {
+	reset(t)
+	const archivedProject = int64(22)
+	_, err := RunManually(user6, archivedProject, 1, 1)
+	require.Error(t, err)
+	_, missing := RunManually(user6, 99999, 1, 1)
+	require.Error(t, missing)
+	assert.IsType(t, models.ErrGenericForbidden{}, err)
+	assert.IsType(t, missing, err)
+}
