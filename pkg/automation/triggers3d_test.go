@@ -137,6 +137,38 @@ func TestManual_Refusals(t *testing.T) {
 	assert.True(t, models.IsErrAutomationRuleNotRunnable(err), "kill switch: %v", err)
 }
 
+// Someone without write access to the project learns nothing about its rules and tasks, or whether they exist.
+func TestManual_OutsidersGetOneAnswer(t *testing.T) {
+	reset(t)
+	private := privateProject(t)
+	manual := addRule(t, private.ID, user2, rule(spec.TriggerManual, nil, nil, setPriority(1)))
+	disabled := addRule(t, private.ID, user2, rule(spec.TriggerManual, nil, nil, setPriority(1)))
+	disabled.Enabled = false
+	mustCommit(t, func(s *xorm.Session) error { return disabled.Update(s, user2) })
+	other := addRule(t, private.ID, user2, rule(spec.TriggerTaskCreated, nil, nil, setPriority(1)))
+	task := newTask(t, private.ID, "p", user2)
+
+	for name, call := range map[string]func() error{
+		"rule and task":    func() error { _, err := RunManually(user1, private.ID, manual.ID, task.ID); return err },
+		"disabled rule":    func() error { _, err := RunManually(user1, private.ID, disabled.ID, task.ID); return err },
+		"other trigger":    func() error { _, err := RunManually(user1, private.ID, other.ID, task.ID); return err },
+		"unknown rule":     func() error { _, err := RunManually(user1, private.ID, manual.ID+1000, task.ID); return err },
+		"unknown task":     func() error { _, err := RunManually(user1, private.ID, manual.ID, task.ID+1000); return err },
+		"unknown project":  func() error { _, err := RunManually(user1, 99999, manual.ID, task.ID); return err },
+		"task of an other": func() error { _, err := RunManually(user1, private.ID, manual.ID, 1); return err },
+		"rule of an other": func() error { _, err := RunManually(user1, projectOwned, manual.ID, task.ID); return err },
+	} {
+		err := call()
+		if name == "rule of an other" {
+			// user1 may write in this project: the rule is not found there, which says nothing about the private one.
+			assert.True(t, models.IsErrAutomationRuleDoesNotExist(err), "%s: %v", name, err)
+			continue
+		}
+		assert.True(t, models.IsErrGenericForbidden(err), "%s: %v", name, err)
+	}
+	assert.Empty(t, eventsNamed(t, spec.EventManual))
+}
+
 func TestManual_ListShowsEnabledManualRulesToWriters(t *testing.T) {
 	reset(t)
 	addRule(t, projectOwned, user1, rule(spec.TriggerManual, map[string]any{"label": "Raise"}, nil, setPriority(1)))

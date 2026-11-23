@@ -109,6 +109,17 @@ func RunManually(a web.Auth, projectID, ruleID, taskID int64) (*models.Automatio
 	s := db.NewSession()
 	defer s.Close()
 
+	// Access to the project comes before anything is said about the rule or the task: whoever cannot write in the
+	// project gets the same answer whether the project, the rule or the task exist, are enabled or have a manual
+	// trigger.
+	canWrite, err := (&models.Project{ID: projectID}).CanWrite(s, a)
+	if err != nil && !models.IsErrProjectDoesNotExist(err) {
+		return nil, err
+	}
+	if err != nil || !canWrite {
+		return nil, models.ErrGenericForbidden{}
+	}
+
 	rule, err := models.GetAutomationRule(s, ruleID)
 	if err != nil {
 		return nil, err
