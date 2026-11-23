@@ -333,6 +333,24 @@ func (rc *runContext) causedByOwnRun(s *xorm.Session) (bool, error) {
 	return false, nil
 }
 
+// requireReadableSubject makes sure the owner of the rule may read the task the rule is about to see. The subject is
+// loaded without a permission check, and an event can outlive the access of the owner to its task: the task may
+// have been moved to a project the owner cannot see before the run starts, between two steps, or before a retry.
+// For the rule such a task is gone.
+func requireReadableSubject(s *xorm.Session, owner *user.User, sub *Subject) error {
+	if sub == nil || sub.Task == nil {
+		return nil
+	}
+	can, _, err := (&models.Task{ID: sub.Task.ID}).CanRead(s, owner)
+	if err != nil {
+		return err
+	}
+	if !can {
+		return ErrTaskGone
+	}
+	return nil
+}
+
 // checkOwner loads the owner and makes sure they still administer the project.
 func (rc *runContext) checkOwner(s *xorm.Session) (ok bool, err error) {
 	owner, err := user.GetUserByID(s, rc.rule.OwnerID)
@@ -398,6 +416,9 @@ func (rc *runContext) execute(ctx context.Context, s *xorm.Session, fresh bool) 
 	// Conditions look at the state before the first action; a resumed run has changed the task already.
 	if len(existing) == 0 {
 		subject, err := LoadSubject(s, rc.payload.TaskID, rc.payload, now())
+		if err == nil {
+			err = requireReadableSubject(s, rc.owner, subject)
+		}
 		if err != nil {
 			if errors.Is(err, ErrTaskGone) {
 				return rc.finish(s, models.AutomationRunSkipped, SkipTaskNotFound, nil)
@@ -469,6 +490,17 @@ func (rc *runContext) executeStep(runCtx, parent context.Context, position int64
 	if _, err = s.ID(rc.run.ID).Cols("started").Update(&models.AutomationRun{Started: rc.run.Started}); err != nil {
 		return false, err
 	}
+	// Another worker may hold the same run (the lock of its event expired, or the event was queued again by a manual
+	// retry) and have committed this step while this one waited for the write above. Only now is the answer to
+	// "did the step run" reliable.
+	recorded := &models.AutomationRunStep{}
+	has, err := s.Where("run_id = ? AND position = ? AND status = ?", rc.run.ID, position, models.AutomationStepSuccess).Get(recorded)
+	if err != nil {
+		return false, err
+	}
+	if has {
+		return strings.HasPrefix(recorded.Output, stopOutput), s.Rollback()
+	}
 	markSession(s, origin{runID: rc.run.ID, depth: rc.run.Depth})
 	defer unmarkSession(s)
 
@@ -503,6 +535,9 @@ func (rc *runContext) executeStep(runCtx, parent context.Context, position int64
 func (rc *runContext) applyStep(ctx context.Context, s *xorm.Session, impl *action, act *spec.Action) (output string, stop bool, err error) {
 	env := &Env{Ctx: ctx, S: s, Auth: rc.owner, Rule: rc.rule, Event: rc.payload, Now: now()}
 	if err = env.Reload(); err != nil {
+		return "", false, err
+	}
+	if err = requireReadableSubject(s, rc.owner, env.Sub); err != nil {
 		return "", false, err
 	}
 	// Errors and output are checked against the secrets of the project when the step used any: a secret value

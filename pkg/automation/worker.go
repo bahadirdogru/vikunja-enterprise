@@ -224,11 +224,26 @@ func handleEvent(ctx context.Context, ev *models.AutomationEvent) error {
 		if def == nil || def.Event != ev.Name {
 			continue
 		}
+		renewLock(ev)
 		if err := runRule(ctx, ev, payload, rule); err != nil && firstErr == nil {
 			firstErr = err
 		}
 	}
 	return firstErr
+}
+
+// renewLock gives the worker of a claimed event the lock duration again. The lock covers one run timeout, and every
+// rule of the event gets a run timeout of its own: without renewing, an event with several slow rules would be
+// taken over by another worker while this one is still at work.
+func renewLock(ev *models.AutomationEvent) {
+	s := db.NewAutocommitSession()
+	defer s.Close()
+	_, err := s.Where("id = ? AND status = ?", ev.ID, models.AutomationEventProcessing).
+		Cols("locked_until").
+		Update(&models.AutomationEvent{LockedUntil: now().Add(lockDuration())})
+	if err != nil {
+		log.Errorf("[automation] could not renew the lock of event %d: %v", ev.ID, err)
+	}
 }
 
 // abortOrphanedRuns ends runs of this event whose rule was disabled or deleted while the run waited for a retry.

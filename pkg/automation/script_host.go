@@ -167,6 +167,10 @@ func (h *hostBase) planUpdate(id int64, patch map[string]any) (*mutation, error)
 	if err != nil {
 		return nil, err
 	}
+	// Every plan below checks this too, but an empty patch has no plan and still answers with the task.
+	if _, err := requireWritableTask(e); err != nil {
+		return nil, err
+	}
 	keys := make([]string, 0, len(patch))
 	for k := range patch {
 		keys = append(keys, k)

@@ -126,7 +126,12 @@ deleted.
   attempts=attempts+1 WHERE id=? AND status='pending'` and only used when exactly
   one row was changed - no `SKIP LOCKED`, so the same SQL runs on SQLite, MySQL
   and PostgreSQL. Rows left in `processing` past `locked_until` go back to
-  `pending` (or `dead` when the attempts are used up). Events written by this
+  `pending` (or `dead` when the attempts are used up). The lock is renewed
+  before every rule of the event, because each run has the run timeout to
+  itself. Should two workers hold the same run anyway (an expired lock, a manual
+  retry while the event is still being processed), a step checks again, after
+  taking the write lock of its run, whether it was recorded as successful in
+  the meantime, and does nothing then. Events written by this
   process wake the workers at once; `automation.pollinterval` (1 s) finds the
   ones of other replicas.
 - Events written by an action of a run carry `origin_run_id` and `depth + 1`.
@@ -171,6 +176,11 @@ Trigger types in the API: `task.created`, `task.updated` (option `fields`),
   payload). An update that is not made through the task model and has no old
   state (assignee changes, kanban moves to a done bucket) matches *updated* but
   never *completed* / *reopened* or a `fields` filter.
+- The task of an event is only handed to a rule (conditions, templates, the
+  `task` global of scripts) while the owner of the rule can read it. A task
+  that was moved to a project the owner cannot see since the event was written
+  is treated like a task that is gone: the run is skipped (`task_not_found`), a
+  run that is already under way fails.
 - *Task deleted* runs after the task is gone; conditions and templates see the
   task as it was when it was deleted, and actions that need the task fail.
 - *Task overdue* is not offered: the existing overdue events are per user, fire
