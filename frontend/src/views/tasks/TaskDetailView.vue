@@ -276,6 +276,13 @@
 										{{ $t('approvals.adHoc.action') }}
 									</DropdownItem>
 									<DropdownItem
+										v-if="manualAutomations.length > 0"
+										icon="play"
+										@click="runAutomationOpen = true"
+									>
+										{{ $t('automation.manual.action') }}
+									</DropdownItem>
+									<DropdownItem
 										icon="copy"
 										@click="duplicateCurrentTask"
 									>
@@ -300,6 +307,13 @@
 						:task-id="task.id"
 						:is-project-admin="(taskQuery.task.value?.max_permission ?? 0) >= PERMISSIONS.ADMIN"
 						@changed="refreshAfterStatusChange"
+					/>
+					<RunAutomationDialog
+						v-if="runAutomationOpen && manualAutomations.length > 0"
+						:task-id="task.id"
+						:project-id="task.project_id"
+						:rules="manualAutomations"
+						@close="runAutomationOpen = false"
 					/>
 					<AdHocApprovalDialog
 						v-if="adHocApprovalOpen"
@@ -593,6 +607,8 @@ import TaskCustomFields from '@/components/tasks/partials/TaskCustomFields.vue'
 import TaskStatus from '@/components/workflow/TaskStatus.vue'
 import TaskApprovals from '@/components/approvals/TaskApprovals.vue'
 import AdHocApprovalDialog from '@/components/approvals/AdHocApprovalDialog.vue'
+import RunAutomationDialog from '@/components/automation/RunAutomationDialog.vue'
+import {manualAutomationsQuery} from '@/client/queries/automation'
 import {customFieldsQuery} from '@/client/queries/customFields'
 import {workflowQuery} from '@/client/queries/workflow'
 import {useQuery} from '@tanstack/vue-query'
@@ -965,6 +981,14 @@ const workflowForVisibility = useQuery(computed(() => workflowQuery(task.value?.
 const hasWorkflow = computed(() => (workflowForVisibility.data.value ?? null) !== null)
 const workflowStatus = ref<InstanceType<typeof TaskStatus> | null>(null)
 const adHocApprovalOpen = ref(false)
+
+// The manual rules of the project: the server lists them for people who can write in it. No rule, no menu entry.
+const manualAutomationsResult = useQuery(computed(() => ({
+	...manualAutomationsQuery(task.value?.project_id ?? 0),
+	enabled: (task.value?.project_id ?? 0) > 0 && canWrite.value && !authStore.isLinkShareAuth,
+})))
+const manualAutomations = computed(() => manualAutomationsResult.data.value ?? [])
+const runAutomationOpen = ref(false)
 
 // A status change can flip done, and the requirements dialog can save fields the local draft keeps.
 async function refreshAfterStatusChange() {

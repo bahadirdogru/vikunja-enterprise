@@ -16,6 +16,7 @@ export const NOTIFICATION_NAMES = {
 	'APPROVAL_RESOLVED': 'approval.resolved',
 	'APPROVAL_REMINDER': 'approval.reminder',
 	'FORM_SUBMITTED': 'form.submitted',
+	'AUTOMATION_NOTIFY': 'automation.notify',
 } as const
 
 function record(value: unknown): Record<string, unknown> {
@@ -25,6 +26,8 @@ function record(value: unknown): Record<string, unknown> {
 export function notificationDoer(n: DatabaseNotification): User | undefined {
 	// The owner of a form is no actor of a submission.
 	if (n.name === NOTIFICATION_NAMES.FORM_SUBMITTED) return undefined
+	// A rule sent it; the person whose change started the rule is not the sender.
+	if (n.name === NOTIFICATION_NAMES.AUTOMATION_NOTIFY) return undefined
 	const doer = record(record(n.notification).doer)
 	return typeof doer.id === 'number' ? doer as User : undefined
 }
@@ -41,6 +44,8 @@ export function notificationText(n: DatabaseNotification, user: Pick<User, 'id'>
 	const approvalTitle = typeof approval.title === 'string' ? approval.title : ''
 	const formTitle = typeof payload.form_title === 'string' ? payload.form_title : ''
 	const submitter = [payload.submitter_name, payload.submitter_email].find(v => typeof v === 'string' && v !== '')
+	const message = typeof payload.message === 'string' ? payload.message.trim() : ''
+	const ruleTitle = typeof payload.rule_title === 'string' ? payload.rule_title : ''
 	let who: string
 	switch (n.name) {
 		case NOTIFICATION_NAMES.TASK_COMMENT:
@@ -76,6 +81,9 @@ export function notificationText(n: DatabaseNotification, user: Pick<User, 'id'>
 			return typeof submitter === 'string'
 				? `${submitter} submitted the form “${formTitle}”, creating ${getTaskIdentifier(task)}`
 				: `The form “${formTitle}” was submitted, creating ${getTaskIdentifier(task)}`
+		case NOTIFICATION_NAMES.AUTOMATION_NOTIFY:
+			// The text is the message of the rule, already filled in by the server.
+			return message !== '' ? message : `Automation “${ruleTitle}” sent a notification`
 		case NOTIFICATION_NAMES.APPROVAL_REQUESTED:
 			return `asked for your approval: “${approvalTitle}” on ${getTaskIdentifier(task)}`
 		case NOTIFICATION_NAMES.APPROVAL_REMINDER:
@@ -112,6 +120,13 @@ export function notificationRoute(n: DatabaseNotification): RouteLocationRaw | n
 		if (typeof id === 'number' && id > 0) return {name: 'task.detail', params: {id}}
 		// A request whose task is gone still has a place to be read.
 		return n.name?.startsWith('approval.') ? {name: 'approvals.index'} : null
+	}
+	if (n.name === NOTIFICATION_NAMES.AUTOMATION_NOTIFY) {
+		const taskId = record(payload.task).id
+		if (typeof taskId === 'number' && taskId > 0) return {name: 'task.detail', params: {id: taskId}}
+		// A rule that runs without a task (a schedule of the project, a webhook) notifies about the project.
+		const projectId = record(payload.project).id
+		return typeof projectId === 'number' && projectId > 0 ? {name: 'task.index', params: {projectId}} : null
 	}
 	if (n.name === NOTIFICATION_NAMES.PROJECT_CREATED) {
 		const projectId = record(payload.project).id

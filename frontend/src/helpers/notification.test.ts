@@ -189,3 +189,21 @@ describe('form notifications', () => {
 		expect(notificationDoer(notification('form.submitted', payload))).toBeUndefined()
 	})
 })
+
+describe('automation.notify', () => {
+	const payload = {message: 'Invoice 42 is due', rule_id: 3, rule_title: 'Invoices', task: TASK, project: PROJECT}
+
+	it('shows the message of the rule and no doer', () => {
+		expect(notificationText(notification(NOTIFICATION_NAMES.AUTOMATION_NOTIFY, payload))).toBe('Invoice 42 is due')
+		expect(notificationText(notification(NOTIFICATION_NAMES.AUTOMATION_NOTIFY, {...payload, message: '  '})))
+			.toBe('Automation “Invoices” sent a notification')
+		expect(notificationDoer(notification('automation.notify', {...payload, doer: SAM}))).toBeUndefined()
+	})
+
+	it('links to the task, or to the project when the run had no task', () => {
+		expect(notificationRoute(notification('automation.notify', payload))).toEqual({name: 'task.detail', params: {id: 3}})
+		expect(notificationRoute(notification('automation.notify', {...payload, task: undefined})))
+			.toEqual({name: 'task.index', params: {projectId: 4}})
+		expect(notificationRoute(notification('automation.notify', {message: 'x', project: null}))).toBeNull()
+	})
+})
