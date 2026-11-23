@@ -180,7 +180,7 @@ tasks.
   compare}`, `bar`/`donut`/`line` `{request}` (a report request; `number` cannot group, `bar` needs `group_by`, `donut`
   one level, `line` needs `time`), `created_vs_done` `{project_id, filter, bucket, from, to}`, `task_list`
   `{project_id, filter, sort_by, order_by, columns, limit<=100}`, `workload` `{project_id, filter, estimate_field}`,
-  `status_time` `{project_id, from, to}`, `time_tracking` `{from, to, group_by: user|project|day}`, `text`
+  `status_time` `{project_id, filter, group_by: assignee|label, from, to}`, `time_tracking` `{project_id, from, to, group_by: user|project|label|day}`, `text`
   `{text}`. A report inside a config is validated like `POST /reports/tasks` validates it (so cf fields have to be
   readable by the author) but is not run on save. Problems are `23008` with the path (`widgets[1].config.request.group_by`).
   On a project dashboard every `project_id` is pinned to the project (another one is an error).

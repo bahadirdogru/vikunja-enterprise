@@ -5,7 +5,7 @@ non-script actions, run history, limits, API v2, catalog, dry run. 3b: JavaScrip
 script actions and script conditions, the `http.request` action, `http.fetch` in
 scripts and project secrets. 3d adds the schedule, overdue, due soon, manual and
 incoming webhook triggers and the wait, create task and notify actions; their UI is
-described under "UI status (3d)". 3c is still design. Builds on custom fields and
+described under "UI status (3d)". 3c (UI) is implemented (see [ROADMAP.md](ROADMAP.md)). Builds on custom fields and
 workflow (their events are the most useful triggers). Where this document
 describes something that is not implemented yet it says so; the section "What 3a
 and 3b do and do not do" lists the differences in one place.
@@ -911,7 +911,7 @@ guessing. Editing the action that failed and retrying works.
 - 3a: outbox + transactional hook, workers, rules, conditions, the non-script
   actions, run history, limits, API, catalog. **Done.**
 - 3b: script condition/action, `http.request`, `http.fetch`, secrets. **Done.**
-- 3c: UI.
+- 3c: UI. **Done.**
 - 3d: schedule, due-date-approaching, manual and incoming webhook triggers;
   wait action; notify action. **Done**, backend and UI (editor forms, webhook address,
   manual run, notification); templates gallery for them not started.

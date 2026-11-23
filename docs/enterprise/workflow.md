@@ -1,6 +1,6 @@
 # Workflow — design
 
-Status: design. Depends on custom fields (required fields on transitions).
+Status: implemented (see [ROADMAP.md](ROADMAP.md) for status). Depends on custom fields (required fields on transitions).
 
 ## Why
 
@@ -139,7 +139,7 @@ fields, `&&`, `||` and groups.
 
 - Statuses are matched by id, the ids come from the workflow document. Any
   other comparator (`>`, `like`, ...) returns the usual invalid comparator
-  `400` (4018); a value that is not an id, or not a category name, returns the
+  `400` (4017); a value that is not an id, or not a category name, returns the
   invalid value `400` (4019). Both are checked when the filter is parsed, so
   they need no database access and a saved filter with an invalid one is
   rejected on save.

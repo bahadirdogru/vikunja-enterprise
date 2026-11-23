@@ -140,7 +140,7 @@ Definition errors on save are `400`, code `25002`, with `details.issues[] = {pat
 Other typed errors: `25001` unknown token or form (404), `25003` form takes no submissions (410, `details`
 `{reason: disabled|closed|full, title}`), `25004` login required (401), `25005` not allowed (403: link share, or a
 user who cannot read the project of a members form), `25007` rate limited (429, `Retry-After` header),
-`25008` forms disabled on the instance (403, saving only).
+`25008` forms disabled on the instance (403, saving only), `25009` invalid form logo (400, `details.reason`: too large, not an image or unsupported type).
 
 ### Access modes on the public routes
 
@@ -287,7 +287,7 @@ Behaviour worth knowing:
 # Approvals
 
 Status: **5a (backend) is implemented** in the models, migration `20261124100000`
-and `/api/v2` routes described below. The UI (5b) is not built yet.
+and `/api/v2` routes described below. The UI (5b) is built (see [ROADMAP.md](ROADMAP.md)).
 
 ## Goals
 
