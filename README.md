@@ -124,7 +124,7 @@ For everything generic (mail, authentication, reverse proxy examples, upgrades, 
 
 ## Configuration
 
-Settings come from a `config.yml` or from environment variables; environment variables override the file. The variable name is `VIKUNJA_` plus the key in upper case with dots as underscores, so `automation.ticker.interval` is `VIKUNJA_AUTOMATION_TICKER_INTERVAL`. The full list with comments is [`config-raw.json`](config-raw.json); [`config.yml.sample`](config.yml.sample) is generated from it (`mage generate:config-yaml`), so edit the JSON, not the sample.
+Settings come from a `config.yml` or from environment variables; environment variables override the file. The variable name is `VIKUNJA_` plus the key in upper case with dots as underscores, so `automation.ticker.interval` is `VIKUNJA_AUTOMATION_TICKER_INTERVAL`. The full list with comments is [`config-raw.json`](config-raw.json); `config.yml.sample` is not checked in; it is generated from the JSON with `mage generate:config-yaml`, so edit the JSON, not the sample.
 
 Fork-specific keys you are most likely to touch, with their defaults (plus `service.publicurl` and `service.timezone`, which come from upstream):
 
