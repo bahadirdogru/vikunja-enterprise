@@ -108,7 +108,7 @@ type ReportTimeInfo struct {
 	Field    string `json:"field"`
 	Bucket   string `json:"bucket"`
 	From     string `json:"from" doc:"Start of the first bucket, RFC 3339."`
-	To       string `json:"to" doc:"End of the last bucket (exclusive), RFC 3339."`
+	To       string `json:"to" doc:"End of the counted range (exclusive), RFC 3339: the end of the last bucket, or the end of the range when compare cuts the period."`
 	Timezone string `json:"timezone"`
 	Buckets  int    `json:"buckets"`
 }
@@ -734,7 +734,7 @@ func (r *reportRun) execute() (*TaskReport, error) {
 			Field:    tp.field,
 			Bucket:   tp.bucket,
 			From:     tp.bounds[0].In(plan.loc).Format(time.RFC3339),
-			To:       tp.bounds[len(tp.bounds)-1].In(plan.loc).Format(time.RFC3339),
+			To:       tp.end.In(plan.loc).Format(time.RFC3339),
 			Timezone: plan.loc.String(),
 			Buckets:  len(tp.bounds) - 1,
 		}
