@@ -623,7 +623,7 @@ longer administers the project disables the rule (`owner_not_admin` /
   with the permissions of the owner of the rule, never more than the owner has.
   Access to the project is checked first: whoever cannot write in it gets the same 403
   whether the project, the rule or the task exist, are enabled or have a manual
-  trigger. For people with access, disabled rules and rules with another trigger are 409.
+  trigger (an archived project included: it does not reveal itself to an outsider). For people with access, disabled rules and rules with another trigger are 409.
 - **Schedule** (`schedule`, options `cron`, `scope`): a five field cron expression
   or `@hourly`, `@daily`, `@weekly`, `@monthly`, `@yearly`, evaluated in the **time zone of the server**
   (`service.timezone`), on wall clock time. `@every ...` and `TZ=` / `CRON_TZ=` prefixes are
@@ -634,7 +634,10 @@ longer administers the project disables the rule (`owner_not_admin` /
   once for all the occurrences it missed, however long it was down. Daylight saving: a wall clock time that does
   not exist (02:30 on the night the clocks jump forward) is skipped that day, an hourly
   job loses only the hour that does not exist; a wall clock time that happens twice
-  (the clocks go back) fires once, for the first of them.
+  (the clocks go back) fires once, for the first of them. When the day of the month and
+  the day of the week are both restricted, a day matches when **either** does (classic cron
+  semantics: `0 0 1 * 1` is the 1st and every Monday). A schedule that never happens
+  (30 February) is rejected on save.
 - **Overdue** (`task.overdue`) and **due soon** (`task.due_soon`, option `offset`,
   at least 1m): fire for not done tasks of the project the first time they cross the
   line. A marker per (rule, task) stores the due date it fired for, so a task fires
@@ -642,9 +645,16 @@ longer administers the project disables the rule (`owner_not_admin` /
   overdue when the rule was armed do not fire, and neither do tasks that were in the
   due soon window then. A rule is armed when it is created, enabled again or gets another
   trigger (type or options); editing its title, conditions or actions does not move the
-  line, so a task that crossed meanwhile still fires. Due soon fires for tasks that
-  entered the window after that or were created after that. (The schedule keeps counting
-  from the last save.) Conditions are checked before a run is
+  line, so a task that crossed meanwhile still fires. Arming writes a marker, with its
+  current due date, for every task of the project that already is overdue (overdue) or
+  inside the window (due soon), in the transaction of the save and at most 20000 of them
+  (tasks beyond that have no marker and fire once, at the pace of the ticker caps). The
+  ticker then fires for every task without a marker for its due date: a task that
+  entered the window or became overdue since, one created there, and one whose due date
+  was edited into the window or into the past after arming (a new due date). A task
+  created with a due date in the past fires overdue, too. A task a rule created that sits at
+  max depth is skipped by all time based rules until the chain is shorter (see Loops).
+  (The schedule keeps counting from the last save.) Conditions are checked before a run is
   queued (script conditions only in the run); a non matching task is marked too.
 - **The ticker**: every process runs it every `automation.ticker.interval`
   (30s). It only reads while nothing is due. A firing is claimed in the database in the
@@ -655,18 +665,32 @@ longer administers the project disables the rule (`owner_not_admin` /
   schedule and the note is on the rule as `last_fire_note`; overdue and due soon
   continue on the next tick) and a schedule looks at no more than
   `automation.ticker.maxscan` tasks. The per-minute run limit does not apply to the
-  time based triggers; this cap does. A schedule claims its occurrence before it
-  scans the tasks, so only one replica does the scan.
+  time based triggers; this cap does. A schedule scans the tasks in a read only session
+  and then claims its occurrence and writes the events in one short transaction; a
+  replica that loses the claim discards its scan.
   **Loops**: a task created by a run (`task.create`, the subtask and related task
   actions, scripts) is remembered with that run (`automation_task_origins`). The time
   based events for such a task carry the run as their origin and one more level of
   depth, so a rule never fires for what its own run created and a chain of rules that
   create tasks for each other ends at `automation.maxdepth`. `http.request` and
   `http.fetch` refuse URLs that are incoming webhooks of this server (the host of
-  `service.publicurl` and the path `/api/v2/automation/hooks/`), also after redirects.
+  `service.publicurl` and the path `/api/v2/automation/hooks/`, whatever the scheme, port,
+  trailing dot of the host or path prefix; without a public URL the path alone decides),
+  also after redirects. That is only the cheap first line. Every request the engine sends
+  carries the header `X-Vikunja-Automation-Depth: 1` (a rule cannot remove or change it,
+  and it survives redirects), and this server answers every `/api/v1` and `/api/v2`
+  request that carries it with 508, so a rule cannot call the hook endpoint or the task
+  API of its own instance, whatever address or token it uses. A reverse proxy that strips
+  the header, or a second hop through an external service that calls back without it, is
+  outside what the guard can see.
+  The loop guards are bounded by retention: origin rows are deleted with their run, so
+  after `automation.retention` days the own-run guard no longer knows a task was created by
+  a rule, and a task a person took over from a rule stays marked only that long.
   Limits that need a value above 0 (`automation.ticker.maxscan`,
   `automation.webhook.maxbody`, `automation.maxpendingwaits`) are replaced with their
-  defaults at startup when set to 0 or less.
+  defaults at startup when set to 0 or less; a negative `automation.maxdepth` gets its
+  default (0 forbids chains), a negative `automation.ratelimit` or `automation.ticker.maxtasks`
+  means 0, which turns that limit off.
 - **Incoming webhook** (`webhook.incoming`, option `secret`):
   `POST /api/v2/automation/hooks/{token}` with a JSON object (`{}` for none; at most
   `automation.webhook.maxbody` bytes, 413 above) starts the rule asynchronously (202).
@@ -697,10 +721,17 @@ longer administers the project disables the rule (`owner_not_admin` /
   continues it with the actions after the wait; conditions are not evaluated again.
   A rule that was disabled or deleted meanwhile aborts the run. Only the resume event
   continues past a wait: another delivery of the original event never does. A project
-  can have `automation.maxpendingwaits` (1000) runs waiting; a wait over that fails.
+  can have `automation.maxpendingwaits` (1000) runs waiting; a wait over that fails. The
+  cap is soft: it is checked without a lock, so workers times replicas can overshoot it by
+  a few. A retry of a run that stopped after its wait queues a fresh resume event for it
+  instead of the original event, and a dead event of another rule does not fail the run
+  that waits.
   The retention cleanup keeps the event of a run that is still running, and the daily
   cleanup fails runs that are running for longer than `automation.waitmax` per wait
-  action of their rule plus a day (the resume event was lost).
+  action of their rule plus a day (the resume event was lost); a reaped run counts as a
+  failed run in the statistics of its rule. Lowering `automation.waitmax` can therefore
+  reap runs that legitimately wait for a longer wait than the new maximum, and
+  `automation.waitmax: 0` turns the reaper (and the maximum wait) off.
 
 ## UI
 

@@ -807,6 +807,9 @@ func TestWait_RunsStuckInRunningAreEndedWellPastTheLongestWait(t *testing.T) {
 	assert.Equal(t, models.AutomationRunFailed, run.Status)
 	assert.Contains(t, run.Error, "automation.waitmax")
 	assert.False(t, run.Finished.IsZero())
+	stored := getRule(t, r.ID)
+	assert.Equal(t, models.AutomationRunFailed, stored.LastRunStatus)
+	assert.EqualValues(t, 1, stored.ConsecutiveFailures)
 
 	n, err = ReapStuckRuns(now())
 	require.NoError(t, err)

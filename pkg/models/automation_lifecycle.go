@@ -272,6 +272,13 @@ func ReapStuckAutomationRuns(s *xorm.Session, now time.Time) (int64, error) {
 			return reaped, err
 		}
 		reaped += n
+		if n == 1 {
+			// The statistics of the rule count it like any other failed run (the rule is not disabled by it).
+			if _, err = s.ID(run.RuleID).Incr("consecutive_failures").Cols("last_run_at", "last_run_status").NoAutoTime().
+				Update(&AutomationRule{LastRunAt: now, LastRunStatus: AutomationRunFailed}); err != nil {
+				return reaped, err
+			}
+		}
 	}
 	return reaped, nil
 }
