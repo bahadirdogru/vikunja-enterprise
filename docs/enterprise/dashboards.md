@@ -107,6 +107,23 @@ Semantics:
   `from`, the last the one containing `to`; the range is half open at its end. Tasks whose date is empty are not in
   the series and counted in `excluded`; `total` counts the tasks inside the range. `status_entered` is the time the
   task entered its current status.
+- **Previous period.** `compare: previous_period` runs the measure over as many buckets as the range has, shifted
+  back by that many buckets (calendar months, weeks or days; day starts follow the time zone, also where a day has no
+  midnight). When `to` lies inside its last bucket (a plain date names the whole day, `now` is the instant), the range
+  is counted until `to` and not until the end of that bucket, and the previous period until the same elapsed time after
+  its own start, so a half filled month is compared with the same share of the month before. Series and totals of a
+  compared request are cut the same way.
+- **Time in status.** Only history of the statuses of the project's current workflow counts (archived statuses
+  included): history of a deleted workflow, or of the project a task was moved in from, is ignored. A visit lasts until
+  the next history entry of the task; the last one is open (runs until now or the end of the window) only when it is
+  the task's current status, otherwise it has no known end and is left out. A task without counted history is counted
+  from the time it entered its current status. When the first counted entry of a task leaves a status the history never
+  entered (the workflow was added to a project with tasks, which gives them a status but no history), that status is
+  counted as a leading visit that starts at the later of the workflow's creation and the task's creation, and not
+  before the previous history entry of the task: no more precise start is stored, as the entry time of the current
+  status is overwritten by every change. A plain date `to` includes that day. Assignees and labels that no longer exist
+  or cannot be seen are counted with the tasks that have none. The rows read (history, current statuses, assignees or
+  labels) are bounded by `reports.maxrows`.
 - **Limits.** At most two dimensions plus time, `reports.maxbuckets` (366) buckets (`23002`), `reports.maxgroups`
   (200) groups (`23003`), a timeout (`reports.timeout`, 20 s) that cancels the database queries (`23009`, 503),
   a 30 s in-memory cache (`reports.cachettl`) per auth identity and normalized request, at most 256 entries, no
@@ -201,7 +218,7 @@ tasks.
 
 - Not in 4a: `status_time`, `workload` and `time_tracking` have a validated config but no data endpoint (4c); CSV
   export; `created_vs_done` has no server side running open count (the client combines two reports: `created` and
-  `done_at`); the `compare` period of a `number` widget is only validated (the client asks twice); saved filters
+  `done_at`); saved filters
   (project ids below -1) are not a report scope; `include_subprojects` is not offered.
 - Nested time series carry series on leaf groups only; `other` leaves have none.
 

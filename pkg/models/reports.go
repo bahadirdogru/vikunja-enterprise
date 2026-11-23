@@ -70,7 +70,7 @@ type ReportRequest struct {
 	Field              string      `json:"field,omitempty" doc:"The numeric field sum, avg, min and max work on: percent_done, time_spent (seconds of finished time entries) or cf_<id> of a number, currency, rating or progress field. Tasks without a value are ignored."`
 	Time               *ReportTime `json:"time,omitempty" doc:"Makes the report a time series: values are split into buckets of this date field."`
 	Limit              int         `json:"limit,omitempty" minimum:"0" doc:"Keep this many groups per level (20 when omitted); the rest is folded into one other group."`
-	Compare            string      `json:"compare,omitempty" enum:"previous_period" doc:"previous_period also computes the measure for the period of equal length right before the time range (the same number of buckets, shifted back) and returns it as comparison. Needs time and cannot be combined with group_by."`
+	Compare            string      `json:"compare,omitempty" enum:"previous_period" doc:"previous_period also computes the measure for the period of equal length right before the time range (the same number of buckets, shifted back) and returns it as comparison. When time.to lies inside its last bucket both periods are counted for the same elapsed time. Needs time and cannot be combined with group_by."`
 }
 
 // ReportComparison is the value of the previous period next to the value of the requested one.
@@ -192,6 +192,7 @@ type reportPlan struct {
 	loc         *time.Location
 	timeCfg     *reportTimePlan
 	cmpCfg      *reportTimePlan
+	timeEnd     time.Time // the resolved end of the requested range, a plain date including its day
 	limit       int
 	maxGroups   int
 }
@@ -206,6 +207,8 @@ type reportTimePlan struct {
 	// rangeCond restricts the tasks to the reported range. It is nil for a plan that only buckets (the workload
 	// report), which then reads every task of the base query.
 	rangeCond builder.Cond
+	// end is where the counted range stops: the end of the last bucket, or earlier when the period was clipped.
+	end time.Time
 }
 
 func isNumericFieldType(t CustomFieldType) bool {
@@ -397,6 +400,7 @@ func (p *reportPlan) buildTime() error {
 	}
 
 	p.timeCfg = newReportTimePlan(t.Field, t.Bucket, bounds)
+	p.timeEnd = reportRangeEnd(t.To, to)
 	return nil
 }
 
@@ -408,15 +412,27 @@ func newReportTimePlan(field, bucket string, bounds []time.Time) *reportTimePlan
 		column:    column,
 		bounds:    bounds,
 		indexExpr: reportBucketIndexExpr(column, bounds),
-		rangeCond: builder.And(
-			builder.Gte{column: bounds[0].UTC().Format(dbTimeFormat)},
-			builder.Lt{column: bounds[len(bounds)-1].UTC().Format(dbTimeFormat)},
-		),
+		end:       bounds[len(bounds)-1],
 	}
+	tp.rangeCond = tp.rangeUntil(tp.end)
 	if joinTable != "" {
 		tp.join = &reportJoin{joinTable, joinCond}
 	}
 	return tp
+}
+
+// rangeUntil restricts the column to the range from the first bucket until end.
+func (tp *reportTimePlan) rangeUntil(end time.Time) builder.Cond {
+	return builder.And(
+		builder.Gte{tp.column: tp.bounds[0].UTC().Format(dbTimeFormat)},
+		builder.Lt{tp.column: end.UTC().Format(dbTimeFormat)},
+	)
+}
+
+// clipTo ends the counted range at end, which lies inside the last bucket. The buckets stay as they are.
+func (tp *reportTimePlan) clipTo(end time.Time) {
+	tp.end = end
+	tp.rangeCond = tp.rangeUntil(end)
 }
 
 // buildCompare plans the previous period: as many buckets as the range has, shifted back by that many buckets, so a
@@ -441,17 +457,27 @@ func (p *reportPlan) buildCompare() error {
 	y, m, d := start.Date()
 	switch tp.bucket {
 	case ReportBucketMonth:
-		start = time.Date(y, m-time.Month(n), 1, 0, 0, 0, 0, start.Location())
+		start = reportDayStart(y, m-time.Month(n), 1, start.Location())
 	case ReportBucketWeek:
-		start = time.Date(y, m, d-7*n, 0, 0, 0, 0, start.Location())
+		start = reportDayStart(y, m, d-7*n, start.Location())
 	default:
-		start = time.Date(y, m, d-n, 0, 0, 0, 0, start.Location())
+		start = reportDayStart(y, m, d-n, start.Location())
 	}
 	bounds := []time.Time{start}
 	for i := 0; i < n; i++ {
 		bounds = append(bounds, reportBucketNext(bounds[i], tp.bucket))
 	}
 	p.cmpCfg = newReportTimePlan(tp.field, tp.bucket, bounds)
+
+	// The last bucket of the requested range is only filled until the end of the range, while the previous period is
+	// complete. Both are cut after the same elapsed time, or the comparison would always look like a decline.
+	if end := p.timeEnd; end.Before(tp.end) {
+		tp.clipTo(end)
+		prevEnd := start.Add(end.Sub(tp.bounds[0]))
+		if prevEnd.Before(p.cmpCfg.end) {
+			p.cmpCfg.clipTo(prevEnd)
+		}
+	}
 	return nil
 }
 
@@ -804,7 +830,7 @@ func (r *reportRun) compare(rep *TaskReport) (*ReportComparison, error) {
 		Value: agg.value(r.plan.measure),
 		Total: agg.n,
 		From:  tp.bounds[0].In(r.plan.loc).Format(time.RFC3339),
-		To:    tp.bounds[len(tp.bounds)-1].In(r.plan.loc).Format(time.RFC3339),
+		To:    tp.end.In(r.plan.loc).Format(time.RFC3339),
 	}
 	c.Delta = rep.Value - c.Value
 	if c.Value != 0 {

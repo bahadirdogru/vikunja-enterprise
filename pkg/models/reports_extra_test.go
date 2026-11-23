@@ -331,6 +331,27 @@ func TestReport_ComparePreviousPeriod(t *testing.T) {
 		assert.Equal(t, "2026-02-01T00:00:00Z", rep.Comparison.To)
 	})
 
+	t.Run("a range that ends inside its last bucket is compared after the same elapsed time", func(t *testing.T) {
+		// Feb 1 .. Mar 10 (38 days): t4 (Feb 28); t5 is created on Mar 31, after the range. The 38 days after Dec 1
+		// end on Jan 8: t1 (Jan 5). t2 (Jan 11) and t3 (Jan 12) belong to the complete month and must not count.
+		rep := runReport(t, cfUser1, req("2026-02-01", "2026-03-10", "month"))
+		assert.Equal(t, float64(1), rep.Value)
+		require.NotNil(t, rep.Comparison)
+		assert.Equal(t, float64(1), rep.Comparison.Value)
+		assert.Equal(t, float64(0), rep.Comparison.Delta)
+		assert.Equal(t, "2025-12-01T00:00:00Z", rep.Comparison.From)
+		assert.Equal(t, "2026-01-08T00:00:00Z", rep.Comparison.To)
+	})
+
+	t.Run("the previous period starts where a day without midnight starts", func(t *testing.T) {
+		// 2026-09-06 begins at 01:00 in Santiago.
+		r := req("2026-09-07", "2026-09-07", "day")
+		r.Time.Timezone = "America/Santiago"
+		rep := runReport(t, cfUser1, r)
+		require.NotNil(t, rep.Comparison)
+		assert.Equal(t, "2026-09-06T01:00:00-03:00", rep.Comparison.From)
+	})
+
 	t.Run("days, weeks and a previous period without tasks", func(t *testing.T) {
 		rep := runReport(t, cfUser1, req("2026-01-12", "2026-01-12", "day"))
 		assert.Equal(t, float64(1), rep.Value, "t3")
