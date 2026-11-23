@@ -1865,9 +1865,17 @@ export type Form = {
      */
     readonly $schema?: string;
     /**
+     * Optional accent color of the public page as a hex color, #rrggbb (the # may be left out). Empty for the default.
+     */
+    accent_color?: string;
+    /**
      * Who may submit: public (anyone with the link), users (every signed-in user) or members (users who can read the project).
      */
     access?: 'public' | 'users' | 'members';
+    /**
+     * Optional name shown on the public page instead of the application name. Plain text.
+     */
+    brand_name?: string;
     /**
      * A timestamp when this form was created. You cannot change this value.
      */
@@ -1888,6 +1896,14 @@ export type Form = {
      * What the form asks, in order.
      */
     fields?: Array<FormField> | null;
+    /**
+     * Whether the form has a logo. Upload it with PUT .../logo, remove it with DELETE .../logo.
+     */
+    readonly has_brand_logo?: boolean;
+    /**
+     * Hides the small 'Powered by' link in the footer of the public page.
+     */
+    hide_footer?: boolean;
     /**
      * The unique, numeric id of this form.
      */
@@ -1983,6 +1999,25 @@ export type FormPublicAttachments = {
     max_files?: number;
 };
 
+export type FormPublicBranding = {
+    /**
+     * The accent color as #rrggbb, empty for the default.
+     */
+    accent_color?: string;
+    /**
+     * Whether a logo exists. Load it from GET /forms/{token}/logo.
+     */
+    has_logo?: boolean;
+    /**
+     * Whether the 'Powered by' footer link is hidden.
+     */
+    hide_footer?: boolean;
+    /**
+     * The brand name to show, empty for none.
+     */
+    name?: string;
+};
+
 export type FormPublicDefinition = {
     /**
      * A URL to the JSON Schema for this object.
@@ -1992,6 +2027,10 @@ export type FormPublicDefinition = {
      * The file limits. Only present when the form asks for attachments.
      */
     attachments?: FormPublicAttachments;
+    /**
+     * How the public page looks. All parts are optional.
+     */
+    branding?: FormPublicBranding;
     /**
      * Sanitized rich text (HTML) shown above the form.
      */
@@ -2108,9 +2147,17 @@ export type FormReadBody = {
      */
     readonly $schema?: string;
     /**
+     * Optional accent color of the public page as a hex color, #rrggbb (the # may be left out). Empty for the default.
+     */
+    accent_color?: string;
+    /**
      * Who may submit: public (anyone with the link), users (every signed-in user) or members (users who can read the project).
      */
     access?: 'public' | 'users' | 'members';
+    /**
+     * Optional name shown on the public page instead of the application name. Plain text.
+     */
+    brand_name?: string;
     /**
      * A timestamp when this form was created. You cannot change this value.
      */
@@ -2131,6 +2178,14 @@ export type FormReadBody = {
      * What the form asks, in order.
      */
     fields?: Array<FormField> | null;
+    /**
+     * Whether the form has a logo. Upload it with PUT .../logo, remove it with DELETE .../logo.
+     */
+    readonly has_brand_logo?: boolean;
+    /**
+     * Hides the small 'Powered by' link in the footer of the public page.
+     */
+    hide_footer?: boolean;
     /**
      * The unique, numeric id of this form.
      */
@@ -7301,9 +7356,17 @@ export type EmailConfirmWritable = {
 
 export type FormWritable = {
     /**
+     * Optional accent color of the public page as a hex color, #rrggbb (the # may be left out). Empty for the default.
+     */
+    accent_color?: string;
+    /**
      * Who may submit: public (anyone with the link), users (every signed-in user) or members (users who can read the project).
      */
     access?: 'public' | 'users' | 'members';
+    /**
+     * Optional name shown on the public page instead of the application name. Plain text.
+     */
+    brand_name?: string;
     /**
      * Rich text (HTML) shown above the form. It is sanitized when saved.
      */
@@ -7316,6 +7379,10 @@ export type FormWritable = {
      * What the form asks, in order.
      */
     fields?: Array<FormField> | null;
+    /**
+     * Hides the small 'Powered by' link in the footer of the public page.
+     */
+    hide_footer?: boolean;
     /**
      * Settings of the form.
      */
@@ -7335,6 +7402,10 @@ export type FormPublicDefinitionWritable = {
      * The file limits. Only present when the form asks for attachments.
      */
     attachments?: FormPublicAttachments;
+    /**
+     * How the public page looks. All parts are optional.
+     */
+    branding?: FormPublicBranding;
     /**
      * Sanitized rich text (HTML) shown above the form.
      */
@@ -7359,9 +7430,17 @@ export type FormPublicDefinitionWritable = {
 
 export type FormReadBodyWritable = {
     /**
+     * Optional accent color of the public page as a hex color, #rrggbb (the # may be left out). Empty for the default.
+     */
+    accent_color?: string;
+    /**
      * Who may submit: public (anyone with the link), users (every signed-in user) or members (users who can read the project).
      */
     access?: 'public' | 'users' | 'members';
+    /**
+     * Optional name shown on the public page instead of the application name. Plain text.
+     */
+    brand_name?: string;
     /**
      * Rich text (HTML) shown above the form. It is sanitized when saved.
      */
@@ -7374,6 +7453,10 @@ export type FormReadBodyWritable = {
      * What the form asks, in order.
      */
     fields?: Array<FormField> | null;
+    /**
+     * Hides the small 'Powered by' link in the footer of the public page.
+     */
+    hide_footer?: boolean;
     /**
      * Settings of the form.
      */
@@ -10475,6 +10558,36 @@ export type FormPublicReadResponses = {
 
 export type FormPublicReadResponse = FormPublicReadResponses[keyof FormPublicReadResponses];
 
+export type FormPublicLogoData = {
+    body?: never;
+    path: {
+        /**
+         * The secret token of the form.
+         */
+        token: string;
+    };
+    query?: never;
+    url: '/forms/{token}/logo';
+};
+
+export type FormPublicLogoErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type FormPublicLogoError = FormPublicLogoErrors[keyof FormPublicLogoErrors];
+
+export type FormPublicLogoResponses = {
+    /**
+     * The logo as a PNG image.
+     */
+    200: Blob | File;
+};
+
+export type FormPublicLogoResponse = FormPublicLogoResponses[keyof FormPublicLogoResponses];
+
 export type FormPublicSubmitData = {
     body: FormSubmitInputWritable;
     path: {
@@ -13065,6 +13178,67 @@ export type FormsUpdateResponses = {
 };
 
 export type FormsUpdateResponse = FormsUpdateResponses[keyof FormsUpdateResponses];
+
+export type FormsLogoDeleteData = {
+    body?: never;
+    path: {
+        project: number;
+        form: number;
+    };
+    query?: never;
+    url: '/projects/{project}/forms/{form}/logo';
+};
+
+export type FormsLogoDeleteErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type FormsLogoDeleteError = FormsLogoDeleteErrors[keyof FormsLogoDeleteErrors];
+
+export type FormsLogoDeleteResponses = {
+    /**
+     * OK
+     */
+    200: Form;
+};
+
+export type FormsLogoDeleteResponse = FormsLogoDeleteResponses[keyof FormsLogoDeleteResponses];
+
+export type FormsLogoUploadData = {
+    body: {
+        /**
+         * The logo image. PNG, JPEG, GIF or WebP, at most 1 MiB.
+         */
+        logo: Blob | File;
+    };
+    path: {
+        project: number;
+        form: number;
+    };
+    query?: never;
+    url: '/projects/{project}/forms/{form}/logo';
+};
+
+export type FormsLogoUploadErrors = {
+    /**
+     * Error
+     */
+    default: VikunjaErrorModel;
+};
+
+export type FormsLogoUploadError = FormsLogoUploadErrors[keyof FormsLogoUploadErrors];
+
+export type FormsLogoUploadResponses = {
+    /**
+     * OK
+     */
+    200: Form;
+};
+
+export type FormsLogoUploadResponse = FormsLogoUploadResponses[keyof FormsLogoUploadResponses];
 
 export type FormSubmissionsListData = {
     body?: never;

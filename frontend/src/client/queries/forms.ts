@@ -2,6 +2,8 @@ import {keepPreviousData, queryOptions, useMutation} from '@tanstack/vue-query'
 
 import {
 	formPublicRead,
+	formsLogoDelete,
+	formsLogoUpload,
 	formPublicSubmit,
 	formPublicSubmitMultipart,
 	formSubmissionsList,
@@ -149,6 +151,9 @@ export function documentOfForm(form: FormResponse, patch: Partial<FormWritable> 
 		description: form.description ?? '',
 		access: form.access,
 		enabled: form.enabled,
+		brand_name: form.brand_name ?? '',
+		accent_color: form.accent_color ?? '',
+		hide_footer: form.hide_footer ?? false,
 		fields: form.fields ?? [],
 		settings: form.settings,
 		...patch,
@@ -197,6 +202,43 @@ export function regenerateTokenMutationOptions() {
 	})
 }
 
+// The logo is its own upload on a saved form; the answer is the form with the new has_brand_logo.
+export function uploadFormLogoMutationOptions() {
+	return contextMutationOptions({
+		mutationFn: async ({projectId, formId, logo}: {projectId: number, formId: number, logo: File}) =>
+			normalizeForm((await formsLogoUpload({path: {project: projectId, form: formId}, body: {logo}})).data),
+		onSuccess: (saved, {projectId}, client) => {
+			client.setQueryData<FormResponse[]>(formKeys.list(projectId),
+				current => current?.map(form => form.id === saved.id ? saved : form))
+		},
+		onSettled: ({projectId}, client) => client.invalidateQueries({queryKey: formKeys.list(projectId), exact: true}),
+		successMessage: () => i18n.global.t('forms.branding.logoSaved'),
+		// The builder shows the reason next to the control.
+		toastError: () => false,
+	})
+}
+
+export function deleteFormLogoMutationOptions() {
+	return contextMutationOptions({
+		mutationFn: async ({projectId, formId}: {projectId: number, formId: number}) =>
+			normalizeForm((await formsLogoDelete({path: {project: projectId, form: formId}})).data),
+		onSuccess: (saved, {projectId}, client) => {
+			client.setQueryData<FormResponse[]>(formKeys.list(projectId),
+				current => current?.map(form => form.id === saved.id ? saved : form))
+		},
+		onSettled: ({projectId}, client) => client.invalidateQueries({queryKey: formKeys.list(projectId), exact: true}),
+		successMessage: () => i18n.global.t('forms.branding.logoRemoved'),
+	})
+}
+
+export function useUploadFormLogoMutation() {
+	return useMutation(uploadFormLogoMutationOptions())
+}
+
+export function useDeleteFormLogoMutation() {
+	return useMutation(deleteFormLogoMutationOptions())
+}
+
 export function useSaveFormMutation() {
 	return useMutation(saveFormMutationOptions())
 }
@@ -214,6 +256,11 @@ export function useRegenerateTokenMutation() {
 }
 
 // ---- public page -------------------------------------------------------------------------------------------------
+
+// The logo is served by token, without credentials, so an image tag can load it.
+export function publicFormLogoUrl(token: string, version = ''): string {
+	return `${getApiBaseUrl()}/forms/${encodeURIComponent(token)}/logo${version ? `?v=${encodeURIComponent(version)}` : ''}`
+}
 
 export type PublicLoad = {definition: PublicDefinition, authed: boolean}
 
