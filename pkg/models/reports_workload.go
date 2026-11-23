@@ -93,6 +93,39 @@ func workloadBucketExpr(now, nextWeek, weekAfter time.Time) string {
 		" ELSE 3 END"
 }
 
+// workloadFilter adds the open condition to the filter of the request.
+func workloadFilter(raw string, loc *time.Location) (string, error) {
+	filter := strings.TrimSpace(raw)
+	if filter == "" {
+		return "done = false", nil
+	}
+	// The user filter has to be complete on its own: a text like "done = true) || (done = true" would balance the
+	// parentheses of the combined filter and let done tasks through.
+	if _, err := getTaskFiltersFromFilterString(filter, loc.String()); err != nil {
+		return "", err
+	}
+	return "(" + filter + ") && done = false", nil
+}
+
+// buildEstimate sums the custom field the estimate comes from; its errors name estimate_field.
+func (p *reportPlan) buildEstimate(a web.Auth, reader *customFieldReader, field string) error {
+	if _, isCustom := parseCustomFieldIdentifier(field); !isCustom {
+		return ErrReportInvalidParameter{Param: "estimate_field", Reason: "must be cf_<id> of a number, currency, rating or progress field"}
+	}
+	p.req.Measure, p.req.Field = ReportMeasureSum, field
+	p.measure = ReportMeasureSum
+	err := p.buildMeasure(a, reader)
+	if e, ok := errors.AsType[ErrReportInvalidParameter](err); ok {
+		e.Param = "estimate_field"
+		return e
+	}
+	if e, ok := errors.AsType[ErrReportFieldKindNotSupported](err); ok {
+		e.Param = "estimate_field"
+		return e
+	}
+	return err
+}
+
 // RunWorkloadReport counts the open tasks the auth can read per assignee and due bucket, with two statements plus the
 // lookup of the names. The tasks are the ones of readableTasksQuery.
 func RunWorkloadReport(ctx context.Context, s *xorm.Session, a web.Auth, req *WorkloadRequest) (*WorkloadReport, error) {
@@ -106,24 +139,17 @@ func RunWorkloadReport(ctx context.Context, s *xorm.Session, a web.Auth, req *Wo
 	if limit == 0 {
 		limit = reportDefaultLimit
 	}
-	if max := config.ReportsMaxGroups.GetInt(); limit > max {
-		return nil, ErrReportTooManyGroups{Limit: limit, Max: max}
+	if maxGroups := config.ReportsMaxGroups.GetInt(); limit > maxGroups {
+		return nil, ErrReportTooManyGroups{Limit: limit, Max: maxGroups}
 	}
 	loc, err := reportLocation(req.Timezone, reportAuthTimezone(s, a))
 	if err != nil {
 		return nil, err
 	}
 
-	filter := strings.TrimSpace(req.Filter)
-	if filter == "" {
-		filter = "done = false"
-	} else {
-		// The user filter has to be complete on its own: a text like "done = true) || (done = true" would balance
-		// the parentheses of the combined filter and let done tasks through.
-		if _, err = getTaskFiltersFromFilterString(filter, loc.String()); err != nil {
-			return nil, err
-		}
-		filter = "(" + filter + ") && done = false"
+	filter, err := workloadFilter(req.Filter, loc)
+	if err != nil {
+		return nil, err
 	}
 
 	reader := &customFieldReader{s: s, a: a}
@@ -136,20 +162,7 @@ func RunWorkloadReport(ctx context.Context, s *xorm.Session, a web.Auth, req *Wo
 		maxGroups: config.ReportsMaxGroups.GetInt(),
 	}
 	if req.EstimateField != "" {
-		if _, isCustom := parseCustomFieldIdentifier(req.EstimateField); !isCustom {
-			return nil, ErrReportInvalidParameter{Param: "estimate_field", Reason: "must be cf_<id> of a number, currency, rating or progress field"}
-		}
-		plan.req.Measure, plan.req.Field = ReportMeasureSum, req.EstimateField
-		plan.measure = ReportMeasureSum
-		if err = plan.buildMeasure(a, reader); err != nil {
-			if e, ok := errors.AsType[ErrReportInvalidParameter](err); ok {
-				e.Param = "estimate_field"
-				return nil, e
-			}
-			if e, ok := errors.AsType[ErrReportFieldKindNotSupported](err); ok {
-				e.Param = "estimate_field"
-				return nil, e
-			}
+		if err = plan.buildEstimate(a, reader, req.EstimateField); err != nil {
 			return nil, err
 		}
 	}

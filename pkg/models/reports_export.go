@@ -571,7 +571,7 @@ func (c *taskExportColumns) fieldCell(taskID int64, f *CustomField) CSVCell {
 			}
 		}
 		return textCell(strings.Join(parts, "; "))
-	default:
+	case CustomFieldTypeText, CustomFieldTypeLongText, CustomFieldTypeURL, CustomFieldTypeEmail:
 		if rows[0].ValueText != nil {
 			return textCell(*rows[0].ValueText)
 		}

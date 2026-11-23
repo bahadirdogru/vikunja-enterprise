@@ -147,8 +147,8 @@ func RunStatusTimeReport(ctx context.Context, s *xorm.Session, a web.Auth, req *
 	if limit == 0 {
 		limit = reportDefaultLimit
 	}
-	if max := config.ReportsMaxGroups.GetInt(); limit > max {
-		return nil, ErrReportTooManyGroups{Limit: limit, Max: max}
+	if maxGroups := config.ReportsMaxGroups.GetInt(); limit > maxGroups {
+		return nil, ErrReportTooManyGroups{Limit: limit, Max: maxGroups}
 	}
 	switch req.GroupBy {
 	case "", StatusTimeGroupAssignee, StatusTimeGroupLabel:
@@ -461,8 +461,8 @@ func countReportRows(s *xorm.Session, base *builder.Builder, bean any) error {
 
 // checkReportRows refuses a read of more rows than reports.maxrows allows.
 func checkReportRows(rows int64) error {
-	if max := config.ReportsMaxRows.GetInt(); rows > int64(max) {
-		return ErrReportTooManyRows{Rows: rows, Max: max}
+	if maxRows := config.ReportsMaxRows.GetInt(); rows > int64(maxRows) {
+		return ErrReportTooManyRows{Rows: rows, Max: maxRows}
 	}
 	return nil
 }

@@ -104,8 +104,8 @@ func RunTimeTrackingReport(ctx context.Context, s *xorm.Session, a web.Auth, req
 	if limit == 0 {
 		limit = reportDefaultLimit
 	}
-	if max := config.ReportsMaxGroups.GetInt(); limit > max {
-		return nil, ErrReportTooManyGroups{Limit: limit, Max: max}
+	if maxGroups := config.ReportsMaxGroups.GetInt(); limit > maxGroups {
+		return nil, ErrReportTooManyGroups{Limit: limit, Max: maxGroups}
 	}
 
 	loc, err := reportLocation(req.Timezone, reportAuthTimezone(s, a))

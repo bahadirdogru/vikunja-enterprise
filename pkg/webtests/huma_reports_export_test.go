@@ -21,7 +21,6 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"net/http"
-	"strings"
 	"testing"
 
 	"code.vikunja.io/api/pkg/license"
@@ -104,9 +103,9 @@ func TestHumaReportExports(t *testing.T) {
 			} `json:"comparison"`
 		}
 		require.NoError(t, json.Unmarshal(raw, &out))
-		assert.Equal(t, float64(20), out.Value)
-		assert.Equal(t, float64(0), out.Comparison.Value)
-		assert.Equal(t, float64(20), out.Comparison.Delta)
+		assert.InDelta(t, float64(20), out.Value, 0)
+		assert.InDelta(t, float64(0), out.Comparison.Value, 0)
+		assert.InDelta(t, float64(20), out.Comparison.Delta, 0)
 		assert.Nil(t, out.Comparison.DeltaPercent)
 
 		code, _, raw = post(user1, "/reports/tasks", `{"compare":"previous_period"}`)
@@ -192,6 +191,6 @@ func TestHumaReportExports(t *testing.T) {
 		require.NoError(t, err)
 		code, _, raw = post(token, "/reports/time-tracking", `{}`)
 		assert.Equal(t, http.StatusForbidden, code, string(raw))
-		assert.True(t, strings.Contains(string(raw), "23005"))
+		assert.Contains(t, string(raw), "23005")
 	})
 }

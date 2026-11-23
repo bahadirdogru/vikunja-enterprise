@@ -326,11 +326,11 @@ func TestReport_ComparePreviousPeriod(t *testing.T) {
 	t.Run("months", func(t *testing.T) {
 		// Feb and Mar: t4 and t5; the two months before: Dec and Jan: t1, t2, t3.
 		rep := runReport(t, cfUser1, req("2026-02-01", "2026-03-31", "month"))
-		assert.Equal(t, float64(2), rep.Value)
+		assert.InDelta(t, float64(2), rep.Value, 0)
 		require.NotNil(t, rep.Comparison)
-		assert.Equal(t, float64(3), rep.Comparison.Value)
+		assert.InDelta(t, float64(3), rep.Comparison.Value, 0)
 		assert.Equal(t, int64(3), rep.Comparison.Total)
-		assert.Equal(t, float64(-1), rep.Comparison.Delta)
+		assert.InDelta(t, float64(-1), rep.Comparison.Delta, 0)
 		require.NotNil(t, rep.Comparison.DeltaPercent)
 		assert.InDelta(t, -33.3333, *rep.Comparison.DeltaPercent, 0.001)
 		assert.Equal(t, "2025-12-01T00:00:00Z", rep.Comparison.From)
@@ -341,10 +341,10 @@ func TestReport_ComparePreviousPeriod(t *testing.T) {
 		// Feb 1 .. Mar 10 (38 days): t4 (Feb 28); t5 is created on Mar 31, after the range. The 38 days after Dec 1
 		// end on Jan 8: t1 (Jan 5). t2 (Jan 11) and t3 (Jan 12) belong to the complete month and must not count.
 		rep := runReport(t, cfUser1, req("2026-02-01", "2026-03-10", "month"))
-		assert.Equal(t, float64(1), rep.Value)
+		assert.InDelta(t, float64(1), rep.Value, 0)
 		require.NotNil(t, rep.Comparison)
-		assert.Equal(t, float64(1), rep.Comparison.Value)
-		assert.Equal(t, float64(0), rep.Comparison.Delta)
+		assert.InDelta(t, float64(1), rep.Comparison.Value, 0)
+		assert.InDelta(t, float64(0), rep.Comparison.Delta, 0)
 		assert.Equal(t, "2025-12-01T00:00:00Z", rep.Comparison.From)
 		assert.Equal(t, "2026-01-08T00:00:00Z", rep.Comparison.To)
 	})
@@ -360,18 +360,18 @@ func TestReport_ComparePreviousPeriod(t *testing.T) {
 
 	t.Run("days, weeks and a previous period without tasks", func(t *testing.T) {
 		rep := runReport(t, cfUser1, req("2026-01-12", "2026-01-12", "day"))
-		assert.Equal(t, float64(1), rep.Value, "t3")
+		assert.InDelta(t, float64(1), rep.Value, 0, "t3")
 		require.NotNil(t, rep.Comparison)
-		assert.Equal(t, float64(1), rep.Comparison.Value, "t2 was created the day before")
-		assert.Equal(t, float64(0), rep.Comparison.Delta)
+		assert.InDelta(t, float64(1), rep.Comparison.Value, 0, "t2 was created the day before")
+		assert.InDelta(t, float64(0), rep.Comparison.Delta, 0)
 		require.NotNil(t, rep.Comparison.DeltaPercent)
-		assert.Equal(t, float64(0), *rep.Comparison.DeltaPercent)
+		assert.InDelta(t, float64(0), *rep.Comparison.DeltaPercent, 0)
 
 		// Week of Jan 5 (Mon) .. Jan 11: t1, t2; the week before has nothing: no percentage.
 		rep = runReport(t, cfUser1, req("2026-01-05", "2026-01-11", "week"))
-		assert.Equal(t, float64(2), rep.Value)
-		assert.Equal(t, float64(0), rep.Comparison.Value)
-		assert.Equal(t, float64(2), rep.Comparison.Delta)
+		assert.InDelta(t, float64(2), rep.Value, 0)
+		assert.InDelta(t, float64(0), rep.Comparison.Value, 0)
+		assert.InDelta(t, float64(2), rep.Comparison.Delta, 0)
 		assert.Nil(t, rep.Comparison.DeltaPercent)
 		assert.Equal(t, "2025-12-29T00:00:00Z", rep.Comparison.From)
 	})
@@ -380,8 +380,8 @@ func TestReport_ComparePreviousPeriod(t *testing.T) {
 		r := req("2026-02-01", "2026-03-31", "month")
 		r.Measure, r.Field = "sum", "cf_"+itoa(env.num)
 		rep := runReport(t, cfUser1, r)
-		assert.Equal(t, float64(20), rep.Value)
-		assert.Equal(t, float64(40), rep.Comparison.Value)
+		assert.InDelta(t, float64(20), rep.Value, 0)
+		assert.InDelta(t, float64(40), rep.Comparison.Value, 0)
 	})
 
 	t.Run("without compare there is no comparison", func(t *testing.T) {
@@ -758,8 +758,8 @@ func TestReport_Workload(t *testing.T) {
 		u1 := rowOf(rep, name1)
 		// t1 = 10 (later), t6 = 5 (next week), t7 no value.
 		assert.Equal(t, []float64{0, 0, 5, 10, 0}, u1.Estimates)
-		assert.Equal(t, float64(15), u1.EstimateTotal)
-		assert.Equal(t, float64(35), rep.Totals.EstimateTotal, "t1 10 + t4 20 + t6 5, the task with two assignees once")
+		assert.InDelta(t, float64(15), u1.EstimateTotal, 0)
+		assert.InDelta(t, float64(35), rep.Totals.EstimateTotal, 0, "t1 10 + t4 20 + t6 5, the task with two assignees once")
 
 		_, err = runWorkload(cfUser1, WorkloadRequest{ProjectID: env.project, EstimateField: "cf_" + itoa(env.sel)})
 		require.Error(t, err)
