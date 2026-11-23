@@ -141,32 +141,36 @@ func ValidateURL(raw string) (*url.URL, error) {
 	return u, nil
 }
 
-// hookPathPrefix is where incoming automation webhooks live; see routes/api/v2/automation_hooks.go.
-const hookPathPrefix = "/api/v2/automation/hooks/"
+// hookPathSegment is where incoming automation webhooks live (see routes/api/v2/automation_hooks.go), possibly
+// behind a path prefix of a reverse proxy.
+const hookPathSegment = "/api/v2/automation/hooks/"
 
-// targetsOwnHooks reports whether the URL is an incoming webhook of this instance. A rule that calls the webhook of
-// a rule of this instance (its own included) turns an event into a run for every request, which nothing on the
-// event chain (origin, depth) can see, so such requests are refused.
+// MarkerHeader is set on every request the engine sends. This instance refuses API requests that carry it, which is
+// what keeps a rule from calling the API of this server (the hook endpoint, the task API) and so from creating work
+// that no run, origin or depth accounts for. Unlike the URL check it does not depend on how the server is addressed.
+// It cannot see a proxy that strips the header, or a second hop through an external service that calls back without it.
+const MarkerHeader = "X-Vikunja-Automation-Depth"
+
+// markerValue is the value of the marker header.
+const markerValue = "1"
+
+// targetsOwnHooks is a cheap first line in front of MarkerHeader: it reports whether the URL looks like an incoming
+// webhook of this instance, whatever the scheme, port, letter case, trailing dot of the host or path prefix. Without a
+// public URL there is no host to compare, so the path alone decides.
 func targetsOwnHooks(u *url.URL) bool {
+	p := strings.ToLower(path.Clean("/" + u.Path))
+	if !strings.Contains(p+"/", hookPathSegment) {
+		return false
+	}
 	own, err := url.Parse(strings.TrimSpace(config.ServicePublicURL.GetString()))
 	if err != nil || own.Hostname() == "" {
-		return false
+		return true
 	}
-	if !strings.EqualFold(u.Hostname(), own.Hostname()) || effectivePort(u) != effectivePort(own) {
-		return false
-	}
-	p := strings.ToLower(path.Clean("/" + u.Path))
-	return strings.HasPrefix(p+"/", hookPathPrefix)
+	return normalizeHost(u.Hostname()) == normalizeHost(own.Hostname())
 }
 
-func effectivePort(u *url.URL) string {
-	if port := u.Port(); port != "" {
-		return port
-	}
-	if u.Scheme == "https" {
-		return "443"
-	}
-	return "80"
+func normalizeHost(h string) string {
+	return strings.TrimRight(strings.ToLower(h), ".")
 }
 
 // Sign returns the value of the signature header: sha256= followed by the hex HMAC-SHA256 of the body, keyed with
@@ -225,6 +229,8 @@ func Do(ctx context.Context, r *Request) (*Response, error) {
 		req.Header.Set(k, v)
 		userHeaders[http.CanonicalHeaderKey(k)] = true
 	}
+	// After the headers of the rule: it cannot remove or change the marker.
+	req.Header.Set(MarkerHeader, markerValue)
 
 	client := clientFactory()
 	// The client is built for this request alone: do not leave its idle connections behind.
@@ -247,6 +253,7 @@ func Do(ctx context.Context, r *Request) (*Response, error) {
 				next.Header.Del(h)
 			}
 		}
+		next.Header.Set(MarkerHeader, markerValue)
 		return nil
 	}
 

@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/netip"
+	neturl "net/url"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -317,6 +318,9 @@ func TestDo_RefusesTheIncomingWebhooksOfThisServer(t *testing.T) {
 		"https://tasks.example.com//api/v2/automation/hooks/abc",
 		"https://tasks.example.com/api/v2/x/../automation/hooks/abc",
 		"https://tasks.example.com/API/V2/Automation/Hooks/abc",
+		"https://tasks.example.com./api/v2/automation/hooks/abc",
+		"http://tasks.example.com:8080/api/v2/automation/hooks/abc",
+		"https://tasks.example.com/vikunja/api/v2/automation/hooks/abc",
 	} {
 		_, err := Do(context.Background(), &Request{URL: refused, Method: "POST"})
 		var invalid *InvalidError
@@ -324,10 +328,9 @@ func TestDo_RefusesTheIncomingWebhooksOfThisServer(t *testing.T) {
 		assert.Contains(t, err.Error(), "incoming webhook of this server", refused)
 	}
 
-	// Other hosts, other ports and other paths are not affected by the check (they fail later, in the guard).
+	// Other hosts and other paths are not affected by the check (they fail later, in the guard).
 	for _, other := range []string{
 		"https://other.example.com/api/v2/automation/hooks/abc",
-		"https://tasks.example.com:8443/api/v2/automation/hooks/abc",
 		"https://tasks.example.com/api/v2/tasks",
 	} {
 		u, err := ValidateURL(other)
@@ -338,4 +341,38 @@ func TestDo_RefusesTheIncomingWebhooksOfThisServer(t *testing.T) {
 	// Relative forms are no URLs at all.
 	_, err := ValidateURL("/api/v2/automation/hooks/abc")
 	require.Error(t, err)
+}
+
+func TestTargetsOwnHooks_WithoutAPublicURLThePathDecides(t *testing.T) {
+	config.ServicePublicURL.Set("")
+	for url, want := range map[string]bool{
+		"https://anything.example.com/api/v2/automation/hooks/abc": true,
+		"https://anything.example.com/api/v2/tasks":                false,
+	} {
+		u, err := neturl.Parse(url)
+		require.NoError(t, err, url)
+		assert.Equal(t, want, targetsOwnHooks(u), url)
+	}
+}
+
+func TestDo_MarksEveryRequestAndKeepsTheMarkerThroughRedirects(t *testing.T) {
+	allowLoopbackListener(t)
+	var first, last atomic.Value
+	mux := http.NewServeMux()
+	mux.HandleFunc("/start", func(w http.ResponseWriter, r *http.Request) {
+		first.Store(r.Header.Get(MarkerHeader))
+		http.Redirect(w, r, "/end", http.StatusFound)
+	})
+	mux.HandleFunc("/end", func(w http.ResponseWriter, r *http.Request) {
+		last.Store(r.Header.Get(MarkerHeader))
+		fmt.Fprint(w, "ok")
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	// A rule cannot override or drop the marker with a header of its own.
+	_, err := Do(context.Background(), &Request{URL: srv.URL + "/start", Headers: map[string]string{MarkerHeader: "0"}})
+	require.NoError(t, err)
+	assert.Equal(t, "1", first.Load())
+	assert.Equal(t, "1", last.Load(), "the redirected request carries the marker too")
 }

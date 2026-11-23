@@ -29,6 +29,7 @@ import (
 	"testing"
 
 	"code.vikunja.io/api/pkg/automation"
+	"code.vikunja.io/api/pkg/automation/outbound"
 	"code.vikunja.io/api/pkg/config"
 	"code.vikunja.io/api/pkg/db"
 	"code.vikunja.io/api/pkg/models"
@@ -281,4 +282,45 @@ func TestHumaAutomation_CatalogHasTheNewTriggersAndActions(t *testing.T) {
 	for _, want := range []string{`"manual"`, `"schedule"`, `"task.overdue"`, `"task.due_soon"`, `"webhook.incoming"`, `"task.create"`, `"wait"`, `"notify"`, `event.payload.`} {
 		assert.Contains(t, body, want)
 	}
+}
+
+func TestAutomation_RequestsSentByTheEngineAreRefusedByTheAPI(t *testing.T) {
+	e, err := setupTestEnv()
+	require.NoError(t, err)
+	user1 := humaTokenFor(t, &testuser1)
+
+	rec := humaRequest(t, e, http.MethodPost, autoRulesPath(1), hookRuleBody, user1, "")
+	require.Equal(t, http.StatusCreated, rec.Code, rec.Body.String())
+	var created struct {
+		Token string `json:"webhook_token"`
+	}
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &created))
+
+	send := func(method, path, body string, marked bool) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(method, path, strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+user1)
+		if marked {
+			req.Header.Set(outbound.MarkerHeader, "1")
+		}
+		rec := httptest.NewRecorder()
+		e.ServeHTTP(rec, req)
+		return rec
+	}
+	hook := "/api/v2/automation/hooks/" + created.Token
+
+	t.Run("the hook endpoint", func(t *testing.T) {
+		assert.Equal(t, http.StatusLoopDetected, send(http.MethodPost, hook, `{}`, true).Code)
+		assert.Equal(t, http.StatusAccepted, send(http.MethodPost, hook, `{}`, false).Code)
+	})
+	t.Run("the v2 task API", func(t *testing.T) {
+		assert.Equal(t, http.StatusLoopDetected, send(http.MethodPost, "/api/v2/projects/1/tasks", `{"title":"v2 from a rule"}`, true).Code)
+		db.AssertMissing(t, "tasks", map[string]interface{}{"title": "v2 from a rule"})
+		assert.Equal(t, http.StatusCreated, send(http.MethodPost, "/api/v2/projects/1/tasks", `{"title":"from a person"}`, false).Code)
+	})
+	t.Run("the v1 task API", func(t *testing.T) {
+		assert.Equal(t, http.StatusLoopDetected, send(http.MethodPut, "/api/v1/projects/1/tasks", `{"title":"from a rule"}`, true).Code)
+		assert.Equal(t, http.StatusCreated, send(http.MethodPut, "/api/v1/projects/1/tasks", `{"title":"from a person"}`, false).Code)
+		db.AssertMissing(t, "tasks", map[string]interface{}{"title": "from a rule"})
+	})
 }

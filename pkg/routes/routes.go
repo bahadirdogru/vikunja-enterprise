@@ -491,6 +491,7 @@ func gateV2AdminRoutes() echo.MiddlewareFunc {
 // attached before any route so Huma's spec and Scalar docs share the
 // resource handlers' stack; unauthenticatedAPIPaths keeps them public.
 func registerAPIRoutesV2(e *echo.Echo, a *echo.Group, noAuthRateLimit, refreshRateLimit echo.MiddlewareFunc) {
+	a.Use(rejectAutomationRequests())
 	a.Use(rejectFormBodies())
 	a.Use(noStoreCacheControl())
 	a.Use(SetupTokenMiddleware())
@@ -542,6 +543,7 @@ func registerAPIRoutes(a *echo.Group, noAuthRateLimit, refreshRateLimit echo.Mid
 	// until a hard refresh).
 	a.Use(noStoreCacheControl())
 	a.Use(rejectFormBodies())
+	a.Use(rejectAutomationRequests())
 
 	// This is the group with no auth
 	// It is its own group to be able to rate limit this based on different heuristics
