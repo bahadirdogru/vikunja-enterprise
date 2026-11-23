@@ -23,6 +23,7 @@ import (
 	"xorm.io/xorm"
 
 	"code.vikunja.io/api/pkg/automation/spec"
+	"code.vikunja.io/api/pkg/config"
 	"code.vikunja.io/api/pkg/db"
 	"code.vikunja.io/api/pkg/models"
 
@@ -251,4 +252,69 @@ func TestIdempotency_RetryIsRefusedWhenTheRecordedStepsNoLongerMatchTheRule(t *t
 	assert.Equal(t, SkipRuleChanged, after.SkipReason)
 	assert.Equal(t, 1, counter("a"))
 	assert.Equal(t, 0, counter("b"))
+}
+
+func TestRetry_ARunThatFailedAfterItsWaitContinuesOnceFromThere(t *testing.T) {
+	reset(t)
+	resetCounters()
+	advance := fakeClock(t)
+	config.AutomationMaxAttempts.Set(1)
+	r := insertRawRule(t, projectOwned, user1, spec.TriggerTaskCreated,
+		rawAct("test.count", "key", "before"),
+		rawAct(spec.ActionWait, "duration", "1h"),
+		rawAct("test.flaky", "key", "after", "fails", 1),
+		rawAct("test.count", "key", "last"),
+	)
+	newTask(t, projectOwned, "task", user1)
+	drain(t)
+	advance(2 * time.Hour)
+	drain(t)
+	run := allRuns(t, r.ID)[0]
+	require.Equal(t, models.AutomationRunFailed, run.Status, "the step after the wait failed")
+	assert.Equal(t, 1, counter("before"))
+	assert.Equal(t, 0, counter("after"))
+
+	retryRun(t, r, run)
+	assert.Equal(t, models.AutomationRunRunning, getRun(t, run.ID).Status)
+	drain(t)
+	drain(t)
+
+	after := getRun(t, run.ID)
+	assert.Equal(t, models.AutomationRunSuccess, after.Status, after.Error)
+	assert.Equal(t, 1, counter("before"), "the steps before the wait are not repeated")
+	assert.Equal(t, 1, counter("after"))
+	assert.Equal(t, 1, counter("last"))
+	assert.Len(t, runSteps(t, run.ID), 4)
+}
+
+func TestRetry_AReapedRunInItsWaitIsContinued(t *testing.T) {
+	reset(t)
+	resetCounters()
+	advance := fakeClock(t)
+	config.AutomationWaitMax.Set(2 * time.Hour)
+	defer config.AutomationWaitMax.Set(30 * 24 * time.Hour)
+	r := insertRawRule(t, projectOwned, user1, spec.TriggerTaskCreated,
+		rawAct(spec.ActionWait, "duration", "1h"),
+		rawAct("test.count", "key", "after"),
+	)
+	newTask(t, projectOwned, "task", user1)
+	drain(t)
+	// The resume event is lost, the reaper ends the run.
+	s := db.NewAutocommitSession()
+	_, err := s.Where("name = ?", spec.EventResume).Cols("status").Update(&models.AutomationEvent{Status: models.AutomationEventDead})
+	require.NoError(t, err)
+	s.Close()
+	advance(40 * time.Hour)
+	n, err := ReapStuckRuns(now())
+	require.NoError(t, err)
+	require.EqualValues(t, 1, n)
+	run := allRuns(t, r.ID)[0]
+	require.Equal(t, models.AutomationRunFailed, run.Status)
+
+	retryRun(t, r, run)
+	drain(t)
+	drain(t)
+	after := getRun(t, run.ID)
+	assert.Equal(t, models.AutomationRunSuccess, after.Status, after.Error)
+	assert.Equal(t, 1, counter("after"))
 }

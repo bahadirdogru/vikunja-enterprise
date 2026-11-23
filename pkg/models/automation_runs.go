@@ -17,8 +17,11 @@
 package models
 
 import (
+	"encoding/json"
+	"strings"
 	"time"
 
+	"code.vikunja.io/api/pkg/automation/spec"
 	"code.vikunja.io/api/pkg/web"
 
 	"xorm.io/builder"
@@ -154,6 +157,13 @@ func (rr *AutomationRunRetry) Create(s *xorm.Session, _ web.Auth) error {
 		return ErrAutomationRunNotRetryable{RunID: run.ID, Status: run.Status}
 	}
 
+	// A run whose last successful step is a wait is continued by a resume event only: the original event is held back
+	// by the wait guard and would leave the run running with nothing to continue it.
+	resumeAt, waiting, err := pendingAutomationWait(s, run.ID)
+	if err != nil {
+		return err
+	}
+
 	// Back to running: the worker resumes a running run at its first step that did not succeed.
 	run.Status = AutomationRunRunning
 	run.Error = ""
@@ -162,12 +172,76 @@ func (rr *AutomationRunRetry) Create(s *xorm.Session, _ web.Auth) error {
 	if _, err = s.ID(run.ID).Cols("status", "error", "skip_reason", "finished").Update(run); err != nil {
 		return err
 	}
-	_, err = s.ID(run.EventID).
-		Cols("status", "attempts", "run_after", "locked_until", "last_error").
-		Update(&AutomationEvent{Status: AutomationEventPending, RunAfter: time.Now()})
+	if waiting {
+		err = insertAutomationResumeEvent(s, run, resumeAt)
+	} else {
+		_, err = s.ID(run.EventID).
+			Cols("status", "attempts", "run_after", "locked_until", "last_error").
+			Update(&AutomationEvent{Status: AutomationEventPending, RunAfter: time.Now()})
+	}
 	if err != nil {
 		return err
 	}
 	rr.Run = run
 	return nil
+}
+
+// AutomationWaitOutput starts the output of a wait step; the rest is the time the run continues at (RFC 3339).
+const AutomationWaitOutput = "wait: "
+
+// pendingAutomationWait reports whether the last successful step of the run is a wait, and until when.
+func pendingAutomationWait(s *xorm.Session, runID int64) (until time.Time, waiting bool, err error) {
+	steps := []*AutomationRunStep{}
+	if err = s.Where("run_id = ? AND status = ?", runID, AutomationStepSuccess).OrderBy("position DESC").Limit(1).Find(&steps); err != nil {
+		return time.Time{}, false, err
+	}
+	if len(steps) == 0 || steps[0].ActionType != spec.ActionWait {
+		return time.Time{}, false, nil
+	}
+	until, err = time.Parse(time.RFC3339, strings.TrimPrefix(steps[0].Output, AutomationWaitOutput))
+	if err != nil {
+		return time.Time{}, false, nil
+	}
+	return until, true, nil
+}
+
+// insertAutomationResumeEvent queues the continuation of a run after its wait, due at the end of the wait or now.
+func insertAutomationResumeEvent(s *xorm.Session, run *AutomationRun, until time.Time) error {
+	payload := map[string]any{}
+	original := &AutomationEvent{}
+	has, err := s.ID(run.EventID).Get(original)
+	if err != nil {
+		return err
+	}
+	if has {
+		_ = json.Unmarshal([]byte(original.Payload), &payload)
+	}
+	taskID := run.TaskID
+	if has {
+		taskID = original.TaskID
+	} else {
+		payload["name"] = spec.EventResume
+		payload["task_id"] = taskID
+		payload["project_id"] = run.ProjectID
+	}
+	payload["rule_id"] = run.RuleID
+	payload["run_id"] = run.ID
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	runAfter := time.Now()
+	if until.After(runAfter) {
+		runAfter = until
+	}
+	_, err = s.Insert(&AutomationEvent{
+		ProjectID: run.ProjectID,
+		TaskID:    taskID,
+		Name:      spec.EventResume,
+		Payload:   string(raw),
+		Status:    AutomationEventPending,
+		RunAfter:  runAfter,
+		RuleID:    run.RuleID,
+	})
+	return err
 }

@@ -35,7 +35,7 @@ import (
 const maxNotifyRecipients = 100
 
 // waitOutput starts the output of a wait step; the rest is the time the run continues at (RFC 3339).
-const waitOutput = "wait: "
+const waitOutput = models.AutomationWaitOutput
 
 // planCreateStandaloneTask creates a task in the project of the rule. When the run has no task, the new task is the
 // task of the actions that follow.
