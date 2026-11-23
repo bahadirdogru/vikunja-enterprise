@@ -1,0 +1,135 @@
+{
+  "targets": [
+    {
+      "target": "title",
+      "kind": "text",
+      "title": "",
+      "public_visible": true,
+      "public_hidden": true
+    },
+    {
+      "target": "description",
+      "kind": "rich_text",
+      "title": "",
+      "public_visible": true,
+      "public_hidden": true
+    },
+    {
+      "target": "due_date",
+      "kind": "date",
+      "title": "",
+      "public_visible": true,
+      "public_hidden": true
+    },
+    {
+      "target": "priority",
+      "kind": "priority",
+      "title": "",
+      "public_visible": true,
+      "public_hidden": true
+    },
+    {
+      "target": "labels",
+      "kind": "labels",
+      "title": "",
+      "public_visible": false,
+      "public_hidden": true
+    },
+    {
+      "target": "attachments",
+      "kind": "files",
+      "title": "",
+      "public_visible": true,
+      "public_hidden": false
+    },
+    {
+      "target": "cf_1",
+      "kind": "number",
+      "title": "Print run",
+      "custom_field_id": 1,
+      "config": {
+        "min": 100,
+        "max": 50000,
+        "precision": 0
+      },
+      "public_visible": true,
+      "public_hidden": true
+    },
+    {
+      "target": "cf_2",
+      "kind": "select",
+      "title": "Stage",
+      "custom_field_id": 2,
+      "options": [
+        {
+          "id": 1,
+          "custom_field_id": 2,
+          "title": "Editor",
+          "color": "#22aa55",
+          "position": 1
+        },
+        {
+          "id": 2,
+          "custom_field_id": 2,
+          "title": "Design",
+          "color": "#e0832d",
+          "position": 2
+        },
+        {
+          "id": 3,
+          "custom_field_id": 2,
+          "title": "Print",
+          "color": "#3b6fe0",
+          "position": 3
+        }
+      ],
+      "public_visible": true,
+      "public_hidden": true
+    },
+    {
+      "target": "cf_3",
+      "kind": "date",
+      "title": "Deadline",
+      "custom_field_id": 3,
+      "public_visible": true,
+      "public_hidden": true
+    },
+    {
+      "target": "cf_4",
+      "kind": "checkbox",
+      "title": "Rush job",
+      "custom_field_id": 4,
+      "public_visible": true,
+      "public_hidden": true
+    },
+    {
+      "target": "cf_5",
+      "kind": "rating",
+      "title": "Quality",
+      "custom_field_id": 5,
+      "config": {
+        "max_rating": 5
+      },
+      "public_visible": true,
+      "public_hidden": true
+    },
+    {
+      "target": "cf_6",
+      "kind": "long_text",
+      "title": "Notes for the printer",
+      "custom_field_id": 6,
+      "public_visible": true,
+      "public_hidden": true
+    },
+    {
+      "target": "cf_7",
+      "kind": "user",
+      "title": "Reviewer",
+      "custom_field_id": 7,
+      "public_visible": false,
+      "public_hidden": true
+    }
+  ],
+  "public_enabled": true,
+  "public_attachments": true
+}

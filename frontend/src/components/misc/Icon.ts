@@ -1,6 +1,8 @@
 import {library} from '@fortawesome/fontawesome-svg-core'
 import {
 	faAlignLeft,
+	faFileLines,
+	faTriangleExclamation,
 	faAngleLeft,
 	faAngleRight,
 	faArrowDown,
@@ -272,6 +274,8 @@ library.add(faChartLine)
 library.add(faChartPie)
 library.add(faChartSimple)
 library.add(faGrip)
+library.add(faFileLines)
+library.add(faTriangleExclamation)
 
 // overwriting the wrong types
 export default FontAwesomeIcon as unknown as FontAwesomeIconFixedTypes

@@ -8,6 +8,9 @@
 				<p>{{ $t('quickActions.notLoggedIn') }}</p>
 			</div>
 		</template>
+		<template v-else-if="isStandalone">
+			<RouterView />
+		</template>
 		<template v-else>
 			<a
 				href="#main-content"
@@ -87,6 +90,9 @@ if (isQuickAddMode) {
 }
 
 const route = useRoute()
+
+// Standalone pages bring their own layout and work without a session (form links).
+const isStandalone = computed(() => route.meta?.standalone === true)
 
 const showAuthLayout = computed(() => authStore.authUser && typeof route.name === 'string' && !AUTH_ROUTE_NAMES.has(route.name))
 

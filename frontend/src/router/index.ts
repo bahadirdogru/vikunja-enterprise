@@ -64,6 +64,16 @@ const router = createRouter({
 			component: NotFoundComponent,
 		},
 		{
+			// A form link: no app shell, no login, no redirect to the login page.
+			path: '/forms/:token',
+			name: 'forms.public',
+			component: () => import('@/views/forms/PublicFormPage.vue'),
+			props: true,
+			meta: {
+				standalone: true,
+			},
+		},
+		{
 			path: '/login',
 			name: 'user.login',
 			component: Login,
@@ -352,6 +362,15 @@ const router = createRouter({
 			props: route => ({projectId: Number(route.params.projectId as string)}),
 		},
 		{
+			path: '/projects/:projectId(\\d+)/settings/forms',
+			name: 'project.settings.forms',
+			component: () => import('@/views/project/settings/ProjectSettingsForms.vue'),
+			meta: {
+				showAsModal: true,
+			},
+			props: route => ({projectId: Number(route.params.projectId as string)}),
+		},
+		{
 			path: '/projects/:projectId(\\d+)/settings/delete',
 			name: 'project.settings.delete',
 			component: () => import('@/views/project/settings/ProjectSettingsDelete.vue'),
@@ -596,6 +615,11 @@ export async function getAuthForRoute(to: RouteLocation, authStore: {
 	verifyEmail: (token: string) => Promise<unknown>,
 	refreshUserInfo: () => Promise<unknown>,
 }) {
+	// Standalone pages (form links) are open to everyone; they never send a visitor to the login page.
+	if (to.meta?.standalone) {
+		return
+	}
+
 	// vue-router already decoded to.hash once, so slicing off the prefix yields the original
 	// fullPath (e.g. /oauth/authorize?...) losslessly — no extra decodeURIComponent needed.
 	const redirectDest = to.name === 'user.login' && to.hash.startsWith(REDIRECT_HASH_PREFIX)

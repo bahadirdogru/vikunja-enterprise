@@ -1763,6 +1763,14 @@
     "24008": "You cannot decide on your own request.",
     "24009": "The approval request is not valid.",
     "24010": "Share links cannot request approvals.",
+    "25001": "This form does not exist.",
+    "25002": "The form is not valid.",
+    "25003": "This form takes no submissions at the moment.",
+    "25004": "Please sign in to use this form.",
+    "25005": "You are not allowed to use this form.",
+    "25006": "Some answers are not valid.",
+    "25007": "Too many submissions. Try again later.",
+    "25008": "Forms are switched off on this server.",
     "error": "Error",
     "success": "Success",
     "0001": "You're not allowed to do that.",
@@ -2968,6 +2976,7 @@
     "trigger": {
       "approval_requested": "An approval is requested",
       "approval_resolved": "An approval is resolved",
+      "form_submitted": "A form is submitted",
       "task_created": "A task is created",
       "task_updated": "A task is updated",
       "task_completed": "A task is completed",
@@ -2986,6 +2995,7 @@
       "from_status_id": "From status (optional)",
       "to_status_id": "To status (optional)",
       "to_category": "To category (optional)",
+      "form_id": "Form (optional)",
       "field_id": "Custom field (optional)"
     },
     "op": {
@@ -3010,6 +3020,10 @@
       "event_new_approvers": "Approval request: approvers",
       "event_new_outcome": "Approval request: outcome",
       "event_new_cancel_reason": "Approval request: reason for cancelling",
+      "event_new_form_id": "Form: id",
+      "event_new_form_title": "Form: title",
+      "event_new_submitter_name": "Form: name of the submitter",
+      "event_new_submitter_email": "Form: e-mail address of the submitter",
       "title": "Title",
       "description": "Description",
       "done": "Done",
@@ -3136,6 +3150,300 @@
         "title": "Delete this secret?",
         "text": "Rules that use “{name}” keep their definition and fail at the step that needs it."
       }
+    }
+  },
+  "forms": {
+    "title": "Forms",
+    "new": "New form",
+    "newForm": "New form",
+    "editForm": "Edit form",
+    "save": "Save form",
+    "saved": "The form was saved.",
+    "deleted": "The form was deleted.",
+    "backToList": "Back to the forms",
+    "copyOf": "Copy of {title}",
+    "onlyAdminsCanEdit": "Only project admins can manage forms.",
+    "leave": {
+      "title": "Leave without saving?",
+      "text": "The form has changes that are not saved. If you leave now they are lost."
+    },
+    "empty": {
+      "title": "No forms yet",
+      "text": "A form lets people send a request without learning the app: every answer becomes a task in this project, with the answers in its fields. Share the link with your team or, if you choose, with anyone."
+    },
+    "on": "Open",
+    "off": "Closed",
+    "enableForm": "Accept submissions for the form \"{title}\"",
+    "copyLink": "Copy the link of \"{title}\"",
+    "openForm": "Open \"{title}\" in a new tab",
+    "edit": "Edit \"{title}\"",
+    "submissionsOf": "Show the submissions of \"{title}\"",
+    "duplicate": "Duplicate \"{title}\"",
+    "delete": "Delete \"{title}\"",
+    "disabledBadge": "Switched off by the system",
+    "disabledReason": {
+      "owner_not_writer": "The person who last saved this form can no longer create tasks in the project.",
+      "owner_unavailable": "The person who last saved this form no longer has an active account.",
+      "custom_field_deleted": "A custom field this form asks for was deleted.",
+      "status_deleted": "The initial status this form uses was deleted.",
+      "label_deleted": "A label this form uses was deleted.",
+      "duplicated": "This copy of a project's form is switched off until you have checked it.",
+      "duplicated_unmapped_reference": "This copy of a project's form refers to something that was not copied. Check its fields, then switch it on.",
+      "unknown": "The system switched this form off ({reason})."
+    },
+    "deleteConfirm": {
+      "title": "Delete this form?",
+      "text": "The link of \"{title}\" stops working and its list of submissions is deleted. The tasks it created are kept."
+    },
+    "access": {
+      "members": "Project members",
+      "membersShort": "Members",
+      "membersHelp": "Only signed-in people who can see this project.",
+      "users": "Signed-in users",
+      "usersShort": "Signed-in users",
+      "usersHelp": "Anyone with an account on this server.",
+      "public": "Anyone with the link",
+      "publicShort": "Public",
+      "publicHelp": "No account needed. Share it with people outside your team."
+    },
+    "target": {
+      "title": "Task title",
+      "description": "Description",
+      "due_date": "Due date",
+      "priority": "Priority",
+      "labels": "Labels",
+      "attachments": "Attachments"
+    },
+    "tabs": {
+      "fields": "Fields",
+      "settings": "Settings",
+      "share": "Share"
+    },
+    "presets": {
+      "heading": "Start from an example",
+      "thanks": "Thank you, we have received your request.",
+      "simple": {
+        "title": "Simple request",
+        "text": "A title and a description.",
+        "formTitle": "Request",
+        "title_label": "What do you need?",
+        "description_label": "Details"
+      },
+      "dueDate": {
+        "title": "Request with a due date",
+        "text": "A title, a description and the date it is needed.",
+        "formTitle": "Request with a due date",
+        "due_label": "Needed by"
+      },
+      "bug": {
+        "title": "Bug report",
+        "text": "What happened, the details and how urgent it is.",
+        "formTitle": "Report a problem",
+        "title_label": "What went wrong?",
+        "description_label": "What did you expect, and what happened instead?",
+        "priority_label": "How urgent is it?"
+      }
+    },
+    "submissions": {
+      "count": "{count} submission | {count} submissions",
+      "show": "Show the submissions ({count})",
+      "back": "Back",
+      "heading": "Submissions",
+      "title": "Submissions of \"{title}\"",
+      "empty": "Nobody has submitted this form yet.",
+      "date": "Received",
+      "submitter": "Submitted by",
+      "task": "Task",
+      "anonymous": "Anonymous",
+      "signedIn": "signed in"
+    },
+    "builder": {
+      "sections": "Parts of the form",
+      "formTitle": "Form title",
+      "formTitlePlaceholder": "For example: Cover request",
+      "issueCount": "{count} problem | {count} problems",
+      "description": "Introduction",
+      "descriptionPlaceholder": "Tell people what this form is for.",
+      "titleRuleHeading": "The task needs a title.",
+      "titleRule": "Ask for the title (shown and required), or hide it and give it a value. A hidden title can use the placeholders listed under the field, for example to include the name of the submitter.",
+      "fieldList": "Fields of the form",
+      "noFields": "No fields yet. Add the title first.",
+      "addField": "Add field",
+      "taskFields": "Task fields",
+      "customFields": "Custom fields",
+      "added": "added",
+      "alreadyAdded": "Already in the form.",
+      "notOnPublic": "This cannot be part of a public form.",
+      "presetOnPublic": "On a public form this can only be set by you, not asked.",
+      "moveUp": "Move \"{name}\" up",
+      "moveDown": "Move \"{name}\" down",
+      "removeField": "Remove \"{name}\" from the form",
+      "required": "Required",
+      "hiddenBadge": "Not shown",
+      "needsAttention": "Check this",
+      "label": "Question",
+      "labelHiddenPlaceholder": "Not shown to the submitter",
+      "help": "Help text",
+      "requiredLabel": "Required",
+      "hiddenLabel": "Do not show this field",
+      "hiddenHelp": "Not shown to the submitter. Every task gets the value below.",
+      "hiddenLocked": "This can only be set by you on a public form, so it stays hidden. Every task gets the value below.",
+      "labelOptions": "Labels the submitter can choose from",
+      "noLabels": "There are no labels you can use.",
+      "pickOptionsFirst": "Choose the labels to offer first.",
+      "noDefault": "No default",
+      "defaultShown": "Starting value (optional)",
+      "defaultHidden": "Value every task gets",
+      "placeholders": "Placeholders:",
+      "attachmentsHelp": "Submitters can attach files. The server limits how many and how large they may be."
+    },
+    "settings": {
+      "access": "Who can submit",
+      "publicWarningTitle": "Anyone with the link can create tasks in this project.",
+      "publicWarning": "Keep the link to the people you mean to reach. Spam is slowed down by limits and a hidden trap field, but it cannot be ruled out. You can close the form or create a new link at any time.",
+      "publicBlockers": "These fields cannot be on a public form:",
+      "blockerAsked": "cannot be asked on a public form. Hide it and give it a value, or remove it.",
+      "blockerHidden": "cannot be used on a public form.",
+      "enabled": "The form accepts submissions",
+      "initialStatus": "Status of new tasks",
+      "initialStatusDefault": "The default status of the workflow",
+      "initialStatusHelp": "The project has a workflow; tasks from this form start in the status you pick.",
+      "assignees": "Assign new tasks to",
+      "assigneesHelp": "These people are assigned to every task the form creates.",
+      "successMessage": "Message after sending",
+      "redirectUrl": "Send people to a web address after sending",
+      "redirectHelp": "Optional. Must start with http:// or https://. People see where they are going before they are sent.",
+      "submitAnother": "Offer \"Submit another response\"",
+      "closeDate": "Close on",
+      "closeDateHelp": "After this moment the form takes no submissions.",
+      "clear": "Clear",
+      "maxSubmissions": "Maximum number of submissions",
+      "maxSubmissionsHelp": "0 means no limit.",
+      "notify": "Notify when someone submits",
+      "notifyHelp": "These people get a notification for every submission.",
+      "submitter": "Details about the submitter",
+      "submitterHelp": "Asked at the end of the form and added to the task description.",
+      "submitterOnlyPublic": "Only asked on public forms. Signed-in people are identified by their account.",
+      "mode": {
+        "off": "Do not ask",
+        "optional": "Ask, optional",
+        "required": "Ask, required"
+      },
+      "attachmentsNote": "The server decides how many files and how large they may be."
+    },
+    "share": {
+      "saveFirst": "Save the form to get its link.",
+      "unsaved": "You have unsaved changes. The link shows the last saved version.",
+      "off": "The form is closed. The link shows that it takes no submissions.",
+      "link": "Link to the form",
+      "copy": "Copy link",
+      "copied": "Copied to the clipboard.",
+      "copyFailed": "Could not copy. Select the text and copy it by hand.",
+      "open": "Open",
+      "who": {
+        "members": "Only people who can see this project can use it; they sign in first.",
+        "users": "Anyone with an account on this server can use it; they sign in first.",
+        "public": "Anyone who has the link can use it, no account needed."
+      },
+      "regenerate": "Create a new link",
+      "regenerateHelp": "Use this if the link got to people it should not have.",
+      "regenerateConfirm": {
+        "title": "Create a new link?",
+        "text": "The old link stops working at once. Pages and mails that contain it will show \"This form does not exist\"."
+      },
+      "regenerated": "The form has a new link.",
+      "embed": "Embed in a web page",
+      "copyEmbed": "Copy embed code",
+      "embedHelp": "Paste this into the HTML of a page. Some servers or proxies forbid embedding; if the frame stays empty, link to the form instead.",
+      "noQr": "A QR code is not offered yet."
+    },
+    "preview": {
+      "title": "Preview",
+      "hide": "Hide preview",
+      "show": "Show preview",
+      "help": "This is what people see. You can try it out; nothing is sent.",
+      "nothingSent": "This is a preview. Nothing was sent."
+    },
+    "errors": {
+      "string": "Enter text.",
+      "tooLong": "At most {max} characters.",
+      "placeholder": "Unknown placeholder {name}.",
+      "date": "Enter a date like 2026-12-31.",
+      "priority": "Choose a priority between 0 and {max}.",
+      "labels": "Choose labels from the list.",
+      "attachmentsDefault": "Attachments have no starting value.",
+      "titleRequired": "The form needs a title.",
+      "publicDisabled": "Public forms are switched off on this server.",
+      "tooManyFields": "A form can have at most {max} fields.",
+      "targetGone": "This field no longer exists in the project. Remove it.",
+      "targetTwice": "This is already in the form.",
+      "labelRequired": "Write the question people will see.",
+      "hiddenNeedsDefault": "A required field that is not shown needs a value.",
+      "titleRule": "Ask for the title (shown and required), or hide it and give it a value.",
+      "attachmentsPublic": "Attachments are not available on public forms on this server.",
+      "notPublic": "This cannot be asked on a public form. Hide it and give it a value, or remove it.",
+      "hiddenNotAllowed": "This cannot be used on a public form.",
+      "attachmentsHidden": "Attachments cannot be hidden.",
+      "labelOptions": "Choose at least one label to offer.",
+      "labelDefaultInOptions": "The starting value has to be one of the labels on offer.",
+      "redirect": "Enter a web address starting with http:// or https://.",
+      "maxSubmissions": "Enter 0 or a whole number."
+    },
+    "public": {
+      "pageTitle": "Form",
+      "required": "required",
+      "clear": "Clear",
+      "choose": "Choose…",
+      "stars": "{n} of {max}",
+      "fileLimits": "Up to {count} files, {size} each.",
+      "removeFile": "Remove {name}",
+      "remove": "Remove",
+      "aboutYou": "About you",
+      "name": "Your name",
+      "email": "Your e-mail address",
+      "honeypot": "Leave this field empty",
+      "submit": "Send",
+      "fixErrors": "Please check {count} answer. | Please check {count} answers.",
+      "errors": {
+        "required": "This field is required.",
+        "tooManyFiles": "You can attach at most {max} files.",
+        "fileTooLarge": "{name} is larger than {max}."
+      },
+      "loading": "Loading the form",
+      "notFound": {
+        "title": "This form does not exist",
+        "text": "The link may be wrong or the form was deleted or its link was replaced. Ask the person who sent it for the current link."
+      },
+      "unavailable": {
+        "title": "This form is not available",
+        "closed": "This form is closed and takes no more answers.",
+        "full": "This form has received the maximum number of answers and takes no more.",
+        "disabled": "This form is switched off at the moment. Try again later or ask the person who sent it."
+      },
+      "login": {
+        "title": "Please sign in",
+        "text": "This form is only for signed-in people. Sign in, and you will come back to the form.",
+        "button": "Sign in"
+      },
+      "forbidden": {
+        "title": "You cannot use this form",
+        "text": "Your account is not allowed to submit this form. Ask the person who sent it."
+      },
+      "rate": {
+        "title": "Too many requests"
+      },
+      "rateLimited": "Too many submissions. Please try again in {minutes} minute. | Too many submissions. Please try again in {minutes} minutes.",
+      "rateLimitedNoTime": "Too many submissions. Please try again in a little while.",
+      "error": {
+        "title": "Something went wrong"
+      },
+      "networkError": "The form could not be reached. Check your connection and try again.",
+      "failed": "The form could not be sent. Please try again.",
+      "retry": "Try again",
+      "thanks": "Thank you, your answer was sent.",
+      "redirecting": "You will be sent to {host} in a moment.",
+      "redirectNow": "Go there now",
+      "another": "Submit another response"
     }
   }
 }

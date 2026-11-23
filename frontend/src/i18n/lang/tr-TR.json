@@ -1652,6 +1652,14 @@
 		"24008": "Kendi talebinize karar veremezsiniz.",
 		"24009": "Onay talebi geçerli değil.",
 		"24010": "Paylaşım bağlantılarıyla onay istenemez.",
+		"25001": "Bu form yok.",
+		"25002": "Form geçerli değil.",
+		"25003": "Bu form şu an yanıt almıyor.",
+		"25004": "Bu formu kullanmak için lütfen oturum açın.",
+		"25005": "Bu formu kullanma izniniz yok.",
+		"25006": "Bazı yanıtlar geçerli değil.",
+		"25007": "Çok fazla gönderim yapıldı. Daha sonra tekrar deneyin.",
+		"25008": "Bu sunucuda formlar kapalı.",
 		"1001": "Bu kullanıcı adı zaten kapılmış.",
 		"1002": "Bu e-posta adresiyle kayıtlı bir hesap zaten var.",
 		"1004": "Kullanıcı adı ve şifre belirtilmedi.",
@@ -2782,6 +2790,7 @@
 		"trigger": {
 			"approval_requested": "Bir onay istendiğinde",
 			"approval_resolved": "Bir onay sonuçlandığında",
+			"form_submitted": "Bir form gönderildiğinde",
 			"task_created": "Bir görev oluşturulduğunda",
 			"task_updated": "Bir görev güncellendiğinde",
 			"task_completed": "Bir görev tamamlandığında",
@@ -2800,6 +2809,7 @@
 			"from_status_id": "Önceki durum (isteğe bağlı)",
 			"to_status_id": "Yeni durum (isteğe bağlı)",
 			"to_category": "Yeni kategori (isteğe bağlı)",
+			"form_id": "Form (isteğe bağlı)",
 			"field_id": "Özel alan (isteğe bağlı)"
 		},
 		"op": {
@@ -2824,6 +2834,10 @@
 			"event_new_approvers": "Onay talebi: onaylayanlar",
 			"event_new_outcome": "Onay talebi: sonuç",
 			"event_new_cancel_reason": "Onay talebi: iptal nedeni",
+			"event_new_form_id": "Form: kimlik",
+			"event_new_form_title": "Form: başlık",
+			"event_new_submitter_name": "Form: gönderenin adı",
+			"event_new_submitter_email": "Form: gönderenin e-posta adresi",
 			"title": "Başlık",
 			"description": "Açıklama",
 			"done": "Tamamlandı",
@@ -2950,6 +2964,300 @@
 				"title": "Bu gizli anahtar silinsin mi?",
 				"text": "“{name}” anahtarını kullanan kuralların tanımı korunur ama ihtiyaç duyan adımda hata verirler."
 			}
+		}
+	},
+	"forms": {
+		"title": "Formlar",
+		"new": "Yeni form",
+		"newForm": "Yeni form",
+		"editForm": "Formu düzenle",
+		"save": "Formu kaydet",
+		"saved": "Form kaydedildi.",
+		"deleted": "Form silindi.",
+		"backToList": "Formlara dön",
+		"copyOf": "{title} kopyası",
+		"onlyAdminsCanEdit": "Formları yalnızca proje yöneticileri yönetebilir.",
+		"leave": {
+			"title": "Kaydetmeden çıkılsın mı?",
+			"text": "Formda kaydedilmemiş değişiklikler var. Şimdi çıkarsanız kaybolur."
+		},
+		"empty": {
+			"title": "Henüz form yok",
+			"text": "Form, insanların uygulamayı öğrenmeden talep göndermesini sağlar: her yanıt bu projede, yanıtları alanlarında taşıyan bir göreve dönüşür. Bağlantıyı ekibinizle ya da isterseniz herkesle paylaşabilirsiniz."
+		},
+		"on": "Açık",
+		"off": "Kapalı",
+		"enableForm": "\"{title}\" formu yanıt alsın",
+		"copyLink": "\"{title}\" bağlantısını kopyala",
+		"openForm": "\"{title}\" formunu yeni sekmede aç",
+		"edit": "\"{title}\" formunu düzenle",
+		"submissionsOf": "\"{title}\" yanıtlarını göster",
+		"duplicate": "\"{title}\" formunu çoğalt",
+		"delete": "\"{title}\" formunu sil",
+		"disabledBadge": "Sistem tarafından kapatıldı",
+		"disabledReason": {
+			"owner_not_writer": "Formu en son kaydeden kişi artık projede görev oluşturamıyor.",
+			"owner_unavailable": "Formu en son kaydeden kişinin etkin bir hesabı kalmadı.",
+			"custom_field_deleted": "Formun sorduğu bir özel alan silindi.",
+			"status_deleted": "Formun kullandığı başlangıç durumu silindi.",
+			"label_deleted": "Formun kullandığı bir etiket silindi.",
+			"duplicated": "Projeden kopyalanan bu form, siz kontrol edene kadar kapalıdır.",
+			"duplicated_unmapped_reference": "Projeden kopyalanan bu form, kopyalanmayan bir şeye başvuruyor. Alanlarını kontrol edip açın.",
+			"unknown": "Sistem bu formu kapattı ({reason})."
+		},
+		"deleteConfirm": {
+			"title": "Bu form silinsin mi?",
+			"text": "\"{title}\" bağlantısı çalışmaz olur ve yanıt listesi silinir. Formun oluşturduğu görevler korunur."
+		},
+		"access": {
+			"members": "Proje üyeleri",
+			"membersShort": "Üyeler",
+			"membersHelp": "Yalnızca bu projeyi görebilen, oturum açmış kişiler.",
+			"users": "Oturum açmış kullanıcılar",
+			"usersShort": "Oturum açanlar",
+			"usersHelp": "Bu sunucuda hesabı olan herkes.",
+			"public": "Bağlantıya sahip herkes",
+			"publicShort": "Herkese açık",
+			"publicHelp": "Hesap gerekmez. Ekibiniz dışındaki kişilerle paylaşabilirsiniz."
+		},
+		"target": {
+			"title": "Görev başlığı",
+			"description": "Açıklama",
+			"due_date": "Bitiş tarihi",
+			"priority": "Öncelik",
+			"labels": "Etiketler",
+			"attachments": "Ekler"
+		},
+		"tabs": {
+			"fields": "Alanlar",
+			"settings": "Ayarlar",
+			"share": "Paylaş"
+		},
+		"presets": {
+			"heading": "Bir örnekle başlayın",
+			"thanks": "Teşekkürler, talebinizi aldık.",
+			"simple": {
+				"title": "Basit talep",
+				"text": "Bir başlık ve bir açıklama.",
+				"formTitle": "Talep",
+				"title_label": "Neye ihtiyacınız var?",
+				"description_label": "Ayrıntılar"
+			},
+			"dueDate": {
+				"title": "Tarihli talep",
+				"text": "Bir başlık, bir açıklama ve ihtiyaç duyulan tarih.",
+				"formTitle": "Tarihli talep",
+				"due_label": "Ne zamana kadar gerekli?"
+			},
+			"bug": {
+				"title": "Hata bildirimi",
+				"text": "Ne olduğu, ayrıntılar ve aciliyeti.",
+				"formTitle": "Sorun bildir",
+				"title_label": "Ne ters gitti?",
+				"description_label": "Ne bekliyordunuz, bunun yerine ne oldu?",
+				"priority_label": "Ne kadar acil?"
+			}
+		},
+		"submissions": {
+			"count": "{count} yanıt | {count} yanıt",
+			"show": "Yanıtları göster ({count})",
+			"back": "Geri",
+			"heading": "Yanıtlar",
+			"title": "\"{title}\" yanıtları",
+			"empty": "Bu formu henüz kimse göndermedi.",
+			"date": "Alındı",
+			"submitter": "Gönderen",
+			"task": "Görev",
+			"anonymous": "Anonim",
+			"signedIn": "oturum açmış"
+		},
+		"builder": {
+			"sections": "Formun bölümleri",
+			"formTitle": "Form başlığı",
+			"formTitlePlaceholder": "Örneğin: Yedek ders talebi",
+			"issueCount": "{count} sorun | {count} sorun",
+			"description": "Giriş metni",
+			"descriptionPlaceholder": "Bu formun ne için olduğunu anlatın.",
+			"titleRuleHeading": "Görevin bir başlığı olmalı.",
+			"titleRule": "Başlığı sorun (gösterilsin ve zorunlu olsun) ya da gizleyip bir değer verin. Gizli bir başlık, alanın altında listelenen yer tutucuları kullanabilir; örneğin gönderenin adını ekleyebilir.",
+			"fieldList": "Formun alanları",
+			"noFields": "Henüz alan yok. Önce başlığı ekleyin.",
+			"addField": "Alan ekle",
+			"taskFields": "Görev alanları",
+			"customFields": "Özel alanlar",
+			"added": "eklendi",
+			"alreadyAdded": "Formda zaten var.",
+			"notOnPublic": "Bu, herkese açık bir formda olamaz.",
+			"presetOnPublic": "Herkese açık formda bunu yalnızca siz ayarlayabilirsiniz, sorulamaz.",
+			"moveUp": "\"{name}\" alanını yukarı taşı",
+			"moveDown": "\"{name}\" alanını aşağı taşı",
+			"removeField": "\"{name}\" alanını formdan kaldır",
+			"required": "Zorunlu",
+			"hiddenBadge": "Gösterilmez",
+			"needsAttention": "Kontrol edin",
+			"label": "Soru",
+			"labelHiddenPlaceholder": "Gönderene gösterilmez",
+			"help": "Yardım metni",
+			"requiredLabel": "Zorunlu",
+			"hiddenLabel": "Bu alanı gösterme",
+			"hiddenHelp": "Gönderene gösterilmez. Her göreve aşağıdaki değer verilir.",
+			"hiddenLocked": "Herkese açık formda bunu yalnızca siz ayarlayabilirsiniz, bu yüzden gizli kalır. Her göreve aşağıdaki değer verilir.",
+			"labelOptions": "Gönderenin seçebileceği etiketler",
+			"noLabels": "Kullanabileceğiniz etiket yok.",
+			"pickOptionsFirst": "Önce sunulacak etiketleri seçin.",
+			"noDefault": "Varsayılan yok",
+			"defaultShown": "Başlangıç değeri (isteğe bağlı)",
+			"defaultHidden": "Her görevin alacağı değer",
+			"placeholders": "Yer tutucular:",
+			"attachmentsHelp": "Gönderenler dosya ekleyebilir. Kaç dosya ve ne kadar büyük olabileceğini sunucu sınırlar."
+		},
+		"settings": {
+			"access": "Kimler gönderebilir",
+			"publicWarningTitle": "Bağlantıya sahip herkes bu projede görev oluşturabilir.",
+			"publicWarning": "Bağlantıyı yalnızca ulaşmak istediğiniz kişilerle paylaşın. Spam, sınırlar ve gizli bir tuzak alanla yavaşlatılır ama tümüyle engellenemez. Formu istediğiniz zaman kapatabilir ya da yeni bir bağlantı oluşturabilirsiniz.",
+			"publicBlockers": "Bu alanlar herkese açık formda olamaz:",
+			"blockerAsked": "herkese açık formda sorulamaz. Gizleyip bir değer verin ya da kaldırın.",
+			"blockerHidden": "herkese açık formda kullanılamaz.",
+			"enabled": "Form yanıt alıyor",
+			"initialStatus": "Yeni görevlerin durumu",
+			"initialStatusDefault": "İş akışının varsayılan durumu",
+			"initialStatusHelp": "Projede bir iş akışı var; bu formdan gelen görevler seçtiğiniz durumda başlar.",
+			"assignees": "Yeni görevleri şu kişilere ata",
+			"assigneesHelp": "Bu kişiler, formun oluşturduğu her göreve atanır.",
+			"successMessage": "Gönderdikten sonraki mesaj",
+			"redirectUrl": "Gönderdikten sonra bir web adresine yönlendir",
+			"redirectHelp": "İsteğe bağlı. http:// veya https:// ile başlamalı. Yönlendirilmeden önce gidecekleri adres gösterilir.",
+			"submitAnother": "\"Bir yanıt daha gönder\" seçeneğini sun",
+			"closeDate": "Şu tarihte kapat",
+			"closeDateHelp": "Bu andan sonra form yanıt almaz.",
+			"clear": "Temizle",
+			"maxSubmissions": "En fazla yanıt sayısı",
+			"maxSubmissionsHelp": "0 sınırsız demektir.",
+			"notify": "Biri gönderdiğinde bildir",
+			"notifyHelp": "Bu kişilere her yanıt için bildirim gider.",
+			"submitter": "Gönderen hakkında bilgiler",
+			"submitterHelp": "Formun sonunda sorulur ve görev açıklamasına eklenir.",
+			"submitterOnlyPublic": "Yalnızca herkese açık formlarda sorulur. Oturum açmış kişiler hesaplarıyla tanınır.",
+			"mode": {
+				"off": "Sorma",
+				"optional": "Sor, isteğe bağlı",
+				"required": "Sor, zorunlu"
+			},
+			"attachmentsNote": "Kaç dosya ve ne kadar büyük olabileceğine sunucu karar verir."
+		},
+		"share": {
+			"saveFirst": "Bağlantısını almak için formu kaydedin.",
+			"unsaved": "Kaydedilmemiş değişiklikleriniz var. Bağlantı, en son kaydedilen sürümü gösterir.",
+			"off": "Form kapalı. Bağlantı, yanıt almadığını gösterir.",
+			"link": "Formun bağlantısı",
+			"copy": "Bağlantıyı kopyala",
+			"copied": "Panoya kopyalandı.",
+			"copyFailed": "Kopyalanamadı. Metni seçip elle kopyalayın.",
+			"open": "Aç",
+			"who": {
+				"members": "Yalnızca bu projeyi görebilen kişiler kullanabilir; önce oturum açarlar.",
+				"users": "Bu sunucuda hesabı olan herkes kullanabilir; önce oturum açarlar.",
+				"public": "Bağlantıya sahip herkes kullanabilir, hesap gerekmez."
+			},
+			"regenerate": "Yeni bağlantı oluştur",
+			"regenerateHelp": "Bağlantı olmaması gereken kişilere ulaştıysa kullanın.",
+			"regenerateConfirm": {
+				"title": "Yeni bağlantı oluşturulsun mu?",
+				"text": "Eski bağlantı hemen çalışmaz olur. Onu içeren sayfalar ve e-postalar \"Bu form yok\" gösterir."
+			},
+			"regenerated": "Formun yeni bir bağlantısı var.",
+			"embed": "Bir web sayfasına göm",
+			"copyEmbed": "Gömme kodunu kopyala",
+			"embedHelp": "Bunu bir sayfanın HTML'ine yapıştırın. Bazı sunucular ya da vekiller gömmeyi yasaklar; çerçeve boş kalırsa forma bağlantı verin.",
+			"noQr": "QR kod henüz sunulmuyor."
+		},
+		"preview": {
+			"title": "Önizleme",
+			"hide": "Önizlemeyi gizle",
+			"show": "Önizlemeyi göster",
+			"help": "İnsanların göreceği görünüm bu. Deneyebilirsiniz; hiçbir şey gönderilmez.",
+			"nothingSent": "Bu bir önizlemedir. Hiçbir şey gönderilmedi."
+		},
+		"errors": {
+			"string": "Bir metin girin.",
+			"tooLong": "En fazla {max} karakter.",
+			"placeholder": "Bilinmeyen yer tutucu: {name}.",
+			"date": "2026-12-31 gibi bir tarih girin.",
+			"priority": "0 ile {max} arasında bir öncelik seçin.",
+			"labels": "Listeden etiket seçin.",
+			"attachmentsDefault": "Eklerin başlangıç değeri olmaz.",
+			"titleRequired": "Formun bir başlığı olmalı.",
+			"publicDisabled": "Bu sunucuda herkese açık formlar kapalı.",
+			"tooManyFields": "Bir formda en fazla {max} alan olabilir.",
+			"targetGone": "Bu alan artık projede yok. Kaldırın.",
+			"targetTwice": "Bu zaten formda var.",
+			"labelRequired": "İnsanların göreceği soruyu yazın.",
+			"hiddenNeedsDefault": "Gösterilmeyen zorunlu bir alanın değeri olmalı.",
+			"titleRule": "Başlığı sorun (gösterilsin ve zorunlu olsun) ya da gizleyip bir değer verin.",
+			"attachmentsPublic": "Bu sunucuda ekler herkese açık formlarda kullanılamaz.",
+			"notPublic": "Bu, herkese açık formda sorulamaz. Gizleyip bir değer verin ya da kaldırın.",
+			"hiddenNotAllowed": "Bu, herkese açık formda kullanılamaz.",
+			"attachmentsHidden": "Ekler gizlenemez.",
+			"labelOptions": "Sunulacak en az bir etiket seçin.",
+			"labelDefaultInOptions": "Başlangıç değeri, sunulan etiketlerden biri olmalı.",
+			"redirect": "http:// veya https:// ile başlayan bir web adresi girin.",
+			"maxSubmissions": "0 ya da bir tam sayı girin."
+		},
+		"public": {
+			"pageTitle": "Form",
+			"required": "zorunlu",
+			"clear": "Temizle",
+			"choose": "Seçin…",
+			"stars": "{n} / {max}",
+			"fileLimits": "En fazla {count} dosya, her biri en çok {size}.",
+			"removeFile": "{name} dosyasını kaldır",
+			"remove": "Kaldır",
+			"aboutYou": "Sizin hakkınızda",
+			"name": "Adınız",
+			"email": "E-posta adresiniz",
+			"honeypot": "Bu alanı boş bırakın",
+			"submit": "Gönder",
+			"fixErrors": "Lütfen {count} yanıtı kontrol edin. | Lütfen {count} yanıtı kontrol edin.",
+			"errors": {
+				"required": "Bu alan zorunlu.",
+				"tooManyFiles": "En fazla {max} dosya ekleyebilirsiniz.",
+				"fileTooLarge": "{name} dosyası {max} sınırından büyük."
+			},
+			"loading": "Form yükleniyor",
+			"notFound": {
+				"title": "Bu form yok",
+				"text": "Bağlantı yanlış olabilir ya da form silinmiş veya bağlantısı değiştirilmiş olabilir. Size gönderen kişiden güncel bağlantıyı isteyin."
+			},
+			"unavailable": {
+				"title": "Bu form kullanılamıyor",
+				"closed": "Bu form kapandı ve artık yanıt almıyor.",
+				"full": "Bu form en fazla yanıt sayısına ulaştı ve artık yanıt almıyor.",
+				"disabled": "Bu form şu an kapalı. Daha sonra tekrar deneyin ya da size gönderen kişiye sorun."
+			},
+			"login": {
+				"title": "Lütfen oturum açın",
+				"text": "Bu form yalnızca oturum açmış kişiler içindir. Oturum açın, forma geri döneceksiniz.",
+				"button": "Oturum aç"
+			},
+			"forbidden": {
+				"title": "Bu formu kullanamazsınız",
+				"text": "Hesabınızın bu formu göndermeye izni yok. Size gönderen kişiye sorun."
+			},
+			"rate": {
+				"title": "Çok fazla istek"
+			},
+			"rateLimited": "Çok fazla gönderim yapıldı. Lütfen {minutes} dakika sonra tekrar deneyin. | Çok fazla gönderim yapıldı. Lütfen {minutes} dakika sonra tekrar deneyin.",
+			"rateLimitedNoTime": "Çok fazla gönderim yapıldı. Lütfen biraz sonra tekrar deneyin.",
+			"error": {
+				"title": "Bir şeyler ters gitti"
+			},
+			"networkError": "Forma ulaşılamadı. Bağlantınızı kontrol edip tekrar deneyin.",
+			"failed": "Form gönderilemedi. Lütfen tekrar deneyin.",
+			"retry": "Tekrar dene",
+			"thanks": "Teşekkürler, yanıtınız gönderildi.",
+			"redirecting": "Birazdan {host} adresine yönlendirileceksiniz.",
+			"redirectNow": "Şimdi git",
+			"another": "Bir yanıt daha gönder"
 		}
 	}
 }

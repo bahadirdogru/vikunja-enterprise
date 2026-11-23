@@ -132,6 +132,13 @@
 				{{ $t('automation.title') }}
 			</DropdownItem>
 			<DropdownItem
+				v-if="forceAllActions || project.max_permission === PERMISSIONS.ADMIN"
+				:to="{ name: 'project.settings.forms', params: { projectId: project.id } }"
+				icon="file-lines"
+			>
+				{{ $t('forms.title') }}
+			</DropdownItem>
+			<DropdownItem
 				:to="{ name: 'project.createFromParent', params: { parentProjectId: project.id } }"
 				icon="layer-group"
 			>
