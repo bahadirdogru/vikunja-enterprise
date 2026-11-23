@@ -47,17 +47,17 @@ type StatusTimeRequest struct {
 	FilterIncludeNulls bool   `json:"filter_include_nulls,omitempty" doc:"If true, tasks whose filtered field is empty are included."`
 	GroupBy            string `json:"group_by,omitempty" enum:"assignee,label" doc:"Also split the result by assignee or label. A task with several of them counts in each group."`
 	From               string `json:"from,omitempty" doc:"Only count time after this moment: an RFC 3339 timestamp, a date like 2026-01-31, or now-90d. All of the history when omitted."`
-	To                 string `json:"to,omitempty" doc:"Only count time before this moment, same formats as from, now when omitted. Later moments are cut to now."`
+	To                 string `json:"to,omitempty" doc:"Only count time before this moment, same formats as from, now when omitted. A plain date includes that day. Later moments are cut to now."`
 	Timezone           string `json:"timezone,omitempty" doc:"An IANA time zone that plain dates are read in. Defaults to the time zone setting of the user."`
 	Limit              int    `json:"limit,omitempty" minimum:"0" doc:"With group_by: keep this many groups, the ones with the most tasks (20 when omitted)."`
 }
 
 // StatusTimeStat is the time tasks spent in one status.
 type StatusTimeStat struct {
-	StatusID       int64   `json:"status_id" doc:"The workflow status. A status that was removed keeps its id and the title it had."`
+	StatusID       int64   `json:"status_id" doc:"The workflow status, archived ones included. Statuses of other workflows (a deleted one, or the project a task came from) are not counted."`
 	Title          string  `json:"title"`
 	Color          string  `json:"color,omitempty" doc:"A hex color including #, when the status has one."`
-	Category       string  `json:"category,omitempty" doc:"The category of the status, empty for a status that no longer exists."`
+	Category       string  `json:"category,omitempty" doc:"The category of the status."`
 	Tasks          int64   `json:"tasks" doc:"The number of tasks that spent time in the status."`
 	Visits         int64   `json:"visits" doc:"How often tasks entered the status; a task that came back counts again."`
 	OpenTasks      int64   `json:"open_tasks" doc:"How many of the tasks are still in the status. Their time runs until now."`
@@ -132,8 +132,8 @@ func (set statusAggSet) add(taskID int64, iv statusInterval, seconds float64) {
 
 // RunStatusTimeReport computes how long the readable tasks of a project spent in each status from the status history.
 // The intervals are computed in Go from the history rows, so it needs no date arithmetic of the database; the number of
-// rows read is bounded by reports.maxrows. A visit that has no later entry is open and counts until now (or the end of
-// the window).
+// rows read is bounded by reports.maxrows. A visit that has no later entry and is the current status of the task is
+// open and counts until now (or the end of the window).
 //
 //nolint:gocyclo
 func RunStatusTimeReport(ctx context.Context, s *xorm.Session, a web.Auth, req *StatusTimeRequest) (*StatusTimeReport, error) {
