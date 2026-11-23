@@ -20,6 +20,8 @@ import (
 	"errors"
 	"testing"
 
+	"code.vikunja.io/api/pkg/log"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"xorm.io/xorm"
@@ -30,6 +32,8 @@ type hookTestEvent struct{ name string }
 func (e *hookTestEvent) Name() string { return e.name }
 
 func TestTransactionalHook(t *testing.T) {
+	// A failing hook is logged, so the test must not rely on another test having set up the logger.
+	log.InitLogger()
 	t.Cleanup(ResetTransactionalHooks)
 
 	t.Run("runs synchronously with the session of the key", func(t *testing.T) {
@@ -47,7 +51,7 @@ func TestTransactionalHook(t *testing.T) {
 		// Visible right after the call, before any commit or DispatchPending.
 		assert.Equal(t, []string{"a"}, got)
 		assert.Same(t, s, gotSession)
-		assert.NoError(t, PendingHookError(s))
+		require.NoError(t, PendingHookError(s))
 		CleanupPending(s)
 	})
 
@@ -87,7 +91,7 @@ func TestTransactionalHook(t *testing.T) {
 		})
 
 		assert.NotPanics(t, func() { DispatchOnCommit(s, &hookTestEvent{name: "a"}) })
-		assert.NoError(t, PendingHookError(s))
+		require.NoError(t, PendingHookError(s))
 		assert.True(t, called, "later hooks still run")
 		CleanupPending(s)
 	})
