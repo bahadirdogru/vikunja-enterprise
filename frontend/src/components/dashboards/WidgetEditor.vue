@@ -165,7 +165,8 @@ const problems = computed(() => draftProblems(draft))
 const complete = computed(() => problems.value.length === 0)
 const config = computed(() => configFromDraft(draft))
 // The preview asks the server about the unsaved config, so it waits for the typing to stop.
-const previewConfig = refDebounced(config, 400)
+// The type goes with the config: a new type with the config of the old one is a request the server refuses.
+const previewWidget = refDebounced(computed(() => ({type: draft.type, config: config.value})), 400)
 const previewTitle = computed(() => draft.title || t(`dashboards.types.${draft.type}.name`))
 
 const clientErrors = computed(() => submitted.value
@@ -628,12 +629,12 @@ const projectLabel = computed(() => projectStore.projectsArray.find(p => p.id ==
 					</p>
 					<div class="widget-editor__preview-body">
 						<WidgetView
-							:type="draft.type"
-							:config="previewConfig"
+							:type="previewWidget.type"
+							:config="previewWidget.config"
 							:title="previewTitle"
 							:display="draft.display"
 							:can-drill="false"
-							:enabled="complete"
+							:enabled="complete && previewWidget.type === draft.type"
 							@error="onPreviewError"
 						/>
 					</div>

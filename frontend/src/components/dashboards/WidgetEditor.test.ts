@@ -27,7 +27,7 @@ const ViewStub = defineComponent({
 	props: ['type', 'config', 'enabled'],
 	emits: ['error'],
 	setup(props, {emit}) {
-		return () => h('div', {class: 'view-stub', 'data-config': JSON.stringify(props.config), 'data-enabled': String(props.enabled), onClick: () => emit('error', {code: 23001, details: {param: 'group_by'}, detail: 'bad group'})})
+		return () => h('div', {class: 'view-stub', 'data-view-type': props.type, 'data-config': JSON.stringify(props.config), 'data-enabled': String(props.enabled), onClick: () => emit('error', {code: 23001, details: {param: 'group_by'}, detail: 'bad group'})})
 	},
 })
 
@@ -85,6 +85,19 @@ describe('WidgetEditor', () => {
 		const stub = wrapper.find('.view-stub')
 		expect(stub.attributes('data-enabled')).toBe('true')
 		expect(JSON.parse(stub.attributes('data-config')!)).toEqual({request: {project_id: 3, group_by: 'assignee'}})
+	})
+
+	it('does not preview a new type with the config of the previous one', async () => {
+		const wrapper = mountEditor({widget: null})
+		await wrapper.find('[data-type=status_time]').trigger('click')
+		await flushPromises()
+		// A time in status widget with the config of the number widget the editor started with is a request the server refuses.
+		const stub = wrapper.find('.view-stub')
+		const stale = stub.attributes('data-enabled') === 'true' && 'request' in JSON.parse(stub.attributes('data-config')!)
+		expect(stale).toBe(false)
+		await vi.advanceTimersByTimeAsync(500)
+		expect(wrapper.find('.view-stub').attributes('data-view-type')).toBe('status_time')
+		expect(wrapper.find('.view-stub').attributes('data-enabled')).toBe('true')
 	})
 
 	it('shows what the server says about a parameter on its control', async () => {
