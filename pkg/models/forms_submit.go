@@ -462,6 +462,9 @@ type formCFAnswer struct {
 func submitForm(s *xorm.Session, req *FormSubmitRequest) (*FormSubmitResult, error) {
 	// A write first takes the lock of the form: on PostgreSQL and MySQL a row lock that serializes the
 	// submissions of one form, on SQLite the database lock, so nothing that is read can change under us.
+	if !isFormToken(req.Token) {
+		return nil, ErrFormDoesNotExist{}
+	}
 	if _, err := s.Exec("UPDATE forms SET token = token WHERE token = ?", req.Token); err != nil {
 		return nil, err
 	}

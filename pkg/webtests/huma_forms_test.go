@@ -177,6 +177,20 @@ func TestHumaForms_PublicRoutes(t *testing.T) {
 		assert.EqualValues(t, models.ErrCodeFormDoesNotExist, formsDecode(t, rec)["code"])
 	})
 
+	t.Run("a token that is no token is 404, not a database error", func(t *testing.T) {
+		// PostgreSQL rejects a NUL byte and invalid UTF-8 in a text parameter; that must not surface as a 500.
+		for _, token := range []string{"%00", "abc%00def", "%ff%fe", "caf%C3%A9"} {
+			for _, c := range []struct{ method, suffix, body, contentType string }{
+				{http.MethodGet, "", "", ""},
+				{http.MethodPost, "/submissions", `{"values":{"title":"x"}}`, ""},
+				{http.MethodPost, "/submissions/multipart", "--b\r\nContent-Disposition: form-data; name=\"data\"\r\n\r\n{\"values\":{\"title\":\"x\"}}\r\n--b--\r\n", "multipart/form-data; boundary=b"},
+			} {
+				rec := humaRequest(t, e, c.method, "/api/v2/forms/"+token+c.suffix, c.body, "", c.contentType)
+				assert.Equal(t, http.StatusNotFound, rec.Code, "%s %s%s: %s", c.method, token, c.suffix, rec.Body.String())
+			}
+		}
+	})
+
 	t.Run("forms for signed-in users answer a typed 401 without credentials", func(t *testing.T) {
 		for _, token := range []string{usr, mem} {
 			rec := humaRequest(t, e, http.MethodGet, "/api/v2/forms/"+token, "", "", "")

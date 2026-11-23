@@ -199,9 +199,25 @@ func getFormInProject(s *xorm.Session, formID, projectID int64) (*Form, error) {
 	return f, nil
 }
 
+// isFormToken tells whether a string from a URL can be a token at all: the characters newFormToken produces, at
+// most the width of the column. Everything else is unknown without asking the database. PostgreSQL answers a NUL
+// byte or invalid UTF-8 in a parameter with an error, which would surface as a 500.
+func isFormToken(token string) bool {
+	if token == "" || len(token) > 64 {
+		return false
+	}
+	for i := 0; i < len(token); i++ {
+		c := token[i]
+		if (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') && (c < '0' || c > '9') && c != '-' && c != '_' {
+			return false
+		}
+	}
+	return true
+}
+
 // GetFormByToken loads a form by its secret token.
 func GetFormByToken(s *xorm.Session, token string) (*Form, error) {
-	if token == "" || len(token) > 64 {
+	if !isFormToken(token) {
 		return nil, ErrFormDoesNotExist{}
 	}
 	f := &Form{}
