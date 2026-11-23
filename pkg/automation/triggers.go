@@ -48,6 +48,11 @@ func recordTaskOrigin(s *xorm.Session, taskID int64) error {
 		return nil
 	}
 	from := o.(origin)
+	// A row left for the same id (the database handed it out again, or cleanup has not run yet) would make the unique
+	// index reject the insert and fail the run, and its stale origin would be read for the new task.
+	if _, err := s.Where("task_id = ?", taskID).Delete(&models.AutomationTaskOrigin{}); err != nil {
+		return err
+	}
 	_, err := s.Insert(&models.AutomationTaskOrigin{TaskID: taskID, RunID: from.runID, Depth: from.depth + 1})
 	return err
 }
