@@ -52,6 +52,8 @@ type Env struct {
 	Rule *models.AutomationRule
 	// Event is the payload of the event that started the run.
 	Event *Payload
+	// RunID is the run the action belongs to, 0 in a dry run.
+	RunID int64
 	Now   time.Time
 	// Sub is the current state of the task. Run it through Reload before each action.
 	Sub *Subject
@@ -95,6 +97,10 @@ type Plan struct {
 	Warnings []string
 	// Stop ends the run successfully (flow.stop_if).
 	Stop bool
+	// Wait suspends the run for this long after the step (the wait action). The continuation is written by apply.
+	Wait time.Duration
+	// CreatedTaskID is set by apply when the action created the task the run continues with.
+	CreatedTaskID int64
 
 	apply func() (string, error)
 	// preview, when set, is what a dry run does instead of only reading Summary: it runs the action against a
@@ -158,6 +164,9 @@ func init() {
 	register(spec.ActionScriptRun, planScript)
 	register(spec.ActionHTTPRequest, planHTTPRequest)
 	register(spec.ActionApprovalRequest, planApprovalRequest)
+	register(spec.ActionCreateTask, planCreateStandaloneTask)
+	register(spec.ActionWait, planWait)
+	register(spec.ActionNotify, planNotify)
 }
 
 // requireWritableTask checks that the task exists and the owner of the rule may change it.

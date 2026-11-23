@@ -92,6 +92,7 @@ func eventMap(p *Payload) map[string]any {
 		"new":        orMap(p.New),
 		"changed":    stringsToAny(p.Changed),
 		"field_id":   p.FieldID,
+		"payload":    orMap(p.Hook),
 	}
 	if p.Doer != nil {
 		m["doer"] = map[string]any{"id": p.Doer.ID, "username": p.Doer.Username, "name": p.Doer.Name}

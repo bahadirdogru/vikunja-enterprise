@@ -252,6 +252,12 @@ const (
 	AutomationPollInterval        Key = `automation.pollinterval`
 	AutomationCacheTTL            Key = `automation.cachettl`
 	AutomationRetention           Key = `automation.retention`
+	AutomationTickInterval        Key = `automation.ticker.interval`
+	AutomationTickMaxTasks        Key = `automation.ticker.maxtasks`
+	AutomationTickMaxScan         Key = `automation.ticker.maxscan`
+	AutomationWaitMax             Key = `automation.waitmax`
+	AutomationWebhookMaxBody      Key = `automation.webhook.maxbody`
+	AutomationWebhookRateLimit    Key = `automation.webhook.ratelimit`
 
 	FormsEnabled                Key = `forms.enabled`
 	FormsMaxBodySize            Key = `forms.maxbodysize`
@@ -599,6 +605,12 @@ func initDefaultConfig() {
 	AutomationPollInterval.setDefault(time.Second)
 	AutomationCacheTTL.setDefault(30 * time.Second)
 	AutomationRetention.setDefault(30)
+	AutomationTickInterval.setDefault(30 * time.Second)
+	AutomationTickMaxTasks.setDefault(100)
+	AutomationTickMaxScan.setDefault(5000)
+	AutomationWaitMax.setDefault(30 * 24 * time.Hour)
+	AutomationWebhookMaxBody.setDefault(64 * 1024)
+	AutomationWebhookRateLimit.setDefault(60)
 
 	// Reports
 	ReportsCacheTTL.setDefault(30 * time.Second)

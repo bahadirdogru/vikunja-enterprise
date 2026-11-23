@@ -45,7 +45,23 @@ type automationRuleReadBody struct {
 }
 
 type automationTestRequest struct {
-	TaskID int64 `json:"task_id" required:"true" minimum:"1" doc:"The task to test the rule with. It has to belong to the project of the rule."`
+	TaskID  int64          `json:"task_id" minimum:"0" doc:"The task to test the rule with. It has to belong to the project of the rule. Required unless the trigger has no task (incoming webhook, a schedule per project): then it is ignored."`
+	Payload map[string]any `json:"payload,omitempty" doc:"For the trigger webhook.incoming: the simulated JSON body of the call, readable as event.payload."`
+}
+
+type automationRunRequest struct {
+	TaskID int64 `json:"task_id" required:"true" minimum:"1" doc:"The task to run the rule for. You need write access to it, and it has to belong to the project of the rule."`
+}
+
+// AutomationRunQueued is the answer of a manual run: the run itself appears in the history of the rule once a worker
+// picked the event up.
+type AutomationRunQueued struct {
+	EventID int64  `json:"event_id" doc:"The outbox event that starts the run."`
+	Status  string `json:"status" doc:"Always queued."`
+}
+
+type automationManualListBody struct {
+	Body []*models.AutomationManualRule
 }
 
 // RegisterAutomationRoutes wires the automation rules, their runs and the catalog onto the Huma API.
@@ -116,6 +132,35 @@ func RegisterAutomationRoutes(api huma.API) {
 		DefaultStatus: http.StatusOK,
 		Tags:          tags,
 	}, automationsTest)
+
+	Register(api, huma.Operation{
+		OperationID: "automation-run-manually",
+		Summary:     "Run a manual automation rule for a task",
+		Description: "Queues a run of a rule with the trigger manual for a task. You need write access to the task; the rule still runs as its owner, with the permissions the owner has. The run goes through the same queue as every other and shows in the run history of the rule; the conditions are checked when it runs, so a task that does not match ends as a skipped run. 409 (code 22009) when the rule is disabled or has another trigger.",
+		Method:      http.MethodPost,
+		Path:        "/projects/{project}/automations/{rule}/run",
+		// Queues work, it does not create a resource.
+		DefaultStatus: http.StatusAccepted,
+		Tags:          tags,
+	}, automationRunManually)
+
+	Register(api, huma.Operation{
+		OperationID: "automation-manual-list",
+		Summary:     "List the manual automation rules of a project",
+		Description: "Returns the enabled rules of the project with the trigger manual: id, title and the text of the button. This is what the task detail offers as Run automation. Needs write access to the project; it shows no conditions or actions.",
+		Method:      http.MethodGet,
+		Path:        "/projects/{project}/manual-automations",
+		Tags:        tags,
+	}, automationManualList)
+
+	Register(api, huma.Operation{
+		OperationID: "automation-webhook-token",
+		Summary:     "Regenerate the webhook URL of a rule",
+		Description: "Replaces the secret of the incoming webhook of a rule (trigger webhook.incoming). The old URL stops working immediately. The new token and URL are only shown in this answer: the server stores a hash. Needs admin access to the project.",
+		Method:      http.MethodPost,
+		Path:        "/projects/{project}/automations/{rule}/webhook-token",
+		Tags:        tags,
+	}, automationWebhookToken)
 
 	Register(api, huma.Operation{
 		OperationID: "automation-runs-list",
@@ -324,7 +369,10 @@ func automationsTest(ctx context.Context, in *struct {
 	if !can {
 		return nil, translateDomainError(models.ErrGenericForbidden{})
 	}
-	result, err := automation.DryRun(ctx, rule, in.Body.TaskID)
+	if spec.TriggerHasTask(rule.Trigger) && in.Body.TaskID < 1 {
+		return nil, huma.Error422UnprocessableEntity("task_id is required for this trigger")
+	}
+	result, err := automation.DryRunWith(ctx, rule, in.Body.TaskID, in.Body.Payload)
 	if err != nil {
 		return nil, translateDomainError(err)
 	}
@@ -382,4 +430,51 @@ func automationRunsRetry(ctx context.Context, in *struct {
 	}
 	automation.Wake()
 	return &singleBody[models.AutomationRunRetry]{Body: retry}, nil
+}
+
+func automationRunManually(ctx context.Context, in *struct {
+	ProjectID int64 `path:"project"`
+	ID        int64 `path:"rule"`
+	Body      automationRunRequest
+}) (*singleBody[AutomationRunQueued], error) {
+	a, err := authFromCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	ev, err := automation.RunManually(a, in.ProjectID, in.ID, in.Body.TaskID)
+	if err != nil {
+		return nil, translateDomainError(err)
+	}
+	return &singleBody[AutomationRunQueued]{Body: &AutomationRunQueued{EventID: ev.ID, Status: "queued"}}, nil
+}
+
+func automationManualList(ctx context.Context, in *struct {
+	ProjectID int64 `path:"project"`
+}) (*automationManualListBody, error) {
+	a, err := authFromCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	s := db.NewReadSession()
+	defer s.Close()
+	rules, err := models.ListAutomationManualRules(s, a, in.ProjectID)
+	if err != nil {
+		return nil, translateDomainError(err)
+	}
+	return &automationManualListBody{Body: rules}, nil
+}
+
+func automationWebhookToken(ctx context.Context, in *struct {
+	ProjectID int64 `path:"project"`
+	ID        int64 `path:"rule"`
+}) (*singleBody[models.AutomationWebhookToken], error) {
+	a, err := authFromCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	t := &models.AutomationWebhookToken{ID: in.ID, ProjectID: in.ProjectID}
+	if err := handler.DoCreate(ctx, t, a); err != nil {
+		return nil, translateDomainError(err)
+	}
+	return &singleBody[models.AutomationWebhookToken]{Body: t}, nil
 }

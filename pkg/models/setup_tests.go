@@ -84,6 +84,7 @@ func SetupTests() {
 		"automation_events",
 		"automation_runs",
 		"automation_run_steps",
+		"automation_due_markers",
 		"dashboards",
 		"dashboard_widgets",
 		"automation_secrets",

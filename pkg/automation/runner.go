@@ -286,7 +286,9 @@ func (rc *runContext) preChecks(s *xorm.Session) (done bool, err error) {
 		return true, rc.finish(s, models.AutomationRunSkipped, SkipSelfTrigger, nil)
 	}
 
-	if limit := int64(config.AutomationRateLimit.GetInt()); limit > 0 {
+	// The time based triggers are limited by the cap per tick instead.
+	timeBased := rc.ev.Name == spec.EventSchedule || rc.ev.Name == spec.EventOverdue || rc.ev.Name == spec.EventDueSoon
+	if limit := int64(config.AutomationRateLimit.GetInt()); limit > 0 && !timeBased {
 		recent, err := s.Where(builder.And(
 			builder.Eq{"rule_id": rc.rule.ID},
 			builder.Gt{"started": dbTime(now().Add(-time.Minute))},
@@ -437,6 +439,14 @@ func (rc *runContext) execute(ctx context.Context, s *xorm.Session, fresh bool) 
 		}
 	}
 
+	// A run that waits is continued by its resume event. Another delivery of the original event (a retry of a
+	// different rule's failure, say) must not skip the pause.
+	if rc.ev.Name != spec.EventResume {
+		if until, waiting := pendingWait(existing); waiting && until.After(now()) {
+			return nil
+		}
+	}
+
 	for position, act := range rc.rule.Actions {
 		if st, ok := done[int64(position)]; ok {
 			if strings.HasPrefix(st.Output, stopOutput) {
@@ -444,7 +454,7 @@ func (rc *runContext) execute(ctx context.Context, s *xorm.Session, fresh bool) 
 			}
 			continue
 		}
-		stop, err := rc.executeStep(runCtx, ctx, int64(position), act)
+		stop, suspend, err := rc.executeStep(runCtx, ctx, int64(position), act)
 		if err != nil {
 			if isPermanent(err) {
 				log.Debugf("[automation] run %d failed at step %d: %v", rc.run.ID, position, err)
@@ -460,6 +470,10 @@ func (rc *runContext) execute(ctx context.Context, s *xorm.Session, fresh bool) 
 			}
 			return err
 		}
+		if suspend {
+			// The run stays running; the resume event written by the wait step continues it.
+			return nil
+		}
 		if stop {
 			break
 		}
@@ -467,15 +481,33 @@ func (rc *runContext) execute(ctx context.Context, s *xorm.Session, fresh bool) 
 	return rc.finish(s, models.AutomationRunSuccess, "", nil)
 }
 
+// pendingWait reports whether the last successful step of the run is a wait, and until when.
+func pendingWait(steps []*models.AutomationRunStep) (time.Time, bool) {
+	var last *models.AutomationRunStep
+	for _, st := range steps {
+		if st.Status == models.AutomationStepSuccess && (last == nil || st.Position > last.Position) {
+			last = st
+		}
+	}
+	if last == nil || last.ActionType != spec.ActionWait {
+		return time.Time{}, false
+	}
+	until, err := time.Parse(time.RFC3339, strings.TrimPrefix(last.Output, waitOutput))
+	if err != nil {
+		return time.Time{}, false
+	}
+	return until, true
+}
+
 // executeStep performs one action in its own transaction together with the step row, so a step recorded as
 // successful has been applied exactly once.
-func (rc *runContext) executeStep(runCtx, parent context.Context, position int64, act *spec.Action) (stop bool, err error) {
+func (rc *runContext) executeStep(runCtx, parent context.Context, position int64, act *spec.Action) (stop, suspend bool, err error) {
 	impl := registry[act.Type]
 	started := time.Now()
 	if impl == nil {
 		err = actionErrorf("unknown action %q", act.Type)
 		rc.recordFailedStep(position, act.Type, err, started)
-		return false, err
+		return false, false, err
 	}
 
 	stepCtx, cancel := context.WithTimeout(runCtx, config.AutomationStepTimeout.GetDuration())
@@ -488,7 +520,7 @@ func (rc *runContext) executeStep(runCtx, parent context.Context, position int64
 	// between, which busy_timeout cannot fix. Taking the write lock before the first read makes concurrent steps wait
 	// for each other instead. On other databases this is a cheap no-op update of a row only this worker touches.
 	if _, err = s.ID(rc.run.ID).Cols("started").Update(&models.AutomationRun{Started: rc.run.Started}); err != nil {
-		return false, err
+		return false, false, err
 	}
 	// Another worker may hold the same run (the lock of its event expired, or the event was queued again by a manual
 	// retry) and have committed this step while this one waited for the write above. Only now is the answer to
@@ -496,15 +528,17 @@ func (rc *runContext) executeStep(runCtx, parent context.Context, position int64
 	recorded := &models.AutomationRunStep{}
 	has, err := s.Where("run_id = ? AND position = ? AND status = ?", rc.run.ID, position, models.AutomationStepSuccess).Get(recorded)
 	if err != nil {
-		return false, err
+		return false, false, err
 	}
 	if has {
-		return strings.HasPrefix(recorded.Output, stopOutput), s.Rollback()
+		// The other worker's outcome decides: a recorded wait must suspend this worker too, or it would run on
+		// past the pause.
+		return strings.HasPrefix(recorded.Output, stopOutput), strings.HasPrefix(recorded.Output, waitOutput), s.Rollback()
 	}
 	markSession(s, origin{runID: rc.run.ID, depth: rc.run.Depth})
 	defer unmarkSession(s)
 
-	output, stop, err := rc.applyStep(stepCtx, s, impl, act)
+	output, plan, err := rc.applyStep(stepCtx, s, impl, act)
 	if err == nil {
 		err = stepCtx.Err()
 	}
@@ -521,35 +555,48 @@ func (rc *runContext) executeStep(runCtx, parent context.Context, position int64
 		_ = s.Rollback()
 		events.CleanupPending(s)
 		rc.recordFailedStep(position, act.Type, err, started)
-		return false, err
+		return false, false, err
+	}
+	if plan.CreatedTaskID != 0 {
+		rc.run.TaskID = plan.CreatedTaskID
 	}
 
 	events.DispatchPending(parent, s)
 	Wake()
-	if stop {
-		return true, nil
-	}
-	return false, nil
+	return plan.Stop, plan.Wait > 0, nil
 }
 
-func (rc *runContext) applyStep(ctx context.Context, s *xorm.Session, impl *action, act *spec.Action) (output string, stop bool, err error) {
-	env := &Env{Ctx: ctx, S: s, Auth: rc.owner, Rule: rc.rule, Event: rc.payload, Now: now()}
+func (rc *runContext) applyStep(ctx context.Context, s *xorm.Session, impl *action, act *spec.Action) (output string, plan *Plan, err error) {
+	event := rc.payload
+	if rc.run.TaskID != 0 && rc.run.TaskID != event.TaskID {
+		// A create task action replaced the (missing) task of the run: the later actions work on the new task.
+		withTask := *event
+		withTask.TaskID = rc.run.TaskID
+		event = &withTask
+	}
+	env := &Env{Ctx: ctx, S: s, Auth: rc.owner, Rule: rc.rule, Event: event, Now: now(), RunID: rc.run.ID}
 	if err = env.Reload(); err != nil {
-		return "", false, err
+		return "", nil, err
 	}
 	if err = requireReadableSubject(s, rc.owner, env.Sub); err != nil {
-		return "", false, err
+		return "", nil, err
 	}
 	// Errors and output are checked against the secrets of the project when the step used any: a secret value
 	// must not reach the run history.
-	plan, err := impl.plan(env, params(act.Params))
+	plan, err = impl.plan(env, params(act.Params))
 	if err != nil {
-		return "", false, env.maskErr(err)
+		return "", nil, env.maskErr(err)
 	}
 	output = plan.Summary
 	if plan.apply != nil {
 		if output, err = plan.apply(); err != nil {
-			return "", false, env.maskErr(err)
+			return "", nil, env.maskErr(err)
+		}
+	}
+	if plan.CreatedTaskID != 0 {
+		// The new task is the task of the rest of the run.
+		if _, err = s.ID(rc.run.ID).Cols("task_id").Update(&models.AutomationRun{TaskID: plan.CreatedTaskID}); err != nil {
+			return "", nil, err
 		}
 	}
 	for _, w := range plan.Warnings {
@@ -558,7 +605,7 @@ func (rc *runContext) applyStep(ctx context.Context, s *xorm.Session, impl *acti
 	if plan.Stop {
 		output = stopOutput + output
 	}
-	return truncate(env.maskOutput(output), maxOutputBytes), plan.Stop, ctx.Err()
+	return truncate(env.maskOutput(output), maxOutputBytes), plan, ctx.Err()
 }
 
 // storeStep inserts or updates the row of the step. Position is unique per run.

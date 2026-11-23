@@ -152,3 +152,136 @@ func (err ErrAutomationRunNotRetryable) HTTPError() web.HTTPError {
 		Message:  "Only runs that failed can be retried.",
 	}
 }
+
+// ErrAutomationRuleNotRunnable represents an error where a rule cannot be started the way it was asked for: it is
+// disabled, or it has another trigger.
+type ErrAutomationRuleNotRunnable struct {
+	RuleID int64
+	Reason string
+}
+
+// IsErrAutomationRuleNotRunnable checks if an error is ErrAutomationRuleNotRunnable.
+func IsErrAutomationRuleNotRunnable(err error) bool {
+	var target ErrAutomationRuleNotRunnable
+	return errors.As(err, &target)
+}
+
+func (err ErrAutomationRuleNotRunnable) Error() string {
+	return fmt.Sprintf("Automation rule cannot be run [RuleID: %d, Reason: %s]", err.RuleID, err.Reason)
+}
+
+// ErrCodeAutomationRuleNotRunnable holds the unique world-error code of this error
+const ErrCodeAutomationRuleNotRunnable = 22009
+
+// HTTPError holds the http error description
+func (err ErrAutomationRuleNotRunnable) HTTPError() web.HTTPError {
+	return web.HTTPError{
+		HTTPCode: http.StatusConflict,
+		Code:     ErrCodeAutomationRuleNotRunnable,
+		Message:  "This rule cannot be run this way: it is disabled or has another trigger.",
+		Details:  map[string]any{"reason": err.Reason},
+	}
+}
+
+// ErrAutomationHookNotFound represents an error where the token of an incoming webhook matches no enabled rule.
+type ErrAutomationHookNotFound struct{}
+
+// IsErrAutomationHookNotFound checks if an error is ErrAutomationHookNotFound.
+func IsErrAutomationHookNotFound(err error) bool {
+	var target ErrAutomationHookNotFound
+	return errors.As(err, &target)
+}
+
+func (err ErrAutomationHookNotFound) Error() string {
+	return "Automation webhook does not exist"
+}
+
+// ErrCodeAutomationHookNotFound holds the unique world-error code of this error
+const ErrCodeAutomationHookNotFound = 22010
+
+// HTTPError holds the http error description
+func (err ErrAutomationHookNotFound) HTTPError() web.HTTPError {
+	return web.HTTPError{
+		HTTPCode: http.StatusNotFound,
+		Code:     ErrCodeAutomationHookNotFound,
+		Message:  "This webhook does not exist.",
+	}
+}
+
+// ErrAutomationHookSignatureInvalid represents an error where the signature of an incoming webhook is missing or wrong.
+type ErrAutomationHookSignatureInvalid struct{}
+
+// IsErrAutomationHookSignatureInvalid checks if an error is ErrAutomationHookSignatureInvalid.
+func IsErrAutomationHookSignatureInvalid(err error) bool {
+	var target ErrAutomationHookSignatureInvalid
+	return errors.As(err, &target)
+}
+
+func (err ErrAutomationHookSignatureInvalid) Error() string {
+	return "Automation webhook signature is missing or invalid"
+}
+
+// ErrCodeAutomationHookSignatureInvalid holds the unique world-error code of this error
+const ErrCodeAutomationHookSignatureInvalid = 22011
+
+// HTTPError holds the http error description
+func (err ErrAutomationHookSignatureInvalid) HTTPError() web.HTTPError {
+	return web.HTTPError{
+		HTTPCode: http.StatusUnauthorized,
+		Code:     ErrCodeAutomationHookSignatureInvalid,
+		Message:  "The X-Vikunja-Signature header is missing or does not match the body.",
+	}
+}
+
+// ErrAutomationHookRateLimited represents an error where a webhook was called too often.
+type ErrAutomationHookRateLimited struct {
+	RetryAfterSeconds int64
+}
+
+// IsErrAutomationHookRateLimited checks if an error is ErrAutomationHookRateLimited.
+func IsErrAutomationHookRateLimited(err error) bool {
+	var target ErrAutomationHookRateLimited
+	return errors.As(err, &target)
+}
+
+func (err ErrAutomationHookRateLimited) Error() string {
+	return fmt.Sprintf("Too many webhook calls [RetryAfter: %ds]", err.RetryAfterSeconds)
+}
+
+// ErrCodeAutomationHookRateLimited holds the unique world-error code of this error
+const ErrCodeAutomationHookRateLimited = 22012
+
+// HTTPError holds the http error description
+func (err ErrAutomationHookRateLimited) HTTPError() web.HTTPError {
+	return web.HTTPError{
+		HTTPCode: http.StatusTooManyRequests,
+		Code:     ErrCodeAutomationHookRateLimited,
+		Message:  "Too many calls, try again later.",
+		Details:  map[string]any{"retry_after": err.RetryAfterSeconds},
+	}
+}
+
+// ErrAutomationHookPayloadInvalid represents an error where the body of an incoming webhook is not a JSON object.
+type ErrAutomationHookPayloadInvalid struct{}
+
+// IsErrAutomationHookPayloadInvalid checks if an error is ErrAutomationHookPayloadInvalid.
+func IsErrAutomationHookPayloadInvalid(err error) bool {
+	var target ErrAutomationHookPayloadInvalid
+	return errors.As(err, &target)
+}
+
+func (err ErrAutomationHookPayloadInvalid) Error() string {
+	return "Automation webhook body is not a JSON object"
+}
+
+// ErrCodeAutomationHookPayloadInvalid holds the unique world-error code of this error
+const ErrCodeAutomationHookPayloadInvalid = 22013
+
+// HTTPError holds the http error description
+func (err ErrAutomationHookPayloadInvalid) HTTPError() web.HTTPError {
+	return web.HTTPError{
+		HTTPCode: http.StatusBadRequest,
+		Code:     ErrCodeAutomationHookPayloadInvalid,
+		Message:  "The body has to be a JSON object.",
+	}
+}

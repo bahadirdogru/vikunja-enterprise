@@ -57,6 +57,13 @@ type Payload struct {
 	FieldID int64 `json:"field_id,omitempty"`
 	// Task is the last known state of the task, for events whose task is gone when the rule runs.
 	Task map[string]any `json:"task,omitempty"`
+	// RuleID is set on the events the engine writes for one rule (manual, schedule, due, webhook, resume); other
+	// rules do not see them.
+	RuleID int64 `json:"rule_id,omitempty"`
+	// RunID is set on a resume event: the run that continues after a wait.
+	RunID int64 `json:"run_id,omitempty"`
+	// Hook is the JSON body of an incoming webhook.
+	Hook map[string]any `json:"payload,omitempty"`
 }
 
 // origin says which run caused the events written in a session.

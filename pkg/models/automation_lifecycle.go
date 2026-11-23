@@ -206,6 +206,11 @@ func cleanupAutomation(s *xorm.Session, olderThan time.Time) (events, runs int64
 		builder.Lt{"created": olderThan.UTC().Format(dbTimeFormat)},
 		builder.In("status", AutomationEventDone, AutomationEventDead),
 	)).Delete(&AutomationEvent{})
+	if err != nil {
+		return
+	}
+	// The due markers of tasks that are gone; the others have to stay or the rule would fire again.
+	_, err = s.Where(builder.NotIn("task_id", builder.Select("id").From("tasks"))).Delete(&AutomationDueMarker{})
 	return
 }
 

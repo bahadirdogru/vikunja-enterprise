@@ -189,7 +189,15 @@ func processEvent(ctx context.Context, ev *models.AutomationEvent) {
 // failRunningRuns ends the runs of an event that gave up: they stay resumable only as long as retries are left.
 func failRunningRuns(s *xorm.Session, ev *models.AutomationEvent, cause error) {
 	runs := []*models.AutomationRun{}
-	if err := s.Where("event_id = ? AND status = ?", ev.ID, models.AutomationRunRunning).Find(&runs); err != nil {
+	cond := builder.Eq{"event_id": ev.ID, "status": models.AutomationRunRunning}
+	if ev.Name == spec.EventResume {
+		// A resume event continues a run of an earlier event.
+		payload := &Payload{}
+		if json.Unmarshal([]byte(ev.Payload), payload) == nil && payload.RunID != 0 {
+			cond = builder.Eq{"id": payload.RunID, "status": models.AutomationRunRunning}
+		}
+	}
+	if err := s.Where(cond).Find(&runs); err != nil {
 		log.Errorf("[automation] could not load the runs of event %d: %v", ev.ID, err)
 		return
 	}
@@ -213,6 +221,10 @@ func handleEvent(ctx context.Context, ev *models.AutomationEvent) error {
 		// A payload we wrote ourselves and cannot read is a bug; retrying cannot fix it.
 		log.Errorf("[automation] event %d has an unreadable payload: %v", ev.ID, err)
 		return nil
+	}
+
+	if ev.RuleID != 0 || spec.IsSyntheticEvent(ev.Name) {
+		return handleTargeted(ctx, ev, payload)
 	}
 
 	s := db.NewAutocommitSession()
@@ -252,6 +264,71 @@ func renewLock(ev *models.AutomationEvent) {
 	if err != nil {
 		log.Errorf("[automation] could not renew the lock of event %d: %v", ev.ID, err)
 	}
+}
+
+// handleTargeted runs the one rule an event was written for: manual, schedule, due, webhook and resume events.
+func handleTargeted(ctx context.Context, ev *models.AutomationEvent, payload *Payload) error {
+	s := db.NewAutocommitSession()
+	rule, err := models.GetAutomationRule(s, ev.RuleID)
+	if err != nil && !models.IsErrAutomationRuleDoesNotExist(err) {
+		s.Close()
+		return err
+	}
+	usable := err == nil && rule.ProjectID == ev.ProjectID && rule.Enabled
+	if usable {
+		// The event of a rule that changed its trigger since is meaningless.
+		def := spec.TriggerByType(rule.Trigger.Type)
+		usable = def != nil && (def.Event == ev.Name || (ev.Name == spec.EventResume && payload.RunID != 0))
+	}
+	enabled := []*models.AutomationRule{}
+	if usable {
+		enabled = append(enabled, rule)
+	}
+	abortOrphanedRuns(s, ev, enabled)
+	if ev.Name == spec.EventResume && !usable {
+		abortResumedRun(s, payload.RunID)
+	}
+	s.Close()
+	if !usable {
+		return nil
+	}
+	renewLock(ev)
+	if ev.Name == spec.EventResume {
+		return resumeRun(ctx, ev, payload, rule)
+	}
+	return runRule(ctx, ev, payload, rule)
+}
+
+// abortResumedRun ends the run a resume event belongs to, because its rule is gone or disabled.
+func abortResumedRun(s *xorm.Session, runID int64) {
+	run := &models.AutomationRun{}
+	has, err := s.Where("id = ? AND status = ?", runID, models.AutomationRunRunning).Get(run)
+	if err != nil || !has {
+		return
+	}
+	run.Status = models.AutomationRunAborted
+	run.SkipReason = SkipRuleDisabled
+	run.Finished = now()
+	if _, err := s.ID(run.ID).Cols("status", "skip_reason", "finished").Update(run); err != nil {
+		log.Errorf("[automation] could not abort run %d: %v", run.ID, err)
+	}
+}
+
+// resumeRun continues a run after its wait.
+func resumeRun(ctx context.Context, ev *models.AutomationEvent, payload *Payload, rule *models.AutomationRule) error {
+	s := db.NewAutocommitSession()
+	defer s.Close()
+	run := &models.AutomationRun{}
+	has, err := s.Where("id = ? AND rule_id = ?", payload.RunID, rule.ID).Get(run)
+	if err != nil {
+		return err
+	}
+	if !has || run.Status != models.AutomationRunRunning {
+		return nil
+	}
+	log.Debugf("[automation] resuming run %d of rule %d after its wait", run.ID, rule.ID)
+	rc := &runContext{ev: ev, payload: payload, rule: rule, run: run}
+	return rc.execute(ctx, s, false)
 }
 
 // abortOrphanedRuns ends runs of this event whose rule was disabled or deleted while the run waited for a retry.
@@ -301,6 +378,11 @@ func Start(parent context.Context) {
 			workerLoop(ctx)
 		}()
 	}
+	workersDone.Add(1)
+	go func() {
+		defer workersDone.Done()
+		tickLoop(ctx)
+	}()
 	log.Infof("[automation] started %d workers", n)
 }
 

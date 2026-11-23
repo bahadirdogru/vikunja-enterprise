@@ -47,17 +47,28 @@ type DryRunResult struct {
 // DryRun evaluates the conditions of a rule against a task and plans every action without writing anything. The
 // actions are planned as the owner of the rule. Planning only reads; the transaction is rolled back at the end as
 // a second guard.
-func DryRun(_ context.Context, rule *models.AutomationRule, taskID int64) (*DryRunResult, error) {
+func DryRun(ctx context.Context, rule *models.AutomationRule, taskID int64) (*DryRunResult, error) {
+	return DryRunWith(ctx, rule, taskID, nil)
+}
+
+// DryRunWith is DryRun for every trigger: taskID is ignored when the trigger has no task (incoming webhook, schedule
+// per project) and required otherwise; hook is the simulated body of an incoming webhook.
+func DryRunWith(_ context.Context, rule *models.AutomationRule, taskID int64, hook map[string]any) (*DryRunResult, error) {
 	s := db.NewSession()
 	defer s.Close()
 	defer func() { _ = s.Rollback() }()
 
-	task, err := models.GetTaskByIDSimple(s, taskID)
-	if err != nil {
-		return nil, err
-	}
-	if task.ProjectID != rule.ProjectID {
-		return nil, models.ErrTaskDoesNotExist{ID: taskID}
+	hasTask := spec.TriggerHasTask(rule.Trigger)
+	task := models.Task{}
+	if hasTask {
+		var err error
+		task, err = models.GetTaskByIDSimple(s, taskID)
+		if err != nil {
+			return nil, err
+		}
+		if task.ProjectID != rule.ProjectID {
+			return nil, models.ErrTaskDoesNotExist{ID: taskID}
+		}
 	}
 
 	owner, err := user.GetUserByID(s, rule.OwnerID)
@@ -73,9 +84,12 @@ func DryRun(_ context.Context, rule *models.AutomationRule, taskID int64) (*DryR
 	payload := &Payload{
 		Name:      name,
 		TaskID:    task.ID,
-		ProjectID: task.ProjectID,
+		ProjectID: rule.ProjectID,
 		Doer:      personOf(owner),
-		Task:      taskFields(&task),
+		Hook:      hook,
+	}
+	if hasTask {
+		payload.Task = taskFields(&task)
 	}
 	env := &Env{S: s, Auth: owner, Rule: rule, Event: payload, Now: now()}
 	if err = env.Reload(); err != nil {
@@ -103,12 +117,18 @@ func DryRun(_ context.Context, rule *models.AutomationRule, taskID int64) (*DryR
 		result.Notes = append(result.Notes, "The conditions do not hold, so a real run would stop before the first action.")
 	}
 
+	// After a create task action of a run without a task, the following actions work on a task that does not exist yet.
+	virtualTask := false
 	for i, act := range rule.Actions {
 		step := &DryRunStep{Position: int64(i), Type: act.Type, Warnings: []string{}}
 		result.Steps = append(result.Steps, step)
 		impl := registry[act.Type]
 		if impl == nil {
 			step.Error = "unknown action"
+			continue
+		}
+		if virtualTask && spec.ActionNeedsTask(act) {
+			step.Summary = "would act on the task created above (not simulated in a test)"
 			continue
 		}
 		if err = env.Reload(); err != nil {
@@ -127,6 +147,9 @@ func DryRun(_ context.Context, rule *models.AutomationRule, taskID int64) (*DryR
 		}
 		step.Summary = plan.Summary
 		step.Stops = plan.Stop
+		if act.Type == spec.ActionCreateTask && !hasTask {
+			virtualTask = true
+		}
 		if plan.Warnings != nil {
 			step.Warnings = plan.Warnings
 		}

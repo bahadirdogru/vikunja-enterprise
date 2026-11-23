@@ -17,6 +17,7 @@
 package automation
 
 import (
+	"encoding/json"
 	"regexp"
 	"strconv"
 	"strings"
@@ -92,6 +93,23 @@ func placeholderValue(name string, sub *Subject) (string, bool) {
 			}
 		}
 		return "", true
+	}
+	if rest, ok := strings.CutPrefix(name, "event.payload."); ok {
+		if sub.Event == nil {
+			return "", false
+		}
+		v := payloadValue(sub.Event.Hook, rest)
+		if v == nil {
+			return "", false
+		}
+		switch v.(type) {
+		case string, float64, bool:
+			return toString(v), true
+		}
+		if raw, err := json.Marshal(v); err == nil {
+			return string(raw), true
+		}
+		return "", false
 	}
 	if rest, ok := strings.CutPrefix(name, "task.cf."); ok {
 		id, err := strconv.ParseInt(rest, 10, 64)

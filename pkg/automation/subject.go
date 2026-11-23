@@ -111,6 +111,12 @@ func LoadSubject(s *xorm.Session, taskID int64, ev *Payload, now time.Time) (*Su
 		Now:       now,
 	}
 	if taskID == 0 {
+		// A run without a task still knows its project (templates, the create task action).
+		if ev != nil && ev.ProjectID != 0 {
+			if project, err := models.GetProjectSimpleByID(s, ev.ProjectID); err == nil {
+				sub.Project = project
+			}
+		}
 		return sub, nil
 	}
 
@@ -215,6 +221,30 @@ func LoadSubject(s *xorm.Session, taskID int64, ev *Payload, now time.Time) (*Su
 	return sub, nil
 }
 
+// payloadValue walks a dotted path through the decoded JSON body of a webhook. Numbers are indexes into lists.
+func payloadValue(root map[string]any, path string) any {
+	var cur any = root
+	for _, key := range strings.Split(path, ".") {
+		switch node := cur.(type) {
+		case map[string]any:
+			v, ok := node[key]
+			if !ok {
+				return nil
+			}
+			cur = v
+		case []any:
+			i, err := strconv.Atoi(key)
+			if err != nil || i < 0 || i >= len(node) {
+				return nil
+			}
+			cur = node[i]
+		default:
+			return nil
+		}
+	}
+	return cur
+}
+
 // DoerID is the id of the user who caused the event, 0 when unknown.
 func (sub *Subject) DoerID() int64 {
 	if sub.Event != nil && sub.Event.Doer != nil {
@@ -274,6 +304,11 @@ func (sub *Subject) Lookup(name string) (value any, ok bool) {
 			return sub.Event.Doer.Name, true
 		}
 		return nil, true
+	case spec.IsPayloadField(name):
+		if sub.Event == nil {
+			return nil, true
+		}
+		return canon(payloadValue(sub.Event.Hook, strings.TrimPrefix(name, "event.payload."))), true
 	case strings.HasPrefix(name, "event.old."), strings.HasPrefix(name, "event.new."):
 		if sub.Event == nil {
 			return nil, true

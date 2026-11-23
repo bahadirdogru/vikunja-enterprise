@@ -22,6 +22,7 @@ package spec
 
 import (
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -29,12 +30,14 @@ import (
 
 // The kinds of values options, params and condition fields can have.
 const (
-	KindString      = "string"
-	KindText        = "text"
-	KindNumber      = "number"
-	KindBool        = "bool"
-	KindDate        = "date"
-	KindDuration    = "duration"
+	KindString   = "string"
+	KindText     = "text"
+	KindNumber   = "number"
+	KindBool     = "bool"
+	KindDate     = "date"
+	KindDuration = "duration"
+	// KindTeam is the id of a team.
+	KindTeam        = "team"
 	KindUser        = "user"
 	KindUsers       = "users"
 	KindLabel       = "label"
@@ -86,7 +89,38 @@ const (
 	TriggerApprovalRequested      = "approval.requested"
 	TriggerApprovalResolved       = "approval.resolved"
 	TriggerFormSubmitted          = "form.submitted"
+	TriggerManual                 = "manual"
+	TriggerSchedule               = "schedule"
+	TriggerTaskOverdue            = "task.overdue"
+	TriggerTaskDueSoon            = "task.due_soon"
+	TriggerWebhookIncoming        = "webhook.incoming"
 )
+
+// The internal events of the triggers that no model event backs. They are written by the engine itself, always for
+// one rule only (the rule_id of the outbox row), and carry the rule's task (when it has one) in the row.
+const (
+	EventManual   = "rule.manual"
+	EventSchedule = "rule.schedule"
+	EventOverdue  = "rule.overdue"
+	EventDueSoon  = "rule.due_soon"
+	EventWebhook  = "rule.webhook"
+	// EventResume continues a run that waits (the wait action).
+	EventResume = "rule.resume"
+)
+
+// The values of the scope option of the schedule trigger.
+const (
+	ScopeTasks   = "tasks"
+	ScopeProject = "project"
+)
+
+// SyntheticEvents are the events of the triggers that are fired by the engine for one rule.
+var SyntheticEvents = []string{EventManual, EventSchedule, EventOverdue, EventDueSoon, EventWebhook, EventResume}
+
+// IsSyntheticEvent reports whether the event is one the engine writes for a single rule.
+func IsSyntheticEvent(name string) bool {
+	return slices.Contains(SyntheticEvents, name)
+}
 
 // The outcomes the approval.resolved trigger can wait for.
 const (
@@ -117,6 +151,9 @@ const (
 	ActionScriptRun       = "script.run"
 	ActionHTTPRequest     = "http.request"
 	ActionApprovalRequest = "approval.request"
+	ActionCreateTask      = "task.create"
+	ActionWait            = "wait"
+	ActionNotify          = "notify"
 )
 
 // The keywords the user kind accepts besides a user id.
@@ -294,7 +331,56 @@ func Triggers() []*TriggerDef {
 		{Type: TriggerFormSubmitted, TitleKey: title("trigger", "form_submitted"), Event: "form.submitted", Options: []Param{
 			{Name: "form_id", Kind: KindNumber, TitleKey: title("option", "form_id")},
 		}},
+		{Type: TriggerManual, TitleKey: title("trigger", "manual"), Event: EventManual, Options: []Param{
+			{Name: "label", Kind: KindString, TitleKey: title("option", "label"),
+				Description: "The text of the button in the task. Defaults to the title of the rule."},
+		}},
+		{Type: TriggerSchedule, TitleKey: title("trigger", "schedule"), Event: EventSchedule, Options: []Param{
+			{Name: "cron", Kind: KindString, Required: true, TitleKey: title("option", "cron"),
+				Description: "A cron expression with five fields (minute hour day-of-month month day-of-week), evaluated in the time zone of the server (service.timezone). Example: 0 9 * * 1 is every Monday at 09:00."},
+			{Name: "scope", Kind: KindEnum, Enum: []string{ScopeTasks, ScopeProject}, Default: ScopeTasks, TitleKey: title("option", "scope"),
+				Description: "tasks: one run per task of the project that matches the conditions (at most automation.ticker.maxtasks per tick). project: one run per tick without a task; use it with a create task action first."},
+		}},
+		{Type: TriggerTaskOverdue, TitleKey: title("trigger", "task_overdue"), Event: EventOverdue, Options: []Param{}},
+		{Type: TriggerTaskDueSoon, TitleKey: title("trigger", "task_due_soon"), Event: EventDueSoon, Options: []Param{
+			{Name: "offset", Kind: KindDuration, Required: true, TitleKey: title("option", "offset"),
+				Description: "How long before the due date the rule fires, e.g. 24h or 2d."},
+		}},
+		{Type: TriggerWebhookIncoming, TitleKey: title("trigger", "webhook_incoming"), Event: EventWebhook, Options: []Param{
+			{Name: "secret", Kind: KindSecret, TitleKey: title("option", "secret"),
+				Description: "The name of a project secret. When set, every call has to carry the header X-Vikunja-Signature: sha256=<hex HMAC-SHA256 of the body, keyed with the secret>."},
+		}},
 	}
+}
+
+// TriggerHasTask reports whether the runs of a trigger are about a task. The webhook has none, and a schedule has
+// none when its scope is the project.
+func TriggerHasTask(t Trigger) bool {
+	switch t.Type {
+	case TriggerWebhookIncoming:
+		return false
+	case TriggerSchedule:
+		scope, _ := t.Options["scope"].(string)
+		return scope != ScopeProject
+	}
+	return true
+}
+
+// ActionNeedsTask reports whether an action works on the task of the run.
+func ActionNeedsTask(a *Action) bool {
+	switch a.Type {
+	case ActionStopIf, ActionScriptRun, ActionHTTPRequest, ActionCreateTask, ActionWait:
+		return false
+	case ActionNotify:
+		list, _ := a.Params["recipients"].([]any)
+		for _, item := range list {
+			if s, ok := item.(string); ok && (s == UserAssignees || s == UserTaskCreator) {
+				return true
+			}
+		}
+		return false
+	}
+	return true
 }
 
 // TriggerByType looks a trigger up.
@@ -392,6 +478,7 @@ func Fields() []*FieldDef {
 		field("event.new.form_title", KindString),
 		field("event.new.submitter_name", KindString),
 		field("event.new.submitter_email", KindString),
+		field("event.payload.<path>", KindAny, pattern("event.payload.<path>"), func(f *FieldDef) { f.Operators = allOps; f.TitleKey = title("field", "event_payload") }),
 	)
 	return fields
 }
@@ -433,6 +520,7 @@ func Placeholders() []string {
 		"event.doer.name", "event.doer.username", "project.title",
 		"event.approval.id", "event.approval.title", "event.approval.outcome",
 		"event.form.title", "event.form.submitter_name", "event.form.submitter_email",
+		"event.payload.<path>",
 	}
 }
 
@@ -506,6 +594,28 @@ func Actions() []*ActionDef {
 				{Name: "title", Kind: KindTemplate, Required: true, TitleKey: title("param", "title")},
 				{Name: "description", Kind: KindTemplate, TitleKey: title("param", "description")},
 				{Name: "due_offset", Kind: KindDuration, TitleKey: title("param", "due_offset")},
+			}},
+		{Type: ActionCreateTask, TitleKey: title("action", "create_task"),
+			Description: "Creates a task in the project of the rule, as the owner of the rule. When the run has no task (incoming webhook, schedule per project) the new task becomes the task of the actions after it. Text parameters are templates, so they can use {{event.payload.<path>}} of a webhook.",
+			Params: []Param{
+				{Name: "title", Kind: KindTemplate, Required: true, TitleKey: title("param", "title")},
+				{Name: "description", Kind: KindTemplate, TitleKey: title("param", "description")},
+				{Name: "priority", Kind: KindNumber, TitleKey: title("param", "priority"), Description: "0 (none) to 5."},
+				userParam("assignee", false),
+				{Name: "due_offset", Kind: KindDuration, TitleKey: title("param", "due_offset")},
+			}},
+		{Type: ActionWait, TitleKey: title("action", "wait"),
+			Description: "Pauses the run. The actions after this one run later; the pause is stored in the database, so it survives a restart. The conditions are not evaluated again. Minimum 1 minute, maximum automation.waitmax (30 days by default).",
+			Params: []Param{
+				{Name: "duration", Kind: KindDuration, Required: true, TitleKey: title("param", "duration"), Description: "For example 30m, 12h, 3d or 2w."},
+			}},
+		{Type: ActionNotify, TitleKey: title("action", "notify"),
+			Description: "Sends an in-app notification (and an e-mail when the person has e-mail notifications on) to people who can read the project. Anybody without access to the project is skipped.",
+			Params: []Param{
+				{Name: "recipients", Kind: KindUsers, Multiple: true, Enum: []string{UserEventDoer, UserTaskCreator, UserAssignees}, TitleKey: title("param", "recipients"),
+					Description: "User ids and/or the keywords event_doer, task_creator and assignees."},
+				{Name: "team_id", Kind: KindTeam, TitleKey: title("param", "team_id"), Description: "Every member of this team gets the notification, too."},
+				{Name: "message", Kind: KindTemplate, Required: true, TitleKey: title("param", "message")},
 			}},
 		{Type: ActionHTTPRequest, TitleKey: title("action", "http_request"),
 			Description: "Sends an HTTP request to an external service, for example a chat webhook. Private, loopback and link-local addresses are blocked. A 5xx answer or a network error is retried like any temporary failure; a 4xx answer fails the run. The status and the first 2 KiB of the answer are stored in the step output.",

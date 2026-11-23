@@ -1223,6 +1223,48 @@
                     "comment": "Finished automation events, runs and run steps are deleted after this many days. Set to 0 to keep them forever."
                 },
                 {
+                    "key": "ticker",
+                    "comment": "The time based triggers: schedule, overdue and due soon. One ticker per process looks for rules that are due; a database claim makes sure a tick fires once even with several replicas.",
+                    "children": [
+                        {
+                            "key": "interval",
+                            "default_value": "30s",
+                            "comment": "How often the ticker looks for due schedules and for tasks that became overdue or are due soon. Cron expressions have a resolution of one minute."
+                        },
+                        {
+                            "key": "maxtasks",
+                            "default_value": "100",
+                            "comment": "The maximum number of runs one rule starts per tick (schedule: matching tasks; overdue / due soon: tasks). When more tasks match, the rest is not started in this tick (a schedule tick records that it was capped on the rule; overdue and due soon pick up the rest on the next tick)."
+                        },
+                        {
+                            "key": "maxscan",
+                            "default_value": "5000",
+                            "comment": "The maximum number of tasks a schedule tick looks at to find the ones that match the conditions of the rule."
+                        }
+                    ]
+                },
+                {
+                    "key": "waitmax",
+                    "default_value": "720h",
+                    "comment": "The longest duration the wait action of a rule may pause a run (default 30 days)."
+                },
+                {
+                    "key": "webhook",
+                    "comment": "Incoming webhooks: the public endpoint POST /api/v2/automation/hooks/{token} that starts rules with the trigger webhook.incoming.",
+                    "children": [
+                        {
+                            "key": "maxbody",
+                            "default_value": "65536",
+                            "comment": "The maximum size of the JSON body of an incoming webhook in bytes."
+                        },
+                        {
+                            "key": "ratelimit",
+                            "default_value": "60",
+                            "comment": "The maximum number of incoming webhook calls per rule and minute. Calls above the limit are answered with 429."
+                        }
+                    ]
+                },
+                {
                     "key": "scripts",
                     "comment": "JavaScript in automation rules (script action, script condition, http.fetch inside scripts) and the outgoing `http.request` action. Scripts run in an embedded pure-Go interpreter with a small API; see docs/enterprise/automation.md for the API and the security model. There is no hard memory cap: allocation inside the interpreter is bounded only by the timeout.",
                     "children": [

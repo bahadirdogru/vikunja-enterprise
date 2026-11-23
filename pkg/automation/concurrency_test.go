@@ -86,9 +86,10 @@ func TestIdempotency_ASecondWorkerOnTheSameRunDoesNotRepeatACommittedStep(t *tes
 	require.NoError(t, err)
 	rc := &runContext{ev: ev, payload: payload, rule: getRule(t, r.ID), run: run, owner: owner}
 	for position, action := range rc.rule.Actions {
-		stop, err := rc.executeStep(context.Background(), context.Background(), int64(position), action)
+		stop, suspend, err := rc.executeStep(context.Background(), context.Background(), int64(position), action)
 		require.NoError(t, err)
 		assert.False(t, stop)
+		assert.False(t, suspend)
 	}
 
 	assert.Equal(t, 1, counter("once"), "a step recorded as successful is not applied again")

@@ -23,6 +23,9 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"time"
+
+	"github.com/robfig/cron/v3"
 )
 
 const (
@@ -96,6 +99,7 @@ func Validate(d *Doc, maxActions int) []Issue {
 		v.add("trigger.type", "unknown trigger %q", d.Trigger.Type)
 	default:
 		v.params("trigger.options", trigger.Options, d.Trigger.Options)
+		v.triggerRules(&d.Trigger)
 	}
 
 	if d.Conditions != nil {
@@ -108,11 +112,19 @@ func Validate(d *Doc, maxActions int) []Issue {
 	case maxActions > 0 && len(d.Actions) > maxActions:
 		v.add("actions", "a rule may have at most %d actions", maxActions)
 	}
+	hasTask := trigger != nil && TriggerHasTask(d.Trigger)
 	for i, a := range d.Actions {
 		path := fmt.Sprintf("actions[%d]", i)
 		if a == nil {
 			v.add(path, "is null")
 			continue
+		}
+		if trigger != nil && !hasTask {
+			if a.Type == ActionCreateTask {
+				hasTask = true
+			} else if ActionNeedsTask(a) {
+				v.add(path+".type", "the trigger %q has no task: this action needs one, so a create task action has to come before it", d.Trigger.Type)
+			}
 		}
 		def := ActionByType(a.Type)
 		switch {
@@ -128,6 +140,30 @@ func Validate(d *Doc, maxActions int) []Issue {
 	return v.issues
 }
 
+// CronParser is the parser of the schedule trigger: the standard five fields, plus the descriptors like @daily.
+var CronParser = cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor)
+
+// MinWait is the shortest pause of the wait action.
+const MinWait = time.Minute
+
+// triggerRules checks what the generic option validation cannot.
+func (v *validator) triggerRules(t *Trigger) {
+	switch t.Type {
+	case TriggerSchedule:
+		if expr, ok := t.Options["cron"].(string); ok {
+			if _, err := CronParser.Parse(strings.TrimSpace(expr)); err != nil {
+				v.add("trigger.options.cron", "is not a valid cron expression: %s", err.Error())
+			}
+		}
+	case TriggerTaskDueSoon:
+		if offset, ok := t.Options["offset"].(string); ok {
+			if d, err := ParseOffset(offset); err == nil && d < time.Minute {
+				v.add("trigger.options.offset", "must be at least 1m")
+			}
+		}
+	}
+}
+
 // forbiddenHeaders are set by the HTTP client itself.
 var forbiddenHeaders = map[string]bool{"host": true, "content-length": true, "transfer-encoding": true, "connection": true, "upgrade": true}
 
@@ -137,6 +173,20 @@ var headerNamePattern = regexp.MustCompile("^[!#$%&'*+.^_`|~0-9A-Za-z-]{1,128}$"
 // actionRules checks what the generic parameter validation cannot: the scripts and secrets rules of single actions.
 func (v *validator) actionRules(path string, a *Action) {
 	switch a.Type {
+	case ActionWait:
+		if s, ok := a.Params["duration"].(string); ok {
+			if d, err := ParseOffset(s); err == nil && d < MinWait {
+				v.add(path+".duration", "must be at least 1m")
+			}
+		}
+	case ActionNotify:
+		list, _ := a.Params["recipients"].([]any)
+		if len(list) == 0 && a.Params["team_id"] == nil {
+			v.add(path+".recipients", "name at least one recipient or a team")
+		}
+		if strings.TrimSpace(fmt.Sprint(a.Params["message"])) == "" && a.Params["message"] != nil {
+			v.add(path+".message", "must not be empty")
+		}
 	case ActionScriptRun:
 		if src, ok := a.Params["source"].(string); ok && strings.TrimSpace(src) == "" {
 			v.add(path+".source", "must not be empty")
@@ -341,7 +391,7 @@ func (v *validator) value(path, kind string, multiple bool, enum []string, val a
 		if id, ok := ToInt64(val); !ok || id <= 0 {
 			v.add(path, "must be a user id")
 		}
-	case KindLabel, KindStatus, KindCustomField, KindProject:
+	case KindLabel, KindStatus, KindCustomField, KindProject, KindTeam:
 		if id, ok := ToInt64(val); !ok || id <= 0 {
 			v.add(path, "must be an id (a positive integer)")
 		}
@@ -455,10 +505,19 @@ func (v *validator) children(path string, children []*Condition, depth int) {
 	}
 }
 
+// payloadFieldPattern is a condition field of the payload of an incoming webhook.
+var payloadFieldPattern = regexp.MustCompile(`^event\.payload\.[A-Za-z0-9_-]+(\.[A-Za-z0-9_-]+){0,7}$`)
+
+// IsPayloadField reports whether the name is a field of the webhook payload (event.payload.<path>).
+func IsPayloadField(name string) bool { return payloadFieldPattern.MatchString(name) }
+
 // FieldKind resolves the kind of a condition field. For custom fields the kind is KindCustomField.
 func FieldKind(name string) (def *FieldDef, ok bool) {
 	if _, isCF := CustomFieldID(name); isCF {
 		return &FieldDef{Name: name, Kind: KindCustomField, Operators: allOps}, true
+	}
+	if payloadFieldPattern.MatchString(name) {
+		return &FieldDef{Name: name, Kind: KindAny, Operators: allOps}, true
 	}
 	def, ok = staticFields[name]
 	return def, ok

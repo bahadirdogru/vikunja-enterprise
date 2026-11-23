@@ -346,6 +346,9 @@ var unauthenticatedAPIPaths = map[string]bool{
 	"/api/v2/forms/:token/submissions":           true,
 	"/api/v2/forms/:token/submissions/multipart": true,
 
+	// Incoming automation webhook (a Huma op): the secret token in the URL is the credential.
+	automationHookPath: true,
+
 	// Public infra healthcheck (a Huma op that opts out of the global auth).
 	"/api/v2/health": true,
 
@@ -357,6 +360,9 @@ var unauthenticatedAPIPaths = map[string]bool{
 	// it authenticates via its first message, so the upgrade needs no JWT.
 	"/api/v2/ws": true,
 }
+
+// automationHookPath is the public endpoint of incoming automation webhooks.
+const automationHookPath = "/api/v2/automation/hooks/:token"
 
 // optionalAuthAPIPaths are the public paths that still authenticate a request which sends credentials.
 var optionalAuthAPIPaths = map[string]bool{
@@ -492,6 +498,8 @@ func registerAPIRoutesV2(e *echo.Echo, a *echo.Group, noAuthRateLimit, refreshRa
 	a.Use(pathScoped(v2CredentialPaths.has, noAuthRateLimit))
 	// A floor against floods on the public form endpoints; the per IP and per form submission limits are in the database.
 	a.Use(pathScoped(func(p string) bool { return optionalAuthAPIPaths[p] }, perMinuteIPRateLimit("forms", config.FormsPublicRequestRateLimit.GetInt64())))
+	// The same floor for the incoming automation webhooks; the limit per rule is in the database.
+	a.Use(pathScoped(func(p string) bool { return p == automationHookPath }, perMinuteIPRateLimit("hooks", config.FormsPublicRequestRateLimit.GetInt64())))
 	// Match the authenticated v1 group: rate limiting and route metrics
 	// apply to v2 resource endpoints too.
 	setupRateLimit(a, config.RateLimitKind.GetString())
