@@ -19,13 +19,18 @@ package models
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"image"
+	_ "image/gif"  // The decoders DecodeConfig and imageutils need for every accepted logo type.
+	_ "image/jpeg" // See above.
 	"image/png"
 	"io"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 	"unicode/utf8"
 
@@ -37,6 +42,7 @@ import (
 
 	"github.com/disintegration/imaging"
 	"github.com/gabriel-vasile/mimetype"
+	_ "golang.org/x/image/webp" // See above.
 	"xorm.io/xorm"
 )
 
@@ -46,6 +52,9 @@ const (
 	FormLogoMaxBytes = 1 << 20
 	// formLogoMaxSide is the longest side of the stored logo; larger images are scaled down.
 	formLogoMaxSide = 512
+	// formLogoMaxInputSide is the largest width and height an uploaded logo may have. A file of a few KiB can
+	// declare far more pixels than any logo needs, so this is checked on the header before anything is decoded.
+	formLogoMaxInputSide = 4096
 )
 
 var formAccentColor = regexp.MustCompile(`^#?([0-9a-fA-F]{6})$`)
@@ -106,6 +115,14 @@ func PrepareFormLogo(ctx context.Context, src io.Reader) (*EncodedFormLogo, erro
 	}
 	if !supported {
 		return nil, ErrFormLogoInvalid{Reason: FormLogoUnsupportedType}
+	}
+
+	cfg, _, err := image.DecodeConfig(bytes.NewReader(raw))
+	if err != nil {
+		return nil, ErrFormLogoInvalid{Reason: FormLogoUnsupportedType}
+	}
+	if cfg.Width > formLogoMaxInputSide || cfg.Height > formLogoMaxInputSide {
+		return nil, ErrFormLogoInvalid{Reason: FormLogoTooLarge}
 	}
 
 	buf := &bytes.Buffer{}
@@ -176,6 +193,12 @@ func LoadFormLogo(s *xorm.Session, token string) (*FormLogo, error) {
 	if err != nil {
 		return nil, err
 	}
+	normalizeForm(f)
+	// Like the definition, a form that is switched off, by the owner or by the instance, serves nothing. A form that
+	// is closed, full or members-only keeps its logo.
+	if formUnavailableReason(f) == FormUnavailableDisabled {
+		return nil, ErrFormDoesNotExist{}
+	}
 	if f.BrandLogoFileID == 0 {
 		return nil, ErrFormDoesNotExist{}
 	}
@@ -186,13 +209,18 @@ func LoadFormLogo(s *xorm.Session, token string) (*FormLogo, error) {
 	if err = file.LoadFileByID(); err != nil {
 		return nil, ErrFormDoesNotExist{}
 	}
-	return &FormLogo{File: file, ETag: `"form-logo-` + strconv.FormatInt(f.BrandLogoFileID, 10) + `"`}, nil
+	// The ETag changes with every replacement without exposing the internal file id.
+	sum := sha256.Sum256([]byte("form-logo:" + strconv.FormatInt(file.ID, 10) + ":" + strconv.FormatUint(file.Size, 10) + ":" + file.Created.UTC().Format(time.RFC3339Nano)))
+	return &FormLogo{File: file, ETag: `"` + hex.EncodeToString(sum[:12]) + `"`}, nil
 }
 
 // UploadFormLogo checks the image and stores it as the logo of the form. Needs admin access to the project. The
 // decoding may queue for capacity, so it runs before the transaction starts, and the permission is checked again
 // inside it.
 func UploadFormLogo(ctx context.Context, a web.Auth, projectID, formID int64, src io.Reader) (*Form, error) {
+	if err := (&Form{}).checkFeature(); err != nil {
+		return nil, err
+	}
 	if err := checkFormAdmin(a, projectID, formID); err != nil {
 		return nil, err
 	}
@@ -205,7 +233,7 @@ func UploadFormLogo(ctx context.Context, a web.Auth, projectID, formID int64, sr
 	defer s.Close()
 	defer events.CleanupPending(s)
 
-	f, err := adminForm(s, a, projectID, formID)
+	f, err := lockedAdminForm(s, a, projectID, formID)
 	if err == nil {
 		err = f.SetBrandLogo(s, a, logo)
 	}
@@ -222,11 +250,14 @@ func UploadFormLogo(ctx context.Context, a web.Auth, projectID, formID int64, sr
 
 // DeleteFormLogo removes the logo of the form. Needs admin access to the project.
 func DeleteFormLogo(ctx context.Context, a web.Auth, projectID, formID int64) (*Form, error) {
+	if err := (&Form{}).checkFeature(); err != nil {
+		return nil, err
+	}
 	s := db.NewSession()
 	defer s.Close()
 	defer events.CleanupPending(s)
 
-	f, err := adminForm(s, a, projectID, formID)
+	f, err := lockedAdminForm(s, a, projectID, formID)
 	if err == nil {
 		err = f.RemoveBrandLogo(s)
 	}
@@ -239,6 +270,19 @@ func DeleteFormLogo(ctx context.Context, a web.Auth, projectID, formID int64) (*
 	}
 	events.DispatchPending(ctx, s)
 	return f, nil
+}
+
+// lockedAdminForm is adminForm for a write of the logo: it takes the lock of the form row first, the way submitForm
+// does, and reads the form after that, so two concurrent replacements cannot both see the same old logo and orphan
+// a file.
+func lockedAdminForm(s *xorm.Session, a web.Auth, projectID, formID int64) (*Form, error) {
+	if _, err := adminForm(s, a, projectID, formID); err != nil {
+		return nil, err
+	}
+	if _, err := s.Exec("UPDATE forms SET id = id WHERE id = ?", formID); err != nil {
+		return nil, err
+	}
+	return adminForm(s, a, projectID, formID)
 }
 
 func checkFormAdmin(a web.Auth, projectID, formID int64) error {

@@ -23,6 +23,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"code.vikunja.io/api/pkg/config"
@@ -191,10 +192,10 @@ func formPublicLogo(ctx context.Context, in *struct {
 		c := humaecho.Unwrap(hctx)
 		w, r := (*c).Response(), (*c).Request()
 		// Replaces the global no-store: the logo may be cached, but is revalidated.
-		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Cache-Control", "private, no-cache")
 		w.Header().Set("ETag", logo.ETag)
 		w.Header().Set("X-Content-Type-Options", "nosniff")
-		if r.Header.Get("If-None-Match") == logo.ETag {
+		if etagMatches(r.Header.Get("If-None-Match"), logo.ETag) {
 			w.WriteHeader(http.StatusNotModified)
 			return
 		}
@@ -253,4 +254,16 @@ func formPublicSubmitMultipart(ctx context.Context, in *formMultipartInput) (*fo
 		return nil, formError(ctx, err)
 	}
 	return &formSubmitResultBody{Body: res}, nil
+}
+
+// etagMatches reports whether an If-None-Match header names the ETag: a comma separated list, weak validators
+// allowed (weak comparison is what the header uses), or *.
+func etagMatches(header, etag string) bool {
+	for _, candidate := range strings.Split(header, ",") {
+		candidate = strings.TrimPrefix(strings.TrimSpace(candidate), "W/")
+		if candidate == "*" || candidate == etag {
+			return true
+		}
+	}
+	return false
 }

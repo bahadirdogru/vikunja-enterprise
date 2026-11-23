@@ -580,6 +580,15 @@ func TestHumaForms_Branding(t *testing.T) {
 		cached := httptest.NewRecorder()
 		e.ServeHTTP(cached, req)
 		assert.Equal(t, http.StatusNotModified, cached.Code)
+		assert.Equal(t, "private, no-cache", rec.Header().Get("Cache-Control"))
+		assert.NotContains(t, etag, "form-logo-", "the ETag does not show the file id")
+		for _, header := range []string{`W/` + etag, `"other", ` + etag, `*`} {
+			req = httptest.NewRequest(http.MethodGet, "/api/v2/forms/"+token+"/logo", nil)
+			req.Header.Set("If-None-Match", header)
+			cached = httptest.NewRecorder()
+			e.ServeHTTP(cached, req)
+			assert.Equal(t, http.StatusNotModified, cached.Code, header)
+		}
 
 		assert.Equal(t, http.StatusNotFound, humaRequest(t, e, http.MethodGet, "/api/v2/forms/not-a-token/logo", "", "", "").Code)
 
@@ -590,5 +599,20 @@ func TestHumaForms_Branding(t *testing.T) {
 		require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
 		assert.Equal(t, false, formsDecode(t, rec)["has_brand_logo"])
 		assert.Equal(t, http.StatusNotFound, humaRequest(t, e, http.MethodGet, "/api/v2/forms/"+token+"/logo", "", "", "").Code)
+	})
+
+	t.Run("nothing is served or saved while forms are disabled", func(t *testing.T) {
+		data, ct := multipartLogo(pngBytes.Bytes())
+		rec := humaRequest(t, e, http.MethodPut, logoPath, data, user1, ct)
+		require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+		require.Equal(t, http.StatusOK, humaRequest(t, e, http.MethodGet, "/api/v2/forms/"+token+"/logo", "", "", "").Code)
+
+		config.FormsEnabled.Set(false)
+		defer config.FormsEnabled.Set(true)
+		assert.Equal(t, http.StatusNotFound, humaRequest(t, e, http.MethodGet, "/api/v2/forms/"+token+"/logo", "", "", "").Code)
+		rec = humaRequest(t, e, http.MethodPut, logoPath, data, user1, ct)
+		assert.EqualValues(t, models.ErrCodeFormsDisabled, formsDecode(t, rec)["code"], rec.Body.String())
+		rec = humaRequest(t, e, http.MethodDelete, logoPath, "", user1, "")
+		assert.EqualValues(t, models.ErrCodeFormsDisabled, formsDecode(t, rec)["code"], rec.Body.String())
 	})
 }

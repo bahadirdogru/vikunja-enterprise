@@ -313,7 +313,7 @@ type ErrFormLogoInvalid struct {
 
 // IsErrFormLogoInvalid checks if an error is ErrFormLogoInvalid.
 func IsErrFormLogoInvalid(err error) bool {
-	_, ok := err.(ErrFormLogoInvalid)
+	_, ok := errors.AsType[ErrFormLogoInvalid](err)
 	return ok
 }
 
@@ -329,7 +329,7 @@ func (err ErrFormLogoInvalid) HTTPError() web.HTTPError {
 	message := "The logo is not a usable image."
 	switch err.Reason {
 	case FormLogoTooLarge:
-		message = "The logo is too large. It may be at most 1 MiB."
+		message = "The logo is too large. It may be at most 1 MiB and 4096 x 4096 pixels."
 	case FormLogoNotAnImage:
 		message = "The logo is not an image."
 	case FormLogoUnsupportedType:

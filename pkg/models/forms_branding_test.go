@@ -19,13 +19,17 @@ package models
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"image"
 	"image/color"
+	"image/gif"
+	"image/jpeg"
 	"image/png"
 	"io"
 	"strings"
 	"testing"
 
+	"code.vikunja.io/api/pkg/config"
 	"code.vikunja.io/api/pkg/db"
 	"code.vikunja.io/api/pkg/files"
 
@@ -158,6 +162,45 @@ func TestFormLogo_Prepare(t *testing.T) {
 		}
 	})
 
+	t.Run("decodes every accepted format", func(t *testing.T) {
+		img := image.NewNRGBA(image.Rect(0, 0, 30, 20))
+		for x := 0; x < 30; x++ {
+			for y := 0; y < 20; y++ {
+				img.Set(x, y, color.NRGBA{R: 10, G: 120, B: 220, A: 255})
+			}
+		}
+		encoded := map[string][]byte{"png": logoPNG(t, 30, 20)}
+		jbuf := &bytes.Buffer{}
+		require.NoError(t, jpeg.Encode(jbuf, img, nil))
+		encoded["jpeg"] = jbuf.Bytes()
+		gbuf := &bytes.Buffer{}
+		require.NoError(t, gif.Encode(gbuf, img, nil))
+		encoded["gif"] = gbuf.Bytes()
+		// A 1x1 lossy WebP: x/image/webp only decodes, so the fixture is embedded instead of produced.
+		webp, err := base64.StdEncoding.DecodeString("UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AAAAAA")
+		require.NoError(t, err)
+		encoded["webp"] = webp
+
+		for name, data := range encoded {
+			logo, err := PrepareFormLogo(ctx, bytes.NewReader(data))
+			require.NoError(t, err, name)
+			_, format, err := image.DecodeConfig(bytes.NewReader(logo.png))
+			require.NoError(t, err, name)
+			assert.Equal(t, "png", format, name)
+		}
+	})
+
+	t.Run("refuses a small file with a huge canvas before decoding it", func(t *testing.T) {
+		// A solid 5000x5000 PNG is a few dozen KiB but 25 megapixels.
+		data := logoPNG(t, 5000, 5000)
+		require.Less(t, len(data), FormLogoMaxBytes, "the fixture has to pass the byte limit")
+		_, err := PrepareFormLogo(ctx, bytes.NewReader(data))
+		assert.Equal(t, ErrFormLogoInvalid{Reason: FormLogoTooLarge}, err)
+
+		_, err = PrepareFormLogo(ctx, bytes.NewReader(logoPNG(t, 4096, 100)))
+		require.NoError(t, err, "the limit itself is fine")
+	})
+
 	t.Run("refuses a file over the limit", func(t *testing.T) {
 		big := append(logoPNG(t, 10, 10), bytes.Repeat([]byte{0}, FormLogoMaxBytes)...)
 		_, err := PrepareFormLogo(ctx, bytes.NewReader(big))
@@ -172,9 +215,9 @@ func TestFormLogo_Lifecycle(t *testing.T) {
 
 	t.Run("only project admins upload", func(t *testing.T) {
 		_, err := UploadFormLogo(ctx, fU2, 1, f.ID, bytes.NewReader(logoPNG(t, 20, 20)))
-		assert.Error(t, err)
+		require.Error(t, err)
 		_, err = DeleteFormLogo(ctx, fU2, 1, f.ID)
-		assert.Error(t, err)
+		require.Error(t, err)
 		_, err = UploadFormLogo(ctx, fU1, 1, f.ID+100, bytes.NewReader(logoPNG(t, 20, 20)))
 		assert.True(t, IsErrFormDoesNotExist(err))
 	})
@@ -267,5 +310,66 @@ func TestFormLogo_Lifecycle(t *testing.T) {
 		require.True(t, has)
 		assert.Equal(t, "#abcdef", clone.AccentColor)
 		assert.Zero(t, clone.BrandLogoFileID)
+	})
+}
+
+func TestFormLogo_Availability(t *testing.T) {
+	formsReset(t)
+	ctx := context.Background()
+	f := createForm(t, baseForm(FormAccessPublic))
+	_, err := UploadFormLogo(ctx, fU1, 1, f.ID, bytes.NewReader(logoPNG(t, 20, 20)))
+	require.NoError(t, err)
+	serves := func() bool {
+		logo, err := OpenFormLogo(f.Token)
+		if err == nil {
+			_ = logo.File.File.Close()
+			return true
+		}
+		assert.True(t, IsErrFormDoesNotExist(err), "got %T: %v", err, err)
+		return false
+	}
+	setForm := func(cols string, v *Form) {
+		s := db.NewSession()
+		defer s.Close()
+		_, err := s.ID(f.ID).Cols(cols).Update(v)
+		require.NoError(t, err)
+		require.NoError(t, s.Commit())
+	}
+	require.True(t, serves())
+
+	t.Run("not while the form is disabled", func(t *testing.T) {
+		setForm("enabled", &Form{Enabled: false})
+		defer setForm("enabled", &Form{Enabled: true})
+		assert.False(t, serves())
+	})
+
+	t.Run("not while forms or public forms are disabled on the instance", func(t *testing.T) {
+		config.FormsEnabled.Set(false)
+		assert.False(t, serves())
+		config.FormsEnabled.Set(true)
+
+		config.FormsPublicEnabled.Set(false)
+		defer config.FormsPublicEnabled.Set(true)
+		assert.False(t, serves())
+	})
+
+	t.Run("a full form keeps serving it", func(t *testing.T) {
+		setForm("max_submissions", &Form{MaxSubmissions: 1})
+		defer setForm("max_submissions", &Form{MaxSubmissions: 0})
+		s := db.NewSession()
+		_, err := s.Exec("UPDATE forms SET submission_count = 5 WHERE id = ?", f.ID)
+		require.NoError(t, err)
+		require.NoError(t, s.Commit())
+		s.Close()
+		assert.True(t, serves())
+	})
+
+	t.Run("saving and removing the logo need the feature", func(t *testing.T) {
+		config.FormsEnabled.Set(false)
+		defer config.FormsEnabled.Set(true)
+		_, err := UploadFormLogo(ctx, fU1, 1, f.ID, bytes.NewReader(logoPNG(t, 20, 20)))
+		assert.True(t, IsErrFormsDisabled(err), "got %v", err)
+		_, err = DeleteFormLogo(ctx, fU1, 1, f.ID)
+		assert.True(t, IsErrFormsDisabled(err), "got %v", err)
 	})
 }
