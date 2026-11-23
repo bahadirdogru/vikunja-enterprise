@@ -428,12 +428,12 @@ func (r *reportRun) selectColumns(groupDims []*reportDim, withBucket bool) (cols
 	return cols, strings.Join(groups, ", ")
 }
 
-// query runs one grouped statement over the readable tasks: the joins of joinDims are added, the rows are grouped by
-// groupDims and the time bucket and restricted to extra.
-func (r *reportRun) query(joinDims, groupDims []*reportDim, withBucket bool, extra builder.Cond) ([]*reportRow, error) {
+// query runs one grouped statement over the readable tasks: the rows are grouped by groupDims and the time bucket and
+// restricted to extra.
+func (r *reportRun) query(groupDims []*reportDim, withBucket bool, extra builder.Cond) ([]*reportRow, error) {
 	cols, groupBy := r.selectColumns(groupDims, withBucket)
 	q := builder.Select(cols...).From("tasks")
-	for _, d := range append(append([]*reportDim{}, joinDims...), groupDims...) {
+	for _, d := range groupDims {
 		for _, j := range d.joins {
 			q = q.LeftJoin(j.table, j.cond)
 		}
@@ -627,7 +627,7 @@ func (r *reportRun) execute() (*TaskReport, error) {
 		}
 	}
 
-	totals, err := r.query(nil, nil, false, nil)
+	totals, err := r.query(nil, false, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -656,7 +656,7 @@ func (r *reportRun) execute() (*TaskReport, error) {
 
 	if len(plan.dims) == 0 {
 		if plan.timeCfg != nil {
-			rows, err := r.query(nil, nil, true, nil)
+			rows, err := r.query(nil, true, nil)
 			if err != nil {
 				return nil, err
 			}
@@ -666,7 +666,7 @@ func (r *reportRun) execute() (*TaskReport, error) {
 	}
 
 	d1 := plan.dims[0]
-	rows, err := r.query(nil, []*reportDim{d1}, false, nil)
+	rows, err := r.query([]*reportDim{d1}, false, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -682,7 +682,7 @@ func (r *reportRun) execute() (*TaskReport, error) {
 		otherNode = &reportNode{other: true, label: reportLabel{label: "Other"}}
 		if d1.multi {
 			// A task with several of the folded values must count once in other, so ask the database.
-			otherRows, err := r.query([]*reportDim{d1}, nil, false, d1.keyCond(nodeKeys(kept), false))
+			otherRows, err := r.query(nil, false, r.foldedTasksCond(d1, kept))
 			if err != nil {
 				return nil, err
 			}
@@ -779,7 +779,7 @@ func (r *reportRun) attachChildren(parents []*reportNode) error {
 		return nil
 	}
 	d1, d2 := r.plan.dims[0], r.plan.dims[1]
-	rows, err := r.query(nil, []*reportDim{d1, d2}, false, d1.keyCond(nodeKeys(parents), true))
+	rows, err := r.query([]*reportDim{d1, d2}, false, d1.keyCond(nodeKeys(parents), true))
 	if err != nil {
 		return err
 	}
@@ -830,7 +830,7 @@ func (r *reportRun) fetchSeries(kept []*reportNode, hasOther bool) (map[string]m
 	}
 	extra = builder.And(conds...)
 
-	rows, err := r.query(nil, groupDims, true, extra)
+	rows, err := r.query(groupDims, true, extra)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -845,13 +845,27 @@ func (r *reportRun) fetchSeries(kept []*reportNode, hasOther bool) (map[string]m
 
 	var otherSeries map[int]*reportAgg
 	if hasOther && len(dims) == 1 {
-		otherRows, err := r.query(dims, nil, true, dims[0].keyCond(nodeKeys(kept), false))
+		otherRows, err := r.query(nil, true, r.foldedTasksCond(dims[0], kept))
 		if err != nil {
 			return nil, nil, err
 		}
 		otherSeries = seriesOf(otherRows)
 	}
 	return out, otherSeries, nil
+}
+
+// foldedTasksCond selects the tasks that have a value of d outside the kept groups. It is a sub-select and not a join,
+// so a task with several folded values is one row and its measure counts once in the other group.
+func (r *reportRun) foldedTasksCond(d *reportDim, kept []*reportNode) builder.Cond {
+	sub := builder.Select("tasks.id").From("tasks")
+	for _, j := range d.joins {
+		sub = sub.LeftJoin(j.table, j.cond)
+	}
+	conds := []builder.Cond{builder.In("tasks.id", r.base)}
+	if folded := d.keyCond(nodeKeys(kept), false); folded != nil {
+		conds = append(conds, folded)
+	}
+	return builder.In("tasks.id", sub.Where(builder.And(conds...)))
 }
 
 // RunTaskReport aggregates the tasks the auth can read. The set of tasks is built by the same code as the task list

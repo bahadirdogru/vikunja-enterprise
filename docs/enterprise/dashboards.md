@@ -97,8 +97,8 @@ Semantics:
   `multi_valued` says so and `total` stays the number of distinct tasks. Tasks without a value form the `none`
   group (`key: null`, `none: true`). `priority` 0 counts as no value; `done` and checkbox fields have no none group
   (an unset checkbox is "not checked", as in the filter). The folded rest is one group with `other: true` and
-  `key: null`. For a multi valued first level `other` is the number of distinct tasks that have any folded value
-  (one extra statement); on the second level it is the sum of the folded children. `other` groups have no children
+  `key: null`. For a multi valued first level `other` is computed over the distinct tasks that have any folded value
+  (one extra statement), so a task with two folded values counts once, for every measure; on the second level it is the sum of the folded children. `other` groups have no children
   and, on a nested time series, no series.
 - **Measures.** Tasks without a value are ignored by sum/avg/min/max. `time_spent` is the sum of finished time
   entries (`end_time` set) per task in seconds; running timers are ignored, not counted up to now. It is not
@@ -117,8 +117,9 @@ Semantics:
 ### Time bucketing and time zones
 
 The database is never asked to truncate dates. The buckets are computed in Go in the requested IANA time zone
-(`time.LoadLocation`, so daylight saving is exact: a day can be 23 or 25 hours long and always starts at local
-midnight; weeks start Monday; months on the 1st) and the boundaries are passed to the query as a balanced tree of
+(`time.LoadLocation`, so daylight saving is exact: a day can be 23 or 25 hours long and starts at local
+midnight, or at the clock change where daylight saving starts at midnight and that hour does not exist, as in
+America/Santiago and America/Havana; weeks start Monday; months on the 1st) and the boundaries are passed to the query as a balanced tree of
 `CASE WHEN column < 'boundary'` expressions (depth log2(buckets), at most 9). That is plain SQL on SQLite, PostgreSQL
 and MySQL, with no per-dialect date function and no time zone support tables. The only dialect specific expression
 is the length of a time entry in seconds (`time_spent`). Limits: the boundaries are formatted as UTC literals

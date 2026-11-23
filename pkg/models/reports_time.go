@@ -97,7 +97,8 @@ func parseReportDate(raw string, loc *time.Location, now time.Time, param string
 		return t, nil
 	}
 	if ds, err := spec.ParseDateSpec(raw, false); err == nil {
-		return ds.Resolve(now), nil
+		// A timestamp carries its own offset; the buckets are cut in the time zone of the report.
+		return ds.Resolve(now).In(loc), nil
 	}
 
 	var budget businessDayBudget
@@ -111,18 +112,31 @@ func parseReportDate(raw string, loc *time.Location, now time.Time, param string
 	return expr.Time(datemath.WithLocation(loc), datemath.WithNow(now), datemath.WithStartOfWeek(time.Monday)).In(loc), nil
 }
 
+// reportDayStart is the first instant of a calendar day in loc. Where daylight saving time starts at midnight
+// (America/Havana, America/Santiago) that hour does not exist and time.Date answers with 23:00 of the day before; the
+// day then starts at the change of the offset.
+func reportDayStart(y int, m time.Month, d int, loc *time.Location) time.Time {
+	t := time.Date(y, m, d, 0, 0, 0, 0, loc)
+	if t.Day() != time.Date(y, m, d, 12, 0, 0, 0, loc).Day() {
+		if _, end := t.ZoneBounds(); !end.IsZero() {
+			return end
+		}
+	}
+	return t
+}
+
 // reportBucketStart truncates t to the start of its bucket in t's own location. Weeks start on Monday.
 func reportBucketStart(t time.Time, bucket string) time.Time {
 	y, m, d := t.Date()
 	loc := t.Location()
 	switch bucket {
 	case ReportBucketMonth:
-		return time.Date(y, m, 1, 0, 0, 0, 0, loc)
+		return reportDayStart(y, m, 1, loc)
 	case ReportBucketWeek:
 		back := (int(t.Weekday()) + 6) % 7
-		return time.Date(y, m, d-back, 0, 0, 0, 0, loc)
+		return reportDayStart(y, m, d-back, loc)
 	}
-	return time.Date(y, m, d, 0, 0, 0, 0, loc)
+	return reportDayStart(y, m, d, loc)
 }
 
 // reportBucketNext is the start of the bucket after the one starting at start. It adds calendar days, so a bucket
@@ -131,11 +145,11 @@ func reportBucketNext(start time.Time, bucket string) time.Time {
 	y, m, d := start.Date()
 	switch bucket {
 	case ReportBucketMonth:
-		return time.Date(y, m+1, 1, 0, 0, 0, 0, start.Location())
+		return reportDayStart(y, m+1, 1, start.Location())
 	case ReportBucketWeek:
-		return time.Date(y, m, d+7, 0, 0, 0, 0, start.Location())
+		return reportDayStart(y, m, d+7, start.Location())
 	}
-	return time.Date(y, m, d+1, 0, 0, 0, 0, start.Location())
+	return reportDayStart(y, m, d+1, start.Location())
 }
 
 // reportBuckets returns the boundaries of the buckets covering from to to: bucket i is [b[i], b[i+1]).

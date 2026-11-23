@@ -374,6 +374,25 @@ func TestReport_TopNAndOther(t *testing.T) {
 		assert.True(t, open.Children[1].Other)
 		assert.Empty(t, rep.Groups[1].Children, "the other group has no children")
 	})
+
+	t.Run("multi valued other measures a task once", func(t *testing.T) {
+		// t3 (percent_done 0.5) gets two labels that are both folded. Label 1 (t1, t2: 1.25) is kept; the other
+		// group is t2 (label 2), t3 (labels 4 and 5) and t4, t5 (no label): 1 + 0.5 + 0 + 0.
+		insertRow(t, &LabelTask{TaskID: env.tasks["t3"], LabelID: 4})
+		insertRow(t, &LabelTask{TaskID: env.tasks["t3"], LabelID: 5})
+		req := ReportRequest{ProjectID: p, GroupBy: "label", Measure: ReportMeasureSum, Field: ReportFieldPercentDone, Limit: 1}
+		rep := runReport(t, cfUser1, req)
+		require.Len(t, rep.Groups, 2)
+		assert.InDelta(t, 1.25, rep.Groups[0].Value, 0.001)
+		require.True(t, rep.Groups[1].Other)
+		assert.InDelta(t, 1.5, rep.Groups[1].Value, 0.001)
+
+		req.Time = &ReportTime{Field: "created", Bucket: "month", From: "2026-01-01", To: "2026-03-31", Timezone: "UTC"}
+		rep = runReport(t, cfUser1, req)
+		require.Len(t, rep.Groups, 2)
+		require.True(t, rep.Groups[1].Other)
+		assert.InDelta(t, 1.5, seriesValues(rep.Groups[1].Series)["2026-01-01"], 0.001)
+	})
 }
 
 func TestReport_TimeSeries(t *testing.T) {
@@ -440,6 +459,22 @@ func TestReport_TimeSeries(t *testing.T) {
 		req.Time.Timezone = "UTC"
 		rep = runReport(t, cfUser1, req)
 		assert.Equal(t, map[string]float64{"2026-03-08": 1, "2026-03-09": 2}, seriesValues(rep.Series))
+	})
+
+	t.Run("a timestamp range is cut in the time zone of the report", func(t *testing.T) {
+		req := ReportRequest{ProjectID: env.project2, Time: &ReportTime{Field: "created", Bucket: "day", From: "2026-03-08T12:00:00Z", To: "2026-03-09T12:00:00Z", Timezone: "America/New_York"}}
+		rep := runReport(t, cfUser1, req)
+		assert.Equal(t, map[string]float64{"2026-03-08": 2, "2026-03-09": 1}, seriesValues(rep.Series))
+		assert.Equal(t, "2026-03-08T00:00:00-05:00", rep.Series[0].Start)
+	})
+
+	t.Run("daylight saving that starts at midnight", func(t *testing.T) {
+		// In Chile the clock goes from 2026-09-05 24:00 to 2026-09-06 01:00, so that day has no midnight.
+		rep := runReport(t, cfUser1, tm("created", "day", "2026-09-01", "2026-09-10", "America/Santiago"))
+		require.Len(t, rep.Series, 10)
+		assert.Equal(t, "2026-09-06", rep.Series[5].Bucket)
+		assert.Equal(t, "2026-09-06T01:00:00-03:00", rep.Series[5].Start)
+		assert.Equal(t, "2026-09-07T00:00:00-03:00", rep.Series[5].End)
 	})
 
 	t.Run("month end", func(t *testing.T) {
@@ -846,4 +881,39 @@ func TestReport_LinkShare(t *testing.T) {
 			}
 		}
 	})
+}
+
+func TestReport_BucketsWhereMidnightDoesNotExist(t *testing.T) {
+	for _, zone := range []string{"America/Havana", "America/Santiago"} {
+		t.Run(zone, func(t *testing.T) {
+			loc, err := time.LoadLocation(zone)
+			require.NoError(t, err)
+			from := time.Date(2026, 1, 1, 0, 0, 0, 0, loc)
+			to := time.Date(2026, 12, 31, 12, 0, 0, 0, loc)
+
+			days, err := reportBuckets(from, to, ReportBucketDay, 400)
+			require.NoError(t, err)
+			require.Len(t, days, 366)
+			shifted := 0
+			for i, b := range days {
+				want := time.Date(2026, 1, 1+i, 12, 0, 0, 0, time.UTC).Format(reportDateLayout)
+				require.Equal(t, want, b.Format(reportDateLayout), "bucket %d", i)
+				if b.Hour() != 0 {
+					shifted++
+					noon := time.Date(2026, 1, 1+i, 12, 0, 0, 0, loc)
+					assert.True(t, reportBucketStart(noon, ReportBucketDay).Equal(b), "a time on that day belongs to its bucket")
+				}
+			}
+			assert.Equal(t, 1, shifted, "the zone has one day in 2026 that starts after midnight")
+
+			weeks, err := reportBuckets(from, to, ReportBucketWeek, 400)
+			require.NoError(t, err)
+			for i, b := range weeks {
+				require.Equal(t, time.Monday, b.Weekday(), "week %d", i)
+				if i > 0 {
+					require.True(t, b.After(weeks[i-1]))
+				}
+			}
+		})
+	}
 }
