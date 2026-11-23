@@ -150,6 +150,26 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   mode, Turkish. A server-side 422 was only shown with a mocked response. No
   QR code (would need a dependency). Relative date defaults are not offered.
 
+- Review pass over the fork's code (branch `chore/enterprise-overhaul`).
+  golangci-lint v2.14.0 run for the first time: 240 findings, 12 left, all
+  `unused` in `pkg/license`. Build the linter with `GOTOOLCHAIN=go1.27.0`;
+  do not run `lint:fix` blind, its err113 autofix corrupted a test file.
+  The intermittent `./pkg/models/` failure was `TestApprovals_Notifications`
+  asserting the order of two mails (7 failures in 100 runs). Full
+  `test:feature` and `test:web` pass on SQLite and PostgreSQL 17 with no
+  failures; an earlier run on PostgreSQL 9.5 passed apart from an unordered
+  member list, fixed since. Fixed in the review, each with a test: scripts
+  reading any task through an empty update, rules seeing tasks their owner
+  lost, duplicate steps and an expiring event lock, idle workers locking
+  SQLite on every poll, three issues on the public form path and a 500 on
+  malformed form tokens, workflow rules skipped by entering a workflow done,
+  done out of sync after a category change, report buckets in time zones
+  where daylight saving starts at midnight, duplicate custom field values
+  under concurrent writes. Behaviour change: creating a done task in a
+  workflow project whose done transition is restricted or needs approval is
+  now refused, also through CalDAV. Frontend: eslint, stylelint and vue-tsc
+  are clean on the fork's files; the unit suite was not run in this pass.
+
 ## Remaining
 
 - 1e: custom field filter UI with field names instead of `cf_<id>`.
@@ -157,7 +177,35 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   in-app notify action.
 - 4c: status time, workload and time tracking widgets, CSV export, number
   comparison.
-- MCP exposure of the fork's endpoints; golangci-lint has never been run on
-  the fork's code; MySQL only exercised for reports, approvals and forms; the
-  arm64 image has not been started on real ARM hardware; one unexplained
-  intermittent failure in `./pkg/models/`.
+- MCP exposure of the fork's endpoints; MySQL only exercised for reports,
+  approvals and forms; the arm64 image has not been started on real ARM
+  hardware.
+
+Open after the review pass, not fixed because they need a decision:
+
+- Automation: a script can outlive its timeout inside array natives
+  (`Array.prototype.indexOf.call({length: 2**53 - 1}, 1)`) and holds a
+  worker for good. Scripts are enabled by default.
+- Automation: retrying one failed run re-queues the whole event, so rules
+  created after the event run for it too. No cap on rules per project.
+- Approvals: a decision and a direct status change of the same task
+  deadlock on PostgreSQL (the status change fails with 40P01). Locking the
+  task first in the decision path fixed it on PostgreSQL in a trial; MySQL
+  not checked.
+- Approvals: an approved transition is performed for a requester whose
+  account was disabled; a request whose only approver was disabled stays
+  pending.
+- Workflow: removing a status with `move_tasks_to` writes no history and
+  fires no event.
+- Reports: the response size is unbounded in groups x children x buckets
+  (13 MB measured with two 20-option fields and 366 buckets).
+- Custom fields: no cap on fields per project or options per field;
+  `value_text` is 64 KB on MySQL and values are not length-checked.
+- Forms: the e-mail of a signed-in submitter is never recorded although the
+  field documentation says so; the title of a closed members form is shown
+  to an anonymous holder of the link; no hourly limit on members forms;
+  per-IP limits count full IPv6 addresses; uploads are buffered before the
+  token is looked up.
+- SQLite: a transaction that reads and then writes fails at once when
+  another connection holds the write lock (`_txlock=immediate` would change
+  that for every transaction).
