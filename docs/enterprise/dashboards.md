@@ -1,6 +1,6 @@
 # Dashboards and reports — design
 
-Status: step 4a (aggregation API and dashboard CRUD) and 4b (the UI) are implemented, 4c is open. The sections below describe what is built; "Deferred" lists what is not.
+Status: step 4a (aggregation API and dashboard CRUD) and 4b (the UI) are implemented, 4c (time in status, workload and time tracking widgets, CSV export, previous period comparison) is implemented except the default dashboards. The sections below describe what is built; "Deferred" lists what is not.
 
 ## Goals
 
@@ -236,8 +236,7 @@ Deferred or different from the plan:
 
 - Display options (bar direction, stacked, legend) are not stored: widget configs are decoded strictly and have no room
   for them, so they are a per-viewer setting in the browser.
-- `number` has no compare period; `created_vs_done` has no running open count; `status_time`, `workload` and
-  `time_tracking` are not offered (4c); no CSV export; a `text` widget stores the editor's HTML (sanitized on render).
+- `created_vs_done` has no running open count; a `text` widget stores the editor's HTML (sanitized on render).
 - The `line` chart does not offer a second dimension.
 - Colours without an API colour come from a hash of the group's key and label (same option, same colour in every widget); the empty and folded groups are named in the user's language. In a stack over a multi valued dimension a task counts once per child, so the stack can be taller than the distinct tasks (the tooltip shows both).
 
@@ -247,5 +246,6 @@ Deferred or different from the plan:
   limits, cache) + dashboards/widgets CRUD + tests.
 - 4b (done): dashboard pages, SVG chart components, widget gallery and editor,
   drill-down.
-- 4c: `status_time`, `workload`, `time_tracking` widgets, CSV export, default
-  dashboards created for new projects with a workflow.
+- 4c (done, not checked in a browser): `status_time`, `workload`, `time_tracking` widgets, CSV export from the widget
+  menu and the drill-down, previous period delta on `number` widgets. Open: default dashboards created for new
+  projects with a workflow.
