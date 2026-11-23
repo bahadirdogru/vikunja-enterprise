@@ -566,26 +566,19 @@ func tickDue(rule *models.AutomationRule) (int, error) {
 		builder.Eq{"project_id": rule.ProjectID, "done": false},
 		builder.NotNull{"due_date"},
 	)
-	// Both triggers fire for what happens after the rule was armed (created, last enabled or last got another
-	// trigger), never for the state it finds when it starts: overdue for tasks that became overdue since, due soon
-	// for tasks that entered the window since, or that were created after.
-	armed := rule.ArmedAt
-	if armed.IsZero() {
-		armed = rule.Updated
-	}
+	// What the rule finds when it is armed carries a marker (models.seedAutomationDueMarkers), so everything without
+	// one fires: a task that became overdue or entered the window since, one created there, or one whose due date
+	// was edited into it.
 	switch rule.Trigger.Type {
 	case spec.TriggerTaskOverdue:
-		cond = builder.And(cond, builder.Lt{"due_date": dbTime(at)}, builder.Gte{"due_date": dbTime(armed)})
+		cond = builder.And(cond, builder.Lt{"due_date": dbTime(at)})
 	case spec.TriggerTaskDueSoon:
 		offsetText, _ := rule.Trigger.Options["offset"].(string)
 		offset, err := spec.ParseOffset(offsetText)
 		if err != nil {
 			return 0, err
 		}
-		cond = builder.And(cond,
-			builder.Gt{"due_date": dbTime(at)}, builder.Lte{"due_date": dbTime(at.Add(offset))},
-			builder.Or(builder.Gte{"due_date": dbTime(armed.Add(offset))}, builder.Gte{"created": dbTime(armed)}),
-		)
+		cond = builder.And(cond, builder.Gt{"due_date": dbTime(at)}, builder.Lte{"due_date": dbTime(at.Add(offset))})
 	}
 	tasks := []*models.Task{}
 	q := s.Where(cond).And("NOT EXISTS (SELECT 1 FROM automation_due_markers m WHERE m.rule_id = ? AND m.task_id = tasks.id AND m.due_date = tasks.due_date)", rule.ID).

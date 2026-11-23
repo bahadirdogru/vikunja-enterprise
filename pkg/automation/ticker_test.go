@@ -607,3 +607,53 @@ func ageTasks(t *testing.T, projectID int64) {
 	_, err := s.Exec("UPDATE tasks SET created = ? WHERE project_id = ?", time.Now().Add(-72*time.Hour).UTC().Format("2006-01-02 15:04:05"), projectID)
 	require.NoError(t, err)
 }
+
+// The marker seeded when the rule is armed keeps the tasks it found quiet, but a due date edited afterwards is a
+// new date: it fires, even in the first offset after arming.
+func TestDueSoon_ADueDateEditedIntoTheWindowAfterArmingFires(t *testing.T) {
+	reset(t)
+	clearTasks(t, projectOwned)
+	fakeClock(t)
+	inWindow := newTask(t, projectOwned, "in window", user1)
+	updateTask(t, user1, inWindow.ID, dueIn(10*time.Hour), "due_date")
+	later := newTask(t, projectOwned, "later", user1)
+	updateTask(t, user1, later.ID, dueIn(72*time.Hour), "due_date")
+	r := addRule(t, projectOwned, user1, rule(spec.TriggerTaskDueSoon, map[string]any{"offset": "24h"}, nil, setPriority(3)))
+
+	assert.Zero(t, tick(t), "already in the window when the rule was armed")
+	// Edited into the window during the first offset after arming.
+	updateTask(t, user1, later.ID, dueIn(20*time.Hour), "due_date")
+	assert.Equal(t, 1, tick(t))
+	// The task that was in the window gets another date in it.
+	updateTask(t, user1, inWindow.ID, dueIn(8*time.Hour), "due_date")
+	assert.Equal(t, 1, tick(t))
+	assert.Zero(t, tick(t))
+	drain(t)
+	assert.Len(t, allRuns(t, r.ID), 2)
+}
+
+func TestOverdue_ADueDateBackdatedAfterArmingFires(t *testing.T) {
+	reset(t)
+	clearTasks(t, projectOwned)
+	fakeClock(t)
+	old := newTask(t, projectOwned, "old", user1)
+	updateTask(t, user1, old.ID, func(tk *models.Task) { tk.DueDate = now().Add(-48 * time.Hour).Truncate(time.Second) }, "due_date")
+	future := newTask(t, projectOwned, "future", user1)
+	updateTask(t, user1, future.ID, dueIn(5*24*time.Hour), "due_date")
+	r := addRule(t, projectOwned, user1, rule(spec.TriggerTaskOverdue, nil, nil, setPriority(5)))
+
+	assert.Zero(t, tick(t), "the task that was overdue when the rule was armed is quiet")
+	updateTask(t, user1, future.ID, func(tk *models.Task) { tk.DueDate = now().Add(-24 * time.Hour).Truncate(time.Second) }, "due_date")
+	assert.Equal(t, 1, tick(t), "a due date moved into the past after arming is a new overdue task")
+	assert.Zero(t, tick(t))
+
+	// Disabling and enabling arms again: what is overdue by then is not replayed.
+	updateTask(t, user1, old.ID, func(tk *models.Task) { tk.DueDate = now().Add(-12 * time.Hour).Truncate(time.Second) }, "due_date")
+	stored := getRule(t, r.ID)
+	stored.Enabled = false
+	mustCommit(t, func(s *xorm.Session) error { return stored.Update(s, user1) })
+	stored = getRule(t, r.ID)
+	stored.Enabled = true
+	mustCommit(t, func(s *xorm.Session) error { return stored.Update(s, user1) })
+	assert.Zero(t, tick(t))
+}
