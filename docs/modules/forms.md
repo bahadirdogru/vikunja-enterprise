@@ -164,7 +164,7 @@ From the [roadmap](../enterprise/ROADMAP.md):
 - The title of a closed `members` form is shown to an anonymous holder of the link; there is no hourly limit on `members` forms.
 - Per-IP limits count full IPv6 addresses; hourly limits are check-then-insert; honeypot hits and validation failures only count against the per-minute request limit.
 - Uploads are buffered before the token is looked up.
-- The branding UI (brand name, accent colour, footer, logo) is not checked in a browser; a server-side `422` was only shown with a mocked response; relative date defaults are not offered; no QR code.
+- The branding UI (brand name, accent colour, footer, logo) was checked in a browser (see the roadmap); the builder's live preview does not use the accent colour; a server-side `422` was only shown with a mocked response; relative date defaults are not offered; no QR code.
 - Not exposed over MCP.
 - Which databases the forms tests have been run on is recorded in the roadmap.
 

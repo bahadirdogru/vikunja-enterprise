@@ -431,7 +431,7 @@ From the [roadmap](../enterprise/ROADMAP.md):
 - A rule enabled on one replica can miss another replica's events for up to `automation.cachettl`.
 - The catalog does not expose `automation.waitmax` or `service.timezone` to the editor; the stuck-run reaper does not disable rules or update metrics; the `stop` step is still recognised by an output prefix; no templates gallery for the time, manual and webhook trigger types; no e-mail action; no owner notification on auto-disable.
 - Retrying one failed run re-queues the whole event; no cap on rules per project.
-- The editor for the time, manual and webhook triggers and actions has not been checked in a browser.
+- The editor for the time, manual and webhook triggers and actions was checked in a browser (see the roadmap); rules fired by the ticker, wait continuations, signed webhook calls and the Turkish strings were not.
 - Not exposed over MCP; the automation routes are not in the allow-list.
 - Which databases the engine tests have been run on is recorded in the roadmap.
 

@@ -170,7 +170,7 @@ From the [roadmap](../enterprise/ROADMAP.md):
 - The time tracking report builds `IN` lists from task ids (parameter-limit risk).
 - Bar and donut widgets with a time range ignore it in drill-down and export; only number widgets are fixed.
 - `created_vs_done` has no server-side running open count (the client combines two reports); a `text` widget stores the editor's HTML, sanitized on render; the `line` chart does not offer a second dimension.
-- The new widgets (time in status, workload, time tracking), CSV export and the previous-period comparison are not checked in a browser.
+- The new widgets (time in status, workload, time tracking), CSV export and the previous-period comparison were checked in a browser (see the roadmap); the workload estimate field was not.
 - Not exposed over MCP.
 - Which databases the reports tests have been run on is recorded in the roadmap.
 

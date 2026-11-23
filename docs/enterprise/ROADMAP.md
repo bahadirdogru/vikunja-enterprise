@@ -32,15 +32,15 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
 | 3a | Automation core: transactional outbox, workers, rules, conditions, non-script actions, run history, limits, dry run, catalog ([automation.md](automation.md)) | Done |
 | 3b | Automation scripting: JavaScript action and condition, `http.request` action, encrypted project secrets, script editor with API reference | Done |
 | 3c | Automation UI: rule list, catalog-driven When / If / Then editor, dry run, runs with steps and retry | Done |
-| 3d | Automation: schedule / overdue / due soon / manual / incoming webhook triggers, wait / `task.create` / notify actions, ticker, loop guards, editor support, manual run from a task | Done (UI not checked in a browser; no templates gallery for the new types) |
+| 3d | Automation: schedule / overdue / due soon / manual / incoming webhook triggers, wait / `task.create` / notify actions, ticker, loop guards, editor support, manual run from a task | Done (editor, webhook address, dry run, manual run and notify checked in a browser; time triggers and `wait` not run end to end; no templates gallery for the new types) |
 | 4a | Dashboards: task aggregation API (`POST /api/v2/reports/tasks`), options endpoint, dashboards/widgets CRUD ([dashboards.md](dashboards.md)) | Done |
 | 4b | Dashboards UI: SVG charts, dashboard pages with drag/resize grid, widget editor with live preview, drill-down | Done |
-| 4c | Dashboards: time in status, workload, time tracking widgets, CSV export, previous-period comparison on number widgets | Done (UI not checked in a browser; default dashboards for new workflow projects open) |
+| 4c | Dashboards: time in status, workload, time tracking widgets, CSV export, previous-period comparison on number widgets | Done (checked in a browser; default dashboards for new workflow projects open) |
 | 5a | Approvals backend: requests and decisions, approval on workflow transitions, ad-hoc approvals, automation triggers/action, notifications ([forms-approvals.md](forms-approvals.md)) | Done |
 | 5b | Approvals UI: transition approval settings, task banner with approve / reject, approvals page with badge, kanban and list markers, notifications | Done |
 | 5c | Forms backend: definitions, public and signed-in submission path, limits, attachments, `form.submitted` trigger | Done |
 | 5d | Forms UI: forms list, builder with live preview, submissions, standalone public form page | Done |
-| 5e | Forms: brand name, accent colour, footer and logo for public forms (backend + builder settings + public page) | Done (UI not checked in a browser) |
+| 5e | Forms: brand name, accent colour, footer and logo for public forms (backend + builder settings + public page) | Done (checked in a browser) |
 | 5f | Approvals: the `409` / `24007` refusal names the target status and a pending request; the UI offers "Request approval" | Done |
 | – | Organisation / tenant layer, AI features | Deferred |
 
@@ -181,7 +181,7 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   is pending).
 - Form branding added (backend + UI): brand name, accent colour, footer and
   a logo (PNG, JPEG, GIF or WebP, no SVG; scaled down, size and pixel
-  limits). Type-checked and unit-tested, not checked in a browser.
+  limits). Checked in a browser, see the browser pass below.
 - Automation 3d added (backend + UI, en + tr). Triggers: schedule (cron, time
   zone of the server), task overdue, due soon, manual, incoming webhook
   (secret URL, optional HMAC signature). Actions: `wait`, `task.create`,
@@ -189,8 +189,9 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   twice; arming markers keep tasks that were already overdue from firing;
   loop guards (task origins, depth, a header the API refuses with 508 on
   requests the engine sends). Editor forms, webhook address shown once,
-  "Run automation..." on a task, `automation.notify` notification. Not
-  checked in a browser. No replay protection on the webhook signature.
+  "Run automation..." on a task, `automation.notify` notification. Checked
+  in a browser, see the browser pass below. No replay protection on the
+  webhook signature.
 - Database pass after automation 3d: `test:feature` passes on SQLite,
   PostgreSQL 17 and MySQL 8, `test:web` on all three, run uncached after the fixes (the 3d failures on
   PostgreSQL and MySQL were test problems, see below). Go caches test results
@@ -209,8 +210,41 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
 - Dashboards 4c added (backend + UI): time in status, workload and time
   tracking widgets, CSV export from the widget menu and the drill-down,
   previous-period comparison on number widgets (a partial period is compared
-  with the same elapsed share of the previous one). Not checked in a browser.
-  Default dashboards for new projects with a workflow are not created.
+  with the same elapsed share of the previous one). Checked in a browser,
+  see the browser pass below. Default dashboards for new projects with a workflow are not created.
+- Browser pass over the three newest UI parts (Playwright through
+  `mage test:e2e`, system Chromium, SQLite; 19 tests in
+  `frontend/tests/e2e/forms/form-branding.spec.ts`,
+  `dashboards/dashboard-widgets.spec.ts` and
+  `automation/automation-triggers-actions.spec.ts`; screenshots are written
+  only when `E2E_SCREENSHOT_DIR` is set; uncaught errors and unexpected 4xx /
+  5xx responses fail the specs). Exercised: brand name, accent colour, logo
+  upload / replace / refusal / removal and the footer, in the builder and on
+  the public page (light, dark, 390 px wide); the three new widget types
+  added in the editor and rendered with data and with none, a number widget
+  with the previous-period comparison, CSV from the widget menu and from the
+  drill-down (header row asserted), dark and 390 px dashboards; the
+  schedule editor (bad expressions, presets), overdue, due soon, manual and
+  webhook triggers with a save and reload, the webhook address shown once
+  with its copy button, the leave confirmation and "create a new address"
+  (the old address stops, the new one starts the rule), a dry run with a JSON
+  payload, `wait` / `task.create` / notify actions, "Run automation..." on a
+  task with its toast, and the `automation.notify` notification in the bell.
+  Found and fixed: a pale accent (#ffe066) made links on the public form
+  unreadable (1.3:1) and mid blues and greens got white button text below
+  4.5:1, so links now get a per-theme shade and the button text is whichever
+  of black and white contrasts more; time in status and tracked time showed
+  bare seconds on the chart axis and bars (now hours and minutes); picking
+  one of the new widget types sent the number widget's request to its
+  endpoint, three 422 responses per pick; the accent swatch and its input
+  wrapped onto two rows in the builder. Open: the builder's live preview does
+  not use the accent colour; the dry-run block of a webhook rule is titled
+  "Test with a task"; the accent is rounded to whole hue / saturation /
+  lightness steps (a few RGB units off). Not run end to end: the 30 s ticker
+  firing schedule, overdue and due soon rules, a `wait` continuation, the HMAC
+  signature header, notify to the doer or assignees, the workload estimate
+  field (needs a numeric custom field), a server-side validation error shown
+  in the builder, and the Turkish translations of these screens.
 - Review-pass operational notes: run code generators with `LC_ALL=C` on
   machines with a Turkish locale (the dotless `i` breaks generated
   identifiers). Vitest's on-disk module cache is disabled in
@@ -224,9 +258,9 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   the MCP allow-list.
 - The arm64 image has not been started on real ARM hardware. MariaDB and the
   documented minimum database versions are not tested.
-- The newest UI (form branding, 4c widgets and export, automation 3d editor
-  and manual run) is type-checked and unit-tested but not checked in a
-  browser.
+- The parts of the newest UI listed as not run end to end in the browser
+  pass above (ticker-driven rules, `wait`, HMAC, workload estimate field,
+  Turkish strings).
 - Automation: the catalog does not expose `automation.waitmax` or
   `service.timezone` to the editor; the stuck-run reaper does not disable
   rules or update metrics; the `stop` step is still recognised by an output

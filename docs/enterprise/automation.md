@@ -843,9 +843,9 @@ catalog or `/info`, so the editor can only say "at most what the administrator a
 server; no per-rule display of the last scan note (`last_fire_note`) or of the number of
 waiting runs; the editor does not warn that an action needs a task when a project scope
 schedule or a webhook starts the rule (the server rejects it on save and the message is
-shown under the action); the dry run of a webhook rule cannot take a payload; the list of
-rules shows no marker for the new trigger types beyond their title; not checked in a
-browser against a running server.
+shown under the action); the list of
+rules shows no marker for the new trigger types beyond their title. Checked in a browser
+against a running server since (see the roadmap).
 
 ## What 3a and 3b do and do not do
 

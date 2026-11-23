@@ -263,6 +263,6 @@ Deferred or different from the plan:
   limits, cache) + dashboards/widgets CRUD + tests.
 - 4b (done): dashboard pages, SVG chart components, widget gallery and editor,
   drill-down.
-- 4c (done, not checked in a browser): `status_time`, `workload`, `time_tracking` widgets, CSV export from the widget
+- 4c (done, checked in a browser): `status_time`, `workload`, `time_tracking` widgets, CSV export from the widget
   menu and the drill-down, previous period delta on `number` widgets. Open: default dashboards created for new
   projects with a workflow.
