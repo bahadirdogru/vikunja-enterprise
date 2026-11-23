@@ -61,7 +61,8 @@ func TestAutomationTriggersMigration20261127100000(t *testing.T) {
 	require.NotEmpty(t, beforeEvents.Indexes)
 
 	now := time.Now()
-	_, err = x.Insert(&automationRules20261122140000{ProjectID: 1, Title: "r", OwnerID: 1, Trigger: "{}", Actions: "[]", Created: now, Updated: now})
+	// Conditions is set too: the struct holds the json column as a string and PostgreSQL rejects the empty string.
+	_, err = x.Insert(&automationRules20261122140000{ProjectID: 1, Title: "r", OwnerID: 1, Trigger: "{}", Conditions: "{}", Actions: "[]", Created: now, Updated: now})
 	require.NoError(t, err)
 
 	idx := slices.IndexFunc(migrations, func(m *xormigrate.Migration) bool { return m.ID == "20261127100000" })
