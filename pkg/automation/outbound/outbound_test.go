@@ -306,3 +306,36 @@ func TestUnguardedFactoryIsNotTheDefault(t *testing.T) {
 	var blocked *BlockedError
 	assert.ErrorAs(t, err, &blocked)
 }
+
+func TestDo_RefusesTheIncomingWebhooksOfThisServer(t *testing.T) {
+	config.ServicePublicURL.Set("https://tasks.example.com/")
+	t.Cleanup(func() { config.ServicePublicURL.Set("") })
+
+	for _, refused := range []string{
+		"https://tasks.example.com/api/v2/automation/hooks/abc",
+		"https://TASKS.example.com:443/api/v2/automation/hooks/abc?x=1",
+		"https://tasks.example.com//api/v2/automation/hooks/abc",
+		"https://tasks.example.com/api/v2/x/../automation/hooks/abc",
+		"https://tasks.example.com/API/V2/Automation/Hooks/abc",
+	} {
+		_, err := Do(context.Background(), &Request{URL: refused, Method: "POST"})
+		var invalid *InvalidError
+		require.ErrorAs(t, err, &invalid, refused)
+		assert.Contains(t, err.Error(), "incoming webhook of this server", refused)
+	}
+
+	// Other hosts, other ports and other paths are not affected by the check (they fail later, in the guard).
+	for _, other := range []string{
+		"https://other.example.com/api/v2/automation/hooks/abc",
+		"https://tasks.example.com:8443/api/v2/automation/hooks/abc",
+		"https://tasks.example.com/api/v2/tasks",
+	} {
+		u, err := ValidateURL(other)
+		require.NoError(t, err, other)
+		assert.False(t, targetsOwnHooks(u), other)
+	}
+
+	// Relative forms are no URLs at all.
+	_, err := ValidateURL("/api/v2/automation/hooks/abc")
+	require.Error(t, err)
+}

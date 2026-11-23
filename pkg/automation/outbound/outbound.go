@@ -36,6 +36,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"path"
 	"strings"
 	"time"
 
@@ -134,7 +135,38 @@ func ValidateURL(raw string) (*url.URL, error) {
 	if u.User != nil {
 		return nil, invalid("credentials in the URL are not allowed, use a header")
 	}
+	if targetsOwnHooks(u) {
+		return nil, invalid("the URL is an incoming webhook of this server: a rule cannot start rules through a request")
+	}
 	return u, nil
+}
+
+// hookPathPrefix is where incoming automation webhooks live; see routes/api/v2/automation_hooks.go.
+const hookPathPrefix = "/api/v2/automation/hooks/"
+
+// targetsOwnHooks reports whether the URL is an incoming webhook of this instance. A rule that calls the webhook of
+// a rule of this instance (its own included) turns an event into a run for every request, which nothing on the
+// event chain (origin, depth) can see, so such requests are refused.
+func targetsOwnHooks(u *url.URL) bool {
+	own, err := url.Parse(strings.TrimSpace(config.ServicePublicURL.GetString()))
+	if err != nil || own.Hostname() == "" {
+		return false
+	}
+	if !strings.EqualFold(u.Hostname(), own.Hostname()) || effectivePort(u) != effectivePort(own) {
+		return false
+	}
+	p := strings.ToLower(path.Clean("/" + u.Path))
+	return strings.HasPrefix(p+"/", hookPathPrefix)
+}
+
+func effectivePort(u *url.URL) string {
+	if port := u.Port(); port != "" {
+		return port
+	}
+	if u.Scheme == "https" {
+		return "443"
+	}
+	return "80"
 }
 
 // Sign returns the value of the signature header: sha256= followed by the hex HMAC-SHA256 of the body, keyed with
@@ -205,6 +237,9 @@ func Do(ctx context.Context, r *Request) (*Response, error) {
 		}
 		if next.URL.Scheme != "http" && next.URL.Scheme != "https" {
 			return invalid("redirect to a URL that is not http or https")
+		}
+		if targetsOwnHooks(next.URL) {
+			return invalid("redirect to an incoming webhook of this server")
 		}
 		if next.URL.Host != origin {
 			// Whatever the rule put in the headers was meant for the first host only.

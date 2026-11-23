@@ -40,8 +40,34 @@ import (
 	"xorm.io/xorm"
 )
 
-// insertTargetedEvent writes an outbox row for one rule. The caller commits.
-func insertTargetedEvent(s *xorm.Session, rule *models.AutomationRule, name string, taskID int64, payload *Payload) (*models.AutomationEvent, error) {
+// recordTaskOrigin remembers that the run whose actions the session executes created the task, see
+// models.AutomationTaskOrigin. Outside a run (a dry run, a test) there is nothing to remember.
+func recordTaskOrigin(s *xorm.Session, taskID int64) error {
+	o, has := sessionOrigins.Load(s)
+	if !has || taskID == 0 {
+		return nil
+	}
+	from := o.(origin)
+	_, err := s.Insert(&models.AutomationTaskOrigin{TaskID: taskID, RunID: from.runID, Depth: from.depth + 1})
+	return err
+}
+
+// taskOriginOf returns the run that created the task, nil when no run did.
+func taskOriginOf(s *xorm.Session, taskID int64) (*models.AutomationTaskOrigin, error) {
+	if taskID == 0 {
+		return nil, nil
+	}
+	o := &models.AutomationTaskOrigin{}
+	has, err := s.Where("task_id = ?", taskID).Get(o)
+	if err != nil || !has {
+		return nil, err
+	}
+	return o, nil
+}
+
+// insertTargetedEvent writes an outbox row for one rule. The caller commits. from is the run that created the task,
+// when one did: the event then continues the chain of that run, so the loop guards see it.
+func insertTargetedEvent(s *xorm.Session, rule *models.AutomationRule, name string, taskID int64, payload *Payload, from *models.AutomationTaskOrigin) (*models.AutomationEvent, error) {
 	payload.Name = name
 	payload.RuleID = rule.ID
 	payload.ProjectID = rule.ProjectID
@@ -58,6 +84,10 @@ func insertTargetedEvent(s *xorm.Session, rule *models.AutomationRule, name stri
 		Status:    models.AutomationEventPending,
 		RunAfter:  now(),
 		RuleID:    rule.ID,
+	}
+	if from != nil {
+		row.OriginRunID = from.RunID
+		row.Depth = from.Depth
 	}
 	if _, err = s.Insert(row); err != nil {
 		return nil, err
@@ -108,7 +138,7 @@ func RunManually(a web.Auth, projectID, ruleID, taskID int64) (*models.Automatio
 		return nil, models.ErrGenericForbidden{}
 	}
 
-	row, err := insertTargetedEvent(s, rule, spec.EventManual, task.ID, &Payload{Doer: personOf(doer), Task: taskFields(&task)})
+	row, err := insertTargetedEvent(s, rule, spec.EventManual, task.ID, &Payload{Doer: personOf(doer), Task: taskFields(&task)}, nil)
 	if err != nil {
 		_ = s.Rollback()
 		return nil, err
@@ -188,7 +218,7 @@ func ReceiveWebhook(call *WebhookCall) (*models.AutomationEvent, error) {
 		}
 	}
 
-	row, err := insertTargetedEvent(s, rule, spec.EventWebhook, 0, &Payload{Hook: hook})
+	row, err := insertTargetedEvent(s, rule, spec.EventWebhook, 0, &Payload{Hook: hook}, nil)
 	if err != nil {
 		_ = s.Rollback()
 		return nil, err
@@ -388,7 +418,12 @@ func tickSchedule(rule *models.AutomationRule) (int, error) {
 	}
 	owner, _ := user.GetUserByID(s, rule.OwnerID)
 	for _, taskID := range targets {
-		if _, err = insertTargetedEvent(s, rule, spec.EventSchedule, taskID, &Payload{Doer: personOf(owner), New: map[string]any{"scheduled_for": due.Format(time.RFC3339)}}); err != nil {
+		from, err := taskOriginOf(s, taskID)
+		if err != nil {
+			_ = s.Rollback()
+			return 0, err
+		}
+		if _, err = insertTargetedEvent(s, rule, spec.EventSchedule, taskID, &Payload{Doer: personOf(owner), New: map[string]any{"scheduled_for": due.Format(time.RFC3339)}}, from); err != nil {
 			_ = s.Rollback()
 			return 0, err
 		}
@@ -577,7 +612,12 @@ func claimDue(rule *models.AutomationRule, task *models.Task, at time.Time, matc
 			name = spec.EventDueSoon
 		}
 		payload := &Payload{Doer: personOf(owner), New: map[string]any{"due_date": task.DueDate.UTC().Format(time.RFC3339)}}
-		if _, err = insertTargetedEvent(s, rule, name, task.ID, payload); err != nil {
+		from, err := taskOriginOf(s, task.ID)
+		if err != nil {
+			_ = s.Rollback()
+			return false, err
+		}
+		if _, err = insertTargetedEvent(s, rule, name, task.ID, payload, from); err != nil {
 			_ = s.Rollback()
 			return false, err
 		}

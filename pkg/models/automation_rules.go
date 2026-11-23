@@ -125,8 +125,9 @@ type AutomationEvent struct {
 	LockedUntil time.Time `xorm:"DATETIME null" json:"locked_until"`
 	LastError   string    `xorm:"text null" json:"last_error"`
 	// RuleID is set for events that are meant for one rule only (manual, schedule, due, webhook, resume).
-	RuleID  int64     `xorm:"bigint null INDEX" json:"rule_id"`
-	Created time.Time `xorm:"created not null" json:"created"`
+	// The index also serves the rate limit count of incoming webhooks (rule, name, created).
+	RuleID  int64     `xorm:"bigint null index(automation_events_rule_created)" json:"rule_id"`
+	Created time.Time `xorm:"created not null index(automation_events_rule_created)" json:"created"`
 }
 
 // TableName returns the table name of automation events.

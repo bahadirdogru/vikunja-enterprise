@@ -49,6 +49,7 @@ func TestAutomationTriggersMigration20261127100000(t *testing.T) {
 		automationRules20261122140000{},
 		automationEvents20261122140000{},
 		automationDueMarkers20261127100000{},
+		automationTaskOrigins20261127100000{},
 	}
 	require.NoError(t, x.DropTables(tables...))
 	t.Cleanup(func() { require.NoError(t, x.DropTables(tables...)) })

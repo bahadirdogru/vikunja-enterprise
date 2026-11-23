@@ -49,6 +49,25 @@ func (*AutomationDueMarker) TableName() string {
 	return "automation_due_markers"
 }
 
+// AutomationTaskOrigin remembers which run created a task. The time based triggers (overdue, due soon, schedule)
+// start their runs from the clock instead of from an event, so the origin of the events the outbox hook writes does
+// not reach them: without this a rule that creates tasks which are overdue themselves would feed itself. An event
+// started for such a task carries the run as its origin and one more level of depth, so the loop guards (a rule does
+// not react to what its own run caused; the maximum depth) apply to it like to every other chain.
+type AutomationTaskOrigin struct {
+	ID     int64 `xorm:"bigint autoincr not null unique pk" json:"id"`
+	TaskID int64 `xorm:"bigint not null unique" json:"task_id"`
+	RunID  int64 `xorm:"bigint not null INDEX" json:"run_id"`
+	// Depth is the depth of the events that start for the task.
+	Depth   int64     `xorm:"bigint not null default 0" json:"depth"`
+	Created time.Time `xorm:"created not null" json:"created"`
+}
+
+// TableName returns the table name of the task origins.
+func (*AutomationTaskOrigin) TableName() string {
+	return "automation_task_origins"
+}
+
 // HashAutomationWebhookToken is what is stored of the secret in a webhook URL.
 func HashAutomationWebhookToken(token string) string {
 	sum := sha256.Sum256([]byte(token))

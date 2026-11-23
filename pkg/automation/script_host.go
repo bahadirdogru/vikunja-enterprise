@@ -314,6 +314,9 @@ func (h *hostBase) planCreate(projectID int64, data map[string]any) (*mutation, 
 		if err := created.Create(env.S, env.Auth); err != nil {
 			return "", err
 		}
+		if err := recordTaskOrigin(env.S, created.ID); err != nil {
+			return "", err
+		}
 		if parentID != 0 {
 			relation := &models.TaskRelation{TaskID: parentID, OtherTaskID: created.ID, RelationKind: models.RelationKindSubtask}
 			can, err := relation.CanCreate(env.S, env.Auth)

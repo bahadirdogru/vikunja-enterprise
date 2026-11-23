@@ -26,8 +26,10 @@ import (
 // The partial structs below only carry the new columns: Sync adds what is missing and leaves everything else of
 // the existing tables alone.
 type automationEvents20261127100000 struct {
-	ID     int64 `xorm:"bigint autoincr not null unique pk"`
-	RuleID int64 `xorm:"bigint null INDEX"`
+	ID int64 `xorm:"bigint autoincr not null unique pk"`
+	// One index for the lookups by rule and for the webhook rate limit count (rule, created).
+	RuleID  int64     `xorm:"bigint null index(automation_events_rule_created)"`
+	Created time.Time `xorm:"created not null index(automation_events_rule_created)"`
 }
 
 func (automationEvents20261127100000) TableName() string {
@@ -57,10 +59,22 @@ func (automationDueMarkers20261127100000) TableName() string {
 	return "automation_due_markers"
 }
 
+type automationTaskOrigins20261127100000 struct {
+	ID      int64     `xorm:"bigint autoincr not null unique pk"`
+	TaskID  int64     `xorm:"bigint not null unique"`
+	RunID   int64     `xorm:"bigint not null INDEX"`
+	Depth   int64     `xorm:"bigint not null default 0"`
+	Created time.Time `xorm:"created not null"`
+}
+
+func (automationTaskOrigins20261127100000) TableName() string {
+	return "automation_task_origins"
+}
+
 func init() {
 	migrations = append(migrations, &xormigrate.Migration{
 		ID:          "20261127100000",
-		Description: "Add the columns for manual, schedule, due and webhook triggers and the due markers table",
+		Description: "Add the columns for manual, schedule, due and webhook triggers and the due marker and task origin tables",
 		Migrate: func(tx *xorm.Engine) error {
 			// The existing tables only get their new columns and plain indexes: a plain Sync would drop every index
 			// the partial structs do not declare.
@@ -69,11 +83,12 @@ func init() {
 			}
 			return tx.Sync( //nolint:forbidigo // a brand-new table, nothing to drop
 				automationDueMarkers20261127100000{},
+				automationTaskOrigins20261127100000{},
 			)
 		},
 		Rollback: func(tx *xorm.Engine) error {
 			// The added columns stay: they are nullable and harmless to older code.
-			return tx.DropTables(automationDueMarkers20261127100000{})
+			return tx.DropTables(automationDueMarkers20261127100000{}, automationTaskOrigins20261127100000{})
 		},
 	})
 }

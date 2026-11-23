@@ -86,6 +86,9 @@ func planCreateStandaloneTask(env *Env, p params) (*Plan, error) {
 		if err := created.Create(env.S, env.Auth); err != nil {
 			return "", err
 		}
+		if err := recordTaskOrigin(env.S, created.ID); err != nil {
+			return "", err
+		}
 		if env.Sub == nil || env.Sub.Task == nil {
 			plan.CreatedTaskID = created.ID
 		}

@@ -726,6 +726,9 @@ func planCreateTask(env *Env, p params, subtask bool) (*Plan, error) {
 		if err := created.Create(env.S, env.Auth); err != nil {
 			return "", err
 		}
+		if err := recordTaskOrigin(env.S, created.ID); err != nil {
+			return "", err
+		}
 		relation := &models.TaskRelation{TaskID: task.ID, OtherTaskID: created.ID, RelationKind: kind}
 		can, err := relation.CanCreate(env.S, env.Auth)
 		if err != nil {

@@ -210,7 +210,14 @@ func cleanupAutomation(s *xorm.Session, olderThan time.Time) (events, runs int64
 		return
 	}
 	// The due markers of tasks that are gone; the others have to stay or the rule would fire again.
-	_, err = s.Where(builder.NotIn("task_id", builder.Select("id").From("tasks"))).Delete(&AutomationDueMarker{})
+	if _, err = s.Where(builder.NotIn("task_id", builder.Select("id").From("tasks"))).Delete(&AutomationDueMarker{}); err != nil {
+		return
+	}
+	// The origins of tasks that are gone or whose run was deleted: without the run there is no chain to continue.
+	_, err = s.Where(builder.Or(
+		builder.NotIn("task_id", builder.Select("id").From("tasks")),
+		builder.NotIn("run_id", builder.Select("id").From("automation_runs")),
+	)).Delete(&AutomationTaskOrigin{})
 	return
 }
 
