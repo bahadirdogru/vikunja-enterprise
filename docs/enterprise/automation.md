@@ -1,9 +1,11 @@
 # Automation and scripting — design
 
-Status: **3a and 3b implemented.** 3a: outbox, workers, rules, conditions, the
+Status: **3a, 3b and 3d (backend) implemented.** 3a: outbox, workers, rules, conditions, the
 non-script actions, run history, limits, API v2, catalog, dry run. 3b: JavaScript
 script actions and script conditions, the `http.request` action, `http.fetch` in
-scripts and project secrets. 3c-3d are still design. Builds on custom fields and
+scripts and project secrets. 3d adds the schedule, overdue, due soon, manual and
+incoming webhook triggers and the wait, create task and notify actions (backend and
+API only, no UI yet). 3c is still design. Builds on custom fields and
 workflow (their events are the most useful triggers). Where this document
 describes something that is not implemented yet it says so; the section "What 3a
 and 3b do and do not do" lists the differences in one place.
@@ -146,8 +148,9 @@ deleted.
 
 ## Triggers
 
-3a implements the triggers marked with *(3a)*. The other ones need events that
-do not exist yet (labels, relations, moving between projects) or belong to 3d.
+3a implements the triggers marked with *(3a)*, 3d the time, manual and external ones
+(*(3d)*). The others need events that do not exist yet (labels, relations, moving
+between projects).
 
 | Kind | Triggers |
 |---|---|
@@ -156,9 +159,9 @@ do not exist yet (labels, relations, moving between projects) or belong to 3d.
 | Custom field | value changed (a given field) *(3a)* |
 | People | assignee added / removed *(3a)* |
 | Content | comment added *(3a)*, attachment added *(3a)*, label added / removed, relation added |
-| Time | task became overdue, due date approaching (N hours/days before), reminder fired, schedule (cron expression + time zone) |
-| Manual | a button on the task ("Run automation") |
-| External | incoming webhook with a per-rule secret URL |
+| Time | task became overdue *(3d)*, due date approaching (N hours/days before) *(3d)*, reminder fired, schedule (cron expression, in the time zone of the server) *(3d)* |
+| Manual | a button on the task ("Run automation") *(3d, API only)* |
+| External | incoming webhook with a per-rule secret URL *(3d)* |
 
 Trigger types in the API: `task.created`, `task.updated` (option `fields`),
 `task.completed`, `task.reopened`, `task.deleted`, `task.status_changed` (options
@@ -183,9 +186,9 @@ Trigger types in the API: `task.created`, `task.updated` (option `fields`),
   run that is already under way fails.
 - *Task deleted* runs after the task is gone; conditions and templates see the
   task as it was when it was deleted, and actions that need the task fail.
-- *Task overdue* is not offered: the existing overdue events are per user, fire
-  at the user's reminder time and are only dispatched when webhooks are
-  configured. A real overdue / due-approaching trigger belongs to 3d.
+- *Task overdue* does not use the existing overdue events (per user, at the user's
+  reminder time, only dispatched when webhooks are configured); 3d has its own
+  ticker, see "Time, manual and webhook triggers (3d)".
 - Label changes only produce a generic `task.updated` without old state, so
   label triggers are not offered either.
 
@@ -222,9 +225,10 @@ script that returns a boolean (3b).
 | Approval | `approval.request`: ask users (ids, `assignees`, `task_creator`, `event_doer`) to approve the task, ad hoc, `mode`, templated title and description, `due_offset` *(5a)* |
 | People | assign / unassign (a user id, the event's doer, the task creator) *(3a)*, round robin over a team |
 | Content | add comment *(3a)*, add / remove label *(3a)*, create subtask or related task from a template *(3a)*, add checklist to description |
-| Notify | in-app notification, e-mail to users / assignees / a team (not in 3a: a persisted notification type needs a frontend renderer and a mail template) |
+| Notify | `notify`: in-app notification (plus the e-mail the person's settings allow) to users, `assignees`, `task_creator`, `event_doer` or a team *(3d)* |
+| Content | `task.create`: create a task from templated parameters; with no task in the run (webhook, project-scope schedule) it becomes the task of the actions after it *(3d)* |
 | Integrate | call a webhook: `http.request` (signed, SSRF-protected, with retry) *(3b)* |
-| Flow | stop if a condition holds *(3a)*, wait (delay — stored as a scheduled event, never a sleeping goroutine) |
+| Flow | stop if a condition holds *(3a)*, `wait` (delay, 1 minute to `automation.waitmax`; stored as a scheduled event, never a sleeping goroutine) *(3d)* |
 | Script | run JavaScript: `script.run` *(3b)* |
 
 Text parameters are templates: `{{task.title}}`, `{{task.identifier}}`,
@@ -565,7 +569,12 @@ rule that creates tasks does not react to the tasks it created.
   is simulated (you are the doer, `event.old.*` / `event.new.*` are empty).
   Scripts run with a recording, read-only host (see "Test run" under Scripting):
   nothing is written, no HTTP request is sent, secrets are placeholders.
-- `POST /tasks/{task}/automations/{rule}/run` — manual trigger.
+- `POST /projects/{project}/automations/{rule}/run` with `{task_id}` — manual trigger
+  (3d), 202 `{event_id, status: "queued"}`; see below. `GET /projects/{project}/
+  manual-automations` lists the enabled manual rules (id, title, button label) for
+  people with write access to the project. `POST /projects/{project}/automations/
+  {rule}/webhook-token` regenerates the secret of an incoming webhook (project admin).
+- `POST /automation/hooks/{token}` — the public incoming webhook (3d), no auth.
 - `GET /projects/{project}/automations/{rule}/runs`, `GET .../runs/{run}`
   (with steps), `POST .../runs/{run}/retry`.
 - `GET /automations/catalog[?project_id=]` — machine readable list of triggers,
@@ -595,8 +604,73 @@ syntax error in the source (`actions[2].params.source`, `conditions.all[1].scrip
 cannot be decrypted (409). 22001
 rule not found, 22003 run not found, 22004 run cannot be retried (409; only runs
 with the status `failed`). Retrying a run puts its event back in the queue; steps
-that succeeded are not executed again. Manual trigger (`/tasks/{task}/automations/
-{rule}/run`) is 3d.
+that succeeded are not executed again. 22009 the rule cannot be run (409: disabled, or no manual trigger), 22010 webhook not
+found (404), 22011 invalid signature (401), 22012 webhook rate limited (429 with
+`Retry-After`), 22013 the webhook body is not a JSON object (400).
+
+### Time, manual and webhook triggers (3d)
+
+All of these write an outbox event for **one rule** (`rule_id` on the event; the model
+events of the project do not reach it and it does not see theirs), so they appear in
+the run history, obey the conditions and the self-trigger guard and run as the
+rule owner like any other run. The owner is checked again when the run starts and, for
+schedule and due rules, when the ticker is about to fire: an owner who is gone or no
+longer administers the project disables the rule (`owner_not_admin` /
+`owner_unavailable`) instead of firing it.
+
+- **Manual** (`manual`, option `label`): `POST .../{rule}/run` needs write access to
+  the task and the task to belong to the project of the rule. The actions still run
+  with the permissions of the owner of the rule, never more than the owner has.
+  Disabled rules and rules with another trigger are 409.
+- **Schedule** (`schedule`, options `cron`, `scope`): a five field cron expression
+  or `@daily` and friends, evaluated in the **time zone of the server**
+  (`service.timezone`), on wall clock time. `scope: tasks` (default) starts one run per
+  task of the project that matches the conditions; `scope: project` starts one run
+  with no task (use `task.create` first). Nothing fires for the time before the rule
+  was last saved (enabling does not replay the past), and a server that was down fires
+  once for all the occurrences it missed. Daylight saving: a wall clock time that does
+  not exist (02:30 on the night the clocks jump forward) is skipped that day, an hourly
+  job loses only the hour that does not exist; a wall clock time that happens twice
+  (the clocks go back) fires once, for the first of them.
+- **Overdue** (`task.overdue`) and **due soon** (`task.due_soon`, option `offset`,
+  at least 1m): fire for not done tasks of the project the first time they cross the
+  line. A marker per (rule, task) stores the due date it fired for, so a task fires
+  once per due date and a changed due date arms it again. Tasks that were already
+  overdue when the rule was saved do not fire. Conditions are checked before a run is
+  queued (script conditions only in the run); a non matching task is marked too.
+- **The ticker**: every process runs it every `automation.ticker.interval`
+  (30s). It only reads while nothing is due. A firing is claimed in the database in the
+  same transaction that writes the events: a schedule by a conditional update of
+  `last_fired_at` (only one replica changes the row), a due marker by its unique
+  (rule, task) index. Several instances therefore never fire twice. Per tick and
+  rule at most `automation.ticker.maxtasks` runs start (the rest is skipped for a
+  schedule and the note is on the rule as `last_fire_note`; overdue and due soon
+  continue on the next tick) and a schedule looks at no more than
+  `automation.ticker.maxscan` tasks. The per-minute run limit does not apply to the
+  time based triggers; this cap does.
+- **Incoming webhook** (`webhook.incoming`, option `secret`):
+  `POST /api/v2/automation/hooks/{token}` with a JSON object (`{}` for none; at most
+  `automation.webhook.maxbody` bytes, 413 above) starts the rule asynchronously (202).
+  The body is `event.payload` for templates (`{{event.payload.customer.name}}`) and
+  conditions (`event.payload.<path>`). The token is 32 random bytes (base64url),
+  returned once, in the answer that created or regenerated it (`webhook_token`,
+  `webhook_url`); the database stores its SHA-256 only, and it is looked up by that
+  hash, after a shape check that never lets a malformed token reach the database.
+  It is not logged. Unknown tokens, disabled rules and rules with another trigger are
+  all the same 404. With a `secret` option the call has to carry
+  `X-Vikunja-Signature: sha256=<hex HMAC-SHA256 of the raw body>` keyed with that
+  project secret (401 otherwise, compared in constant time). Calls are limited per
+  rule (`automation.webhook.ratelimit` per minute, 429 + `Retry-After`; counted from
+  the outbox, so with simultaneous calls it can overshoot by a few) and per IP by the
+  router (the floor of the public form endpoints). The route sets no cookies and
+  needs no CSRF token. The test run (`/test`) takes an optional `payload`.
+- **Notify** only reaches users who can read the project of the rule (and so its
+  tasks), at most 100 per step; others are skipped with a warning and the step fails
+  when nobody is left. The notification is `automation.notify` and is shown by the
+  generic notification list (the frontend renderer is not part of 3d).
+- **Wait**: the run stays `running`, a `rule.resume` event due after the delay
+  continues it with the actions after the wait; conditions are not evaluated again.
+  A rule that was disabled or deleted meanwhile aborts the run.
 
 ## UI
 
@@ -661,7 +735,7 @@ Known limits / deferred:
   catalog without `script`) as "scripts unavailable": the script action and the
   script condition are not offered, existing ones are shown read-only with a note.
 - No drag-and-drop reordering (buttons only), no manual-trigger button on the
-  task (3d).
+  task (the API of 3d exists, the UI does not).
 
 ## What 3a and 3b do and do not do
 
@@ -681,10 +755,16 @@ Prometheus metrics `vikunja_automation_runs_total{status}` and
 3b: JavaScript script action and script condition, `http.request`, `http.fetch`,
 project secrets with masking, the script reference in the catalog.
 
-Not implemented: `notify.in_app` and e-mail actions, the owner notification on
-auto-disable, task overdue / label / relation / move triggers, schedule, manual,
-incoming webhook and due-approaching triggers, the
-wait action, the frontend (3c), the generated frontend client for the new routes.
+3d (backend): the triggers `schedule`, `task.overdue`, `task.due_soon`, `manual` and
+`webhook.incoming`, the actions `notify`, `wait` and `task.create`, the ticker, the
+due markers table, the incoming webhook endpoint with token regeneration and
+optional HMAC signature, `event.payload.*` in templates and conditions.
+
+Not implemented: the e-mail action, the owner notification on auto-disable, label /
+relation / move / reminder triggers, the frontend (3c, and the 3d UI: the manual
+button, the webhook URL display, the editor forms, the notification renderer), the
+generated frontend client for the new routes, a templates gallery, round robin and
+duplicate / delete task actions.
 `vikunja.notify(userIds, text)` of the first design is not part of the script API: it
 needs the notification type of 3a. Scripts cannot create or delete relations, labels,
 or projects, move tasks between projects or delete tasks. Secrets are not rotated or
@@ -725,4 +805,5 @@ guessing. Editing the action that failed and retrying works.
 - 3b: script condition/action, `http.request`, `http.fetch`, secrets. **Done.**
 - 3c: UI.
 - 3d: schedule, due-date-approaching, manual and incoming webhook triggers;
-  wait action; templates gallery.
+  wait action; notify action. **Backend done** (UI and the generated client
+  follow with 3c; templates gallery not started).
