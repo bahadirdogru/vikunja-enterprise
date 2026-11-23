@@ -17,6 +17,7 @@
 package models
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -30,7 +31,7 @@ type ErrCustomFieldDoesNotExist struct {
 
 // IsErrCustomFieldDoesNotExist checks if an error is ErrCustomFieldDoesNotExist.
 func IsErrCustomFieldDoesNotExist(err error) bool {
-	_, ok := err.(ErrCustomFieldDoesNotExist)
+	_, ok := errors.AsType[ErrCustomFieldDoesNotExist](err)
 	return ok
 }
 
@@ -57,7 +58,7 @@ type ErrCustomFieldInvalidDefinition struct {
 
 // IsErrCustomFieldInvalidDefinition checks if an error is ErrCustomFieldInvalidDefinition.
 func IsErrCustomFieldInvalidDefinition(err error) bool {
-	_, ok := err.(ErrCustomFieldInvalidDefinition)
+	_, ok := errors.AsType[ErrCustomFieldInvalidDefinition](err)
 	return ok
 }
 
@@ -85,7 +86,7 @@ type ErrCustomFieldTypeImmutable struct {
 
 // IsErrCustomFieldTypeImmutable checks if an error is ErrCustomFieldTypeImmutable.
 func IsErrCustomFieldTypeImmutable(err error) bool {
-	_, ok := err.(ErrCustomFieldTypeImmutable)
+	_, ok := errors.AsType[ErrCustomFieldTypeImmutable](err)
 	return ok
 }
 
@@ -113,7 +114,7 @@ type ErrCustomFieldOptionDoesNotExist struct {
 
 // IsErrCustomFieldOptionDoesNotExist checks if an error is ErrCustomFieldOptionDoesNotExist.
 func IsErrCustomFieldOptionDoesNotExist(err error) bool {
-	_, ok := err.(ErrCustomFieldOptionDoesNotExist)
+	_, ok := errors.AsType[ErrCustomFieldOptionDoesNotExist](err)
 	return ok
 }
 
@@ -142,7 +143,7 @@ type ErrCustomFieldInvalidValue struct {
 
 // IsErrCustomFieldInvalidValue checks if an error is ErrCustomFieldInvalidValue.
 func IsErrCustomFieldInvalidValue(err error) bool {
-	_, ok := err.(ErrCustomFieldInvalidValue)
+	_, ok := errors.AsType[ErrCustomFieldInvalidValue](err)
 	return ok
 }
 

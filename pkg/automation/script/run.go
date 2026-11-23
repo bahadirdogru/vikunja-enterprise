@@ -331,16 +331,16 @@ func (r *runtime) stringify(v goja.Value) (out string) {
 	}()
 	res, err := r.jsonStr(goja.Undefined(), v)
 	if err != nil || res == nil || goja.IsUndefined(res) {
-		return truncateString(v.String(), maxLogArgBytes)
+		return truncateLogArg(v.String())
 	}
 	return res.String()
 }
 
-func truncateString(s string, n int) string {
-	if len(s) <= n {
+func truncateLogArg(s string) string {
+	if len(s) <= maxLogArgBytes {
 		return s
 	}
-	return s[:n] + "..."
+	return s[:maxLogArgBytes] + "..."
 }
 
 func (r *runtime) throw(format string, args ...any) {
@@ -472,18 +472,18 @@ func (r *runtime) install() error {
 			return r.result(goja.Undefined(), h.StatusSet(r.ctx, r.id(c, 0, "taskId"), r.id(c, 1, "statusId"), comment))
 		}),
 	})
-	pair := func(name string, fn func(ctx context.Context, a, b int64) error, second string) goja.Value {
+	pair := func(fn func(ctx context.Context, a, b int64) error, second string) goja.Value {
 		return r.apiFn(func(c goja.FunctionCall) goja.Value {
 			return r.result(goja.Undefined(), fn(r.ctx, r.id(c, 0, "taskId"), r.id(c, 1, second)))
 		})
 	}
 	assignees := namespace(map[string]goja.Value{
-		"add":    pair("add", h.AssigneeAdd, "userId"),
-		"remove": pair("remove", h.AssigneeRemove, "userId"),
+		"add":    pair(h.AssigneeAdd, "userId"),
+		"remove": pair(h.AssigneeRemove, "userId"),
 	})
 	labels := namespace(map[string]goja.Value{
-		"add":    pair("add", h.LabelAdd, "labelId"),
-		"remove": pair("remove", h.LabelRemove, "labelId"),
+		"add":    pair(h.LabelAdd, "labelId"),
+		"remove": pair(h.LabelRemove, "labelId"),
 	})
 	define("vikunja", frozen(namespace(map[string]goja.Value{
 		"tasks": tasks, "fields": fields, "status": status, "assignees": assignees, "labels": labels,
@@ -512,8 +512,8 @@ func orEmpty(m map[string]any) map[string]any {
 func (r *runtime) apiFn(impl func(c goja.FunctionCall) goja.Value) goja.Value {
 	return r.vm.ToValue(func(c goja.FunctionCall) goja.Value {
 		r.api++
-		if max := r.in.Limits.MaxAPICalls; max > 0 && r.api > max {
-			r.throw("the script made more than %d vikunja.* calls", max)
+		if limit := r.in.Limits.MaxAPICalls; limit > 0 && r.api > limit {
+			r.throw("the script made more than %d vikunja.* calls", limit)
 		}
 		return impl(c)
 	})
@@ -585,11 +585,11 @@ func (r *runtime) logCall(c goja.FunctionCall) goja.Value {
 			parts[i] = "null"
 		default:
 			if s, ok := a.Export().(string); ok {
-				parts[i] = truncateString(s, maxLogArgBytes)
+				parts[i] = truncateLogArg(s)
 			} else if _, isObj := a.(*goja.Object); isObj {
-				parts[i] = truncateString(r.stringify(a), maxLogArgBytes)
+				parts[i] = truncateLogArg(r.stringify(a))
 			} else {
-				parts[i] = truncateString(a.String(), maxLogArgBytes)
+				parts[i] = truncateLogArg(a.String())
 			}
 		}
 	}
@@ -600,8 +600,8 @@ func (r *runtime) logCall(c goja.FunctionCall) goja.Value {
 	if r.log.Len() > 0 {
 		line = "\n" + line
 	}
-	if max := r.in.Limits.MaxLogBytes; max > 0 && r.log.Len()+len(line) > max {
-		room := max - r.log.Len()
+	if limit := r.in.Limits.MaxLogBytes; limit > 0 && r.log.Len()+len(line) > limit {
+		room := limit - r.log.Len()
 		if room > 0 {
 			r.log.WriteString(line[:room])
 		}
@@ -616,8 +616,8 @@ func (r *runtime) logCall(c goja.FunctionCall) goja.Value {
 // fetch implements http.fetch(url, options).
 func (r *runtime) fetch(c goja.FunctionCall) goja.Value {
 	r.requests++
-	if max := r.in.Limits.MaxHTTPRequests; max > 0 && r.requests > max {
-		r.throw("the script made more than %d http.fetch requests", max)
+	if limit := r.in.Limits.MaxHTTPRequests; limit > 0 && r.requests > limit {
+		r.throw("the script made more than %d http.fetch requests", limit)
 	}
 	req := &FetchRequest{URL: r.text(c, 0, "url"), Method: "GET", Headers: map[string]string{}}
 	if opt := c.Argument(1); !goja.IsUndefined(opt) && !goja.IsNull(opt) {

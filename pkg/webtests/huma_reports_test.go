@@ -18,11 +18,12 @@ package webtests
 
 import (
 	"encoding/json"
-	"github.com/labstack/echo/v5"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
+
+	"github.com/labstack/echo/v5"
 
 	"code.vikunja.io/api/pkg/models"
 	"code.vikunja.io/api/pkg/modules/auth"
@@ -62,14 +63,14 @@ func TestHumaReports(t *testing.T) {
 	t.Run("counts and groups", func(t *testing.T) {
 		code, out, raw := post(user1, `{"project_id":1,"group_by":"done"}`)
 		require.Equal(t, http.StatusOK, code, string(raw))
-		assert.Equal(t, float64(20), out["total"])
+		assert.InDelta(t, float64(20), out["total"], 0)
 		assert.Equal(t, "count", out["measure"])
 		assert.Equal(t, "tasks", out["unit"])
 		groups := out["groups"].([]any)
 		require.Len(t, groups, 2)
 		first := groups[0].(map[string]any)
 		assert.Equal(t, "Open", first["label"])
-		assert.Equal(t, float64(19), first["value"])
+		assert.InDelta(t, float64(19), first["value"], 0)
 		assert.Equal(t, false, first["key"])
 	})
 
@@ -81,7 +82,7 @@ func TestHumaReports(t *testing.T) {
 		}
 		require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &list))
 		_, out, _ := post(user1, `{"project_id":1,"filter":"done = false"}`)
-		assert.Equal(t, list.Total, out["total"])
+		assert.InDelta(t, list.Total, out["total"], 0)
 	})
 
 	t.Run("time series", func(t *testing.T) {
@@ -90,8 +91,8 @@ func TestHumaReports(t *testing.T) {
 		series := out["series"].([]any)
 		require.Len(t, series, 2)
 		assert.Equal(t, "2018-12-01", series[1].(map[string]any)["bucket"])
-		assert.Equal(t, float64(20), series[1].(map[string]any)["value"])
-		assert.Equal(t, float64(0), series[0].(map[string]any)["value"])
+		assert.InDelta(t, float64(20), series[1].(map[string]any)["value"], 0)
+		assert.InDelta(t, float64(0), series[0].(map[string]any)["value"], 0)
 		assert.Equal(t, "UTC", out["time"].(map[string]any)["timezone"])
 	})
 
@@ -104,21 +105,21 @@ func TestHumaReports(t *testing.T) {
 		} {
 			code, out, raw := post(user1, body)
 			assert.Equal(t, http.StatusBadRequest, code, body)
-			assert.Equal(t, float64(models.ErrCodeReportInvalidParameter), out["code"], body)
+			assert.InDelta(t, float64(models.ErrCodeReportInvalidParameter), out["code"], 0, body)
 			assert.Equal(t, param, problemParam(t, raw), body)
 		}
 
 		code, out, _ := post(user1, `{"time":{"field":"created","bucket":"day","from":"2000-01-01"}}`)
 		assert.Equal(t, http.StatusBadRequest, code)
-		assert.Equal(t, float64(models.ErrCodeReportTooManyBuckets), out["code"])
+		assert.InDelta(t, float64(models.ErrCodeReportTooManyBuckets), out["code"], 0)
 
 		code, out, _ = post(user1, `{"group_by":"done","limit":500}`)
 		assert.Equal(t, http.StatusBadRequest, code)
-		assert.Equal(t, float64(models.ErrCodeReportTooManyGroups), out["code"])
+		assert.InDelta(t, float64(models.ErrCodeReportTooManyGroups), out["code"], 0)
 
 		code, out, _ = post(user1, `{"measure":"sum","field":"cf_2"}`)
 		assert.Equal(t, http.StatusBadRequest, code)
-		assert.Equal(t, float64(models.ErrCodeReportFieldKindNotSupported), out["code"])
+		assert.InDelta(t, float64(models.ErrCodeReportFieldKindNotSupported), out["code"], 0)
 
 		// A bad enum is rejected by the schema before the model.
 		code, _, _ = post(user1, `{"measure":"median"}`)
@@ -132,7 +133,7 @@ func TestHumaReports(t *testing.T) {
 
 		code, out, _ := post(user2, `{"group_by":"cf_2"}`)
 		assert.Equal(t, http.StatusBadRequest, code, "a field of a project user2 cannot read")
-		assert.Equal(t, float64(models.ErrCodeInvalidTaskField), out["code"])
+		assert.InDelta(t, float64(models.ErrCodeInvalidTaskField), out["code"], 0)
 
 		code, _, _ = post("", `{}`)
 		assert.Equal(t, http.StatusUnauthorized, code)
@@ -149,7 +150,7 @@ func TestHumaReports(t *testing.T) {
 
 		code, out, _ = post(token, `{"measure":"sum","field":"time_spent"}`)
 		assert.Equal(t, http.StatusForbidden, code)
-		assert.Equal(t, float64(models.ErrCodeReportNotAvailableForShare), out["code"])
+		assert.InDelta(t, float64(models.ErrCodeReportNotAvailableForShare), out["code"], 0)
 	})
 
 	t.Run("options", func(t *testing.T) {
@@ -174,7 +175,7 @@ func TestHumaReports(t *testing.T) {
 		assert.Contains(t, names, "cf_2")
 		assert.NotContains(t, names, "status")
 		assert.Len(t, opts.Measures, 5)
-		assert.Equal(t, float64(200), opts.Limits["max_groups"])
+		assert.InDelta(t, float64(200), opts.Limits["max_groups"], 0)
 
 		rec = humaRequest(t, e, http.MethodGet, "/api/v2/reports/tasks/options?project_id=1", "", user2, "")
 		assert.Equal(t, http.StatusForbidden, rec.Code)

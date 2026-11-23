@@ -121,11 +121,6 @@ func (p params) int(name string) int64 {
 	return id
 }
 
-func (p params) float(name string) float64 {
-	f, _ := spec.ToFloat64(p[name])
-	return f
-}
-
 func (p params) bool(name string) bool {
 	b, _ := p[name].(bool)
 	return b
@@ -222,7 +217,7 @@ func planSetField(env *Env, p params) (*Plan, error) {
 	update := &models.Task{ID: task.ID, ProjectID: task.ProjectID}
 	plan := &Plan{}
 	unknownBefore := len(env.Unknown)
-	changed := true
+	var changed bool
 
 	switch field {
 	case "title":
@@ -323,7 +318,7 @@ func planSetCustomField(env *Env, p params) (*Plan, error) {
 	unknownBefore := len(env.Unknown)
 	value := p["value"]
 	if s, isString := value.(string); isString {
-		switch fieldType {
+		switch fieldType { //nolint:exhaustive // only dates and texts read a string in a special way
 		case models.CustomFieldTypeDate:
 			d, err := spec.ParseDateSpec(s, true)
 			if err != nil {

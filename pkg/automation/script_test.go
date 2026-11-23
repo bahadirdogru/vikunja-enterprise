@@ -290,7 +290,7 @@ func TestScript_ChangesCarryTheOriginOfTheRun(t *testing.T) {
 			caused++
 			names = append(names, ev.Name)
 			assert.Equal(t, runs[0].ID, ev.OriginRunID, "%s was caused by the run", ev.Name)
-			assert.EqualValues(t, runs[0].Depth+1, ev.Depth)
+			assert.Equal(t, runs[0].Depth+1, ev.Depth)
 		}
 	}
 	assert.ElementsMatch(t, []string{"task.updated", "task.comment.created"}, names)

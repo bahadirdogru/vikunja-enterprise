@@ -19,6 +19,7 @@ package apiv2
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strconv"
@@ -141,7 +142,7 @@ func formClientIP(ctx context.Context) string {
 
 // formError translates a domain error and adds the Retry-After header of rate limits.
 func formError(ctx context.Context, err error) error {
-	if limited, ok := err.(models.ErrFormRateLimited); ok {
+	if limited, ok := errors.AsType[models.ErrFormRateLimited](err); ok {
 		if ec := humabridge.EchoContextFrom(ctx); ec != nil {
 			ec.Response().Header().Set("Retry-After", strconv.FormatInt(limited.RetryAfterSeconds, 10))
 		}

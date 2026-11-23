@@ -146,14 +146,14 @@ func compare(op string, left any, kind string, rawRight any, sub *Subject) (bool
 			return !matches(right), nil
 		case spec.OpIn, spec.OpNotIn:
 			rights, _ := right.([]any)
-			any_ := false
+			matched := false
 			for _, r := range rights {
 				if matches(r) {
-					any_ = true
+					matched = true
 					break
 				}
 			}
-			return any_ == (op == spec.OpIn), nil
+			return matched == (op == spec.OpIn), nil
 		}
 		return false, nil
 	}

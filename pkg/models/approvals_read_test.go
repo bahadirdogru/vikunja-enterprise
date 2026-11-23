@@ -481,7 +481,7 @@ func TestApprovals_TaskStatusReadAndExpand(t *testing.T) {
 			assert.Nil(t, task.Approvals)
 		}
 		assert.NoError(t, TaskCollectionExpandApprovals.Validate())
-		assert.Error(t, TaskCollectionExpandable("nope").Validate())
+		require.Error(t, TaskCollectionExpandable("nope").Validate())
 
 		// Link shares never get it.
 		share := &LinkSharing{ID: 1, ProjectID: apProject, Permission: PermissionRead}

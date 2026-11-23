@@ -72,7 +72,7 @@ func (d *Dashboard) CanRead(s *xorm.Session, a web.Auth) (bool, int, error) {
 // CanCreate needs admin access to the project of a project dashboard, any user may create personal ones.
 func (d *Dashboard) CanCreate(s *xorm.Session, a web.Auth) (bool, error) {
 	if _, err := ownerOf(a); err != nil {
-		return false, nil
+		return false, nil //nolint:nilerr // anything but a user is refused, which is an answer and not an error
 	}
 	if d.ProjectID == 0 {
 		return true, nil

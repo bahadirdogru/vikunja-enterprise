@@ -88,6 +88,8 @@ func isPermanent(err error) bool {
 }
 
 // matchesTrigger reports whether the event is what the trigger of the rule waits for. It looks at the payload only.
+//
+//nolint:gocyclo
 func matchesTrigger(rule *models.AutomationRule, p *Payload) bool {
 	def := spec.TriggerByType(rule.Trigger.Type)
 	if def == nil || def.Event != p.Name {
@@ -149,12 +151,6 @@ func matchesTrigger(rule *models.AutomationRule, p *Payload) bool {
 		return true
 	}
 	return true
-}
-
-// runOutcome tells processEvent whether the event has to be retried.
-type runOutcome struct {
-	// transient is set when the run stopped because of an infrastructure problem and stays resumable.
-	transient error
 }
 
 func loadRun(s *xorm.Session, eventID, ruleID int64) (*models.AutomationRun, error) {
@@ -466,7 +462,7 @@ func (rc *runContext) executeStep(runCtx, parent context.Context, position int64
 
 	s := db.NewSession()
 	defer s.Close()
-	s.Context(stepCtx)
+	db.SetSessionContext(stepCtx, s)
 	// Write first: SQLite fails a transaction that reads and then tries to write after another writer committed in
 	// between, which busy_timeout cannot fix. Taking the write lock before the first read makes concurrent steps wait
 	// for each other instead. On other databases this is a cheap no-op update of a row only this worker touches.

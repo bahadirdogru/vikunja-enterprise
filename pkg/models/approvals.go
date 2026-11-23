@@ -19,7 +19,6 @@ package models
 import (
 	"html"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -286,7 +285,7 @@ func hydrateApprovalRequests(s *xorm.Session, reqs []*ApprovalRequest) error {
 	}
 
 	approvers := []*ApprovalApprover{}
-	for _, chunk := range chunkInt64s(reqIDs, workflowBulkChunkSize) {
+	for _, chunk := range chunkInt64s(reqIDs) {
 		rows := []*ApprovalApprover{}
 		if err := s.Where(builder.In("request_id", chunk)).OrderBy("id ASC").Find(&rows); err != nil {
 			return err
@@ -308,7 +307,7 @@ func hydrateApprovalRequests(s *xorm.Session, reqs []*ApprovalRequest) error {
 
 	tasks := map[int64]*Task{}
 	projectIDs := []int64{}
-	for _, chunk := range chunkInt64s(uniqueInts(taskIDs), workflowBulkChunkSize) {
+	for _, chunk := range chunkInt64s(uniqueInts(taskIDs)) {
 		list := []*Task{}
 		// Unscoped: the history of a request outlives a trashed task.
 		if err := s.Unscoped().Where(builder.In("id", chunk)).Find(&list); err != nil {
@@ -434,7 +433,7 @@ func (r *ApprovalRequest) ReadAll(s *xorm.Session, a web.Auth, _ string, page in
 		return nil, 0, 0, ErrGenericForbidden{}
 	}
 
-	var cond builder.Cond = builder.NewCond()
+	cond := builder.NewCond()
 	switch r.FilterStatus {
 	case "":
 	case string(ApprovalStatusPending), string(ApprovalStatusApproved), string(ApprovalStatusRejected), string(ApprovalStatusCancelled):
@@ -601,9 +600,4 @@ func insertApprovalRequest(s *xorm.Session, req *ApprovalRequest, approvers []*u
 		}
 	}
 	return nil
-}
-
-// approvalIDString is used in step outputs and logs.
-func approvalIDString(id int64) string {
-	return "#" + strconv.FormatInt(id, 10)
 }

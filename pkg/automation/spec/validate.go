@@ -242,6 +242,8 @@ func (v *validator) params(path string, defs []Param, values map[string]any) {
 }
 
 // value validates one value of a kind. keywords allows the user keywords when the kind is user.
+//
+//nolint:gocyclo
 func (v *validator) value(path, kind string, multiple bool, enum []string, val any, allowOffset bool) {
 	if multiple {
 		list, ok := val.([]any)

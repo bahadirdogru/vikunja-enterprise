@@ -57,12 +57,16 @@ func reportCacheKey(a web.Auth, plan *reportPlan) string {
 	case *LinkSharing:
 		identity = fmt.Sprintf("share:%d", a.GetID())
 	}
-	req, _ := json.Marshal(plan.req)
+	req, err := json.Marshal(plan.req)
+	if err != nil {
+		// Without the request in it the key would hand one report to every request of this viewer.
+		return ""
+	}
 	return identity + "|" + plan.loc.String() + "|" + string(req)
 }
 
 func reportCacheGet(key string) (*TaskReport, bool) {
-	if config.ReportsCacheTTL.GetDuration() <= 0 {
+	if key == "" || config.ReportsCacheTTL.GetDuration() <= 0 {
 		return nil, false
 	}
 	reportCache.Lock()
@@ -80,7 +84,7 @@ func reportCacheGet(key string) (*TaskReport, bool) {
 
 func reportCachePut(key string, rep *TaskReport) {
 	ttl := config.ReportsCacheTTL.GetDuration()
-	if ttl <= 0 {
+	if key == "" || ttl <= 0 {
 		return
 	}
 	now := time.Now()

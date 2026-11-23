@@ -616,7 +616,7 @@ func (d *dbTaskSearcher) readableTasksQuery(opts *taskSearchOptions) (*builder.B
 		return nil, err
 	}
 
-	var scope builder.Cond = builder.In("tasks.id", []int64{})
+	scope := builder.In("tasks.id", []int64{})
 	if projectIDCond != nil || favoritesCond != nil {
 		scope = builder.Or(projectIDCond, favoritesCond)
 	}

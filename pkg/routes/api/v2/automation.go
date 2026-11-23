@@ -167,6 +167,8 @@ func customFieldKind(t models.CustomFieldType) (kind string, multiple bool) {
 		return spec.KindEnum, true
 	case models.CustomFieldTypeUser:
 		return spec.KindUsers, true
+	case models.CustomFieldTypeText, models.CustomFieldTypeLongText, models.CustomFieldTypeURL, models.CustomFieldTypeEmail:
+		return spec.KindString, false
 	}
 	return spec.KindString, false
 }

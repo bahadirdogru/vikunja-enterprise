@@ -449,7 +449,7 @@ func TestAutomationRun_ReadAndRetry(t *testing.T) {
 		can, _, _ := (&AutomationRun{ID: failed.ID, RuleID: r.ID, ProjectID: 1}).CanRead(s, autoUser2)
 		assert.False(t, can)
 		_, _, _, err := (&AutomationRun{RuleID: r.ID, ProjectID: 1}).ReadAll(s, autoUser2, "", 1, 50)
-		assert.Error(t, err)
+		require.Error(t, err)
 		can, _ = (&AutomationRunRetry{ProjectID: 1, RuleID: r.ID, RunID: failed.ID}).CanCreate(s, autoUser2)
 		assert.False(t, can)
 	})

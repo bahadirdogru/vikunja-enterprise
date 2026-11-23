@@ -17,6 +17,7 @@
 package models
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -30,7 +31,7 @@ type ErrApprovalRequestDoesNotExist struct {
 
 // IsErrApprovalRequestDoesNotExist checks if an error is ErrApprovalRequestDoesNotExist.
 func IsErrApprovalRequestDoesNotExist(err error) bool {
-	_, ok := err.(ErrApprovalRequestDoesNotExist)
+	_, ok := errors.AsType[ErrApprovalRequestDoesNotExist](err)
 	return ok
 }
 
@@ -58,7 +59,7 @@ type ErrApprovalNotPending struct {
 
 // IsErrApprovalNotPending checks if an error is ErrApprovalNotPending.
 func IsErrApprovalNotPending(err error) bool {
-	_, ok := err.(ErrApprovalNotPending)
+	_, ok := errors.AsType[ErrApprovalNotPending](err)
 	return ok
 }
 
@@ -90,7 +91,7 @@ type ErrApprovalNotApprover struct {
 
 // IsErrApprovalNotApprover checks if an error is ErrApprovalNotApprover.
 func IsErrApprovalNotApprover(err error) bool {
-	_, ok := err.(ErrApprovalNotApprover)
+	_, ok := errors.AsType[ErrApprovalNotApprover](err)
 	return ok
 }
 
@@ -118,7 +119,7 @@ type ErrApprovalAlreadyDecided struct {
 
 // IsErrApprovalAlreadyDecided checks if an error is ErrApprovalAlreadyDecided.
 func IsErrApprovalAlreadyDecided(err error) bool {
-	_, ok := err.(ErrApprovalAlreadyDecided)
+	_, ok := errors.AsType[ErrApprovalAlreadyDecided](err)
 	return ok
 }
 
@@ -145,7 +146,7 @@ type ErrApprovalCommentRequired struct {
 
 // IsErrApprovalCommentRequired checks if an error is ErrApprovalCommentRequired.
 func IsErrApprovalCommentRequired(err error) bool {
-	_, ok := err.(ErrApprovalCommentRequired)
+	_, ok := errors.AsType[ErrApprovalCommentRequired](err)
 	return ok
 }
 
@@ -174,7 +175,7 @@ type ErrApprovalNoApprovers struct {
 
 // IsErrApprovalNoApprovers checks if an error is ErrApprovalNoApprovers.
 func IsErrApprovalNoApprovers(err error) bool {
-	_, ok := err.(ErrApprovalNoApprovers)
+	_, ok := errors.AsType[ErrApprovalNoApprovers](err)
 	return ok
 }
 
@@ -208,7 +209,7 @@ type ErrApprovalRequired struct {
 
 // IsErrApprovalRequired checks if an error is ErrApprovalRequired.
 func IsErrApprovalRequired(err error) bool {
-	_, ok := err.(ErrApprovalRequired)
+	_, ok := errors.AsType[ErrApprovalRequired](err)
 	return ok
 }
 
@@ -240,7 +241,7 @@ type ErrApprovalSelfApproval struct {
 
 // IsErrApprovalSelfApproval checks if an error is ErrApprovalSelfApproval.
 func IsErrApprovalSelfApproval(err error) bool {
-	_, ok := err.(ErrApprovalSelfApproval)
+	_, ok := errors.AsType[ErrApprovalSelfApproval](err)
 	return ok
 }
 
@@ -267,7 +268,7 @@ type ErrApprovalInvalid struct {
 
 // IsErrApprovalInvalid checks if an error is ErrApprovalInvalid.
 func IsErrApprovalInvalid(err error) bool {
-	_, ok := err.(ErrApprovalInvalid)
+	_, ok := errors.AsType[ErrApprovalInvalid](err)
 	return ok
 }
 
@@ -292,7 +293,7 @@ type ErrApprovalLinkShare struct{}
 
 // IsErrApprovalLinkShare checks if an error is ErrApprovalLinkShare.
 func IsErrApprovalLinkShare(err error) bool {
-	_, ok := err.(ErrApprovalLinkShare)
+	_, ok := errors.AsType[ErrApprovalLinkShare](err)
 	return ok
 }
 

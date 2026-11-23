@@ -90,7 +90,7 @@ func dropApproverFromPendingApprovals(s *xorm.Session, userID int64, projectIDs 
 // removeUserFromApprovals is part of deleting a user: the requests they made are cancelled, they are dropped from
 // the requests they were asked to decide, and their approver rows are removed.
 func removeUserFromApprovals(s *xorm.Session, userID int64) error {
-	if err := cancelPendingApprovals(s, builder.Eq{"requested_by_id": userID}, ApprovalCancelRequesterDeleted, ""); err != nil {
+	if err := cancelPendingApprovals(s, builder.Eq{"requested_by_id": userID}, ApprovalCancelRequesterDeleted); err != nil {
 		return err
 	}
 	if err := dropApproverFromPendingApprovals(s, userID, nil, true); err != nil {

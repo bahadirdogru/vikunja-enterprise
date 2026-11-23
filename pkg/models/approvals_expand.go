@@ -35,7 +35,7 @@ func addApprovalsToTasks(s *xorm.Session, taskIDs []int64, taskMap map[int64]*Ta
 		return nil
 	}
 	counts := map[int64]int64{}
-	for _, chunk := range chunkInt64s(taskIDs, workflowBulkChunkSize) {
+	for _, chunk := range chunkInt64s(taskIDs) {
 		rows := []struct {
 			TaskID int64 `xorm:"task_id"`
 			Count  int64 `xorm:"pending_count"`

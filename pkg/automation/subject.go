@@ -235,6 +235,8 @@ func (sub *Subject) fieldKind(name string) string {
 			return spec.KindDate
 		case models.CustomFieldTypeCheckbox:
 			return spec.KindBool
+		case models.CustomFieldTypeText, models.CustomFieldTypeLongText, models.CustomFieldTypeURL, models.CustomFieldTypeEmail:
+			return spec.KindString
 		case "":
 			return spec.KindAny
 		}

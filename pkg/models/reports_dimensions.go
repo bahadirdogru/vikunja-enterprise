@@ -102,6 +102,8 @@ func (d *reportDim) parseKey(raw any) reportKey {
 	case reportKeyNumber:
 		v := reportFloat(raw)
 		return reportKey{canon: strconv.FormatFloat(v, 'g', -1, 64), value: v}
+	case reportKeyInt:
+		// Below, as the zero value of the kind.
 	}
 	v := reportInt(raw)
 	return reportKey{canon: strconv.FormatInt(v, 10), value: v}
@@ -219,7 +221,7 @@ func newReportDim(r *customFieldReader, name, param string, idx int) (*reportDim
 		cond:  alias + ".task_id = tasks.id AND " + alias + ".custom_field_id = " + strconv.FormatInt(field.ID, 10),
 	}
 	dim := &reportDim{name: name, field: field, joins: []reportJoin{join}}
-	switch field.Type {
+	switch field.Type { //nolint:exhaustive // every other type is refused as a dimension
 	case CustomFieldTypeSelect, CustomFieldTypeMultiSelect:
 		dim.kind, dim.keyExpr, dim.multi = reportKeyInt, alias+".option_id", field.Type == CustomFieldTypeMultiSelect
 		dim.resolve = resolveOptionLabels
@@ -357,7 +359,7 @@ func resolvePriorityLabels(_ *xorm.Session, keys []reportKey) (map[string]report
 	return out, nil
 }
 
-func resolveDoneLabels(_ *xorm.Session, keys []reportKey) (map[string]reportLabel, error) {
+func resolveDoneLabels(_ *xorm.Session, _ []reportKey) (map[string]reportLabel, error) {
 	return map[string]reportLabel{"true": {"Done", "#22c55e"}, "false": {"Open", "#94a3b8"}}, nil
 }
 

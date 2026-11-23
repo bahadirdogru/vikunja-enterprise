@@ -89,8 +89,8 @@ func setupReportEnv(t *testing.T) *repEnv {
 	env.project2 = repNewProject(t, "Report edges")
 	p := env.project
 
-	wf := mustSaveWorkflow(t, baseWorkflowDoc(p), cfUser1)
-	wf = readWorkflow(t, p)
+	mustSaveWorkflow(t, baseWorkflowDoc(p), cfUser1)
+	wf := readWorkflow(t, p)
 	env.stTodo, env.stDoing, env.stDone = statusIDByTitle(wf, "Todo"), statusIDByTitle(wf, "Doing"), statusIDByTitle(wf, "Done")
 
 	mk := func(title string, typ CustomFieldType, opts ...string) *CustomField {
@@ -110,7 +110,7 @@ func setupReportEnv(t *testing.T) *repEnv {
 	env.rating = mk("Rating", CustomFieldTypeRating).ID
 	env.usr = mk("Usr", CustomFieldTypeUser).ID
 
-	d := func(v string) time.Time { return repTime(v) }
+	d := repTime
 	env.tasks["t1"] = repInsertTask(t, p, 1, &Task{Created: d("2026-01-05 10:00:00"), Priority: 3, DueDate: d("2026-02-01 12:00:00"), PercentDone: 0.25})
 	env.tasks["t2"] = repInsertTask(t, p, 2, &Task{Created: d("2026-01-11 23:30:00"), Done: true, DoneAt: d("2026-01-12 08:00:00"), Priority: 1, PercentDone: 1})
 	env.tasks["t3"] = repInsertTask(t, p, 3, &Task{Created: d("2026-01-12 00:30:00"), CreatedByID: 2, PercentDone: 0.5})
@@ -314,7 +314,7 @@ func TestReport_Measures(t *testing.T) {
 	t.Run("count unit", func(t *testing.T) {
 		rep := runReport(t, cfUser1, ReportRequest{ProjectID: p})
 		assert.Equal(t, "tasks", rep.Unit)
-		assert.Equal(t, float64(5), rep.Value)
+		assert.InDelta(t, float64(5), rep.Value, 0)
 	})
 
 	t.Run("grouped sum and folding of avg", func(t *testing.T) {
@@ -346,7 +346,7 @@ func TestReport_TopNAndOther(t *testing.T) {
 		assert.Equal(t, "High", rep.Groups[0].Label)
 		assert.True(t, rep.Groups[1].Other)
 		assert.Nil(t, rep.Groups[1].Key)
-		assert.Equal(t, float64(3), rep.Groups[1].Value)
+		assert.InDelta(t, float64(3), rep.Groups[1].Value, 0)
 		assert.True(t, rep.Truncated)
 	})
 
@@ -356,7 +356,7 @@ func TestReport_TopNAndOther(t *testing.T) {
 		require.Len(t, rep.Groups, 2)
 		assert.Equal(t, "user1", rep.Groups[0].Label)
 		assert.True(t, rep.Groups[1].Other)
-		assert.Equal(t, float64(3), rep.Groups[1].Value)
+		assert.InDelta(t, float64(3), rep.Groups[1].Value, 0)
 	})
 
 	t.Run("nothing folded when it fits", func(t *testing.T) {
@@ -411,10 +411,10 @@ func TestReport_TimeSeries(t *testing.T) {
 		rep := runReport(t, cfUser1, tm("done_at", "day", "2026-01-12", "2026-04-01", "UTC"))
 		assert.Equal(t, int64(3), rep.Excluded)
 		assert.Equal(t, int64(2), rep.Total)
-		assert.Equal(t, float64(1), seriesValues(rep.Series)["2026-01-12"])
-		assert.Equal(t, float64(1), seriesValues(rep.Series)["2026-04-01"], "a task at exactly midnight belongs to the bucket that starts then")
+		assert.InDelta(t, float64(1), seriesValues(rep.Series)["2026-01-12"], 0)
+		assert.InDelta(t, float64(1), seriesValues(rep.Series)["2026-04-01"], 0, "a task at exactly midnight belongs to the bucket that starts then")
 		rep = runReport(t, cfUser1, tm("done_at", "day", "2026-03-31", "2026-04-01", "America/New_York"))
-		assert.Equal(t, float64(1), seriesValues(rep.Series)["2026-03-31"])
+		assert.InDelta(t, float64(1), seriesValues(rep.Series)["2026-03-31"], 0)
 	})
 
 	t.Run("due_date boundaries are half open", func(t *testing.T) {
@@ -476,7 +476,7 @@ func TestReport_TimeSeries(t *testing.T) {
 		assert.Equal(t, map[string]float64{"2026-01-01": 2, "2026-02-01": 0, "2026-03-01": 1}, by["user1"])
 		assert.Equal(t, map[string]float64{"2026-01-01": 1, "2026-02-01": 1, "2026-03-01": 0}, by["user2"])
 		assert.Equal(t, map[string]float64{"2026-01-01": 1, "2026-02-01": 0, "2026-03-01": 0}, by["None"])
-		assert.Equal(t, float64(3), groupMap(rep.Groups)["user1"])
+		assert.InDelta(t, float64(3), groupMap(rep.Groups)["user1"], 0)
 	})
 
 	t.Run("grouped series with folded other", func(t *testing.T) {
@@ -727,7 +727,7 @@ func TestReport_PermissionMatrix(t *testing.T) {
 					}
 					require.NoError(t, repErr)
 					assert.Equal(t, want, rep.Total)
-					assert.Equal(t, float64(want), rep.Value)
+					assert.InDelta(t, float64(want), rep.Value, 0)
 
 					// Every single valued dimension partitions exactly the same tasks.
 					for _, dim := range []string{"priority", "done", "project", "status_category"} {
@@ -736,7 +736,7 @@ func TestReport_PermissionMatrix(t *testing.T) {
 						for _, grp := range g.Groups {
 							sum += grp.Value
 						}
-						assert.Equal(t, float64(want), sum, dim)
+						assert.InDelta(t, float64(want), sum, 0, dim)
 						assert.Equal(t, want, g.Total, dim)
 					}
 				})
@@ -793,7 +793,7 @@ func TestReport_NoLeaks(t *testing.T) {
 		assert.Equal(t, want, rep.Total)
 		// The read only share cannot ask for tracked time through a link share, but a user can.
 		rep = runReport(t, share, ReportRequest{ProjectID: env.project, Measure: "sum", Field: "time_spent"})
-		assert.Equal(t, float64(12600), rep.Value)
+		assert.InDelta(t, float64(12600), rep.Value, 0)
 	})
 }
 

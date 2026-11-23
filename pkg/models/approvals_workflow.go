@@ -17,13 +17,14 @@
 package models
 
 import (
-	"code.vikunja.io/api/pkg/web"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"code.vikunja.io/api/pkg/automation/spec"
 	"code.vikunja.io/api/pkg/user"
+	"code.vikunja.io/api/pkg/web"
 
 	"xorm.io/builder"
 	"xorm.io/xorm"
@@ -240,17 +241,19 @@ func executeApprovedTransition(s *xorm.Session, req *ApprovalRequest, task *Task
 		BypassApproval:    true,
 		ApprovalRequestID: req.ID,
 	})
-	switch e := err.(type) {
-	case nil:
+	if err == nil {
 		return "", "", nil
-	case ErrWorkflowTransitionNotAllowed:
+	}
+	if IsErrWorkflowTransitionNotAllowed(err) {
 		return ApprovalCancelTransitionRemoved, "", nil
-	case ErrWorkflowTransitionForbidden:
+	}
+	if e, ok := errors.AsType[ErrWorkflowTransitionForbidden](err); ok {
 		if e.Reason == workflowForbiddenTeam {
 			return ApprovalCancelRequesterNotInTeam, "", nil
 		}
 		return ApprovalCancelRequesterNoAccess, "", nil
-	case ErrWorkflowRequirementsNotMet:
+	}
+	if e, ok := errors.AsType[ErrWorkflowRequirementsNotMet](err); ok {
 		parts := []string{}
 		if len(e.MissingFields) > 0 {
 			parts = append(parts, "missing fields: "+strings.Join(e.MissingFields, ", "))
@@ -259,9 +262,11 @@ func executeApprovedTransition(s *xorm.Session, req *ApprovalRequest, task *Task
 			parts = append(parts, "a comment is required")
 		}
 		return ApprovalCancelRequirementsNotMet, approvalCancelMessages[ApprovalCancelRequirementsNotMet] + " (" + strings.Join(parts, "; ") + ")", nil
-	case ErrWorkflowStatusDoesNotExist:
+	}
+	if IsErrWorkflowStatusDoesNotExist(err) {
 		return ApprovalCancelStatusRemoved, "", nil
-	case ErrWorkflowStatusArchived:
+	}
+	if IsErrWorkflowStatusArchived(err) {
 		return ApprovalCancelTargetArchived, "", nil
 	}
 	return "", "", err
@@ -355,6 +360,8 @@ func validateTransitionApproval(s *xorm.Session, projectID int64, tr *WorkflowTr
 			if !has || field.Type != CustomFieldTypeUser {
 				return invalid(fmt.Sprintf("approver custom field %d must be a user field of the project", src.ID))
 			}
+		case ApproverSourceAssignees:
+			// Names nothing that could be missing.
 		}
 		sources = append(sources, src)
 	}
@@ -402,12 +409,12 @@ func remapTransitionApproval(cfg *TransitionApproval, statusMap, customFieldMap 
 // status: they were made for the status it left.
 func cancelApprovalsAfterStatusChange(s *xorm.Session, taskID int64) error {
 	return cancelPendingApprovals(s, builder.And(builder.Eq{"task_id": taskID}, builder.NotNull{"transition_id"}),
-		ApprovalCancelStatusChanged, "")
+		ApprovalCancelStatusChanged)
 }
 
 // cancelApprovalsForTask cancels every pending request of a task, ad-hoc ones included.
 func cancelApprovalsForTask(s *xorm.Session, taskID int64, reason string) error {
-	return cancelPendingApprovals(s, builder.Eq{"task_id": taskID}, reason, "")
+	return cancelPendingApprovals(s, builder.Eq{"task_id": taskID}, reason)
 }
 
 // cancelApprovalsForStatuses cancels pending requests that involve removed or archived statuses.
@@ -418,7 +425,7 @@ func cancelApprovalsForStatuses(s *xorm.Session, statusIDs []int64) error {
 	return cancelPendingApprovals(s, builder.Or(
 		builder.In("from_status_id", statusIDs),
 		builder.In("to_status_id", statusIDs),
-	), ApprovalCancelStatusRemoved, "")
+	), ApprovalCancelStatusRemoved)
 }
 
 // cancelApprovalsForTransitions cancels pending requests of transitions that were removed or no longer need approval.
@@ -426,11 +433,11 @@ func cancelApprovalsForTransitions(s *xorm.Session, transitionIDs []int64, reaso
 	if len(transitionIDs) == 0 {
 		return nil
 	}
-	return cancelPendingApprovals(s, builder.In("transition_id", transitionIDs), reason, "")
+	return cancelPendingApprovals(s, builder.In("transition_id", transitionIDs), reason)
 }
 
 // cancelApprovalsForWorkflow cancels the pending transition requests of a project whose workflow is removed.
 func cancelApprovalsForWorkflow(s *xorm.Session, projectID int64) error {
 	return cancelPendingApprovals(s, builder.And(builder.Eq{"project_id": projectID}, builder.NotNull{"transition_id"}),
-		ApprovalCancelWorkflowRemoved, "")
+		ApprovalCancelWorkflowRemoved)
 }

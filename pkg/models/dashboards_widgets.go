@@ -19,6 +19,7 @@ package models
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"slices"
 	"time"
@@ -131,14 +132,16 @@ func scopeWidgetProject(s *xorm.Session, a web.Auth, dashboardProjectID int64, p
 
 // widgetReportError points an error of the report validation at the widget part that caused it.
 func widgetReportError(err error, path string) error {
-	switch e := err.(type) {
-	case ErrReportInvalidParameter:
+	if e, ok := errors.AsType[ErrReportInvalidParameter](err); ok {
 		return ErrDashboardInvalid{Param: path + "." + e.Param, Reason: e.Reason}
-	case ErrReportFieldKindNotSupported:
+	}
+	if e, ok := errors.AsType[ErrReportFieldKindNotSupported](err); ok {
 		return ErrDashboardInvalid{Param: path + "." + e.Param, Reason: e.HTTPError().Message}
-	case ErrReportTooManyBuckets:
+	}
+	if e, ok := errors.AsType[ErrReportTooManyBuckets](err); ok {
 		return ErrDashboardInvalid{Param: path + ".time", Reason: e.HTTPError().Message}
-	case ErrReportTooManyGroups:
+	}
+	if e, ok := errors.AsType[ErrReportTooManyGroups](err); ok {
 		return ErrDashboardInvalid{Param: path + ".limit", Reason: e.HTTPError().Message}
 	}
 	return err
@@ -148,7 +151,7 @@ func validateWidgetRequest(s *xorm.Session, a web.Auth, req ReportRequest, path 
 	return widgetReportError(req.Validate(s, a), path)
 }
 
-func validateWidgetFilter(s *xorm.Session, a web.Auth, filter, path string) error {
+func validateWidgetFilter(s *xorm.Session, a web.Auth, filter string) error {
 	tz := reportAuthTimezone(s, a)
 	loc, err := reportLocation("", tz)
 	if err != nil {
@@ -166,7 +169,7 @@ func validateWidgetDate(raw, path string) error {
 		return nil
 	}
 	if _, err := parseReportDate(raw, time.UTC, time.Now(), path); err != nil {
-		if e, ok := err.(ErrReportInvalidParameter); ok {
+		if e, ok := errors.AsType[ErrReportInvalidParameter](err); ok {
 			return ErrDashboardInvalid{Param: path, Reason: e.Reason}
 		}
 		return err
@@ -235,7 +238,7 @@ func (w *DashboardWidget) validate(s *xorm.Session, a web.Auth, dashboardProject
 		if err := scopeWidgetProject(s, a, dashboardProjectID, &c.ProjectID, path+".config.project_id"); err != nil {
 			return err
 		}
-		if err := validateWidgetFilter(s, a, c.Filter, path+".config.filter"); err != nil {
+		if err := validateWidgetFilter(s, a, c.Filter); err != nil {
 			return err
 		}
 		if c.EstimateField != "" {
@@ -356,7 +359,7 @@ func validateWidgetShape(widgetType string, c *widgetReportConfig, path string) 
 }
 
 func validateTaskListConfig(s *xorm.Session, a web.Auth, c *widgetTaskListConfig, path string) error {
-	if err := validateWidgetFilter(s, a, c.Filter, path+".filter"); err != nil {
+	if err := validateWidgetFilter(s, a, c.Filter); err != nil {
 		return err
 	}
 	if c.Limit < 0 || c.Limit > widgetMaxListLimit {

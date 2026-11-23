@@ -356,7 +356,7 @@ func TestApprovals_TransitionRequest(t *testing.T) {
 		assert.Equal(t, env.task.ID, noApprovers.TaskID)
 		assert.Equal(t, env.doing, noApprovers.ToStatusID)
 		assert.Equal(t, 422, noApprovers.HTTPError().HTTPCode)
-		assert.EqualValues(t, ErrCodeApprovalNoApprovers, noApprovers.HTTPError().Code)
+		assert.Equal(t, ErrCodeApprovalNoApprovers, noApprovers.HTTPError().Code)
 		assert.Empty(t, approvalRowsOfTask(t, env.task.ID))
 		assert.Equal(t, env.todo, taskStatusOf(t, env.task.ID).StatusID)
 	})

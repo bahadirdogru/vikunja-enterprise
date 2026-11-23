@@ -225,7 +225,7 @@ func validateNumberValue(f *CustomField, v any) (float64, error) {
 		return 0, invalidValue(f, "expected a number")
 	}
 
-	switch f.Type {
+	switch f.Type { //nolint:exhaustive // only the numeric types get here, the default is number and currency
 	case CustomFieldTypeProgress:
 		if n < 0 || n > 100 {
 			return 0, invalidValue(f, "progress must be between 0 and 100")

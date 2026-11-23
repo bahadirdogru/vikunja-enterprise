@@ -268,7 +268,7 @@ func TestDashboard_CRUD(t *testing.T) {
 		first, err := saveDash(t, cfUser1, &Dashboard{Title: "First", Position: -1})
 		require.NoError(t, err)
 		ids := dashList(t, cfUser1, 0, "")
-		assert.Equal(t, 6, len(ids))
+		assert.Len(t, ids, 6)
 		assert.Equal(t, first.ID, ids[0])
 	})
 }
@@ -306,14 +306,14 @@ func TestDashboard_Layout(t *testing.T) {
 			assert.Equal(t, int64(4), w.X, "widgets that are not listed keep their place")
 		}
 	}
-	assert.True(t, !after.Updated.Before(before.Updated))
+	assert.False(t, after.Updated.Before(before.Updated))
 
 	assert.True(t, IsErrDashboardWidgetDoesNotExist(layout(cfUser1, &DashboardLayoutItem{ID: 3, X: 0, Y: 0, W: 4, H: 3})), "a widget of another dashboard")
 	assert.True(t, IsErrDashboardInvalid(layout(cfUser1, &DashboardLayoutItem{ID: 1, X: 10, Y: 0, W: 4, H: 3})), "wider than the grid")
 	assert.True(t, IsErrDashboardInvalid(layout(cfUser1, &DashboardLayoutItem{ID: 1, X: 0, Y: -1, W: 4, H: 3})))
 	assert.True(t, IsErrDashboardInvalid(layout(cfUser1, &DashboardLayoutItem{ID: 1, X: 0, Y: 0, W: 0, H: 3})))
 	assert.True(t, IsErrDashboardInvalid(layout(cfUser1, &DashboardLayoutItem{ID: 1, X: 0, Y: 0, W: 4, H: 3}, &DashboardLayoutItem{ID: 1, X: 0, Y: 0, W: 4, H: 3})))
-	assert.ErrorIs(t, layout(cfUser2), ErrGenericForbidden{}, "the dashboard of someone else")
+	require.ErrorIs(t, layout(cfUser2), ErrGenericForbidden{}, "the dashboard of someone else")
 	// A failed layout changes nothing.
 	for _, w := range readDash(t, 1).Widgets {
 		if w.ID == 1 {
@@ -410,8 +410,8 @@ func TestDashboard_ProjectDashboardPinsItsProject(t *testing.T) {
 		widgetOf("task_list", map[string]any{"project_id": 1}),
 	}})
 	require.NoError(t, err)
-	assert.Equal(t, float64(1), d.Widgets[0].Config["request"].(map[string]any)["project_id"])
-	assert.Equal(t, float64(1), d.Widgets[1].Config["project_id"])
+	assert.InDelta(t, float64(1), d.Widgets[0].Config["request"].(map[string]any)["project_id"], 0)
+	assert.InDelta(t, float64(1), d.Widgets[1].Config["project_id"], 0)
 	assert.Equal(t, int64(1), d.Owner.ID)
 }
 
@@ -517,7 +517,7 @@ func TestDashboard_Lifecycle(t *testing.T) {
 		assert.Contains(t, got.Request.Filter, "status_category = open")
 
 		assert.Equal(t, "cf_"+itoa(fieldMap["number"]), full.Widgets[1].Config["estimate_field"])
-		assert.Equal(t, float64(pd.Project.ID), full.Widgets[1].Config["project_id"])
+		assert.InDelta(t, float64(pd.Project.ID), full.Widgets[1].Config["project_id"], 0)
 		assert.Equal(t, "cf_2 stays", full.Widgets[2].Config["text"], "free text is not rewritten")
 
 		db.AssertExists(t, "dashboards", map[string]any{"id": 3}, false)

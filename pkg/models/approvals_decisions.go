@@ -262,6 +262,8 @@ func resolveApproval(s *xorm.Session, req *ApprovalRequest, outcome ApprovalStat
 		if err = applyRejection(s, req, &task, resolver, comment); err != nil {
 			return "", err
 		}
+	case ApprovalStatusPending, ApprovalStatusCancelled:
+		// Nothing happens to the task.
 	}
 	return outcome, nil
 }
@@ -420,13 +422,13 @@ func announceCancellation(s *xorm.Session, req *ApprovalRequest, by *user.User) 
 
 // cancelPendingApprovals cancels every pending request that matches the condition. The requests are read with a
 // locking read and skipped when somebody else resolved them first.
-func cancelPendingApprovals(s *xorm.Session, cond builder.Cond, reason, message string) error {
+func cancelPendingApprovals(s *xorm.Session, cond builder.Cond, reason string) error {
 	reqs := []*ApprovalRequest{}
 	if err := lockingSession(s).Where(builder.And(cond, builder.Eq{"status": ApprovalStatusPending})).OrderBy("id ASC").Find(&reqs); err != nil {
 		return err
 	}
 	for _, req := range reqs {
-		err := cancelApprovalRequest(s, req, reason, message, nil)
+		err := cancelApprovalRequest(s, req, reason, "", nil)
 		if IsErrApprovalNotPending(err) {
 			continue
 		}

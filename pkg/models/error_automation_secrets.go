@@ -17,6 +17,7 @@
 package models
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -28,7 +29,7 @@ type ErrAutomationScriptsDisabled struct{}
 
 // IsErrAutomationScriptsDisabled checks if an error is ErrAutomationScriptsDisabled.
 func IsErrAutomationScriptsDisabled(err error) bool {
-	_, ok := err.(ErrAutomationScriptsDisabled)
+	_, ok := errors.AsType[ErrAutomationScriptsDisabled](err)
 	return ok
 }
 
@@ -55,7 +56,7 @@ type ErrAutomationSecretInvalid struct {
 
 // IsErrAutomationSecretInvalid checks if an error is ErrAutomationSecretInvalid.
 func IsErrAutomationSecretInvalid(err error) bool {
-	_, ok := err.(ErrAutomationSecretInvalid)
+	_, ok := errors.AsType[ErrAutomationSecretInvalid](err)
 	return ok
 }
 
@@ -82,7 +83,7 @@ type ErrAutomationSecretDoesNotExist struct {
 
 // IsErrAutomationSecretDoesNotExist checks if an error is ErrAutomationSecretDoesNotExist.
 func IsErrAutomationSecretDoesNotExist(err error) bool {
-	_, ok := err.(ErrAutomationSecretDoesNotExist)
+	_, ok := errors.AsType[ErrAutomationSecretDoesNotExist](err)
 	return ok
 }
 
@@ -110,7 +111,7 @@ type ErrAutomationSecretUnreadable struct {
 
 // IsErrAutomationSecretUnreadable checks if an error is ErrAutomationSecretUnreadable.
 func IsErrAutomationSecretUnreadable(err error) bool {
-	_, ok := err.(ErrAutomationSecretUnreadable)
+	_, ok := errors.AsType[ErrAutomationSecretUnreadable](err)
 	return ok
 }
 

@@ -19,6 +19,7 @@ package models
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/url"
 	"regexp"
@@ -262,11 +263,11 @@ func (i *formIssues) add(path, format string, args ...any) {
 	*i = append(*i, FormIssue{Path: path, Message: fmt.Sprintf(format, args...)})
 }
 
-func (i formIssues) err() error {
-	if len(i) == 0 {
+func (i *formIssues) err() error {
+	if len(*i) == 0 {
 		return nil
 	}
-	return ErrFormInvalid{FormInvalidDetails{Issues: i}}
+	return ErrFormInvalid{FormInvalidDetails{Issues: *i}}
 }
 
 func isHTTPURL(raw string) bool {
@@ -338,6 +339,7 @@ func hasIssueAt(issues formIssues, prefix string) bool {
 	return false
 }
 
+//nolint:gocyclo
 func (f *Form) validateField(s *xorm.Session, a web.Auth, path string, field *FormField, customFields map[int64]*CustomField, seen map[string]bool, issues *formIssues) error {
 	isBuiltin := slices.Contains(formBuiltinTargets, field.Target)
 	var cf *CustomField
@@ -410,9 +412,7 @@ func (f *Form) validateField(s *xorm.Session, a web.Auth, path string, field *Fo
 		if isEmptyFormDefault(field.Default) {
 			return nil
 		}
-		if msg, err := f.validateDefault(s, field, cf); err != nil {
-			return err
-		} else if msg != "" {
+		if msg := f.validateDefault(s, field, cf); msg != "" {
 			issues.add(path+".default", "%s", msg)
 		}
 	}
@@ -470,43 +470,43 @@ func isEmptyFormDefault(v any) bool {
 
 // validateDefault checks the default of a built-in or custom field target with the validators real answers use.
 // It returns a message for a bad default.
-func (f *Form) validateDefault(s *xorm.Session, field *FormField, cf *CustomField) (string, error) {
+func (f *Form) validateDefault(s *xorm.Session, field *FormField, cf *CustomField) string {
 	if cf != nil {
 		if str, ok := field.Default.(string); ok {
 			if msg := checkFormTemplate(str); msg != "" {
-				return msg, nil
+				return msg
 			}
 		}
 		if err := formValidateCustomFieldValue(s, cf, f.ProjectID, field.Default); err != nil {
-			return formCustomFieldMessage(err), nil
+			return formCustomFieldMessage(err)
 		}
-		return "", nil
+		return ""
 	}
 
 	switch field.Target {
 	case FormTargetTitle, FormTargetDescription:
 		str, ok := field.Default.(string)
 		if !ok {
-			return "must be a string", nil
+			return "must be a string"
 		}
 		limit := formMaxTitleDefault
 		if field.Target == FormTargetDescription {
 			limit = formMaxLongTextLen
 		}
 		if utf8.RuneCountInString(str) > limit {
-			return fmt.Sprintf("may be at most %d characters long", limit), nil
+			return fmt.Sprintf("may be at most %d characters long", limit)
 		}
-		return checkFormTemplate(str), nil
+		return checkFormTemplate(str)
 	case FormTargetDueDate:
 		if _, ok := parseFormDate(field.Default); !ok {
-			return "must be an RFC 3339 date or a date like 2026-12-31", nil
+			return "must be an RFC 3339 date or a date like 2026-12-31"
 		}
 	case FormTargetPriority:
 		if _, ok := parseFormPriority(field.Default); !ok {
-			return fmt.Sprintf("must be a whole number between 0 and %d", formMaxPriority), nil
+			return fmt.Sprintf("must be a whole number between 0 and %d", formMaxPriority)
 		}
 	}
-	return "", nil
+	return ""
 }
 
 // formValidateCustomFieldValue validates a value for a custom field of the project with the same validators real
@@ -520,7 +520,7 @@ func formValidateCustomFieldValue(s *xorm.Session, cf *CustomField, projectID in
 }
 
 func formCustomFieldMessage(err error) string {
-	if e, ok := err.(ErrCustomFieldInvalidValue); ok {
+	if e, ok := errors.AsType[ErrCustomFieldInvalidValue](err); ok {
 		return e.Reason
 	}
 	return "is not valid for this field"

@@ -82,7 +82,7 @@ func requestDropping(t *testing.T, taskID int64, by *user.User) *models.Approval
 	return req
 }
 
-func decide(t *testing.T, requestID int64, by *user.User, decision models.ApprovalDecisionValue, comment string) *models.ApprovalDecision {
+func decide(t *testing.T, requestID int64, by *user.User, decision models.ApprovalDecisionValue, comment string) {
 	t.Helper()
 	d := &models.ApprovalDecision{RequestID: requestID, Decision: decision, Comment: comment}
 	mustCommit(t, func(s *xorm.Session) error {
@@ -91,7 +91,6 @@ func decide(t *testing.T, requestID int64, by *user.User, decision models.Approv
 		require.True(t, can)
 		return d.Create(s, by)
 	})
-	return d
 }
 
 func approvalRows(t *testing.T, taskID int64) []*models.ApprovalRequest {

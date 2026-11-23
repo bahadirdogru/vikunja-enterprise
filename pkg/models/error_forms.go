@@ -17,6 +17,7 @@
 package models
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -31,7 +32,7 @@ type ErrFormDoesNotExist struct {
 
 // IsErrFormDoesNotExist checks if an error is ErrFormDoesNotExist.
 func IsErrFormDoesNotExist(err error) bool {
-	_, ok := err.(ErrFormDoesNotExist)
+	_, ok := errors.AsType[ErrFormDoesNotExist](err)
 	return ok
 }
 
@@ -69,7 +70,7 @@ type ErrFormInvalid struct {
 
 // IsErrFormInvalid checks if an error is ErrFormInvalid.
 func IsErrFormInvalid(err error) bool {
-	_, ok := err.(ErrFormInvalid)
+	_, ok := errors.AsType[ErrFormInvalid](err)
 	return ok
 }
 
@@ -124,7 +125,7 @@ type ErrFormUnavailable struct {
 
 // IsErrFormUnavailable checks if an error is ErrFormUnavailable.
 func IsErrFormUnavailable(err error) bool {
-	_, ok := err.(ErrFormUnavailable)
+	_, ok := errors.AsType[ErrFormUnavailable](err)
 	return ok
 }
 
@@ -150,7 +151,7 @@ type ErrFormLoginRequired struct{}
 
 // IsErrFormLoginRequired checks if an error is ErrFormLoginRequired.
 func IsErrFormLoginRequired(err error) bool {
-	_, ok := err.(ErrFormLoginRequired)
+	_, ok := errors.AsType[ErrFormLoginRequired](err)
 	return ok
 }
 
@@ -176,7 +177,7 @@ type ErrFormNotAllowed struct{}
 
 // IsErrFormNotAllowed checks if an error is ErrFormNotAllowed.
 func IsErrFormNotAllowed(err error) bool {
-	_, ok := err.(ErrFormNotAllowed)
+	_, ok := errors.AsType[ErrFormNotAllowed](err)
 	return ok
 }
 
@@ -215,7 +216,7 @@ type ErrFormSubmissionInvalid struct {
 
 // IsErrFormSubmissionInvalid checks if an error is ErrFormSubmissionInvalid.
 func IsErrFormSubmissionInvalid(err error) bool {
-	_, ok := err.(ErrFormSubmissionInvalid)
+	_, ok := errors.AsType[ErrFormSubmissionInvalid](err)
 	return ok
 }
 
@@ -252,7 +253,7 @@ type ErrFormRateLimited struct {
 
 // IsErrFormRateLimited checks if an error is ErrFormRateLimited.
 func IsErrFormRateLimited(err error) bool {
-	_, ok := err.(ErrFormRateLimited)
+	_, ok := errors.AsType[ErrFormRateLimited](err)
 	return ok
 }
 
@@ -278,7 +279,7 @@ type ErrFormsDisabled struct{}
 
 // IsErrFormsDisabled checks if an error is ErrFormsDisabled.
 func IsErrFormsDisabled(err error) bool {
-	_, ok := err.(ErrFormsDisabled)
+	_, ok := errors.AsType[ErrFormsDisabled](err)
 	return ok
 }
 

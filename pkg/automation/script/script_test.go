@@ -332,7 +332,7 @@ func TestLimits_Timeout(t *testing.T) {
 		_, err := Run(ctx, in)
 		require.ErrorIs(t, err, context.Canceled)
 		var se *Error
-		assert.False(t, errors.As(err, &se))
+		assert.NotErrorAs(t, err, &se)
 	})
 
 	t.Run("a catastrophic regular expression is stopped by the regexp engine", func(t *testing.T) {
@@ -594,7 +594,7 @@ func TestHostCalls(t *testing.T) {
 
 func TestFetch(t *testing.T) {
 	h := &fakeHost{}
-	h.fetch = func(req *FetchRequest) (*FetchResponse, error) {
+	h.fetch = func(_ *FetchRequest) (*FetchResponse, error) {
 		return &FetchResponse{Status: 201, Headers: map[string]string{"x-a": "b"}, Body: `{"id": 7, "list": [1, 2]}`}, nil
 	}
 	res, err := run(t, h, `
@@ -615,7 +615,7 @@ func TestFetch(t *testing.T) {
 	})
 
 	t.Run("json() on a body that is not JSON throws a catchable error", func(t *testing.T) {
-		h.fetch = func(req *FetchRequest) (*FetchResponse, error) {
+		h.fetch = func(_ *FetchRequest) (*FetchResponse, error) {
 			return &FetchResponse{Status: 200, Body: "<html>"}, nil
 		}
 		res, err := run(t, h, `try { http.fetch("https://example.com/").json() } catch (e) { return e.name }`)
@@ -624,7 +624,7 @@ func TestFetch(t *testing.T) {
 	})
 
 	t.Run("json() on a truncated body refuses", func(t *testing.T) {
-		h.fetch = func(req *FetchRequest) (*FetchResponse, error) {
+		h.fetch = func(_ *FetchRequest) (*FetchResponse, error) {
 			return &FetchResponse{Status: 200, Body: `{"a"`, Truncated: true}, nil
 		}
 		res, err := run(t, h, `try { http.fetch("https://example.com/").json() } catch (e) { return e.message }`)
@@ -633,7 +633,7 @@ func TestFetch(t *testing.T) {
 	})
 
 	t.Run("a failing request throws and can be caught", func(t *testing.T) {
-		h.fetch = func(req *FetchRequest) (*FetchResponse, error) { return nil, errors.New("the address is not allowed") }
+		h.fetch = func(_ *FetchRequest) (*FetchResponse, error) { return nil, errors.New("the address is not allowed") }
 		res, err := run(t, h, `try { http.fetch("http://127.0.0.1/") } catch (e) { return e.message }`)
 		require.NoError(t, err)
 		assert.Equal(t, `"the address is not allowed"`, res.Value)

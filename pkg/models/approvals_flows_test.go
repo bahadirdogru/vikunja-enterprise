@@ -251,7 +251,7 @@ func TestApprovals_Callers(t *testing.T) {
 		assert.Equal(t, env.todo, required.FromStatusID)
 		assert.Equal(t, env.done, required.ToStatusID)
 		assert.Equal(t, 409, required.HTTPError().HTTPCode)
-		assert.EqualValues(t, ErrCodeApprovalRequired, required.HTTPError().Code)
+		assert.Equal(t, ErrCodeApprovalRequired, required.HTTPError().Code)
 
 		assert.False(t, taskDone(t, env.task.ID), "the update was rolled back as a whole")
 		assert.Equal(t, env.todo, taskStatusOf(t, env.task.ID).StatusID)

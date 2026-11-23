@@ -247,7 +247,7 @@ func TestEvaluate_Groups(t *testing.T) {
 	}
 
 	_, err := Evaluate(leaf("nonsense", "=", 1), evalSubject())
-	assert.Error(t, err)
+	require.Error(t, err)
 	_, err = Evaluate(&spec.Condition{}, evalSubject())
 	assert.Error(t, err)
 }

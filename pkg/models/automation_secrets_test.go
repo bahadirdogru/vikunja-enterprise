@@ -93,7 +93,7 @@ func TestAutomationSecret_EncryptionRoundTrip(t *testing.T) {
 
 	t.Run("the value is bound to the project and the name", func(t *testing.T) {
 		_, err := DecryptAutomationSecret(1, "OTHER", stored)
-		assert.Error(t, err, "another name")
+		require.Error(t, err, "another name")
 		_, err = DecryptAutomationSecret(2, "KEY", stored)
 		assert.Error(t, err, "another project")
 	})
@@ -167,16 +167,16 @@ func TestAutomationSecret_CRUDAndPermissions(t *testing.T) {
 		// user1 has write but no admin access to project 10 and read access to 9; user2 has no access at all.
 		for _, project := range []int64{9, 10} {
 			err := setAutomationSecret(t, project, "X", "v", autoUser1)
-			assert.ErrorIs(t, err, ErrGenericForbidden{}, "project %d", project)
+			require.ErrorIs(t, err, ErrGenericForbidden{}, "project %d", project)
 			can, err := (&AutomationSecret{ProjectID: project, Name: "X"}).CanDelete(s, autoUser1)
 			require.NoError(t, err)
 			assert.False(t, can)
 			_, _, _, err = (&AutomationSecret{ProjectID: project}).ReadAll(s, autoUser1, "", 1, 10)
-			assert.ErrorIs(t, err, ErrGenericForbidden{})
+			require.ErrorIs(t, err, ErrGenericForbidden{})
 		}
-		assert.Error(t, setAutomationSecret(t, 1, "X", "v", autoUser2))
+		require.Error(t, setAutomationSecret(t, 1, "X", "v", autoUser2))
 		_, _, _, err := (&AutomationSecret{ProjectID: 1}).ReadAll(s, autoUser2, "", 1, 10)
-		assert.ErrorIs(t, err, ErrGenericForbidden{})
+		require.ErrorIs(t, err, ErrGenericForbidden{})
 		// A link share or any non-user cannot administer.
 		can, _, err := (&AutomationSecret{ProjectID: 1, Name: "API_KEY"}).CanRead(s, &LinkSharing{ID: 1, ProjectID: 1})
 		assert.False(t, can)
@@ -230,13 +230,14 @@ func TestAutomationSecret_UnreadableAfterTheServiceSecretChanged(t *testing.T) {
 	items := result.([]*AutomationSecret)
 	require.Len(t, items, 1)
 	assert.True(t, items[0].Unreadable)
-	raw, _ := json.Marshal(items)
+	raw, err := json.Marshal(items)
+	require.NoError(t, err)
 	assert.Contains(t, string(raw), `"unreadable":true`)
 
 	secrets, err := LoadAutomationSecrets(s, 1)
 	require.NoError(t, err)
 	require.Contains(t, secrets, "OLD")
-	assert.Error(t, secrets["OLD"].Err)
+	require.Error(t, secrets["OLD"].Err)
 	assert.True(t, IsErrAutomationSecretUnreadable(secrets["OLD"].Err))
 	assert.Empty(t, secrets["OLD"].Value)
 	assert.NotContains(t, secrets["OLD"].Err.Error(), "stored-with")

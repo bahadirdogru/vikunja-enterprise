@@ -127,6 +127,8 @@ func changedFields(old, cur map[string]any) []string {
 }
 
 // describe extracts what the outbox needs from an event. ok is false for events no trigger listens to.
+//
+//nolint:gocyclo
 func describe(event events.Event) (p *Payload, ok bool) {
 	switch e := event.(type) {
 	case *models.TaskCreatedEvent:

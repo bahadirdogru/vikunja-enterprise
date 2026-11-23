@@ -142,7 +142,7 @@ func GetReportOptions(s *xorm.Session, a web.Auth, projectID int64) (*ReportOpti
 			ProjectID:     f.ProjectID,
 			FieldType:     string(f.Type),
 		}
-		switch f.Type {
+		switch f.Type { //nolint:exhaustive // the other types are no dimension
 		case CustomFieldTypeSelect, CustomFieldTypeMultiSelect, CustomFieldTypeUser, CustomFieldTypeCheckbox, CustomFieldTypeRating:
 			dim := *opt
 			dim.MultiValued = f.Type == CustomFieldTypeMultiSelect || f.Type == CustomFieldTypeUser

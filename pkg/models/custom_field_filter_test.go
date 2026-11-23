@@ -146,7 +146,7 @@ func cfQueryOrdered(t *testing.T, filter string, sortBy, orderBy []string) []int
 
 func TestCustomFieldFilter_Types(t *testing.T) {
 	env := setupCFFilterEnv(t)
-	f := func(format string, args ...any) string { return fmt.Sprintf(format, args...) }
+	f := fmt.Sprintf
 
 	tests := []struct {
 		name   string
@@ -248,7 +248,7 @@ func TestCustomFieldFilter_Types(t *testing.T) {
 
 func TestCustomFieldFilter_Validation(t *testing.T) {
 	env := setupCFFilterEnv(t)
-	f := func(format string, args ...any) string { return fmt.Sprintf(format, args...) }
+	f := fmt.Sprintf
 
 	tests := []struct {
 		name   string

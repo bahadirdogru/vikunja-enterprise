@@ -71,7 +71,7 @@ func TestIdempotency_UniqueIndexRejectsASecondRunForTheSameEventAndRule(t *testi
 	_, err := s.Insert(&models.AutomationRun{
 		RuleID: r.ID, EventID: allEvents(t)[0].ID, ProjectID: projectOwned, Status: models.AutomationRunRunning, Started: time.Now(),
 	})
-	assert.Error(t, err, "(event_id, rule_id) is unique")
+	require.Error(t, err, "(event_id, rule_id) is unique")
 
 	_, err = s.Insert(&models.AutomationRunStep{RunID: allRuns(t, r.ID)[0].ID, Position: 0, ActionType: "x", Status: "success"})
 	assert.Error(t, err, "(run_id, position) is unique")

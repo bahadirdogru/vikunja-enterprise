@@ -77,7 +77,7 @@ func countingServer(t *testing.T, status int, body string) *testServer {
 		w.WriteHeader(ts.status)
 		_, _ = w.Write([]byte(ts.body))
 	}))
-	ts.url = ts.Server.URL
+	ts.url = ts.URL
 	t.Cleanup(ts.Close)
 	return ts
 }
@@ -100,7 +100,7 @@ func (ts *testServer) last(t *testing.T) recordedRequest {
 }
 
 // setSecret stores a secret of a project as user1.
-func setSecret(t *testing.T, projectID int64, name, value string) {
+func setSecret(t *testing.T, projectID int64, name, value string) { //nolint:unparam // the project reads better at the call than inside the helper
 	t.Helper()
 	mustCommit(t, func(s *xorm.Session) error {
 		return (&models.AutomationSecret{ProjectID: projectID, Name: name, NewValue: value}).Update(s, user1)

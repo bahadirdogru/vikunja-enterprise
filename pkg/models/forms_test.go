@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -333,8 +334,7 @@ func TestForm_CreateValidation(t *testing.T) {
 }
 
 func fitoa(i int64) string {
-	b, _ := json.Marshal(i)
-	return string(b)
+	return strconv.FormatInt(i, 10)
 }
 
 func TestForm_TokenIsUniqueAndRegenerable(t *testing.T) {
@@ -449,7 +449,7 @@ func TestForm_UpdateKeepsTokenAndClearsReason(t *testing.T) {
 	require.NoError(t, s.Commit())
 	s.Close()
 	assert.Equal(t, token, upd.Token)
-	assert.Equal(t, "", upd.DisabledReason)
+	assert.Empty(t, upd.DisabledReason)
 	assert.EqualValues(t, 1, upd.OwnerID)
 	stored := reloadForm(t, form.ID)
 	assert.Equal(t, "Renamed", stored.Title)
@@ -539,7 +539,8 @@ func TestFormDefinition_DoesNotLeak(t *testing.T) {
 	budget := fields[2].(map[string]any)
 	assert.ElementsMatch(t, []string{"target", "label", "help", "required", "kind", "config"}, keysOf(budget))
 
-	raw, _ := json.Marshal(def)
+	raw, err := json.Marshal(def)
+	require.NoError(t, err)
 	body := string(raw)
 	for _, forbidden := range []string{"secret internal reference", "project", "owner", "submission_count", "token", "notify", "assignee", "<script", "onerror", "cf_1", `"labels"`} {
 		assert.NotContains(t, body, forbidden)
@@ -604,7 +605,7 @@ func TestFormDefinition_ReasonsAndAccess(t *testing.T) {
 		_, err = submit(t, pub, map[string]any{"title": "x"})
 		assert.True(t, IsErrFormUnavailable(err))
 		_, err = GetFormDefinition(usr.Token, fU2)
-		assert.NoError(t, err, "forms for signed-in users stay")
+		require.NoError(t, err, "forms for signed-in users stay")
 		config.FormsPublicEnabled.Set(true)
 		config.FormsEnabled.Set(false)
 		_, err = GetFormDefinition(usr.Token, fU2)
@@ -742,10 +743,10 @@ func TestFormSubmit_HappyPathAllTargets(t *testing.T) {
 	}
 	assert.Equal(t, "REF-1", got[1])
 	assert.EqualValues(t, 1, got[2])
-	assert.EqualValues(t, 12.5, got[3])
+	assert.InDelta(t, 12.5, got[3], 0)
 	assert.ElementsMatch(t, []int64{3, 4}, got[4])
 	assert.Equal(t, "line one\nline two", got[ids[CustomFieldTypeLongText]])
-	assert.EqualValues(t, 99.9, got[ids[CustomFieldTypeCurrency]])
+	assert.InDelta(t, 99.9, got[ids[CustomFieldTypeCurrency]], 0)
 	assert.Equal(t, true, got[ids[CustomFieldTypeCheckbox]])
 	assert.Equal(t, []int64{1}, got[ids[CustomFieldTypeUser]])
 	assert.Equal(t, "https://example.com/a", got[ids[CustomFieldTypeURL]])
@@ -1108,7 +1109,7 @@ func TestFormSubmit_RateLimits(t *testing.T) {
 		}
 		_, err := submit(t, g, map[string]any{"title": "x"}, fromIP("192.0.2.200"))
 		require.ErrorAs(t, err, &rl)
-		assert.Greater(t, rl.RetryAfterSeconds, int64(0))
+		assert.Positive(t, rl.RetryAfterSeconds)
 		now = now.Add(time.Hour + time.Minute)
 		_, err = submit(t, g, map[string]any{"title": "x"}, fromIP("192.0.2.200"))
 		require.NoError(t, err)
@@ -1133,7 +1134,8 @@ func TestFormSubmit_RateLimits(t *testing.T) {
 			assert.NotContains(t, r.IPHash, "192.0.2")
 			assert.NotEqual(t, "192.0.2.1", r.IPHash)
 		}
-		assert.Equal(t, formIPHash("192.0.2.1"), formIPHash("192.0.2.1"))
+		first := formIPHash("192.0.2.1")
+		assert.Equal(t, first, formIPHash("192.0.2.1"), "the hash is stable")
 		assert.NotEqual(t, formIPHash("192.0.2.1"), formIPHash("192.0.2.2"))
 	})
 }

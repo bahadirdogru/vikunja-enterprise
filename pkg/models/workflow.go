@@ -240,6 +240,7 @@ type workflowDocPlan struct {
 	activeCount int
 }
 
+//nolint:gocyclo
 func (wf *Workflow) validateDocument(s *xorm.Session, existing *Workflow) (*workflowDocPlan, error) {
 	plan := &workflowDocPlan{
 		existing: existing,
@@ -671,7 +672,7 @@ func moveTasksBetweenStatuses(s *xorm.Session, from, to *WorkflowStatus) error {
 	if to.Category.isFinal() {
 		doneAt = time.Now()
 	}
-	for _, chunk := range chunkInt64s(taskIDs, workflowBulkChunkSize) {
+	for _, chunk := range chunkInt64s(taskIDs) {
 		_, err = s.Unscoped().
 			Where(builder.In("id", chunk)).
 			Cols("done", "done_at").
@@ -684,6 +685,8 @@ func moveTasksBetweenStatuses(s *xorm.Session, from, to *WorkflowStatus) error {
 }
 
 // saveTransitions replaces the stored transitions by the submitted ones. Transitions whose pair did not change keep their id.
+//
+//nolint:gocyclo
 func (wf *Workflow) saveTransitions(s *xorm.Session, idMap map[int64]int64) error {
 	stored := []*WorkflowTransition{}
 	if err := s.Where("workflow_id = ?", wf.ID).Find(&stored); err != nil {
@@ -855,10 +858,11 @@ func deleteWorkflowForProject(s *xorm.Session, projectID int64) error {
 	return deleteWorkflowByID(s, wf.ID)
 }
 
-func chunkInt64s(in []int64, size int) [][]int64 {
+// chunkInt64s cuts ids into the pieces a bulk statement takes at once.
+func chunkInt64s(in []int64) [][]int64 {
 	chunks := [][]int64{}
-	for start := 0; start < len(in); start += size {
-		end := min(start+size, len(in))
+	for start := 0; start < len(in); start += workflowBulkChunkSize {
+		end := min(start+workflowBulkChunkSize, len(in))
 		chunks = append(chunks, in[start:end])
 	}
 	return chunks

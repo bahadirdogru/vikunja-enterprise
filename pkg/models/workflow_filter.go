@@ -81,7 +81,7 @@ func parseWorkflowStatusFilter(field string, comparator taskFilterComparator, ra
 // taskStatusExists is a sub-select over the status row of the task row aliased taskAlias, narrowed by extra.
 func taskStatusExists(taskAlias string, extra builder.Cond) *builder.Builder {
 	cond := builder.Expr(taskStatusesTable + ".task_id = " + taskAlias + ".id")
-	var full builder.Cond = cond
+	full := cond
 	if extra != nil {
 		full = builder.And(cond, extra)
 	}
@@ -108,7 +108,7 @@ func workflowStatusFilterCond(f *taskFilter, includeNulls bool, taskAlias string
 	}
 
 	sub := taskStatusExists(taskAlias, match)
-	var cond builder.Cond = builder.Exists(sub)
+	cond := builder.Exists(sub)
 	if negate {
 		cond = builder.NotExists(sub)
 	}

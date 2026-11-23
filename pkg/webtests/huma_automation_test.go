@@ -356,7 +356,7 @@ func TestHumaAutomation_Permissions(t *testing.T) {
 		for _, project := range []int64{9, 10} {
 			rec := humaRequest(t, e, http.MethodGet, autoRulesPath(project), "", user1, "")
 			assert.Equal(t, http.StatusForbidden, rec.Code, rec.Body.String())
-			rec = humaRequest(t, e, http.MethodPost, autoRulesPath(project), strings.Replace(priorityRule, "task.set_field", "task.set_field", 1), user1, "")
+			rec = humaRequest(t, e, http.MethodPost, autoRulesPath(project), priorityRule, user1, "")
 			assert.Equal(t, http.StatusForbidden, rec.Code, rec.Body.String())
 		}
 		db.AssertCount(t, "automation_rules", builder.In("project_id", 9, 10), 0)

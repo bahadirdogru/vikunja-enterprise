@@ -139,8 +139,8 @@ func TestForms_RuleOnTheTriggerCanBeSaved(t *testing.T) {
 
 func TestForms_MaxSubmissionsHoldsUnderConcurrency(t *testing.T) {
 	reset(t)
-	const max, workers = 5, 24
-	f := newForm(t, func(f *models.Form) { f.Settings.MaxSubmissions = max })
+	const limit, workers = 5, 24
+	f := newForm(t, func(f *models.Form) { f.Settings.MaxSubmissions = limit })
 	tasksBefore := countTasks(t)
 
 	var wg sync.WaitGroup
@@ -172,19 +172,19 @@ func TestForms_MaxSubmissionsHoldsUnderConcurrency(t *testing.T) {
 	wg.Wait()
 
 	assert.Empty(t, other)
-	assert.Equal(t, max, ok, "exactly the maximum succeeded")
-	assert.Equal(t, workers-max, full)
+	assert.Equal(t, limit, ok, "exactly the maximum succeeded")
+	assert.Equal(t, workers-limit, full)
 
 	s := db.NewSession()
 	defer s.Close()
 	stored := &models.Form{}
 	_, err := s.ID(f.ID).Get(stored)
 	require.NoError(t, err)
-	assert.EqualValues(t, max, stored.SubmissionCount)
+	assert.EqualValues(t, limit, stored.SubmissionCount)
 	n, err := s.Where("form_id = ?", f.ID).Count(&models.FormSubmission{})
 	require.NoError(t, err)
-	assert.EqualValues(t, max, n)
-	assert.EqualValues(t, tasksBefore+max, countTasks(t))
+	assert.EqualValues(t, limit, n)
+	assert.Equal(t, tasksBefore+limit, countTasks(t))
 }
 
 func countTasks(t *testing.T) int64 {

@@ -66,7 +66,7 @@ func TestHTTPRequest_SendsTheTemplatedRequestWithASignature(t *testing.T) {
 	req := srv.last(t)
 	assert.Equal(t, "POST", req.method)
 	assert.Equal(t, "/hook/Test1?t=Original%20title", req.path)
-	assert.Equal(t, `{"text": "created Original title", "who": "user1"}`, req.body)
+	assert.JSONEq(t, `{"text": "created Original title", "who": "user1"}`, req.body)
 	assert.Equal(t, "Bearer tok-123", req.header.Get("Authorization"))
 	assert.Equal(t, "user1", req.header.Get("X-Doer"))
 	assert.Equal(t, "application/json", req.header.Get("Content-Type"))
@@ -280,7 +280,7 @@ func TestHTTPFetch_InScripts(t *testing.T) {
 	assert.Contains(t, steps[0].Output, `result: {"status":201,"ok":true,"reply":"yes","id":7,"n":3,"truncated":false}`)
 	req := srv.last(t)
 	assert.Equal(t, "PUT", req.method)
-	assert.Equal(t, `{"task":"Original title"}`, req.body)
+	assert.JSONEq(t, `{"task":"Original title"}`, req.body)
 	assert.Equal(t, "1", req.header.Get("X-Mine"))
 	assert.Equal(t, "Vikunja-Automation", req.header.Get("User-Agent"))
 	assert.Empty(t, req.header.Get("Authorization"), "no credentials of Vikunja")
@@ -469,7 +469,7 @@ func TestMasker(t *testing.T) {
 	assert.Equal(t, "x ***", m.mask("x ab1"), "a short secret that was read is masked")
 	assert.Equal(t, "xy stays", m.mask("xy stays"), "a short secret that was not read would damage the text")
 	assert.Equal(t, "nothing here", m.mask("nothing here"))
-	assert.Equal(t, "", (*masker)(nil).mask(""))
+	assert.Empty(t, (*masker)(nil).mask(""))
 	var nilMasker *masker
 	assert.Equal(t, "unchanged", nilMasker.mask("unchanged"))
 
@@ -477,9 +477,9 @@ func TestMasker(t *testing.T) {
 	err := env.maskErr(&ActionError{Msg: "failed: longer-secret-value"})
 	assert.Equal(t, "failed: ***", err.Error())
 	var actionErr *ActionError
-	assert.ErrorAs(t, err, &actionErr, "the type survives masking, so the retry classification does")
+	require.ErrorAs(t, err, &actionErr, "the type survives masking, so the retry classification does")
 	assert.True(t, isPermanent(err))
-	assert.NoError(t, env.maskErr(nil))
+	require.NoError(t, env.maskErr(nil))
 	same := fmt.Errorf("nothing secret")
 	assert.Same(t, same, env.maskErr(same))
 	assert.Equal(t, "plain", (&Env{}).maskOutput("plain"), "a step that used no secrets is not touched")

@@ -328,7 +328,7 @@ func TestLimits_ARuleDoesNotReactToTheTasksItCreated(t *testing.T) {
 	after, err := s.Where("project_id = ?", projectOwned).Count(&models.Task{})
 	_ = s.Close()
 	require.NoError(t, err)
-	assert.EqualValues(t, before+2, after, "the parent and exactly one subtask, no chain")
+	assert.Equal(t, before+2, after, "the parent and exactly one subtask, no chain")
 
 	runs := allRuns(t, self.ID)
 	require.Len(t, runs, 2)

@@ -26,7 +26,7 @@ import (
 // can reveal data of other users (conditions, comments created for them, errors), so reading needs it too.
 func canAdministerAutomation(s *xorm.Session, a web.Auth, projectID int64) (bool, int, error) {
 	if _, err := ownerOf(a); err != nil {
-		return false, 0, nil
+		return false, 0, nil //nolint:nilerr // anything but a user is refused, which is an answer and not an error
 	}
 	can, err := (&Project{ID: projectID}).IsAdmin(s, a)
 	if err != nil || !can {

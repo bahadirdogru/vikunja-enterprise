@@ -146,7 +146,7 @@ func statusOf(t *testing.T, taskID int64) int64 {
 	return status.ID
 }
 
-func historyTo(t *testing.T, taskID, statusID int64) int64 {
+func historyTo(t *testing.T, taskID, statusID int64) int64 { //nolint:unparam // the status reads better at the call than inside the helper
 	t.Helper()
 	s := db.NewSession()
 	defer s.Close()
@@ -225,7 +225,7 @@ func TestApprovalConcurrency_ApproveAndRejectOfModeAnyRaceForTheRequest(t *testi
 		stored := requestState(t, req.ID)
 		won[stored.Status]++
 		assert.EqualValues(t, 1, decidedCount(t, req.ID), "the loser's decision was not recorded")
-		switch stored.Status {
+		switch stored.Status { //nolint:exhaustive // every other status fails the test
 		case models.ApprovalStatusApproved:
 			assert.EqualValues(t, 5, statusOf(t, task.ID))
 			assert.EqualValues(t, 1, historyTo(t, task.ID, 5))
@@ -263,13 +263,13 @@ func TestApprovalConcurrency_ADecisionRacingACancel(t *testing.T) {
 		assert.Equal(t, 1, failures, "round %d: exactly one of them wins", round)
 
 		stored := requestState(t, req.ID)
-		switch stored.Status {
+		switch stored.Status { //nolint:exhaustive // every other status fails the test
 		case models.ApprovalStatusApproved:
-			assert.NoError(t, errs[0])
+			require.NoError(t, errs[0])
 			assert.EqualValues(t, 5, statusOf(t, task.ID))
 			assert.EqualValues(t, 1, historyTo(t, task.ID, 5))
 		case models.ApprovalStatusCancelled:
-			assert.NoError(t, errs[1])
+			require.NoError(t, errs[1])
 			assert.Equal(t, models.ApprovalCancelByRequester, stored.CancelReason)
 			assert.EqualValues(t, 1, statusOf(t, task.ID), "a cancelled request moved nothing")
 			assert.EqualValues(t, 0, historyTo(t, task.ID, 5))

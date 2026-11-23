@@ -17,6 +17,7 @@
 package models
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -32,7 +33,7 @@ type ErrAutomationRuleDoesNotExist struct {
 
 // IsErrAutomationRuleDoesNotExist checks if an error is ErrAutomationRuleDoesNotExist.
 func IsErrAutomationRuleDoesNotExist(err error) bool {
-	_, ok := err.(ErrAutomationRuleDoesNotExist)
+	_, ok := errors.AsType[ErrAutomationRuleDoesNotExist](err)
 	return ok
 }
 
@@ -64,7 +65,7 @@ type ErrAutomationRuleInvalid struct {
 
 // IsErrAutomationRuleInvalid checks if an error is ErrAutomationRuleInvalid.
 func IsErrAutomationRuleInvalid(err error) bool {
-	_, ok := err.(ErrAutomationRuleInvalid)
+	_, ok := errors.AsType[ErrAutomationRuleInvalid](err)
 	return ok
 }
 
@@ -104,7 +105,7 @@ type ErrAutomationRunDoesNotExist struct {
 
 // IsErrAutomationRunDoesNotExist checks if an error is ErrAutomationRunDoesNotExist.
 func IsErrAutomationRunDoesNotExist(err error) bool {
-	_, ok := err.(ErrAutomationRunDoesNotExist)
+	_, ok := errors.AsType[ErrAutomationRunDoesNotExist](err)
 	return ok
 }
 
@@ -132,7 +133,7 @@ type ErrAutomationRunNotRetryable struct {
 
 // IsErrAutomationRunNotRetryable checks if an error is ErrAutomationRunNotRetryable.
 func IsErrAutomationRunNotRetryable(err error) bool {
-	_, ok := err.(ErrAutomationRunNotRetryable)
+	_, ok := errors.AsType[ErrAutomationRunNotRetryable](err)
 	return ok
 }
 

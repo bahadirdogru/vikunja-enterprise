@@ -715,7 +715,7 @@ func copyTaskStatuses(s *xorm.Session, taskMap map[int64]int64, statusMap map[in
 
 	copies := []*TaskStatus{}
 	now := time.Now()
-	for _, chunk := range chunkInt64s(oldIDs, workflowBulkChunkSize) {
+	for _, chunk := range chunkInt64s(oldIDs) {
 		rows := []*TaskStatus{}
 		if err := s.Where(builder.In("task_id", chunk)).Find(&rows); err != nil {
 			return err

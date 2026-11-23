@@ -17,6 +17,7 @@
 package models
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -31,7 +32,7 @@ type ErrWorkflowDoesNotExist struct {
 
 // IsErrWorkflowDoesNotExist checks if an error is ErrWorkflowDoesNotExist.
 func IsErrWorkflowDoesNotExist(err error) bool {
-	_, ok := err.(ErrWorkflowDoesNotExist)
+	_, ok := errors.AsType[ErrWorkflowDoesNotExist](err)
 	return ok
 }
 
@@ -58,7 +59,7 @@ type ErrWorkflowInvalidDefinition struct {
 
 // IsErrWorkflowInvalidDefinition checks if an error is ErrWorkflowInvalidDefinition.
 func IsErrWorkflowInvalidDefinition(err error) bool {
-	_, ok := err.(ErrWorkflowInvalidDefinition)
+	_, ok := errors.AsType[ErrWorkflowInvalidDefinition](err)
 	return ok
 }
 
@@ -85,7 +86,7 @@ type ErrWorkflowStatusDoesNotExist struct {
 
 // IsErrWorkflowStatusDoesNotExist checks if an error is ErrWorkflowStatusDoesNotExist.
 func IsErrWorkflowStatusDoesNotExist(err error) bool {
-	_, ok := err.(ErrWorkflowStatusDoesNotExist)
+	_, ok := errors.AsType[ErrWorkflowStatusDoesNotExist](err)
 	return ok
 }
 
@@ -112,7 +113,7 @@ type ErrWorkflowStatusArchived struct {
 
 // IsErrWorkflowStatusArchived checks if an error is ErrWorkflowStatusArchived.
 func IsErrWorkflowStatusArchived(err error) bool {
-	_, ok := err.(ErrWorkflowStatusArchived)
+	_, ok := errors.AsType[ErrWorkflowStatusArchived](err)
 	return ok
 }
 
@@ -140,7 +141,7 @@ type ErrWorkflowTransitionNotAllowed struct {
 
 // IsErrWorkflowTransitionNotAllowed checks if an error is ErrWorkflowTransitionNotAllowed.
 func IsErrWorkflowTransitionNotAllowed(err error) bool {
-	_, ok := err.(ErrWorkflowTransitionNotAllowed)
+	_, ok := errors.AsType[ErrWorkflowTransitionNotAllowed](err)
 	return ok
 }
 
@@ -170,7 +171,7 @@ type ErrWorkflowTransitionForbidden struct {
 
 // IsErrWorkflowTransitionForbidden checks if an error is ErrWorkflowTransitionForbidden.
 func IsErrWorkflowTransitionForbidden(err error) bool {
-	_, ok := err.(ErrWorkflowTransitionForbidden)
+	_, ok := errors.AsType[ErrWorkflowTransitionForbidden](err)
 	return ok
 }
 
@@ -209,7 +210,7 @@ type ErrWorkflowRequirementsNotMet struct {
 
 // IsErrWorkflowRequirementsNotMet checks if an error is ErrWorkflowRequirementsNotMet.
 func IsErrWorkflowRequirementsNotMet(err error) bool {
-	_, ok := err.(ErrWorkflowRequirementsNotMet)
+	_, ok := errors.AsType[ErrWorkflowRequirementsNotMet](err)
 	return ok
 }
 
@@ -244,7 +245,7 @@ type ErrWorkflowMoveTasksRequired struct {
 
 // IsErrWorkflowMoveTasksRequired checks if an error is ErrWorkflowMoveTasksRequired.
 func IsErrWorkflowMoveTasksRequired(err error) bool {
-	_, ok := err.(ErrWorkflowMoveTasksRequired)
+	_, ok := errors.AsType[ErrWorkflowMoveTasksRequired](err)
 	return ok
 }
 
@@ -275,7 +276,7 @@ type ErrWorkflowRequiredForStatusView struct {
 
 // IsErrWorkflowRequiredForStatusView checks if an error is ErrWorkflowRequiredForStatusView.
 func IsErrWorkflowRequiredForStatusView(err error) bool {
-	_, ok := err.(ErrWorkflowRequiredForStatusView)
+	_, ok := errors.AsType[ErrWorkflowRequiredForStatusView](err)
 	return ok
 }
 
@@ -303,7 +304,7 @@ type ErrStatusViewBucketsManaged struct {
 
 // IsErrStatusViewBucketsManaged checks if an error is ErrStatusViewBucketsManaged.
 func IsErrStatusViewBucketsManaged(err error) bool {
-	_, ok := err.(ErrStatusViewBucketsManaged)
+	_, ok := errors.AsType[ErrStatusViewBucketsManaged](err)
 	return ok
 }
 

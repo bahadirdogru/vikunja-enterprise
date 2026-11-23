@@ -80,12 +80,6 @@ func setupWFViewEnv(t *testing.T) *wfViewEnv {
 	}
 }
 
-func wfSetStatus(t *testing.T, taskID, status int64) {
-	t.Helper()
-	_, err := changeTaskStatusAs(t, taskID, status, "x", cfUser1)
-	require.NoError(t, err)
-}
-
 func wfIDs(t *testing.T, a web.Auth, projectID int64, tc TaskCollection) []int64 {
 	t.Helper()
 	if len(tc.SortBy) == 0 {
@@ -107,7 +101,7 @@ func TestWorkflowFilter_Parsing(t *testing.T) {
 	}
 	for _, f := range valid {
 		_, err := getTaskFiltersFromFilterString(f, "")
-		assert.NoError(t, err, f)
+		require.NoError(t, err, f)
 	}
 
 	t.Run("invalid values", func(t *testing.T) {
@@ -291,7 +285,7 @@ func TestWorkflowSort(t *testing.T) {
 					firstWithout = i
 				}
 			}
-			require.Greater(t, firstWithout, 0, order)
+			require.Positive(t, firstWithout, order)
 			assert.Equal(t, 5, lastWith, order)
 			assert.Less(t, lastWith, firstWithout, order)
 		}
@@ -366,7 +360,7 @@ func TestWorkflowExpandStatus(t *testing.T) {
 		assert.LessOrEqual(t, large, 2)
 	})
 	t.Run("validates as an expand option and scope", func(t *testing.T) {
-		assert.NoError(t, TaskCollectionExpandStatus.Validate())
+		require.NoError(t, TaskCollectionExpandStatus.Validate())
 		group, perm, needs := requiredScopeForExpand("status")
 		assert.True(t, needs)
 		assert.Equal(t, "tasks", group)
@@ -402,7 +396,7 @@ func wfGrantWrite(t *testing.T, userID int64) {
 	insertRow(t, &ProjectUser{UserID: userID, ProjectID: 11, Permission: PermissionWrite})
 }
 
-func wfStatusView(t *testing.T, projectID int64) *ProjectView {
+func wfStatusView(t *testing.T, projectID int64) *ProjectView { //nolint:unparam // the project reads better at the call than inside the helper
 	t.Helper()
 	s := db.NewSession()
 	defer s.Close()
@@ -590,7 +584,7 @@ func TestStatusKanban_Pagination(t *testing.T) {
 	require.Len(t, cols3[0].Tasks, 2)
 	seen := append(append(columnTaskIDs(cols[0]), columnTaskIDs(cols2[0])...), columnTaskIDs(cols3[0])...)
 	slices.Sort(seen)
-	assert.Equal(t, 6, len(seen))
+	assert.Len(t, seen, 6)
 	assert.Equal(t, created, seen)
 	cols4 := wfColumns(t, view, cfUser1, 4, 2, "")
 	assert.Empty(t, cols4[0].Tasks)

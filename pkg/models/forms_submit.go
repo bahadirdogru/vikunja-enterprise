@@ -349,7 +349,7 @@ func buildFormDefinition(s *xorm.Session, f *Form) (*FormPublicDefinition, error
 			}
 			pf.Kind = string(cf.Type)
 			pf.Config = cf.Config
-			switch cf.Type {
+			switch cf.Type { //nolint:exhaustive // the other types have neither a length nor options
 			case CustomFieldTypeText, CustomFieldTypeURL, CustomFieldTypeEmail:
 				pf.MaxLength = formMaxTextLen
 			case CustomFieldTypeLongText:
@@ -683,6 +683,8 @@ func isEmptyAnswer(v any) bool {
 
 // collectFormAnswers validates the values against the visible fields and merges them with the defaults of the
 // hidden ones. Problems are returned per field.
+//
+//nolint:gocyclo
 func collectFormAnswers(s *xorm.Session, form *Form, req *FormSubmitRequest, name, email string, now time.Time, owner *user.User) (*formAnswers, []FormFieldError, error) {
 	var errs []FormFieldError
 	fail := func(field, code, msg string) {
@@ -748,18 +750,14 @@ func collectFormAnswers(s *xorm.Session, form *Form, req *FormSubmitRequest, nam
 			continue
 		}
 		if !present || isEmptyAnswer(raw) {
-			if field.Required && !field.Hidden {
-				if field.Target == FormTargetTitle && !isEmptyFormDefault(field.Default) {
-					raw, present = field.Default, true
-					isDefault = true
-				} else {
-					fail(field.Target, "required", "This field is required.")
-					continue
-				}
-			} else if field.Target == FormTargetTitle && !isEmptyFormDefault(field.Default) {
+			switch {
+			case field.Target == FormTargetTitle && !isEmptyFormDefault(field.Default):
 				raw, present = field.Default, true
 				isDefault = true
-			} else {
+			case field.Required && !field.Hidden:
+				fail(field.Target, "required", "This field is required.")
+				continue
+			default:
 				continue
 			}
 		}
@@ -787,6 +785,8 @@ func hasFieldError(errs []FormFieldError, field string) bool {
 
 // applyFormAnswer validates one value and stores it in the answers. Defaults may contain placeholders, answers
 // never do.
+//
+//nolint:gocyclo
 func applyFormAnswer(s *xorm.Session, ans *formAnswers, form *Form, field *FormField, cfs map[int64]*CustomField, raw any, isDefault bool, vars map[string]string) ([]FormFieldError, error) {
 	one := func(code, msg string) []FormFieldError {
 		return []FormFieldError{{Field: field.Target, Code: code, Message: msg}}
@@ -865,7 +865,7 @@ func applyFormAnswer(s *xorm.Session, ans *formAnswers, form *Form, field *FormF
 			return one("invalid", "The field does not exist any more."), nil
 		}
 		value := raw
-		switch cf.Type {
+		switch cf.Type { //nolint:exhaustive // the other types are checked by the custom field validators alone
 		case CustomFieldTypeText, CustomFieldTypeURL, CustomFieldTypeEmail, CustomFieldTypeLongText:
 			limit, multiline := formMaxTextLen, false
 			if cf.Type == CustomFieldTypeLongText {
@@ -889,7 +889,7 @@ func applyFormAnswer(s *xorm.Session, ans *formAnswers, form *Form, field *FormF
 			return nil, nil
 		}
 		if err := formValidateCustomFieldValue(s, cf, form.ProjectID, value); err != nil {
-			if _, is := err.(ErrCustomFieldInvalidValue); is {
+			if IsErrCustomFieldInvalidValue(err) {
 				return one("invalid", formCustomFieldMessage(err)), nil
 			}
 			return nil, err

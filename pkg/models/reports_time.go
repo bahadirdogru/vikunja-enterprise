@@ -140,7 +140,7 @@ func reportBucketNext(start time.Time, bucket string) time.Time {
 
 // reportBuckets returns the boundaries of the buckets covering from to to: bucket i is [b[i], b[i+1]).
 // The first bucket is the one containing from, the last one the one containing to.
-func reportBuckets(from, to time.Time, bucket string, max int) ([]time.Time, error) {
+func reportBuckets(from, to time.Time, bucket string, maxBuckets int) ([]time.Time, error) {
 	if to.Before(from) {
 		return nil, ErrReportInvalidParameter{Param: "time.to", Reason: "must not be before time.from"}
 	}
@@ -150,8 +150,8 @@ func reportBuckets(from, to time.Time, bucket string, max int) ([]time.Time, err
 	for !cur.After(last) {
 		cur = reportBucketNext(cur, bucket)
 		bounds = append(bounds, cur)
-		if len(bounds)-1 > max {
-			return nil, ErrReportTooManyBuckets{Buckets: len(bounds) - 1, Max: max}
+		if len(bounds)-1 > maxBuckets {
+			return nil, ErrReportTooManyBuckets{Buckets: len(bounds) - 1, Max: maxBuckets}
 		}
 	}
 	return bounds, nil
@@ -179,14 +179,13 @@ func reportBucketIndexExpr(column string, bounds []time.Time) string {
 
 // reportSecondsBetween is the one dialect specific expression of the reports: the length of a time entry in seconds.
 func reportSecondsBetween(startCol, endCol string) string {
-	switch db.Type() {
-	case schemas.POSTGRES:
+	if db.Type() == schemas.POSTGRES {
 		return "EXTRACT(EPOCH FROM (" + endCol + " - " + startCol + "))"
-	case schemas.MYSQL:
-		return "TIMESTAMPDIFF(SECOND, " + startCol + ", " + endCol + ")"
-	default:
-		return "(strftime('%s', " + endCol + ") - strftime('%s', " + startCol + "))"
 	}
+	if db.Type() == schemas.MYSQL {
+		return "TIMESTAMPDIFF(SECOND, " + startCol + ", " + endCol + ")"
+	}
+	return "(strftime('%s', " + endCol + ") - strftime('%s', " + startCol + "))"
 }
 
 // reportLocation returns the time zone a report is bucketed in: the requested one, else the setting of the user,

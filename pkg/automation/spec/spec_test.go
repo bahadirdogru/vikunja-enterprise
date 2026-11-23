@@ -373,17 +373,17 @@ func TestWalk_CollectsAndRemapsReferences(t *testing.T) {
 		IsOptionField: func(id int64) bool { return id == 7 },
 		Option:        func(_, id int64) int64 { return id + 1000 },
 	})
-	assert.Equal(t, float64(101), copyDoc.Trigger.Options["from_status_id"])
+	assert.InDelta(t, float64(101), copyDoc.Trigger.Options["from_status_id"], 0)
 	assert.Equal(t, "cf_207", copyDoc.Conditions.All[0].Field)
-	assert.Equal(t, float64(1070), copyDoc.Conditions.All[0].Value)
+	assert.InDelta(t, float64(1070), copyDoc.Conditions.All[0].Value, 0)
 	assert.Equal(t, []any{float64(101), float64(103)}, copyDoc.Conditions.All[1].Value)
-	assert.Equal(t, float64(9), copyDoc.Conditions.All[2].Value, "labels are not remapped")
-	assert.Equal(t, float64(207), copyDoc.Actions[1].Params["field_id"])
-	assert.Equal(t, float64(1070), copyDoc.Actions[1].Params["value"])
-	assert.Equal(t, float64(5), copyDoc.Actions[2].Params["project_id"])
+	assert.InDelta(t, float64(9), copyDoc.Conditions.All[2].Value, 0, "labels are not remapped")
+	assert.InDelta(t, float64(207), copyDoc.Actions[1].Params["field_id"], 0)
+	assert.InDelta(t, float64(1070), copyDoc.Actions[1].Params["value"], 0)
+	assert.InDelta(t, float64(5), copyDoc.Actions[2].Params["project_id"], 0)
 	inner, ok := ConditionFromParam(copyDoc.Actions[4].Params["condition"])
 	require.True(t, ok)
-	assert.Equal(t, float64(102), inner.Value)
+	assert.InDelta(t, float64(102), inner.Value, 0)
 
 	// The original is untouched.
 	assert.Equal(t, "cf_7", doc.Conditions.All[0].Field)

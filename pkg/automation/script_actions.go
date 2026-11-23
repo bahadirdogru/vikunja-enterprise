@@ -122,8 +122,8 @@ func planScript(env *Env, p params) (*Plan, error) {
 	if strings.TrimSpace(source) == "" {
 		return nil, actionErrorf("the script is empty")
 	}
-	if max := script.MaxSource(); max > 0 && len(source) > max {
-		return nil, actionErrorf("the script is %d bytes long, at most %d are allowed", len(source), max)
+	if limit := script.MaxSource(); limit > 0 && len(source) > limit {
+		return nil, actionErrorf("the script is %d bytes long, at most %d are allowed", len(source), limit)
 	}
 	// Loaded before anything runs, so everything the step prints can be checked against the secrets.
 	if err := env.store().load(); err != nil {

@@ -132,12 +132,3 @@ func formatCustomFieldValue(sub *Subject, fieldID int64) string {
 	}
 	return format(v)
 }
-
-// placeholderNames lists the placeholders a text uses.
-func placeholderNames(text string) []string {
-	names := []string{}
-	for _, m := range placeholderPattern.FindAllStringSubmatch(text, -1) {
-		names = append(names, m[1])
-	}
-	return names
-}

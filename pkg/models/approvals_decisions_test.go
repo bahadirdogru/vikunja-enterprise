@@ -132,7 +132,7 @@ func TestApprovals_Decisions(t *testing.T) {
 		_, err := decideAs(t, req.ID, apU6, ApprovalDecisionRejected, "   ")
 		require.Error(t, err)
 		assert.True(t, IsErrApprovalCommentRequired(err))
-		assert.EqualValues(t, ErrCodeApprovalCommentRequired, err.(ErrApprovalCommentRequired).HTTPError().Code)
+		assert.Equal(t, ErrCodeApprovalCommentRequired, err.(ErrApprovalCommentRequired).HTTPError().Code)
 		stored := readApprovalRow(t, req.ID)
 		assert.Equal(t, ApprovalStatusPending, stored.Status)
 		assert.Nil(t, approverOf(stored, 6).Decision)
@@ -234,7 +234,7 @@ func TestApprovals_Decisions(t *testing.T) {
 }
 
 // apU3Approver returns user2, an approver of the request.
-func apU3Approver(t *testing.T, env *approvalEnv, req *ApprovalRequest) *user.User {
+func apU3Approver(t *testing.T, _ *approvalEnv, _ *ApprovalRequest) *user.User {
 	t.Helper()
 	return apU2
 }

@@ -785,7 +785,7 @@ func TestWorkflow_TransitionChecks(t *testing.T) {
 		wf := mustSaveWorkflow(t, doc, wfOwner6)
 		_, err := changeTaskStatusAs(t, 18, statusIDByTitle(wf, "Doing"), "", cfUser1)
 		require.Error(t, err)
-		assert.True(t, err == ErrGenericForbidden{} || IsErrGenericForbidden(err), "got %T: %v", err, err)
+		assert.True(t, IsErrGenericForbidden(err), "got %T: %v", err, err)
 	})
 
 	requiredFieldCases := []struct {

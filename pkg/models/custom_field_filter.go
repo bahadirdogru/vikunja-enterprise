@@ -287,6 +287,8 @@ func orderedCond(column string, cmp taskFilterComparator, v interface{}) builder
 		return builder.Lt{column: v}
 	case taskFilterComparatorLessEquals:
 		return builder.Lte{column: v}
+	case taskFilterComparatorInvalid, taskFilterComparatorNotEquals, taskFilterComparatorLike, taskFilterComparatorIn, taskFilterComparatorNotIn:
+		// No ordering comparison.
 	}
 	return nil
 }
@@ -321,7 +323,7 @@ func customFieldFilterCond(f *taskFilter, includeNulls bool, taskAlias string) (
 	case CustomFieldTypeCheckbox:
 		// No stored value counts as false, so asking for false is "no true row".
 		wantTrue := c.bools[0] == (f.comparator == taskFilterComparatorEquals)
-		var cond builder.Cond = builder.Exists(customFieldValueExists(c.fieldID, taskAlias, builder.Eq{col("value_bool"): true}))
+		cond := builder.Exists(customFieldValueExists(c.fieldID, taskAlias, builder.Eq{col("value_bool"): true}))
 		if !wantTrue {
 			cond = builder.Not{cond}
 		}
@@ -348,7 +350,7 @@ func customFieldFilterCond(f *taskFilter, includeNulls bool, taskAlias string) (
 	}
 
 	sub := customFieldValueExists(c.fieldID, taskAlias, match)
-	var cond builder.Cond = builder.Exists(sub)
+	cond := builder.Exists(sub)
 	if negate {
 		cond = builder.NotExists(sub)
 	}
@@ -401,6 +403,8 @@ func customFieldSortExpr(field *CustomField) string {
 		// Options sort by their position in the field, not by their id.
 		from += " INNER JOIN custom_field_options cfo ON cfo.id = cfv.option_id"
 		column = "cfo.`position`"
+	case CustomFieldTypeMultiSelect, CustomFieldTypeUser:
+		// Never get here: fields with several values per task are refused as a sort key.
 	}
 	return "(SELECT " + column + " FROM " + from +
 		" WHERE cfv.task_id = tasks.id AND cfv.custom_field_id = " + strconv.FormatInt(field.ID, 10) + ")"

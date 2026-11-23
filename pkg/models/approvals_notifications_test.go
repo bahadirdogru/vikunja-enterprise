@@ -74,7 +74,7 @@ func TestApprovals_Notifications(t *testing.T) {
 		for _, id := range []int64{6, 2} {
 			rows := approvalNotificationsOf(t, id, "approval.requested")
 			require.Len(t, rows, 1, "user %d", id)
-			assert.EqualValues(t, apProject, rows[0].ProjectID)
+			assert.Equal(t, apProject, rows[0].ProjectID)
 			payload := payloadOf(t, rows[0])
 			assert.EqualValues(t, 1, payload["doer"].(map[string]any)["id"])
 			assert.EqualValues(t, env.task.ID, payload["task"].(map[string]any)["id"])
@@ -182,18 +182,18 @@ func TestApprovals_Notifications(t *testing.T) {
 
 		reminder := &ApprovalReminderNotification{Doer: apU1, Task: task, Project: &Project{ID: apProject}, Approval: info, Target: apU6}
 		assert.Contains(t, reminder.ToTitle("en"), "Reminder")
-		assert.EqualValues(t, apProject, reminder.ProjectID())
+		assert.Equal(t, apProject, reminder.ProjectID())
 		assert.Equal(t, "approval.reminder", reminder.Name())
 	})
 }
 
 func TestApprovals_ReminderCron(t *testing.T) {
-	setup := func(t *testing.T, dueIn string) (*approvalEnv, *ApprovalRequest) {
+	setup := func(t *testing.T, dueIn string) *ApprovalRequest {
 		t.Helper()
 		env := newApprovalEnv(t, apCfg(ApprovalModeAll, 6, 2), func(doc *Workflow) {
 			doc.Transitions[0].Approval.DueIn = dueIn
 		})
-		return env, env.request(t, apU1)
+		return env.request(t, apU1)
 	}
 	pastDue := func(t *testing.T, id int64) {
 		t.Helper()
@@ -201,8 +201,7 @@ func TestApprovals_ReminderCron(t *testing.T) {
 	}
 
 	t.Run("undecided approvers are reminded once when the due time passed", func(t *testing.T) {
-		env, req := setup(t, "1d")
-		_ = env
+		req := setup(t, "1d")
 		mustDecide(t, req.ID, apU6, ApprovalDecisionApproved, "")
 		enableApprovalMail(t)
 
@@ -215,7 +214,7 @@ func TestApprovals_ReminderCron(t *testing.T) {
 		require.Len(t, rows, 1)
 		assert.Empty(t, approvalNotificationsOf(t, 6, "approval.reminder"), "user6 decided already")
 		assert.Empty(t, approvalNotificationsOf(t, 1, "approval.reminder"))
-		assert.EqualValues(t, apProject, rows[0].ProjectID)
+		assert.Equal(t, apProject, rows[0].ProjectID)
 		sent := mail.SentMails()
 		require.Len(t, sent, 1)
 		assert.Contains(t, sent[0].Message, "still waiting for your decision")
@@ -233,16 +232,16 @@ func TestApprovals_ReminderCron(t *testing.T) {
 	})
 
 	t.Run("resolved, cancelled and requests without a due time are left alone", func(t *testing.T) {
-		_, resolved := setup(t, "1d")
+		resolved := setup(t, "1d")
 		mustDecide(t, resolved.ID, apU6, ApprovalDecisionRejected, "no")
 		pastDue(t, resolved.ID)
 
-		_, cancelled := setup(t, "1d")
+		cancelled := setup(t, "1d")
 		_, err := cancelAs(t, cancelled.ID, apU1, "")
 		require.NoError(t, err)
 		pastDue(t, cancelled.ID)
 
-		_, noDue := setup(t, "")
+		noDue := setup(t, "")
 		sendApprovalReminders(time.Now().Add(96 * time.Hour))
 		for _, id := range []int64{6, 2} {
 			assert.Empty(t, approvalNotificationsOf(t, id, "approval.reminder"))
@@ -251,7 +250,7 @@ func TestApprovals_ReminderCron(t *testing.T) {
 	})
 
 	t.Run("an approver who lost access is not reminded", func(t *testing.T) {
-		_, req := setup(t, "1d")
+		req := setup(t, "1d")
 		pastDue(t, req.ID)
 		setRaw(t, "users_projects", builder.And(builder.Eq{"user_id": 2}, builder.Eq{"project_id": apProject}), map[string]any{"project_id": 999})
 		s := db.NewSession()

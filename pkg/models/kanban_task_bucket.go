@@ -103,6 +103,8 @@ func (b *TaskBucket) upsert(s *xorm.Session) (err error) {
 }
 
 // updateTaskBucket is internally used to actually do the update.
+//
+//nolint:gocyclo
 func updateTaskBucket(s *xorm.Session, a web.Auth, b *TaskBucket) (err error) {
 	oldTaskBucket := &TaskBucket{}
 	_, err = s.

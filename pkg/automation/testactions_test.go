@@ -92,14 +92,14 @@ func init() {
 		}}, nil
 	})
 	// test.reject fails for good.
-	register("test.reject", func(env *Env, p params) (*Plan, error) {
+	register("test.reject", func(_ *Env, _ params) (*Plan, error) {
 		return &Plan{Summary: "reject", apply: func() (string, error) {
 			bump("reject")
 			return "", actionErrorf("rejected on purpose")
 		}}, nil
 	})
 	// test.slow blocks until the step runs out of time.
-	register("test.slow", func(env *Env, p params) (*Plan, error) {
+	register("test.slow", func(env *Env, _ params) (*Plan, error) {
 		return &Plan{Summary: "slow", apply: func() (string, error) {
 			select {
 			case <-env.Ctx.Done():

@@ -21,7 +21,6 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -56,7 +55,7 @@ func allowLoopbackListener(t *testing.T) {
 
 func TestDo_DefaultGuardBlocksNonRoutableAddresses(t *testing.T) {
 	var hits atomic.Int32
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { hits.Add(1) }))
+	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) { hits.Add(1) }))
 	defer srv.Close()
 	_, port, err := net.SplitHostPort(srv.Listener.Addr().String())
 	require.NoError(t, err)
@@ -101,7 +100,7 @@ func TestDo_OnlyHTTPAndHTTPS(t *testing.T) {
 	for _, url := range []string{"ftp://example.com/x", "file:///etc/passwd", "gopher://example.com", "javascript:alert(1)", "http://", "//example.com", "example.com/x", "http://user:pass@example.com/"} {
 		_, err := Do(context.Background(), &Request{URL: url})
 		var inv *InvalidError
-		assert.ErrorAs(t, err, &inv, url)
+		require.ErrorAs(t, err, &inv, url)
 	}
 	_, err := Do(context.Background(), &Request{URL: "https://example.com/", Method: "CONNECT"})
 	var inv *InvalidError
@@ -157,7 +156,7 @@ func TestDo_RequestAndResponse(t *testing.T) {
 
 func TestDo_ResponseAndRequestSizeCaps(t *testing.T) {
 	allowLoopbackListener(t)
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		fmt.Fprint(w, strings.Repeat("x", 5000))
 	}))
 	defer srv.Close()
@@ -189,7 +188,10 @@ func TestDo_Redirects(t *testing.T) {
 	mux.HandleFunc("/chain/", func(w http.ResponseWriter, r *http.Request) {
 		hops.Add(1)
 		var n int
-		fmt.Sscanf(r.URL.Path, "/chain/%d", &n)
+		if _, err := fmt.Sscanf(r.URL.Path, "/chain/%d", &n); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 		if n == 0 {
 			http.Redirect(w, r, "/ok", http.StatusFound)
 			return
@@ -248,14 +250,14 @@ func TestDo_Redirects(t *testing.T) {
 		leaked.Store("")
 		_, err := Do(context.Background(), &Request{URL: redirector.URL, Headers: map[string]string{"X-Secret-Token": "abc"}})
 		require.NoError(t, err)
-		assert.Equal(t, "", leaked.Load(), "the header does not follow a redirect to another host")
+		assert.Empty(t, leaked.Load(), "the header does not follow a redirect to another host")
 	})
 }
 
 func TestDo_TimeoutIsCapped(t *testing.T) {
 	allowLoopbackListener(t)
 	release := make(chan struct{})
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		select {
 		case <-release:
 		case <-r.Context().Done():
@@ -277,7 +279,7 @@ func TestDo_TimeoutIsCapped(t *testing.T) {
 		started := time.Now()
 		_, err := Do(ctx, &Request{URL: srv.URL})
 		require.Error(t, err)
-		assert.True(t, errors.Is(err, context.DeadlineExceeded), "%v", err)
+		require.ErrorIs(t, err, context.DeadlineExceeded, "%v", err)
 		assert.Less(t, time.Since(started), 3*time.Second)
 	})
 }
@@ -298,7 +300,7 @@ func TestUnguardedFactoryIsNotTheDefault(t *testing.T) {
 	// The default must be the SSRF-safe client of the webhooks; tests replace it only through SetClientFactory.
 	restore := SetClientFactory(utils.NewUnguardedHTTPClient)
 	restore()
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 	defer srv.Close()
 	_, err := Do(context.Background(), &Request{URL: srv.URL})
 	var blocked *BlockedError

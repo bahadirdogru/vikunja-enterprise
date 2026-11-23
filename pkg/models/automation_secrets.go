@@ -42,7 +42,7 @@ const (
 
 	secretVersionPrefix = "v1:"
 	// secretKeyInfo is the fixed HKDF info string. Changing it makes every stored value unreadable.
-	secretKeyInfo = "vikunja automation secrets v1"
+	secretKeyInfo = "vikunja automation secrets v1" //nolint:gosec // an HKDF info label, not a credential
 )
 
 // AutomationSecret is a named value of a project that rules may use (signing key, token, list of ids) without it
@@ -212,7 +212,7 @@ func (sec *AutomationSecret) fill() {
 
 // CanRead checks that the user administers the project.
 func (sec *AutomationSecret) CanRead(s *xorm.Session, a web.Auth) (bool, int, error) {
-	can, max, err := canAdministerAutomation(s, a, sec.ProjectID)
+	can, maxPermission, err := canAdministerAutomation(s, a, sec.ProjectID)
 	if err != nil || !can {
 		return false, 0, err
 	}
@@ -227,7 +227,7 @@ func (sec *AutomationSecret) CanRead(s *xorm.Session, a web.Auth) (bool, int, er
 		return false, 0, ErrAutomationSecretDoesNotExist{Name: sec.Name}
 	}
 	*sec = *stored
-	return true, max, nil
+	return true, maxPermission, nil
 }
 
 // CanCreate is never true: secrets are set with PUT, which creates or replaces.

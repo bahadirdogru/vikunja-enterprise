@@ -18,7 +18,6 @@ package script
 
 import (
 	"fmt"
-	"math"
 	"sort"
 	"time"
 
@@ -126,7 +125,7 @@ func (e *exporter) normalize(v any, depth int) (any, error) {
 	case int:
 		return float64(val), nil
 	case time.Time:
-		if val.IsZero() || math.IsNaN(float64(val.Unix())) {
+		if val.IsZero() {
 			return nil, nil
 		}
 		return val.UTC().Format(time.RFC3339), nil

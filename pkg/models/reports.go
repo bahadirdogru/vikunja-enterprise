@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"code.vikunja.io/api/pkg/config"
+	"code.vikunja.io/api/pkg/db"
 	"code.vikunja.io/api/pkg/user"
 	"code.vikunja.io/api/pkg/web"
 
@@ -192,11 +193,7 @@ type reportTimePlan struct {
 }
 
 func isNumericFieldType(t CustomFieldType) bool {
-	switch t {
-	case CustomFieldTypeNumber, CustomFieldTypeCurrency, CustomFieldTypeRating, CustomFieldTypeProgress:
-		return true
-	}
-	return false
+	return t == CustomFieldTypeNumber || t == CustomFieldTypeCurrency || t == CustomFieldTypeRating || t == CustomFieldTypeProgress
 }
 
 func reportAuthTimezone(s *xorm.Session, a web.Auth) string {
@@ -433,7 +430,7 @@ func (r *reportRun) selectColumns(groupDims []*reportDim, withBucket bool) (cols
 
 // query runs one grouped statement over the readable tasks: the joins of joinDims are added, the rows are grouped by
 // groupDims and the time bucket and restricted to extra.
-func (r *reportRun) query(joinDims, groupDims []*reportDim, withBucket, applyRange bool, extra builder.Cond) ([]*reportRow, error) {
+func (r *reportRun) query(joinDims, groupDims []*reportDim, withBucket bool, extra builder.Cond) ([]*reportRow, error) {
 	cols, groupBy := r.selectColumns(groupDims, withBucket)
 	q := builder.Select(cols...).From("tasks")
 	for _, d := range append(append([]*reportDim{}, joinDims...), groupDims...) {
@@ -450,7 +447,7 @@ func (r *reportRun) query(joinDims, groupDims []*reportDim, withBucket, applyRan
 	}
 
 	conds := []builder.Cond{builder.In("tasks.id", r.base)}
-	if applyRange && tp != nil {
+	if tp != nil {
 		conds = append(conds, tp.rangeCond)
 	}
 	if extra != nil {
@@ -630,7 +627,7 @@ func (r *reportRun) execute() (*TaskReport, error) {
 		}
 	}
 
-	totals, err := r.query(nil, nil, false, true, nil)
+	totals, err := r.query(nil, nil, false, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -659,7 +656,7 @@ func (r *reportRun) execute() (*TaskReport, error) {
 
 	if len(plan.dims) == 0 {
 		if plan.timeCfg != nil {
-			rows, err := r.query(nil, nil, true, true, nil)
+			rows, err := r.query(nil, nil, true, nil)
 			if err != nil {
 				return nil, err
 			}
@@ -669,7 +666,7 @@ func (r *reportRun) execute() (*TaskReport, error) {
 	}
 
 	d1 := plan.dims[0]
-	rows, err := r.query(nil, []*reportDim{d1}, false, true, nil)
+	rows, err := r.query(nil, []*reportDim{d1}, false, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -685,7 +682,7 @@ func (r *reportRun) execute() (*TaskReport, error) {
 		otherNode = &reportNode{other: true, label: reportLabel{label: "Other"}}
 		if d1.multi {
 			// A task with several of the folded values must count once in other, so ask the database.
-			otherRows, err := r.query([]*reportDim{d1}, nil, false, true, d1.keyCond(nodeKeys(kept), false))
+			otherRows, err := r.query([]*reportDim{d1}, nil, false, d1.keyCond(nodeKeys(kept), false))
 			if err != nil {
 				return nil, err
 			}
@@ -782,7 +779,7 @@ func (r *reportRun) attachChildren(parents []*reportNode) error {
 		return nil
 	}
 	d1, d2 := r.plan.dims[0], r.plan.dims[1]
-	rows, err := r.query(nil, []*reportDim{d1, d2}, false, true, d1.keyCond(nodeKeys(parents), true))
+	rows, err := r.query(nil, []*reportDim{d1, d2}, false, d1.keyCond(nodeKeys(parents), true))
 	if err != nil {
 		return err
 	}
@@ -833,7 +830,7 @@ func (r *reportRun) fetchSeries(kept []*reportNode, hasOther bool) (map[string]m
 	}
 	extra = builder.And(conds...)
 
-	rows, err := r.query(nil, groupDims, true, true, extra)
+	rows, err := r.query(nil, groupDims, true, extra)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -848,7 +845,7 @@ func (r *reportRun) fetchSeries(kept []*reportNode, hasOther bool) (map[string]m
 
 	var otherSeries map[int]*reportAgg
 	if hasOther && len(dims) == 1 {
-		otherRows, err := r.query(dims, nil, true, true, dims[0].keyCond(nodeKeys(kept), false))
+		otherRows, err := r.query(dims, nil, true, dims[0].keyCond(nodeKeys(kept), false))
 		if err != nil {
 			return nil, nil, err
 		}
@@ -872,7 +869,7 @@ func RunTaskReport(ctx context.Context, s *xorm.Session, a web.Auth, req *Report
 
 	ctx, cancel := context.WithTimeout(ctx, config.ReportsTimeout.GetDuration())
 	defer cancel()
-	s = s.Context(ctx)
+	db.SetSessionContext(ctx, s)
 
 	tf := &TaskCollection{
 		ProjectID:          plan.req.ProjectID,

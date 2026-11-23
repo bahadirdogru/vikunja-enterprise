@@ -216,6 +216,7 @@ func (h *hostBase) snapshotOf(id int64) (map[string]any, error) {
 	return taskSnapshot(e.S, e.Sub)
 }
 
+//nolint:gocyclo
 func (h *hostBase) planCreate(projectID int64, data map[string]any) (*mutation, error) {
 	env := h.env
 	title, _ := data["title"].(string)

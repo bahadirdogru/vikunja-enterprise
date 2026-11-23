@@ -17,6 +17,7 @@
 package models
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -36,7 +37,7 @@ type ErrReportInvalidParameter struct {
 
 // IsErrReportInvalidParameter checks if an error is ErrReportInvalidParameter.
 func IsErrReportInvalidParameter(err error) bool {
-	_, ok := err.(ErrReportInvalidParameter)
+	_, ok := errors.AsType[ErrReportInvalidParameter](err)
 	return ok
 }
 
@@ -65,7 +66,7 @@ type ErrReportTooManyBuckets struct {
 
 // IsErrReportTooManyBuckets checks if an error is ErrReportTooManyBuckets.
 func IsErrReportTooManyBuckets(err error) bool {
-	_, ok := err.(ErrReportTooManyBuckets)
+	_, ok := errors.AsType[ErrReportTooManyBuckets](err)
 	return ok
 }
 
@@ -94,7 +95,7 @@ type ErrReportTooManyGroups struct {
 
 // IsErrReportTooManyGroups checks if an error is ErrReportTooManyGroups.
 func IsErrReportTooManyGroups(err error) bool {
-	_, ok := err.(ErrReportTooManyGroups)
+	_, ok := errors.AsType[ErrReportTooManyGroups](err)
 	return ok
 }
 
@@ -124,7 +125,7 @@ type ErrReportFieldKindNotSupported struct {
 
 // IsErrReportFieldKindNotSupported checks if an error is ErrReportFieldKindNotSupported.
 func IsErrReportFieldKindNotSupported(err error) bool {
-	_, ok := err.(ErrReportFieldKindNotSupported)
+	_, ok := errors.AsType[ErrReportFieldKindNotSupported](err)
 	return ok
 }
 
@@ -152,7 +153,7 @@ type ErrReportNotAvailableForShare struct {
 
 // IsErrReportNotAvailableForShare checks if an error is ErrReportNotAvailableForShare.
 func IsErrReportNotAvailableForShare(err error) bool {
-	_, ok := err.(ErrReportNotAvailableForShare)
+	_, ok := errors.AsType[ErrReportNotAvailableForShare](err)
 	return ok
 }
 
@@ -169,7 +170,7 @@ func (err ErrReportNotAvailableForShare) HTTPError() web.HTTPError {
 		HTTPCode: http.StatusForbidden,
 		Code:     ErrCodeReportNotAvailableForShare,
 		Message:  fmt.Sprintf("'%s' is not available through a link share.", err.Param),
-		Details:  ReportErrorDetails{Param: err.Param},
+		Details:  ReportErrorDetails(err),
 	}
 }
 
@@ -180,7 +181,7 @@ type ErrDashboardDoesNotExist struct {
 
 // IsErrDashboardDoesNotExist checks if an error is ErrDashboardDoesNotExist.
 func IsErrDashboardDoesNotExist(err error) bool {
-	_, ok := err.(ErrDashboardDoesNotExist)
+	_, ok := errors.AsType[ErrDashboardDoesNotExist](err)
 	return ok
 }
 
@@ -208,7 +209,7 @@ type ErrDashboardWidgetDoesNotExist struct {
 
 // IsErrDashboardWidgetDoesNotExist checks if an error is ErrDashboardWidgetDoesNotExist.
 func IsErrDashboardWidgetDoesNotExist(err error) bool {
-	_, ok := err.(ErrDashboardWidgetDoesNotExist)
+	_, ok := errors.AsType[ErrDashboardWidgetDoesNotExist](err)
 	return ok
 }
 
@@ -236,7 +237,7 @@ type ErrDashboardInvalid struct {
 
 // IsErrDashboardInvalid checks if an error is ErrDashboardInvalid.
 func IsErrDashboardInvalid(err error) bool {
-	_, ok := err.(ErrDashboardInvalid)
+	_, ok := errors.AsType[ErrDashboardInvalid](err)
 	return ok
 }
 
@@ -262,7 +263,7 @@ type ErrReportTimeout struct{}
 
 // IsErrReportTimeout checks if an error is ErrReportTimeout.
 func IsErrReportTimeout(err error) bool {
-	_, ok := err.(ErrReportTimeout)
+	_, ok := errors.AsType[ErrReportTimeout](err)
 	return ok
 }
 
