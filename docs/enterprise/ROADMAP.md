@@ -39,7 +39,7 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
 | 5a | Approvals backend: requests and decisions, approval on workflow transitions, ad-hoc approvals, automation triggers/action, notifications ([forms-approvals.md](forms-approvals.md)) | Done |
 | 5b | Approvals UI: transition approval settings, task banner with approve / reject, approvals page with badge, kanban and list markers, notifications | Done |
 | 5c | Forms backend: definitions, public and signed-in submission path, limits, attachments, `form.submitted` trigger | Done |
-| 5d | Forms UI (builder, public form page, catalog translations for the form trigger) | Next |
+| 5d | Forms UI: forms list, builder with live preview, submissions, standalone public form page | Done |
 | – | Organisation / tenant layer, AI features | Deferred |
 
 ## Log
@@ -142,3 +142,22 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   Known limits: hourly limits are check-then-insert; honeypot hits and
   validation failures only count against the per-minute request limit; not
   exposed through MCP.
+- Forms UI added (en + tr); frontend suite passes (3466 tests). Exercised in
+  a browser, logged out: public form with 11 fields submitted and the task
+  verified through the API (values, status, hidden defaults, attachment,
+  submitter block), client validation, honeypot, full / disabled / closed,
+  members form with login and return, 429, link regeneration, 320px, dark
+  mode, Turkish. A server-side 422 was only shown with a mocked response. No
+  QR code (would need a dependency). Relative date defaults are not offered.
+
+## Remaining
+
+- 1e: custom field filter UI with field names instead of `cf_<id>`.
+- 3d: schedule / manual / incoming webhook / overdue triggers, wait action,
+  in-app notify action.
+- 4c: status time, workload and time tracking widgets, CSV export, number
+  comparison.
+- MCP exposure of the fork's endpoints; golangci-lint has never been run on
+  the fork's code; MySQL only exercised for reports, approvals and forms; the
+  arm64 image has not been started on real ARM hardware; one unexplained
+  intermittent failure in `./pkg/models/`.
