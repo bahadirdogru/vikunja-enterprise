@@ -3,7 +3,7 @@ import {describe, expect, it} from 'vitest'
 import {readFileSync} from 'node:fs'
 import {resolve as resolvePath} from 'node:path'
 import catalogFixture from './automationCatalog.fixture.json'
-import {catalogEnumValues, catalogTitleKeys, normalizeCatalog} from '@/helpers/automation'
+import {catalogEnumEntries, catalogTitleKeys, normalizeCatalog} from '@/helpers/automation'
 
 type Messages = {[key: string]: string | Messages}
 
@@ -39,7 +39,10 @@ describe('automation translations', () => {
 	})
 
 	it.each([['en', en], ['tr-TR', trTR]])('has a label for every enum value in %s', (_name, messages) => {
-		const missing = catalogEnumValues(catalog).filter(value => !resolve(messages as Messages, `automation.enum.${value}`))
+		const missing = catalogEnumEntries(catalog)
+			.filter(({option, value}) => !resolve(messages as Messages, `automation.enum.${option}.${value}`)
+				&& !resolve(messages as Messages, `automation.enum.${value}`))
+			.map(({option, value}) => `${option}.${value}`)
 		expect(missing).toEqual([])
 	})
 

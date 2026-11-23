@@ -5,6 +5,33 @@ import {cronProblem} from '@/helpers/automationCron'
 // Apart from the few server rules mirrored in validateSpecial, nothing in here knows a concrete trigger, field or
 // action: everything comes from the catalog.
 
+// Whether a rule with this trigger works on a task (mirrors spec.TriggerHasTask): the incoming webhook and a schedule
+// per project have none, so a test needs no task for them.
+export function triggerHasTask(type: string, options: Record<string, unknown> | undefined): boolean {
+	if (type === 'webhook.incoming') return false
+	if (type === 'schedule') return options?.scope !== 'project'
+	return true
+}
+
+// The most a simulated webhook body may have: the default of automation.webhook.maxbody.
+export const MAX_WEBHOOK_PAYLOAD_BYTES = 64 * 1024
+
+export type PayloadProblem = 'json' | 'object' | 'size'
+
+// The simulated body of an incoming webhook: a JSON object of at most 64 KiB. Empty text means no payload.
+export function parseWebhookPayload(text: string): {payload?: Record<string, unknown>, problem?: PayloadProblem} {
+	if (text.trim() === '') return {}
+	if (new TextEncoder().encode(text).length > MAX_WEBHOOK_PAYLOAD_BYTES) return {problem: 'size'}
+	let parsed: unknown
+	try {
+		parsed = JSON.parse(text)
+	} catch {
+		return {problem: 'json'}
+	}
+	if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) return {problem: 'object'}
+	return {payload: parsed as Record<string, unknown>}
+}
+
 export type ParamKindBy = {param: string, kinds: Record<string, string>}
 
 export type CatalogParam = {
@@ -757,9 +784,12 @@ export function catalogLabel(t: Translate, te: (key: string) => boolean, titleKe
 	return humanize(fallbackName)
 }
 
-export function enumLabel(t: Translate, te: (key: string) => boolean, value: string): string {
-	const key = `automation.enum.${value}`
-	return te(key) ? t(key) : humanize(value)
+// A label keyed by the option it belongs to (automation.enum.<option>.<value>) wins over the flat one by value, which
+// serves the values that mean the same wherever they appear.
+export function enumLabel(t: Translate, te: (key: string) => boolean, value: string, option?: string): string {
+	const keys = [...(option ? [`automation.enum.${option}.${value}`] : []), `automation.enum.${value}`]
+	const key = keys.find(candidate => te(candidate))
+	return key ? t(key) : humanize(value)
 }
 
 // Every translation key the catalog can emit, for the translation completeness test.
@@ -779,12 +809,13 @@ export function catalogTitleKeys(catalog: CatalogResponse): string[] {
 	return [...keys]
 }
 
-// Every enum value the catalog lists (trigger options, params, fields), for the enum label test.
-export function catalogEnumValues(catalog: CatalogResponse): string[] {
-	const values = new Set<string>()
-	const take = (list: string[]) => list.forEach(v => values.add(v))
-	catalog.triggers.forEach(trigger => trigger.options.forEach(option => take(option.enum)))
-	catalog.actions.forEach(action => action.params.forEach(param => take(param.enum)))
-	catalog.fields.forEach(field => take(field.enum))
-	return [...values]
+// Every enum value the catalog lists (trigger options, params, fields) with the option it belongs to (empty for a
+// field), for the enum label test.
+export function catalogEnumEntries(catalog: CatalogResponse): {option: string, value: string}[] {
+	const entries = new Map<string, {option: string, value: string}>()
+	const take = (option: string, list: string[]) => list.forEach(value => entries.set(`${option}\n${value}`, {option, value}))
+	catalog.triggers.forEach(trigger => trigger.options.forEach(option => take(option.name, option.enum)))
+	catalog.actions.forEach(action => action.params.forEach(param => take(param.name, param.enum)))
+	catalog.fields.forEach(field => take('', field.enum))
+	return [...entries.values()]
 }

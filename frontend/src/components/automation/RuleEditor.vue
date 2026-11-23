@@ -33,6 +33,7 @@ import {
 	pruneConditions,
 	removeAction,
 	triggerDef,
+	triggerHasTask,
 	validateDraft,
 	type ActionDraft,
 	type CatalogResponse,
@@ -73,7 +74,16 @@ const disabledReason = ref(props.rule?.disabled_reason ?? '')
 // The saved rule has an incoming webhook address; the address itself is only known to the session that created it.
 const hasWebhook = ref(props.rule?.has_webhook ?? false)
 const webhookReveal = ref<WebhookReveal | null>(null)
+const webhookCopied = ref(false)
 /* eslint-enable vue/no-setup-props-reactivity-loss */
+
+function setWebhookReveal(value: WebhookReveal | null) {
+	webhookReveal.value = value
+	webhookCopied.value = false
+}
+
+// The one-time address is on screen and was not copied: closing the editor loses it for good.
+const addressUncopied = computed(() => webhookReveal.value !== null && !webhookCopied.value)
 
 const dirty = computed(() => draftSignature(draft.value) !== savedSignature.value)
 watch(dirty, value => emit('dirty', value), {immediate: true})
@@ -175,7 +185,7 @@ async function save() {
 		ruleId.value = result.id
 		disabledReason.value = result.disabled_reason
 		hasWebhook.value = result.has_webhook === true
-		if (result.webhook) webhookReveal.value = result.webhook
+		if (result.webhook) setWebhookReveal(result.webhook)
 		const next = draftFromRule(result)
 		draft.value = clone(next)
 		savedSignature.value = draftSignature(next)
@@ -198,8 +208,9 @@ async function save() {
 	}
 }
 
-defineExpose({save, dirty, ruleId})
+defineExpose({save, dirty, addressUncopied, ruleId})
 
+const hasTask = computed(() => triggerHasTask(draft.value.trigger.type, draft.value.trigger.options))
 const testable = computed(() => ruleId.value !== null && !dirty.value)
 const titleErrors = computed(() => errors.value.get('title') ?? [])
 const triggerHintKey = computed(() => `automation.triggerHint.${draft.value.trigger.type.replace(/\./g, '_')}`)
@@ -345,7 +356,8 @@ const actionsErrors = computed(() => errors.value.get('actions') ?? [])
 					:saved="hasWebhook"
 					:dirty="dirty"
 					:reveal="webhookReveal"
-					@revealed="webhookReveal = $event"
+					@revealed="setWebhookReveal"
+					@copied="webhookCopied = true"
 				/>
 			</div>
 		</section>
@@ -440,6 +452,8 @@ const actionsErrors = computed(() => errors.value.get('actions') ?? [])
 				<DryRunPanel
 					:rule-id="ruleId"
 					:testable="testable"
+					:has-task="hasTask"
+					:webhook="draft.trigger.type === 'webhook.incoming'"
 				/>
 			</div>
 		</section>

@@ -20,6 +20,7 @@ import {useSecretMutation} from './secretMutation'
 import {fetchAllPages} from './fetchAllPages'
 import {toPaginated, type Paginated} from './pagination'
 import {i18n} from '@/i18n'
+import {resolveAgainstApiRoot} from '@/helpers/apiUrl'
 import {
 	draftFromRule,
 	normalizeCatalog,
@@ -121,7 +122,9 @@ export type WebhookReveal = {url: string, token: string}
 export type SavedRuleResponse = AutomationRuleResponse & {webhook?: WebhookReveal}
 
 export function webhookRevealOf(rule: Pick<RuleLike, 'webhook_token' | 'webhook_url'>): WebhookReveal | undefined {
-	return rule.webhook_token && rule.webhook_url ? {url: rule.webhook_url, token: rule.webhook_token} : undefined
+	return rule.webhook_token && rule.webhook_url
+		? {url: resolveAgainstApiRoot(rule.webhook_url), token: rule.webhook_token}
+		: undefined
 }
 
 export function normalizeRule(rule: RuleLike): AutomationRuleResponse {
@@ -357,8 +360,19 @@ export function deleteRuleMutationOptions() {
 // A dry run changes nothing, so it touches no cache; the caller shows the result.
 export function testRuleMutationOptions() {
 	return contextMutationOptions({
-		mutationFn: async ({projectId, ruleId, taskId}: {projectId: number, ruleId: number, taskId: number}) =>
-			normalizeDryRun((await automationsTest({path: {project: projectId, rule: ruleId}, body: {task_id: taskId}})).data),
+		// A rule without a task ignores task_id; the simulated body of an incoming webhook goes as payload.
+		mutationFn: async ({projectId, ruleId, taskId, payload}: {
+			projectId: number
+			ruleId: number
+			taskId?: number | null
+			payload?: Record<string, unknown>
+		}) => normalizeDryRun((await automationsTest({
+			path: {project: projectId, rule: ruleId},
+			body: {
+				...(taskId ? {task_id: taskId} : {}),
+				...(payload ? {payload} : {}),
+			},
+		})).data),
 		toastError: () => false,
 	})
 }
@@ -385,7 +399,7 @@ export function rotateWebhookTokenMutationOptions() {
 	return contextMutationOptions({
 		mutationFn: async ({projectId, ruleId}: {projectId: number, ruleId: number}): Promise<WebhookReveal> => {
 			const data = (await automationWebhookToken({path: {project: projectId, rule: ruleId}})).data
-			return {url: data.url ?? '', token: data.token ?? ''}
+			return {url: data.url ? resolveAgainstApiRoot(data.url) : '', token: data.token ?? ''}
 		},
 		onSettled: ({projectId}, client) => invalidateRules(client, projectId),
 		// The panel that asked shows the failure next to the button.
@@ -405,6 +419,10 @@ export function runRuleManuallyMutationOptions() {
 		mutationFn: async ({projectId, ruleId, taskId}: RunRuleInput) =>
 			(await automationRunManually({path: {project: projectId, rule: ruleId}, body: {task_id: taskId}})).data,
 		onSettled: ({projectId, ruleId}, client) => client.invalidateQueries({queryKey: automationKeys.runsScope(projectId, ruleId)}),
+		// 22009: the rule was disabled or changed since the list was read, so its entry has to go.
+		onFailure: (_cause, {projectId}, client) => {
+			void client.invalidateQueries({queryKey: automationKeys.manual(projectId), exact: true})
+		},
 		successMessage: (_data, {title}) =>
 			i18n.global.t('automation.manual.queued', {title}),
 	})

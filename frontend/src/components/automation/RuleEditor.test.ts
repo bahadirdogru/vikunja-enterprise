@@ -233,6 +233,73 @@ describe('RuleEditor', () => {
 		expect(wrapper.text()).toContain('unsaved changes')
 	})
 
+	describe('dry run of a rule without a task', () => {
+		const dryRunAnswer = {data: {task_id: 0, conditions_met: true, steps: [], notes: []}}
+		const webhookRule: AutomationRuleResponse = {
+			...storedRule, id: 31, trigger: {type: 'webhook.incoming', options: {}}, conditions: null,
+			actions: [{type: 'task.create', params: {title: 'x'}}], has_webhook: true,
+		}
+		const testButton = (wrapper: ReturnType<typeof mountEditor>) => wrapper.get('.dry-run button.is-primary')
+
+		beforeEach(() => {
+			sdk.automationsTest.mockReset()
+			sdk.automationsTest.mockResolvedValue(dryRunAnswer)
+		})
+
+		it('needs no task for an incoming webhook and sends the simulated body as payload', async () => {
+			const wrapper = mountEditor(webhookRule)
+			await flushPromises()
+			expect(wrapper.find('.dry-run select').exists()).toBe(false)
+			expect(testButton(wrapper).attributes('disabled')).toBeUndefined()
+			await wrapper.get('#automation-test-payload').setValue('{"ticket": 7}')
+			await testButton(wrapper).trigger('click')
+			await flushPromises()
+			expect(sdk.automationsTest.mock.calls[0][0]).toEqual({path: {project: 3, rule: 31}, body: {payload: {ticket: 7}}})
+		})
+
+		it('sends no payload when the textarea is empty', async () => {
+			const wrapper = mountEditor(webhookRule)
+			await flushPromises()
+			await testButton(wrapper).trigger('click')
+			await flushPromises()
+			expect(sdk.automationsTest.mock.calls[0][0].body).toEqual({})
+		})
+
+		it.each([
+			['{"a":', 'not valid JSON'],
+			['[1, 2]', 'has to be a JSON object'],
+			['"text"', 'has to be a JSON object'],
+			[JSON.stringify({text: 'x'.repeat(64 * 1024)}), 'larger than 64 KiB'],
+		])('does not test with the body %s', async (text, message) => {
+			const wrapper = mountEditor(webhookRule)
+			await flushPromises()
+			await wrapper.get('#automation-test-payload').setValue(text)
+			expect(wrapper.get('.dry-run').text()).toContain(message)
+			expect(testButton(wrapper).attributes('disabled')).toBeDefined()
+			await testButton(wrapper).trigger('click')
+			expect(sdk.automationsTest).not.toHaveBeenCalled()
+		})
+
+		it('needs no task for a schedule per project and offers no payload', async () => {
+			const schedule = {...webhookRule, trigger: {type: 'schedule', options: {cron: '@daily', scope: 'project'}}, has_webhook: false}
+			const wrapper = mountEditor(schedule)
+			await flushPromises()
+			expect(wrapper.find('.dry-run select').exists()).toBe(false)
+			expect(wrapper.find('#automation-test-payload').exists()).toBe(false)
+			await testButton(wrapper).trigger('click')
+			await flushPromises()
+			expect(sdk.automationsTest.mock.calls[0][0].body).toEqual({})
+		})
+
+		it('still needs a task for a schedule per task', async () => {
+			const schedule = {...webhookRule, trigger: {type: 'schedule', options: {cron: '@daily', scope: 'tasks'}}, has_webhook: false}
+			const wrapper = mountEditor(schedule)
+			await flushPromises()
+			expect(wrapper.find('.dry-run select').exists()).toBe(true)
+			expect(testButton(wrapper).attributes('disabled')).toBeDefined()
+		})
+	})
+
 	describe('triggers and actions of the time, manual and webhook family', () => {
 		it('shows presets, the time zone note and the problem of a cron expression', async () => {
 			const wrapper = mountEditor()
@@ -245,6 +312,22 @@ describe('RuleEditor', () => {
 			expect((wrapper.get('#automation-trigger-options-cron').element as HTMLInputElement).value).toBe('@daily')
 			await wrapper.get('#automation-trigger-options-cron').setValue('61 * * * *')
 			expect(wrapper.text()).toContain('out of range')
+			expect(wrapper.get('#automation-trigger-options-cron').attributes('aria-invalid')).toBe('true')
+		})
+
+		it('shows the problem of a cron expression once, also after a failed save', async () => {
+			const wrapper = mountEditor()
+			await wrapper.get('#automation-title').setValue('Timed')
+			await pick(wrapper, '#automation-trigger-type', 'schedule')
+			await wrapper.get('#automation-trigger-options-cron').setValue('61 * * * *')
+			const occurrences = () => wrapper.text().split('A value is out of range').length - 1
+			expect(occurrences()).toBe(1)
+			await pick(wrapper, '#automation-add-action', 'task.create')
+			await wrapper.get('#automation-actions-0-params-title').setValue('x')
+			await wrapper.get('form').trigger('submit')
+			await flushPromises()
+			expect(sdk.automationsCreate).not.toHaveBeenCalled()
+			expect(occurrences()).toBe(1)
 			expect(wrapper.get('#automation-trigger-options-cron').attributes('aria-invalid')).toBe('true')
 		})
 
@@ -335,6 +418,50 @@ describe('RuleEditor', () => {
 			expect(writeText).toHaveBeenCalledWith(hook.webhook_url)
 			// the token is not part of what the editor tells its parent
 			expect(JSON.stringify(wrapper.emitted('saved'))).not.toContain('tok-1')
+		})
+
+		async function rotateAgain(wrapper: ReturnType<typeof mountEditor>) {
+			await wrapper.findAll('button').find(b => b.text() === 'Create another new address')!.trigger('click')
+			await flushPromises()
+			;(document.body.querySelector('dialog .actions > :last-child') as HTMLElement).click()
+			await flushPromises()
+		}
+
+		it('turns a relative address into one on the API the client talks to', async () => {
+			const relative = {webhook_token: 'tok-1', webhook_url: 'api/v2/automation/hooks/tok-1'}
+			const wrapper = await saveNewWebhookRule(relative)
+			const shown = `${window.location.origin}/api/v2/automation/hooks/tok-1`
+			expect(wrapper.get('#automation-webhook-url').element).toHaveProperty('value', shown)
+			await wrapper.findAll('button').find(b => b.text() === 'Copy')!.trigger('click')
+			await flushPromises()
+			expect(writeText).toHaveBeenCalledWith(shown)
+		})
+
+		it.each([
+			['the request fails', () => Object.assign(new Error('offline'), {detail: 'network down'}), true],
+			['the request context changed', () => new DOMException('Client request context changed', 'AbortError'), false],
+		])('drops the old address and says it has to be generated again when %s', async (_name, cause, showsError) => {
+			const wrapper = await saveNewWebhookRule(hook)
+			expect(wrapper.find('#automation-webhook-url').exists()).toBe(true)
+			sdk.automationWebhookToken.mockRejectedValue(cause())
+			await rotateAgain(wrapper)
+			expect(sdk.automationWebhookToken).toHaveBeenCalledTimes(1)
+			expect(wrapper.find('#automation-webhook-url').exists()).toBe(false)
+			expect(wrapper.text()).not.toContain(hook.webhook_url)
+			expect(wrapper.text()).toContain('may have changed already')
+			expect(wrapper.text().includes('network down')).toBe(showsError)
+			expect(wrapper.vm.addressUncopied).toBe(false)
+		})
+
+		it('knows when the one-time address was shown and not copied yet', async () => {
+			const wrapper = await saveNewWebhookRule(hook)
+			expect(wrapper.vm.addressUncopied).toBe(true)
+			await wrapper.findAll('button').find(b => b.text() === 'Copy')!.trigger('click')
+			await flushPromises()
+			expect(wrapper.vm.addressUncopied).toBe(false)
+			sdk.automationWebhookToken.mockResolvedValue({data: {token: 'tok-2', url: 'https://vikunja.example/api/v2/automation/hooks/tok-2'}})
+			await rotateAgain(wrapper)
+			expect(wrapper.vm.addressUncopied).toBe(true)
 		})
 
 		it('does not show an address the server did not send and offers a new one instead', async () => {

@@ -26,6 +26,8 @@ const problem = computed(() => {
 	const found = text.value.trim() === '' ? null : cronProblem(text.value)
 	return found && found !== 'empty' ? t(`automation.validation.cron.${found}`) : ''
 })
+// While the field shows messages of its own (the same problem after a failed save), the help line stays plain.
+const helpProblem = computed(() => props.invalid ? '' : problem.value)
 </script>
 
 <template>
@@ -62,9 +64,9 @@ const problem = computed(() => {
 		<p
 			:id="`${id}-help`"
 			class="help"
-			:class="{'is-danger': problem !== ''}"
+			:class="{'is-danger': helpProblem !== ''}"
 		>
-			{{ problem || $t('automation.cron.help') }}
+			{{ helpProblem || $t('automation.cron.help') }}
 		</p>
 	</div>
 </template>

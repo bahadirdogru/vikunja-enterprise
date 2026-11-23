@@ -1738,6 +1738,10 @@
 		"21008": "Kaldırılan durumlardaki görevlerin taşınacağı bir durum seçin.",
 		"21009": "İş akışı durumları, yalnızca projede bir iş akışı varsa sütun olarak kullanılabilir.",
 		"21010": "Bu panonun sütunları iş akışı durumlarıdır. Bunları iş akışı ayarlarından değiştirin.",
+		"22001": "Bu otomasyon kuralı bulunamadı.",
+		"22002": "Otomasyon kuralı geçerli değil.",
+		"22003": "Bu otomasyon çalıştırması bulunamadı.",
+		"22004": "Yalnızca başarısız olan çalıştırmalar yeniden denenebilir.",
 		"22005": "Bu sunucuda otomasyon kurallarındaki betikler kapalı (automation.scripts.enabled).",
 		"22006": "Gizli anahtar geçerli değil: adda harf, rakam ve alt çizgi kullanın, rakamla başlamasın (en çok 64 karakter); değer en çok 8 KiB olabilir.",
 		"22007": "Bu gizli anahtar bulunamadı.",
@@ -2605,7 +2609,9 @@
 		},
 		"leave": {
 			"title": "Kaydedilmemiş değişiklikler silinsin mi?",
-			"text": "Kuralda kaydedilmemiş değişiklikler var. Şimdi ayrılırsanız kaybolacaklar."
+			"text": "Kuralda kaydedilmemiş değişiklikler var. Şimdi ayrılırsanız kaybolacaklar.",
+			"addressTitle": "Adresi kopyalamadan çıkılsın mı?",
+			"addressText": "Web kancası adresi yalnızca bir kez gösterilir ve kopyalanmadı. Şimdi çıkarsanız kaybolur ve yeni bir adres oluşturmanız gerekir."
 		},
 		"empty": {
 			"title": "Henüz otomasyon yok",
@@ -2821,7 +2827,7 @@
 			"minDuration": "En az 1 dakika olmalı.",
 			"recipients": "En az bir alıcı ya da bir takım belirtin.",
 			"cron": {
-				"every": "Her ... aralıklı ifadeler desteklenmiyor. Beş alan ya da hazır ayarlardan birini kullanın.",
+				"every": "{'@every'} ile yazılan aralıklar desteklenmiyor. Beş alan ya da hazır ayarlardan birini kullanın.",
 				"timezone": "Saat dilimi öneki desteklenmiyor: zamanlamalar sunucunun saat diliminde çalışır.",
 				"fields": "Beş alan kullanın: dakika, saat, ayın günü, ay ve haftanın günü.",
 				"syntax": "Bu geçerli bir cron ifadesi değil.",
@@ -2842,7 +2848,14 @@
 			"nothingWouldRun": "Bu görev için hiçbir şey çalışmazdı. Aşağıdaki eylemler, koşullar sağlansaydı ne olacağını gösterir.",
 			"stops": "Kuralı durdurur",
 			"wouldFail": "Başarısız olurdu",
-			"scriptOutput": "Betik çıktısı ve çağrıları"
+			"scriptOutput": "Betik çıktısı ve çağrıları",
+			"payload": {
+				"label": "Simüle edilen istek gövdesi (isteğe bağlı)",
+				"help": "event.payload olarak okunabilen bir JSON nesnesi. En çok 64 KiB.",
+				"json": "Bu geçerli bir JSON değil.",
+				"object": "Gövde bir JSON nesnesi olmalıdır.",
+				"size": "Gövde 64 KiB'tan büyük."
+			}
 		},
 		"runs": {
 			"title": "\"{title}\" çalıştırmaları",
@@ -2928,7 +2941,7 @@
 			"cron": "Zamanlama (cron ifadesi)",
 			"scope": "Şunun için çalışır",
 			"offset": "Bitiş tarihinden ne kadar önce",
-			"secret": "İmza anahtarı (isteğe bağlı)"
+			"secret": "İmza gizli anahtarı (isteğe bağlı)"
 		},
 		"op": {
 			"eq": "eşittir",
@@ -3049,8 +3062,10 @@
 			"PUT": "PUT",
 			"PATCH": "PATCH",
 			"DELETE": "DELETE",
-			"tasks": "Koşullara uyan her görev",
-			"project": "Proje, bir kez (görevsiz)"
+			"scope": {
+				"tasks": "Koşullara uyan her görev",
+				"project": "Proje, bir kez (görevsiz)"
+			}
 		},
 		"secrets": {
 			"title": "Gizli anahtarlar",
@@ -3137,12 +3152,13 @@
 			"copyFailed": "Adres kopyalanamadı. Seçip elle kopyalayın.",
 			"hidden": "Bu kuralın bir web kancası adresi var. Adres gizli bir belirteç içerir ve yalnızca özeti saklandığı için bir daha gösterilemez.",
 			"rotate": "Yeni adres oluştur",
-			"rotateAgain": "Bir yeni adres daha oluştur",
+			"rotateAgain": "Yeni bir adres daha oluştur",
 			"rotateHelp": "Eski adres hemen çalışmaz hale gelir.",
+			"rotateUncertain": "Yeni adres oluşturma isteği tamamlanmadı. Adres şimdiden değişmiş olabilir; bu yüzden daha önce gösterilen adres artık güvenilir değil ve kaldırıldı. Yeni bir adres daha oluşturun.",
 			"saveFirst": "Önce değişikliklerinizi kaydedin.",
 			"usage": "Gövdesi bir JSON nesnesi olan bir POST isteği gönderin (boş için {'{}'} kullanın). İstek hemen yanıtlanır ve kural arka planda çalışır.",
 			"signature": "Bir imza anahtarı seçildiyse çağrılar X-Vikunja-Signature: sha256=HEX başlığını taşımalıdır (ham gövdenin anahtarla hesaplanan HMAC-SHA256 değeri).",
-			"noReplayProtection": "Tekrar saldırısına karşı koruma yoktur: imza yalnızca gövdeyi kapsar, bu yüzden ele geçirilen bir istek anahtar ya da adres değiştirilene kadar yeniden gönderilebilir. Gövdeye benzersiz bir kimlik koyun, bir koşulla daha önce görülen kimlikleri eleyin ve sızıntıdan şüpheleniyorsanız adresi yenileyin.",
+			"noReplayProtection": "Tekrar saldırısına karşı koruma yoktur: imza yalnızca gövdeyi kapsar, bu yüzden ele geçirilen bir istek anahtar ya da adres değiştirilene kadar yeniden gönderilebilir. Sızıntıdan şüpheleniyorsanız adresi ya da imza anahtarını yenileyin; daha fazlası gerekiyorsa Vikunja'nın önüne istekleri doğrulayan bir ara sunucu koyun.",
 			"rotateConfirm": {
 				"title": "Yeni web kancası adresi oluşturulsun mu?",
 				"text": "Geçerli adres hemen çalışmaz hale gelir. Onu kullanan her hizmete yeni adres verilmelidir."

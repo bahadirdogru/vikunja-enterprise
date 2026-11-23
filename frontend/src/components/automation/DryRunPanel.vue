@@ -12,13 +12,16 @@ import {useAutomationContext} from '@/components/automation/context'
 import {isRequestContextAbort} from '@/client/requestContext'
 import {useTestRuleMutation, type DryRunResponse} from '@/client/queries/automation'
 import {tasksQuery} from '@/client/queries/tasks'
-import {actionDef, catalogLabel} from '@/helpers/automation'
+import {actionDef, catalogLabel, parseWebhookPayload} from '@/helpers/automation'
 import {getErrorText} from '@/message'
 
 const props = defineProps<{
 	ruleId: number | null
 	// False while the draft differs from the saved rule.
 	testable: boolean
+	// Whether the rule works on a task. Without one the test needs none; an incoming webhook takes a simulated body.
+	hasTask: boolean
+	webhook: boolean
 }>()
 
 const {t, te} = useI18n({useScope: 'global'})
@@ -41,14 +44,27 @@ const taskChoices = computed(() => (tasks.data.value?.items ?? []).map(task => (
 })))
 
 const test = useTestRuleMutation()
-const canRun = computed(() => props.testable && props.ruleId !== null && taskId.value !== null)
+const payloadText = ref('')
+const parsedPayload = computed(() => props.webhook ? parseWebhookPayload(payloadText.value) : {})
+const payloadProblem = computed(() => parsedPayload.value.problem
+	? t(`automation.test.payload.${parsedPayload.value.problem}`)
+	: '')
+const canRun = computed(() => props.testable
+	&& props.ruleId !== null
+	&& (!props.hasTask || taskId.value !== null)
+	&& payloadProblem.value === '')
 
 async function run() {
-	if (!canRun.value || props.ruleId === null || taskId.value === null) return
+	if (!canRun.value || props.ruleId === null) return
 	failure.value = ''
 	result.value = null
 	try {
-		result.value = await test.mutateAsync({projectId: context.projectId, ruleId: props.ruleId, taskId: taskId.value})
+		result.value = await test.mutateAsync({
+			projectId: context.projectId,
+			ruleId: props.ruleId,
+			taskId: props.hasTask ? taskId.value : null,
+			payload: parsedPayload.value.payload,
+		})
 	} catch (cause) {
 		if (isRequestContextAbort(cause)) return
 		failure.value = getErrorText(cause)
@@ -79,19 +95,46 @@ function stepTitle(type: string): string {
 			{{ ruleId === null ? $t('automation.test.saveFirst') : $t('automation.test.unsaved') }}
 		</p>
 		<div class="dry-run__form">
-			<input
-				v-model="search"
-				class="input"
-				type="search"
-				:aria-label="$t('automation.test.searchTask')"
-				:placeholder="$t('automation.test.searchTask')"
+			<template v-if="hasTask">
+				<input
+					v-model="search"
+					class="input"
+					type="search"
+					:aria-label="$t('automation.test.searchTask')"
+					:placeholder="$t('automation.test.searchTask')"
+				>
+				<AutomationSelect
+					v-model="taskId"
+					:options="taskChoices"
+					:label="$t('automation.test.task')"
+					:placeholder="$t('automation.test.chooseTask')"
+				/>
+			</template>
+			<div
+				v-if="webhook"
+				class="dry-run__payload"
 			>
-			<AutomationSelect
-				v-model="taskId"
-				:options="taskChoices"
-				:label="$t('automation.test.task')"
-				:placeholder="$t('automation.test.chooseTask')"
-			/>
+				<label
+					class="label"
+					for="automation-test-payload"
+				>{{ $t('automation.test.payload.label') }}</label>
+				<textarea
+					id="automation-test-payload"
+					v-model="payloadText"
+					class="textarea"
+					rows="4"
+					spellcheck="false"
+					placeholder="{}"
+					:aria-invalid="payloadProblem !== '' ? true : undefined"
+					:class="{'is-danger': payloadProblem !== ''}"
+				/>
+				<p
+					class="help"
+					:class="{'is-danger': payloadProblem !== ''}"
+				>
+					{{ payloadProblem || $t('automation.test.payload.help') }}
+				</p>
+			</div>
 			<XButton
 				type="button"
 				:loading="test.isPending.value"
@@ -187,6 +230,14 @@ function stepTitle(type: string): string {
 
 		.input {
 			max-inline-size: 14rem;
+		}
+	}
+
+	&__payload {
+		flex: 1 1 100%;
+
+		.textarea {
+			font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 		}
 	}
 

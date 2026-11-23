@@ -41,6 +41,8 @@ const props = withDefaults(defineProps<{
 	path?: string
 	// {{secrets.NAME}} may be used in this value (see allowsSecretPlaceholder).
 	allowSecrets?: boolean
+	// The name of the catalog option or param, which keys the label of an enum value.
+	option?: string
 }>(), {
 	multiple: false,
 	enumValues: () => [],
@@ -51,6 +53,7 @@ const props = withDefaults(defineProps<{
 	customField: null,
 	path: '',
 	allowSecrets: false,
+	option: undefined,
 })
 
 const emit = defineEmits<{
@@ -60,7 +63,7 @@ const emit = defineEmits<{
 const {t, te} = useI18n({useScope: 'global'})
 const context = useAutomationContext()
 
-const enumText = (value: string) => enumLabel(t, te, value)
+const enumText = (value: string) => enumLabel(t, te, value, props.option)
 
 // Members of the project. The first page is enough for the 10-20 person teams this is made for.
 const memberSearch = useProjectUserSearch(() => context.projectId, '', () => props.kind === 'user' || props.kind === 'users')

@@ -17,6 +17,17 @@ export function getApiBaseUrl(): string {
 	return `${getApiRootUrl()}/api/v2`
 }
 
+// The server builds the address of an incoming webhook from service.publicurl, which may be empty: then it is a path
+// ("api/v2/automation/hooks/...") that is only meaningful against the API the client talks to.
+export function resolveAgainstApiRoot(url: string): string {
+	if (/^https?:\/\//i.test(url)) {
+		return url
+	}
+	const root = getApiRootUrl()
+	const origin = /^https?:\/\//i.test(root) ? root : `${window.location.origin}${root}`
+	return `${origin}/${url.replace(/^\/+/, '')}`
+}
+
 export class NoApiUrlProvidedError extends Error {
 	constructor() {
 		super()

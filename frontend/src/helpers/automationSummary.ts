@@ -30,7 +30,7 @@ export function summarizeRule(draft: Pick<RuleDraft, 'trigger' | 'conditions' | 
 		const def = actionDef(catalog, action.type)
 		const title = catalogLabel(t, te, def?.title_key ?? '', action.type)
 		const detail = def?.params.find(p => p.kind === 'enum' && !p.multiple && typeof action.params[p.name] === 'string')
-		return detail ? `${title} (${enumLabel(t, te, String(action.params[detail.name]))})` : title
+		return detail ? `${title} (${enumLabel(t, te, String(action.params[detail.name]), detail.name)})` : title
 	})
 	const conditions = pruneConditions(draft.conditions)
 	const parts = [t('automation.summary.line', {

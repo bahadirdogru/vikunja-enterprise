@@ -94,7 +94,13 @@ function fromTemplate(template: AvailableTemplate) {
 }
 
 // ---- unsaved changes ------------------------------------------------------------------------------------------
-const dirty = computed(() => mode.value.kind === 'edit' && editor.value?.dirty === true)
+// What would be lost by leaving: unsaved changes, or the one-time webhook address that was not copied.
+const leaveReason = computed<'dirty' | 'address' | null>(() => {
+	if (mode.value.kind !== 'edit') return null
+	if (editor.value?.dirty === true) return 'dirty'
+	return editor.value?.addressUncopied === true ? 'address' : null
+})
+const dirty = computed(() => leaveReason.value !== null)
 const confirmLeave = ref(false)
 let answerLeave: ((leave: boolean) => void) | null = null
 let afterConfirm: (() => void) | null = null
@@ -202,10 +208,10 @@ const editingTitle = computed(() => mode.value.kind === 'edit'
 			@submit="resolveLeave(true)"
 		>
 			<template #header>
-				<span>{{ $t('automation.leave.title') }}</span>
+				<span>{{ leaveReason === 'address' ? $t('automation.leave.addressTitle') : $t('automation.leave.title') }}</span>
 			</template>
 			<template #text>
-				<p>{{ $t('automation.leave.text') }}</p>
+				<p>{{ leaveReason === 'address' ? $t('automation.leave.addressText') : $t('automation.leave.text') }}</p>
 			</template>
 		</Modal>
 	</CreateEdit>

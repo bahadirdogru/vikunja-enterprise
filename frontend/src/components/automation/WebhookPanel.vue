@@ -25,7 +25,9 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-	revealed: [value: WebhookReveal]
+	// null: the address on screen can no longer be trusted and was dropped.
+	revealed: [value: WebhookReveal | null]
+	copied: []
 }>()
 
 const {t} = useI18n({useScope: 'global'})
@@ -33,6 +35,7 @@ const {t} = useI18n({useScope: 'global'})
 async function copy(text: string) {
 	try {
 		await navigator.clipboard.writeText(text)
+		emit('copied')
 		success({message: t('automation.webhook.copied')})
 	} catch {
 		error(new Error(t('automation.webhook.copyFailed')))
@@ -41,18 +44,23 @@ async function copy(text: string) {
 
 const confirmRotate = ref(false)
 const failure = ref('')
+// A rotate that failed after it was sent may still have replaced the address on the server.
+const uncertain = ref(false)
 const rotate = useRotateWebhookTokenMutation()
 
 async function doRotate() {
 	confirmRotate.value = false
 	failure.value = ''
+	uncertain.value = false
 	if (props.ruleId === null) return
 	try {
 		const result = await rotate.mutateAsync({projectId: props.projectId, ruleId: props.ruleId})
 		if (result.url) emit('revealed', result)
 	} catch (cause) {
-		if (isRequestContextAbort(cause)) return
-		failure.value = getErrorText(cause)
+		// The address on screen may already be dead: never leave it under "copy this address now".
+		emit('revealed', null)
+		uncertain.value = true
+		if (!isRequestContextAbort(cause)) failure.value = getErrorText(cause)
 	}
 }
 </script>
@@ -119,6 +127,13 @@ async function doRotate() {
 				</XButton>
 				<p class="help">
 					{{ dirty ? $t('automation.webhook.saveFirst') : $t('automation.webhook.rotateHelp') }}
+				</p>
+				<p
+					v-if="uncertain"
+					class="help is-danger"
+					role="alert"
+				>
+					{{ $t('automation.webhook.rotateUncertain') }}
 				</p>
 				<p
 					v-if="failure"

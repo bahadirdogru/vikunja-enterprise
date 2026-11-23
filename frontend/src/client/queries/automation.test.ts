@@ -69,9 +69,35 @@ describe('manual automations', () => {
 	})
 })
 
+describe('a manual run that is refused', () => {
+	it('drops the stale list of manual rules, which a successful run leaves alone', async () => {
+		const client = new QueryClient()
+		client.setQueryData(automationKeys.manual(3), [{id: 1, title: 'Escalate', label: 'Escalate'}])
+		sdk.automationRunManually.mockRejectedValue({status: 409, code: 22009})
+		await expect(client.getMutationCache().build(client, runRuleManuallyMutationOptions())
+			.execute({projectId: 3, ruleId: 1, taskId: 42, title: 'Escalate'})).rejects.toBeDefined()
+		expect(client.getQueryState(automationKeys.manual(3))?.isInvalidated).toBe(true)
+
+		client.setQueryData(automationKeys.manual(3), [{id: 1, title: 'Escalate', label: 'Escalate'}])
+		sdk.automationRunManually.mockResolvedValue({data: {event_id: 9, status: 'queued'}})
+		await client.getMutationCache().build(client, runRuleManuallyMutationOptions())
+			.execute({projectId: 3, ruleId: 1, taskId: 42, title: 'Escalate'})
+		expect(client.getQueryState(automationKeys.manual(3))?.isInvalidated).toBe(false)
+	})
+})
+
 describe('the address of an incoming webhook', () => {
+	it('resolves a relative address against the API of the client', async () => {
+		expect(webhookRevealOf({webhook_token: 't', webhook_url: 'api/v2/automation/hooks/t'}))
+			.toEqual({token: 't', url: `${window.location.origin}/api/v2/automation/hooks/t`})
+		sdk.automationWebhookToken.mockResolvedValue({data: {token: 'n', url: 'api/v2/automation/hooks/n'}})
+		const client = new QueryClient()
+		expect(await client.getMutationCache().build(client, rotateWebhookTokenMutationOptions()).execute({projectId: 3, ruleId: 5}))
+			.toEqual({token: 'n', url: `${window.location.origin}/api/v2/automation/hooks/n`})
+	})
+
 	it('reads it only when the server sent the token and the url', () => {
-		expect(webhookRevealOf({webhook_token: 't', webhook_url: 'u'})).toEqual({token: 't', url: 'u'})
+		expect(webhookRevealOf({webhook_token: 't', webhook_url: 'https://x/hooks/t'})).toEqual({token: 't', url: 'https://x/hooks/t'})
 		expect(webhookRevealOf({webhook_token: 't'})).toBeUndefined()
 		expect(webhookRevealOf({})).toBeUndefined()
 	})

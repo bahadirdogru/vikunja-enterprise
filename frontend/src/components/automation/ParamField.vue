@@ -146,6 +146,7 @@ const isCondition = computed(() => kind.value === 'condition')
 			:custom-field="customField"
 			:path="path"
 			:allow-secrets="allowsSecretPlaceholder(actionType, param.name)"
+			:option="param.name"
 			@update:modelValue="emit('update', param.name, $event)"
 		/>
 

@@ -4,6 +4,7 @@ import {
 	getApiRootUrl,
 	InvalidApiUrlProvidedError,
 	normalizeApiUrl,
+	resolveAgainstApiRoot,
 } from './apiUrl'
 
 describe('API base URL', () => {
@@ -34,5 +35,24 @@ describe('API base URL', () => {
 	it('rejects a missing API URL instead of guessing one', () => {
 		window.API_URL = undefined as unknown as string
 		expect(() => getApiBaseUrl()).toThrow(InvalidApiUrlProvidedError)
+	})
+})
+
+describe('resolveAgainstApiRoot', () => {
+	const originalApiUrl = window.API_URL
+
+	afterEach(() => {
+		window.API_URL = originalApiUrl
+	})
+
+	it.each([
+		['', 'api/v2/automation/hooks/t', `${window.location.origin}/api/v2/automation/hooks/t`],
+		['', '/api/v2/automation/hooks/t', `${window.location.origin}/api/v2/automation/hooks/t`],
+		['/prefix', 'api/v2/automation/hooks/t', `${window.location.origin}/prefix/api/v2/automation/hooks/t`],
+		['https://x/prefix/api/v1', 'api/v2/automation/hooks/t', 'https://x/prefix/api/v2/automation/hooks/t'],
+		['https://x', 'https://y.example/api/v2/automation/hooks/t', 'https://y.example/api/v2/automation/hooks/t'],
+	])('with the API at %o turns %o into %o', (stored, url, resolved) => {
+		window.API_URL = stored
+		expect(resolveAgainstApiRoot(url)).toBe(resolved)
 	})
 })

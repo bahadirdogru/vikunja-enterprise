@@ -13,6 +13,7 @@ import {
 	draftToDocument,
 	duplicateAction,
 	effectiveKind,
+	enumLabel,
 	emptyDraft,
 	fieldGroupOf,
 	getNode,
@@ -288,8 +289,23 @@ describe('summary and humanize', () => {
 		const text = summarizeRule(draft, catalog, t, () => true)
 		expect(text).toContain('automation.summary.line')
 		expect(text).toContain('automation.trigger.task_created')
-		expect(text).toContain('automation.action.set_field (automation.enum.priority), automation.action.add_comment')
+		expect(text).toContain('automation.action.set_field (automation.enum.field.priority), automation.action.add_comment')
 		expect(text).toContain('"count":2')
+	})
+
+	it('labels an enum value by its option first and falls back to the flat key by value', () => {
+		const messages: Record<string, string> = {
+			'automation.enum.scope.project': 'The project, once',
+			'automation.enum.project': 'Project',
+			'automation.enum.done': 'Done',
+		}
+		const has = (key: string) => key in messages
+		const say = (key: string) => messages[key]
+		expect(enumLabel(say, has, 'project', 'scope')).toBe('The project, once')
+		expect(enumLabel(say, has, 'project', 'field')).toBe('Project')
+		expect(enumLabel(say, has, 'project')).toBe('Project')
+		expect(enumLabel(say, has, 'done', 'status')).toBe('Done')
+		expect(enumLabel(say, has, 'brand_new', 'scope')).toBe('Brand new')
 	})
 
 	it('falls back to humanized names for unknown types', () => {

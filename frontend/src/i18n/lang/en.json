@@ -1856,6 +1856,10 @@
     "21008": "Choose a status to move the tasks of the removed statuses to.",
     "21009": "Workflow statuses can only be used as columns when the project has a workflow.",
     "21010": "The columns of this board are the workflow statuses. Change them in the workflow settings.",
+    "22001": "This automation rule does not exist.",
+    "22002": "The automation rule is invalid.",
+    "22003": "This automation run does not exist.",
+    "22004": "Only runs that failed can be retried.",
     "22005": "Scripts in automation rules are turned off on this server (automation.scripts.enabled).",
     "22006": "The secret is not valid: use letters, digits and underscores in the name, not starting with a digit (at most 64 characters), and a value of at most 8 KiB.",
     "22007": "This secret does not exist.",
@@ -2791,7 +2795,9 @@
     },
     "leave": {
       "title": "Discard unsaved changes?",
-      "text": "The rule has changes that were not saved. If you leave now they are lost."
+      "text": "The rule has changes that were not saved. If you leave now they are lost.",
+      "addressTitle": "Leave without copying the address?",
+      "addressText": "The webhook address is shown only once and was not copied. If you leave now it is lost, and you have to create a new address."
     },
     "empty": {
       "title": "No automations yet",
@@ -3007,7 +3013,7 @@
       "minDuration": "Must be at least 1 minute.",
       "recipients": "Name at least one recipient or a team.",
       "cron": {
-        "every": "Intervals with every are not supported. Use five fields or one of the presets.",
+        "every": "Intervals with {'@every'} are not supported. Use five fields or one of the presets.",
         "timezone": "A time zone prefix is not supported: schedules run in the time zone of the server.",
         "fields": "Use five fields: minute, hour, day of the month, month and day of the week.",
         "syntax": "This is not a valid cron expression.",
@@ -3028,7 +3034,14 @@
       "nothingWouldRun": "Nothing would run for this task. The actions below show what would happen if they were met.",
       "stops": "Stops the rule",
       "wouldFail": "Would fail",
-      "scriptOutput": "Script output and calls"
+      "scriptOutput": "Script output and calls",
+      "payload": {
+        "label": "Simulated request body (optional)",
+        "help": "A JSON object, readable as event.payload. At most 64 KiB.",
+        "json": "This is not valid JSON.",
+        "object": "The body has to be a JSON object.",
+        "size": "The body is larger than 64 KiB."
+      }
     },
     "runs": {
       "title": "Runs of \"{title}\"",
@@ -3235,8 +3248,10 @@
       "PUT": "PUT",
       "PATCH": "PATCH",
       "DELETE": "DELETE",
-      "tasks": "Each matching task",
-      "project": "The project, once (without a task)"
+      "scope": {
+        "tasks": "Each matching task",
+        "project": "The project, once (without a task)"
+      }
     },
     "secrets": {
       "title": "Secrets",
@@ -3325,10 +3340,11 @@
       "rotate": "Create a new address",
       "rotateAgain": "Create another new address",
       "rotateHelp": "The old address stops working immediately.",
+      "rotateUncertain": "The request to create a new address did not finish. The address may have changed already, so the one shown before is no longer reliable and was removed. Create a new address again.",
       "saveFirst": "Save your changes first.",
       "usage": "Send a POST request with a JSON object as the body (use {'{}'} for none). The request is answered at once and the rule runs in the background.",
       "signature": "With a signing secret chosen, calls must carry the header X-Vikunja-Signature: sha256=HEX (the HMAC-SHA256 of the raw body, keyed with the secret).",
-      "noReplayProtection": "There is no replay protection: the signature covers the body only, so a captured request can be sent again until the secret or the address is changed. Put a unique id in the body and let a condition drop ids it has seen, and rotate the address if you suspect a leak.",
+      "noReplayProtection": "There is no replay protection: the signature covers the body only, so a captured request can be sent again until the secret or the address is changed. Rotate the address or the secret if you suspect a leak, and put a proxy that verifies requests in front of Vikunja if you need more.",
       "rotateConfirm": {
         "title": "Create a new webhook address?",
         "text": "The current address stops working at once. Every service that uses it has to be given the new one."
