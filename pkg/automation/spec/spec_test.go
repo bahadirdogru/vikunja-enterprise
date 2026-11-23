@@ -43,6 +43,9 @@ func exampleValue(p Param, siblings map[string]any) any {
 		if p.Name == "url" {
 			v = "https://example.com/hook?t={{task.id}}"
 		}
+		if p.Name == "cron" {
+			v = "0 9 * * 1"
+		}
 	case KindCode:
 		v = "return 1"
 	case KindSecret:
@@ -62,7 +65,7 @@ func exampleValue(p Param, siblings map[string]any) any {
 		if len(p.Enum) > 0 {
 			v = p.Enum[0]
 		}
-	case KindLabel, KindStatus, KindCustomField, KindProject:
+	case KindLabel, KindStatus, KindCustomField, KindProject, KindTeam:
 		v = float64(1)
 	case KindEnum:
 		v = p.Enum[0]
@@ -102,6 +105,9 @@ func TestCatalog_EveryTriggerAndActionValidatesAgainstItsOwnSchema(t *testing.T)
 				Trigger: Trigger{Type: tr.Type, Options: opts},
 				Actions: []*Action{{Type: ActionSetDone, Params: map[string]any{"done": true}}},
 			}
+			if !TriggerHasTask(doc.Trigger) {
+				doc.Actions = []*Action{{Type: ActionCreateTask, Params: map[string]any{"title": "x"}}}
+			}
 			assert.Empty(t, Validate(doc, 25), "trigger %s with options %v", tr.Type, opts)
 		}
 	}
@@ -109,6 +115,9 @@ func TestCatalog_EveryTriggerAndActionValidatesAgainstItsOwnSchema(t *testing.T)
 	for _, ac := range Actions() {
 		for _, withOptional := range []bool{false, true} {
 			params := exampleParams(ac.Params)
+			if ac.Type == ActionNotify {
+				params["recipients"] = []any{UserEventDoer}
+			}
 			if withOptional {
 				params = map[string]any{}
 				for _, p := range ac.Params {
@@ -129,7 +138,7 @@ func TestCatalog_IsConsistent(t *testing.T) {
 		KindString: true, KindText: true, KindNumber: true, KindBool: true, KindDate: true, KindDuration: true,
 		KindUser: true, KindUsers: true, KindLabel: true, KindStatus: true, KindCustomField: true,
 		KindProject: true, KindTemplate: true, KindCondition: true, KindEnum: true, KindAny: true,
-		KindCode: true, KindSecret: true, KindMap: true,
+		KindCode: true, KindSecret: true, KindMap: true, KindTeam: true,
 	}
 	checkParams := func(owner string, params []Param) {
 		names := map[string]bool{}
@@ -387,4 +396,37 @@ func TestWalk_CollectsAndRemapsReferences(t *testing.T) {
 
 	// The original is untouched.
 	assert.Equal(t, "cf_7", doc.Conditions.All[0].Field)
+}
+
+func TestValidate_TaskLessTriggersNeedACreateTaskFirst(t *testing.T) {
+	setDone := &Action{Type: ActionSetDone, Params: map[string]any{"done": true}}
+	create := &Action{Type: ActionCreateTask, Params: map[string]any{"title": "x"}}
+	hook := Trigger{Type: TriggerWebhookIncoming}
+	projectSchedule := Trigger{Type: TriggerSchedule, Options: map[string]any{"cron": "@daily", "scope": ScopeProject}}
+
+	for _, tr := range []Trigger{hook, projectSchedule} {
+		assert.False(t, TriggerHasTask(tr), tr.Type)
+		issues := Validate(&Doc{Trigger: tr, Actions: []*Action{setDone}}, 25)
+		require.Len(t, issues, 1, tr.Type)
+		assert.Equal(t, "actions[0].type", issues[0].Path)
+		assert.Empty(t, Validate(&Doc{Trigger: tr, Actions: []*Action{create, setDone}}, 25), tr.Type)
+		// Actions that do not need a task are fine at any position.
+		assert.Empty(t, Validate(&Doc{Trigger: tr, Actions: []*Action{{Type: ActionWait, Params: map[string]any{"duration": "1h"}}, create}}, 25))
+	}
+	assert.True(t, TriggerHasTask(Trigger{Type: TriggerSchedule, Options: map[string]any{"cron": "@daily"}}))
+	assert.True(t, TriggerHasTask(Trigger{Type: TriggerManual}))
+}
+
+func TestValidate_PayloadFieldsAndCron(t *testing.T) {
+	good := &Condition{Field: "event.payload.customer.name", Op: OpEq, Value: "Ada"}
+	bad := &Condition{Field: "event.payload.", Op: OpEq, Value: "Ada"}
+	create := &Action{Type: ActionCreateTask, Params: map[string]any{"title": "x"}}
+	hook := Trigger{Type: TriggerWebhookIncoming}
+	assert.Empty(t, Validate(&Doc{Trigger: hook, Conditions: good, Actions: []*Action{create}}, 25))
+	assert.NotEmpty(t, Validate(&Doc{Trigger: hook, Conditions: bad, Actions: []*Action{create}}, 25))
+
+	for expr, valid := range map[string]bool{"0 9 * * 1": true, "*/15 8-18 * * 1-5": true, "@hourly": true, "0 9 * *": false, "0 0 9 * * *": false, "nope": false} {
+		issues := Validate(&Doc{Trigger: Trigger{Type: TriggerSchedule, Options: map[string]any{"cron": expr}}, Actions: []*Action{{Type: ActionSetDone, Params: map[string]any{"done": true}}}}, 25)
+		assert.Equal(t, valid, len(issues) == 0, expr)
+	}
 }

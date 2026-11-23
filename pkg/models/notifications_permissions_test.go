@@ -169,6 +169,7 @@ func TestNotificationScopeClassification(t *testing.T) {
 		"approval.reminder",
 		"approval.requested",
 		"approval.resolved",
+		"automation.notify",
 		"form.submitted",
 		"project.created",
 		"task.assigned",
