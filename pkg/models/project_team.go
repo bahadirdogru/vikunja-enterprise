@@ -220,6 +220,10 @@ func (tl *TeamProject) ReadAll(s *xorm.Session, a web.Auth, search string, page 
 
 	limit, start := getLimitFromPageIndex(page, perPage)
 
+	// Resolved before the query is built: the admin check may read the user through s, and a statement
+	// run on a session drops the table, joins and conditions set on it so far.
+	searchReadableTeamsOnly := search != "" && !isInstanceAdmin(s, a)
+
 	// Get the teams
 	all := []*TeamWithPermission{}
 	query := s.
@@ -227,7 +231,6 @@ func (tl *TeamProject) ReadAll(s *xorm.Session, a web.Auth, search string, page 
 		Join("INNER", "team_projects", "team_id = teams.id").
 		Where("team_projects.project_id = ?", tl.ProjectID).
 		Where(db.ILIKE("teams.name", search))
-	searchReadableTeamsOnly := search != "" && !isInstanceAdmin(s, a)
 	if searchReadableTeamsOnly {
 		query = query.Where(readableTeamSearchCond(a))
 	}
