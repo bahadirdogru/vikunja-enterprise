@@ -158,8 +158,8 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   do not run `lint:fix` blind, its err113 autofix corrupted a test file.
   The intermittent `./pkg/models/` failure was `TestApprovals_Notifications`
   asserting the order of two mails (7 failures in 100 runs). Full
-  `test:feature` and `test:web` pass on SQLite and PostgreSQL 17 with no
-  failures; an earlier run on PostgreSQL 9.5 passed apart from an unordered
+  `test:feature` and `test:web` passed on SQLite and PostgreSQL 17 at that
+  time; an earlier run on PostgreSQL 9.5 passed apart from an unordered
   member list, fixed since. Fixed in the review, each with a test: scripts
   reading any task through an empty update, rules seeing tasks their owner
   lost, duplicate steps and an expiring event lock, idle workers locking
@@ -191,6 +191,21 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   requests the engine sends). Editor forms, webhook address shown once,
   "Run automation..." on a task, `automation.notify` notification. Not
   checked in a browser. No replay protection on the webhook signature.
+- Database pass after automation 3d: `test:feature` passes on SQLite,
+  PostgreSQL 17 and MySQL 8, `test:web` on all three, run uncached after the fixes (the 3d failures on
+  PostgreSQL and MySQL were test problems, see below). Go caches test results
+  without regard to `VIKUNJA_DATABASE_*`: run other databases with
+  `GOFLAGS=-count=1` or the result is the previous database's. Found and
+  fixed: `automation_task_origins` was not reset between tests, so rows of
+  earlier tests with the same task id made the unique index fail runs and
+  suppressed the due and schedule events (the loop guard read the stale
+  origin); product bug: `recordTaskOrigin` now replaces an existing row for
+  the task instead of failing on the unique index (ids can be handed out
+  again, and cleanup of origins is only daily). The overdue, due soon,
+  schedule and webhook triggers themselves behaved correctly on both
+  databases. `TestClaimDue_ARealInsertErrorIsReturnedNotSwallowed` needs a
+  SQLite trigger and is skipped elsewhere. The triggers migration test
+  inserted an empty json value, rejected by PostgreSQL.
 - Dashboards 4c added (backend + UI): time in status, workload and time
   tracking widgets, CSV export from the widget menu and the drill-down,
   previous-period comparison on number widgets (a partial period is compared
@@ -207,8 +222,8 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
 - Default dashboards for new projects with a workflow (4c).
 - MCP exposure of the fork's endpoints; the new automation routes are not in
   the MCP allow-list.
-- MySQL only exercised for reports, approvals and forms; the arm64 image has
-  not been started on real ARM hardware.
+- The arm64 image has not been started on real ARM hardware. MariaDB and the
+  documented minimum database versions are not tested.
 - The newest UI (form branding, 4c widgets and export, automation 3d editor
   and manual run) is type-checked and unit-tested but not checked in a
   browser.
