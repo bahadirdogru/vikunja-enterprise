@@ -100,7 +100,35 @@ describe('problems', () => {
 		expect(readApprovalProblem({code: 24005}).kind).toBe('commentRequired')
 		expect(readApprovalProblem({code: 24002}).kind).toBe('notPending')
 		expect(readApprovalProblem({code: 24004}).kind).toBe('alreadyDecided')
-		expect(readApprovalProblem({code: 24007, details: {to_status_id: 4}})).toEqual({kind: 'doneRequiresApproval', toStatusId: 4})
+		expect(readApprovalProblem({code: 24007, details: {to_status_id: 4}})).toEqual({
+			kind: 'doneRequiresApproval',
+			taskId: 0,
+			fromStatusTitle: '',
+			toStatusId: 4,
+			toStatusTitle: '',
+			toStatusCategory: '',
+			pendingApprovalId: 0,
+		})
+		expect(readApprovalProblem({
+			code: 24007,
+			details: {
+				task_id: 9,
+				from_status_title: 'To do',
+				to_status_id: 4,
+				to_status_title: 'Done',
+				to_status_category: 'done',
+				pending_approval_id: 12,
+				approval_pending: true,
+			},
+		})).toEqual({
+			kind: 'doneRequiresApproval',
+			taskId: 9,
+			fromStatusTitle: 'To do',
+			toStatusId: 4,
+			toStatusTitle: 'Done',
+			toStatusCategory: 'done',
+			pendingApprovalId: 12,
+		})
 		expect(readApprovalProblem({code: 1})).toEqual({kind: 'other'})
 		expect(isDoneRequiresApproval({code: 24007})).toBe(true)
 	})

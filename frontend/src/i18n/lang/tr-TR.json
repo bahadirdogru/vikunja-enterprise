@@ -2,6 +2,15 @@
 	"approvals": {
 		"title": "Onaylar",
 		"requested": "Onay istendi",
+		"doneBlocked": {
+			"needsDone": "Görev tamamlandı olarak işaretlenmedi: \"{status}\" için önce onay gerekiyor.",
+			"needsReopen": "Görev yeniden açılmadı: \"{status}\" için önce onay gerekiyor.",
+			"needsGeneric": "Görev değiştirilmedi: bu durum değişikliği için önce onay gerekiyor.",
+			"request": "Onay iste",
+			"pending": "\"{status}\" için bir onay zaten karar bekliyor. Onaylanana kadar görev olduğu gibi kalır.",
+			"pendingGeneric": "Bu durum değişikliği için bir onay zaten karar bekliyor. Onaylanana kadar görev olduğu gibi kalır.",
+			"open": "Görevi aç"
+		},
 		"approve": "Onayla",
 		"reject": "Reddet",
 		"requestedBy": "Talep eden",

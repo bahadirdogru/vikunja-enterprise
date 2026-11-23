@@ -40,6 +40,7 @@ vi.mock('@/client/generated', () => sdk)
 vi.mock('@/message', () => ({
 	error: vi.fn(),
 	success: vi.fn(),
+	markErrorAnswered: vi.fn(),
 	translatedError: (message: string) => new Error(message),
 }))
 vi.mock('@/client/requestContext', () => ({
@@ -119,6 +120,67 @@ describe('task mutations', () => {
 			body: [{op: 'add', path: '/title', value: 'new'}],
 		})
 		expect(client.getQueryData<Task>(taskKeys.detail(1))?.title).toBe('new')
+	})
+
+	describe('a done change that needs an approval', () => {
+		const refused = {
+			code: 24007,
+			details: {
+				task_id: 1,
+				to_status_id: 7,
+				to_status_title: 'Done',
+				to_status_category: 'done',
+				pending_approval_id: 0,
+			},
+		}
+
+		it('is explained instead of toasted raw, and the optimistic done flag is rolled back', async () => {
+			const {error} = await import('@/message')
+			const {approvalRequestTarget} = await import('@/composables/approvalRequired')
+			vi.mocked(error).mockClear()
+			approvalRequestTarget.value = null
+			const client = new QueryClient()
+			client.setQueryData(taskKeys.detail(1), {id: 1, title: 'old', done: false})
+			sdk.patchTasksRead.mockRejectedValue(refused)
+
+			await expect(client.getMutationCache()
+				.build(client, updateTaskMutationOptions(true))
+				.execute({id: 1, title: 'old', done: true, project_id: 3})).rejects.toBe(refused)
+
+			expect(client.getQueryData<Task>(taskKeys.detail(1))?.done).toBe(false)
+			// One toast, with the action that requests the approval, not the raw error.
+			expect(error).toHaveBeenCalledTimes(1)
+			const [shown, actions] = vi.mocked(error).mock.calls[0]
+			expect(shown).not.toBe(refused)
+			expect(actions).toHaveLength(1)
+			actions![0].callback()
+			expect(approvalRequestTarget.value).toEqual({taskId: 1, projectId: 3, toStatusId: 7})
+			approvalRequestTarget.value = null
+		})
+
+		it('still toasts other failures', async () => {
+			const {error} = await import('@/message')
+			vi.mocked(error).mockClear()
+			const client = new QueryClient()
+			const denied = new Error('denied')
+			sdk.patchTasksRead.mockRejectedValue(denied)
+			await expect(client.getMutationCache()
+				.build(client, updateTaskMutationOptions())
+				.execute({id: 1, done: true})).rejects.toBe(denied)
+			expect(error).toHaveBeenCalledWith(denied)
+		})
+
+		it('is explained for a kanban move into the done bucket too', async () => {
+			const {error} = await import('@/message')
+			vi.mocked(error).mockClear()
+			const client = new QueryClient()
+			sdk.taskBucketUpdate.mockRejectedValue(refused)
+			await expect(client.getMutationCache()
+				.build(client, moveTaskMutationOptions())
+				.execute({project: 3, view: 2, bucket: 5, task: {id: 1, project_id: 3}})).rejects.toBe(refused)
+			expect(error).toHaveBeenCalledTimes(1)
+			expect(vi.mocked(error).mock.calls[0][1]).toHaveLength(1)
+		})
 	})
 
 	it('addresses the delete endpoint by task id', async () => {

@@ -10,25 +10,18 @@ import TaskStatusDialog from '@/components/workflow/TaskStatusDialog.vue'
 import TaskStatusHistory from '@/components/workflow/TaskStatusHistory.vue'
 import WorkflowStatusBadge from '@/components/workflow/WorkflowStatusBadge.vue'
 import {customFieldsQuery} from '@/client/queries/customFields'
-import {
-	taskStatusQuery,
-	useChangeTaskStatusMutation,
-	workflowQuery,
-} from '@/client/queries/workflow'
-import {isRequestContextAbort} from '@/client/requestContext'
+import {taskStatusQuery, workflowQuery} from '@/client/queries/workflow'
+import {useStatusTransition} from '@/composables/useStatusTransition'
 import {
 	customFieldIdOf,
 	doneTargetStatus,
 	isCustomFieldName,
 	needsInput,
-	outcomeOfProblem,
-	readWorkflowProblem,
 	reopenTargetStatus,
 	type AvailableTransitionResponse,
 	type WorkflowStatusResponse,
 } from '@/helpers/workflow'
 import {describeApprovers} from '@/helpers/approvals'
-import {error, getErrorText} from '@/message'
 
 const props = defineProps<{
 	taskId: number
@@ -54,7 +47,6 @@ const fieldsResult = useQuery(computed(() => ({
 	...customFieldsQuery(props.projectId),
 	enabled: props.projectId > 0 && hasWorkflow.value,
 })))
-const change = useChangeTaskStatusMutation()
 
 const taskStatus = computed(() => statusResult.data.value ?? null)
 const currentStatus = computed(() => taskStatus.value?.status ?? null)
@@ -92,45 +84,7 @@ function approverText(transition: AvailableTransitionResponse): string {
 	return names === '' ? t('approvals.menu.askNobody') : t('approvals.menu.willAsk', {names})
 }
 
-type DialogState = {
-	toStatus: WorkflowStatusResponse
-	missingFields: string[]
-	commentRequired: boolean
-	problem: string | null
-}
-
-const dialog = ref<DialogState | null>(null)
-
-async function attempt(toStatus: WorkflowStatusResponse, comment = ''): Promise<boolean> {
-	const taskId = props.taskId
-	let succeeded = false
-	try {
-		const result = await change.mutateAsync({taskId, toStatusId: toStatus.id, comment})
-		// 202: a request was made, the task is still in its status. The mutation announced it.
-		succeeded = !result.approval
-		if (props.taskId === taskId) {
-			dialog.value = null
-		}
-	} catch (cause) {
-		if (isRequestContextAbort(cause) || props.taskId !== taskId) {
-			return false
-		}
-		const outcome = outcomeOfProblem(readWorkflowProblem(cause))
-		if (outcome.kind === 'dialog') {
-			dialog.value = {
-				toStatus,
-				missingFields: outcome.missingFields,
-				commentRequired: outcome.commentRequired,
-				problem: dialog.value ? t('workflow.dialog.stillMissing') : null,
-			}
-		} else {
-			dialog.value = null
-			error({message: outcome.kind === 'message' ? t(outcome.messageKey) : getErrorText(cause)})
-		}
-	}
-	emit('changed')
-	return succeeded
-}
+const {change, dialog, attempt, submitDialog} = useStatusTransition(() => props.taskId, () => emit('changed'))
 
 function choose(transition: AvailableTransitionResponse, close: () => void) {
 	close()
@@ -144,12 +98,6 @@ function choose(transition: AvailableTransitionResponse, close: () => void) {
 		return
 	}
 	attempt(transition.to_status)
-}
-
-async function submitDialog(comment: string) {
-	if (dialog.value) {
-		await attempt(dialog.value.toStatus, comment)
-	}
 }
 
 // The done button of the task goes through the workflow so its rules and dialog apply.

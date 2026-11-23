@@ -42,6 +42,8 @@ import {colorFromHex} from '@/helpers/color/colorFromHex'
 import {approvalKeys} from './approvalKeys'
 import {getDefaultBucketId, moveTaskToBucket} from '@/helpers/task'
 import {readWorkflowProblem} from '@/helpers/workflow'
+import {isDoneRequiresApproval} from '@/helpers/approvals'
+import {handleApprovalRequired} from '@/composables/approvalRequired'
 import {translatedError} from '@/message'
 
 const API_ZERO_DATE = '0001-01-01T00:00:00Z'
@@ -176,6 +178,9 @@ export function updateTaskMutationOptions(optimistic = false) {
 			reconcileDoneBuckets(client, normalizeTask({...task, id: input.id}))
 		},
 		onSettled: ({id}, client) => invalidateTaskMembership(client, id),
+		// A done change the workflow wants approved is explained, with a way to request it, not shown raw.
+		toastError: (_input, cause) => !isDoneRequiresApproval(cause),
+		onFailure: (cause, task) => { handleApprovalRequired(cause, task) },
 	})
 }
 
@@ -449,7 +454,10 @@ export function moveTaskMutationOptions({reportErrors = true}: {reportErrors?: b
 			if (id !== undefined) reconcileTaskBuckets(client, {project, view, bucket: target, task: id})
 		},
 		onSettled: ({task}, client) => invalidateTaskMembership(client, task.id),
-		toastError: () => reportErrors,
+		toastError: (_input, cause) => reportErrors && !isDoneRequiresApproval(cause),
+		onFailure: (cause, {task}) => {
+			if (reportErrors) handleApprovalRequired(cause, task)
+		},
 	})
 }
 

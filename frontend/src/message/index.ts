@@ -67,7 +67,16 @@ function toast(type: 'error' | 'success', title: string, e: unknown, actions: Ac
 	})
 }
 
+const answeredErrors = new WeakSet<object>()
+
+// An error a caller already explained to the user in its own way. Callers that let it propagate
+// (an async event handler ends in the global handler) must not get a second, raw toast for it.
+export function markErrorAnswered(e: unknown) {
+	if (e !== null && typeof e === 'object') answeredErrors.add(e)
+}
+
 export function error(e: unknown, actions: Action[] = []) {
+	if (e !== null && typeof e === 'object' && answeredErrors.has(e)) return
 	// The 3s library default is too short to notice and read an error.
 	toast('error', i18n.global.t('error.error'), e, actions, {duration: 10_000})
 }

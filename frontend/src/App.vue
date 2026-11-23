@@ -37,6 +37,7 @@
 		<Teleport to="body">
 			<BottomBanners v-if="!isQuickAddMode" />
 			<Notification />
+			<ApprovalRequestHost />
 		</Teleport>
 	</Ready>
 </template>
@@ -47,6 +48,7 @@ import {useRoute, useRouter} from 'vue-router'
 import isTouchDevice from 'is-touch-device'
 
 import Notification from '@/components/misc/Notification.vue'
+import ApprovalRequestHost from '@/components/approvals/ApprovalRequestHost.vue'
 import BottomBanners from '@/components/home/BottomBanners.vue'
 import KeyboardShortcuts from '@/components/misc/keyboard-shortcuts/index.vue'
 

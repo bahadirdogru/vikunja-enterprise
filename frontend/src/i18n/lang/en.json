@@ -2,6 +2,15 @@
   "approvals": {
     "title": "Approvals",
     "requested": "Approval requested",
+    "doneBlocked": {
+      "needsDone": "The task was not marked as done: \"{status}\" needs an approval first.",
+      "needsReopen": "The task was not reopened: \"{status}\" needs an approval first.",
+      "needsGeneric": "The task was not changed: this status change needs an approval first.",
+      "request": "Request approval",
+      "pending": "An approval for \"{status}\" is already waiting for a decision. The task stays as it is until it is approved.",
+      "pendingGeneric": "An approval for this status change is already waiting for a decision. The task stays as it is until it is approved.",
+      "open": "Open task"
+    },
     "approve": "Approve",
     "reject": "Reject",
     "requestedBy": "Requested by",

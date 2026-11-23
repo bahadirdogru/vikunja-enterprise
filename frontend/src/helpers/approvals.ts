@@ -272,7 +272,16 @@ export type ApprovalProblem =
 	| {kind: 'notApprover'}
 	| {kind: 'selfDecision'}
 	| {kind: 'noApprovers'}
-	| {kind: 'doneRequiresApproval', toStatusId: number}
+	| {
+		kind: 'doneRequiresApproval'
+		taskId: number
+		fromStatusTitle: string
+		toStatusId: number
+		toStatusTitle: string
+		toStatusCategory: string
+		// The open request for the same status, 0 when there is none.
+		pendingApprovalId: number
+	}
 	| {kind: 'notFound'}
 	| {kind: 'invalidRequest', message: string}
 	| {kind: 'linkShare'}
@@ -303,7 +312,12 @@ export function readApprovalProblem(cause: unknown): ApprovalProblem {
 		case APPROVAL_ERROR_CODE.doneRequiresApproval:
 			return {
 				kind: 'doneRequiresApproval',
+				taskId: typeof details.task_id === 'number' ? details.task_id : 0,
+				fromStatusTitle: typeof details.from_status_title === 'string' ? details.from_status_title : '',
 				toStatusId: typeof details.to_status_id === 'number' ? details.to_status_id : 0,
+				toStatusTitle: typeof details.to_status_title === 'string' ? details.to_status_title : '',
+				toStatusCategory: typeof details.to_status_category === 'string' ? details.to_status_category : '',
+				pendingApprovalId: typeof details.pending_approval_id === 'number' ? details.pending_approval_id : 0,
 			}
 		case APPROVAL_ERROR_CODE.notFound:
 			return {kind: 'notFound'}
