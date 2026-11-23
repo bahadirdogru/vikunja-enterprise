@@ -804,6 +804,7 @@
 				"intro": "Görevleri filtrelemek için SQL benzeri bir sorgu dili kullanabilirsin. Kullanabileceğin alanlar:",
 				"link": "Nasıl çalışır?",
 				"canUseDatemath": "Göreceli tarihler belirlemek için tarih matematiği kullanabilirsin. Detaylar için sorgudaki tarih değerine tıkla.",
+				"customFields": "Özel alanlar adlarıyla yazılır, örneğin Bütçe > 100. Boşluk içeren adları çift tırnak içine al: \"Maliyet merkezi\" = a. Seçim alanlarında seçenek başlıklarını kullan: Aşama in İnceleme, Bitti. İki alanın adı aynıysa projeyi ekle, örneğin \"Bütçe (Pazarlama)\".",
 				"fields": {
 					"done": "Görevin tamamlanıp tamamlanmadığı",
 					"priority": "Görevin öncelik seviyesi (1-5)",

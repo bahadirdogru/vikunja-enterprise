@@ -38,6 +38,7 @@ const showDocs = ref(false)
 			<li><code>updated</code>: {{ $t('filters.query.help.fields.updated') }}</li>
 		</ul>
 		<p>{{ $t('filters.query.help.canUseDatemath') }}</p>
+		<p>{{ $t('filters.query.help.customFields') }}</p>
 		<p>{{ $t('filters.query.help.operators.intro') }}</p>
 		<ul>
 			<li><code>!=</code>: {{ $t('filters.query.help.operators.notEqual') }}</li>

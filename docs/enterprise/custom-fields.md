@@ -1,8 +1,7 @@
 # Custom fields — design
 
 Status: backend done (step 1a), filtering and sorting done, display in task
-lists, table columns and kanban cards done. Frontend filter/sort UI follows in
-a later step.
+lists, table columns and kanban cards done, filter input with field names done.
 
 ## Model
 
@@ -131,6 +130,53 @@ built-in fields, `&&`, `||` and groups.
 - The check happens when the query runs, so a saved filter is accepted as long
   as it parses; it fails (and is skipped when matching tasks to views) if the
   field was deleted.
+
+### Field names in the filter input
+
+The filter input in the UI never shows `cf_<id>`. It shows the field name and
+translates to and from the API form, also when a saved filter is loaded.
+Nothing changes on the API: the stored filter string keeps `cf_<id>` and option
+ids, so renaming a field does not break a saved filter.
+
+| Shown in the input | Sent to the API |
+|---|---|
+| `Budget > 100` | `cf_12 > 100` |
+| `"Cost center" like abc` | `cf_3 like abc` |
+| `Stage in Review, "Won, closed"` | `cf_4 in 31, 32` |
+| `"Go live" < now/w+1w` | `cf_5 < now/w+1w` |
+| `Owner in alice, bob` | `cf_6 in alice, bob` |
+
+- **Quoting.** A name made only of letters, digits and `_` is written as it is.
+  Anything else (spaces, punctuation) is double quoted; `\"` and `\\` escape a
+  quote and a backslash inside. Matching is case-insensitive. Select option
+  titles follow the same rule, and a title with a comma is quoted in lists.
+- **Built-in names win.** A bare `done`, `priority`, `labels`, ... is always the
+  built-in field. A custom field with such a name is written quoted
+  (`"Priority" > 2`); the input does this by itself when it displays the filter.
+  A quoted name never means a built-in field.
+- **Where a field is looked up.** In a project view the fields of that project.
+  In saved filters and other cross-project places the fields of every
+  non-archived project the user can read; they are fetched when the filter
+  already uses one or the user starts typing in the input.
+- **Name collisions.** Fields whose names are equal (ignoring case) cannot be
+  addressed by that name. Each gets the project title appended,
+  `Budget (Marketing)`, and if that is still equal the field id,
+  `Budget (Marketing) #12`. The order that decides this is project id, field
+  position, field id, so the same set of fields always gets the same names. The
+  plain name of a colliding field is not resolved and the API answers with the
+  usual unknown-field `400`.
+- **Values.** Select and multi-select option titles are turned into option ids
+  (and back); text that matches no option is sent unchanged and fails in the
+  API like a wrong id. Numbers, text, checkbox values and dates are not
+  touched, so date math works as before, and the date picker opens when
+  clicking a date value of a date field. User values are sent as typed
+  (usernames are accepted by the API); the assignee autocomplete suggests them.
+  User ids from an old filter stay as ids.
+- **Autocomplete.** At the start of an expression, after one typed character,
+  the field names are suggested; after the operator of a select field the
+  option titles, after the operator of a user field the users.
+- **Fallbacks.** A raw `cf_<id>` still works when typed, and a field that is not
+  known (deleted, not readable) stays as `cf_<id>` in the display.
 
 Sorting: `sort_by=cf_<fieldID>` with `order_by=asc|desc` works for all
 single-value types. Select fields sort by option position, not option id.

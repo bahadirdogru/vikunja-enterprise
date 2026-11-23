@@ -856,6 +856,7 @@
         "intro": "To filter tasks, you can use a query syntax similar to SQL. The available fields for filtering include:",
         "link": "How does this work?",
         "canUseDatemath": "You can use date math to set relative dates. Click on the date value in a query to find out more.",
+        "customFields": "Custom fields are written by their name, for example Budget > 100. Put names with spaces in double quotes: \"Cost center\" = a. For select fields use the option titles: Stage in Review, Done. If two fields have the same name, add the project, for example \"Budget (Marketing)\".",
         "fields": {
           "done": "Whether the task is completed or not",
           "priority": "The priority level of the task (1-5)",

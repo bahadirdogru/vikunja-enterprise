@@ -1,12 +1,19 @@
 <script setup lang="ts">
-import {onBeforeUnmount, onMounted, ref, watch} from 'vue'
+import {onBeforeUnmount, onMounted, ref, shallowRef, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import DatepickerWithValues from '@/components/date/DatepickerWithValues.vue'
 import {useLabels} from '@/composables/useLabels'
 import {useProjects} from '@/composables/useProjects'
 import {queryClient} from '@/client/queryClient'
 import {workflowKeys, workflowQuery} from '@/client/queries/workflow'
+import {customFieldsQuery} from '@/client/queries/customFields'
 import type {WorkflowResponse} from '@/helpers/workflow'
+import {
+	buildCustomFieldRefs,
+	customFieldFilterFromApi,
+	customFieldFilterToApi,
+	type CustomFieldFilterRef,
+} from '@/helpers/customFieldFilter'
 import {
 	transformFilterStringForApi,
 	transformFilterStringFromApi,
@@ -37,6 +44,11 @@ const {t} = useI18n()
 const {labels, isPending, getLabelByExactTitle, getLabelById} = useLabels()
 const projectList = useProjects()
 
+// The custom fields the filter can address by name: those of the project, or in saved filters
+// and other cross-project places those of every project the user can see.
+const customFieldRefs = shallowRef<CustomFieldFilterRef[]>([])
+let customFieldsLoad: Promise<CustomFieldFilterRef[]> | undefined
+
 // Date picker functionality
 const currentOldDatepickerValue = ref('')
 const currentDatepickerValue = ref('')
@@ -50,7 +62,7 @@ const FilterHighlighter = Extension.create({
 
 	addProseMirrorPlugins() {
 		return [
-			createFilterHighlighter(() => labels.value),
+			createFilterHighlighter(() => labels.value, () => customFieldRefs.value),
 		]
 	},
 })
@@ -113,6 +125,7 @@ const editor = useEditor({
 			get projectId() {
 				return props.projectId
 			},
+			getCustomFields: loadCustomFields,
 		}),
 		Extension.create({
 			name: 'enterHandler',
@@ -150,7 +163,7 @@ const workflowStatuses = () => props.projectId
 // Process the editor content to output snake_cased filter
 const processContent = (content: string) => {
 	return transformFilterStringForApi(
-		content,
+		customFieldFilterToApi(content, customFieldRefs.value),
 		labelTitle => getLabelByExactTitle(labelTitle)?.id || null,
 		projectTitle => {
 			const found = projectList.findProjectByExactname(projectTitle)
@@ -185,7 +198,51 @@ watch(
 onMounted(() => {
 	setEditorContentFromModelValue(props.modelValue)
 	loadWorkflowStatuses()
+	// A single project is cheap. Across all projects the fields are only fetched once the filter
+	// needs them: it already uses one, or the user starts typing a name.
+	if (props.projectId || /\bcf_\d+/.test(props.modelValue ?? '')) {
+		loadCustomFields()
+	}
 })
+
+watch(() => props.projectId, () => {
+	customFieldsLoad = undefined
+	customFieldRefs.value = []
+	loadCustomFields()
+})
+
+function loadCustomFields(): Promise<CustomFieldFilterRef[]> {
+	customFieldsLoad ??= fetchCustomFields()
+	return customFieldsLoad
+}
+
+async function fetchCustomFields(): Promise<CustomFieldFilterRef[]> {
+	const projectIds = props.projectId
+		? [props.projectId]
+		: (projectList.projectsArray ?? []).filter(project => project.id > 0 && !project.is_archived).map(project => project.id)
+
+	const results = await Promise.allSettled(projectIds.map(id => queryClient.ensureQueryData(customFieldsQuery(id))))
+	const fields = results.flatMap(result => result.status === 'fulfilled' ? result.value : [])
+	const refs = buildCustomFieldRefs(fields, id => projectList.projects[id]?.title)
+	if (!editor.value) {
+		return refs
+	}
+	customFieldRefs.value = refs
+	editor.value.view.dispatch(editor.value.state.tr.setMeta(filterHighlighterKey, true))
+
+	// Names only show once the fields are there; texts the user changed meanwhile are sent again with names resolved.
+	const text = editor.value.getText()
+	if (text === lastSetContent) {
+		setEditorContentFromModelValue(props.modelValue)
+	} else if (refs.length > 0) {
+		const processed = processContent(text)
+		if (processed !== lastEmittedValue) {
+			lastEmittedValue = processed
+			emit('update:modelValue', processed)
+		}
+	}
+	return refs
+}
 
 // Status ids in the filter only show as titles once the workflow is there; texts the user changed meanwhile stay.
 async function loadWorkflowStatuses() {
@@ -222,12 +279,12 @@ watch(labels, () => {
 function setEditorContentFromModelValue(newValue: string | undefined) {
 	if (!editor.value) return
 
-	const content = newValue ? transformFilterStringFromApi(
+	const content = newValue ? customFieldFilterFromApi(transformFilterStringFromApi(
 		newValue,
 		labelId => getLabelById(labelId)?.title || null,
 		projectId => projectList.projects[projectId]?.title || null,
 		statusId => workflowStatuses().find(status => status.id === statusId)?.title || null,
-	) : ''
+	), customFieldRefs.value) : ''
 	lastSetContent = content
 
 	if (editor.value.getText() !== content) {

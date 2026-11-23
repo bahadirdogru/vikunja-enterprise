@@ -15,20 +15,24 @@ import type {Label} from '@/client/generated'
 import {getLabelColor} from '@/composables/useLabelStyles'
 import {getTextColor} from '@/helpers/color/getTextColor'
 import {Node} from '@tiptap/pm/model'
+import {findCustomFieldExpressions, type CustomFieldFilterRef} from '@/helpers/customFieldFilter'
 
 export const filterHighlighterKey = new PluginKey<DecorationSet>('filterHighlighter')
 
-export function createFilterHighlighter(getLabels: () => Label[]) {
+export function createFilterHighlighter(
+	getLabels: () => Label[],
+	getCustomFields: () => CustomFieldFilterRef[] = () => [],
+) {
 	return new Plugin({
 		key: filterHighlighterKey,
 		state: {
 			init(_, state: EditorState) {
-				return decorateDocument(state.doc, getLabels())
+				return decorateDocument(state.doc, getLabels(), getCustomFields())
 			},
 			apply(tr: Transaction, oldState) {
 				if (!tr.docChanged && !tr.getMeta(filterHighlighterKey)) return oldState
 
-				return decorateDocument(tr.doc, getLabels())
+				return decorateDocument(tr.doc, getLabels(), getCustomFields())
 			},
 		},
 		props: {
@@ -39,7 +43,7 @@ export function createFilterHighlighter(getLabels: () => Label[]) {
 	})
 }
 
-export function decorateDocument(doc: Node, labels: Label[]) {
+export function decorateDocument(doc: Node, labels: Label[], customFields: CustomFieldFilterRef[] = []) {
 	const decorations: Decoration[] = []
 
 	const text = doc.textContent
@@ -244,6 +248,34 @@ export function decorateDocument(doc: Node, labels: Label[]) {
 			}
 		}
 	}
+
+	// Custom fields are written by their name: the name is a field, the value a value (a date for date fields).
+	findCustomFieldExpressions(text, customFields).forEach(({expression, field}) => {
+		const nameFrom = findPosForIndex(doc, expression.nameStart)
+		const nameTo = findPosForIndex(doc, expression.nameEnd)
+		if (nameFrom !== null && nameTo !== null) {
+			decorations.push(Decoration.inline(nameFrom, nameTo, {class: 'field'}))
+			valueRanges.push({start: expression.nameStart, end: expression.nameEnd})
+		}
+
+		if (expression.valueEnd <= expression.valueStart) {
+			return
+		}
+		const valueFrom = findPosForIndex(doc, expression.valueStart)
+		const valueTo = findPosForIndex(doc, expression.valueEnd)
+		if (valueFrom === null || valueTo === null) {
+			return
+		}
+		const valueText = text.slice(expression.valueStart, expression.valueEnd)
+		decorations.push(Decoration.inline(valueFrom, valueTo, field.type === 'date'
+			? {
+				class: 'date-value',
+				'data-date-value': valueText,
+				'data-position': expression.valueStart.toString(),
+			}
+			: {class: 'value'}))
+		valueRanges.push({start: expression.valueStart, end: expression.valueEnd})
+	})
 
 	// Helper function to check if a range overlaps with any value range
 	const overlapsWithValue = (start: number, end: number): boolean => {

@@ -17,6 +17,12 @@ import {
 	STATUS_FIELDS,
 } from '@/helpers/filters'
 import {WORKFLOW_CATEGORIES} from '@/helpers/workflow'
+import {
+	detectCustomFieldAutocomplete,
+	suggestCustomFieldNames,
+	suggestCustomFieldOptions,
+	type CustomFieldFilterRef,
+} from '@/helpers/customFieldFilter'
 import {queryClient} from '@/client/queryClient'
 import {workflowQuery} from '@/client/queries/workflow'
 
@@ -29,6 +35,8 @@ import type {ProjectResponse} from '@/client/queries/projects'
 
 export interface FilterAutocompleteOptions {
 	projectId?: number
+	// The custom fields that can be addressed by name. May load them on first use.
+	getCustomFields?: () => Promise<CustomFieldFilterRef[]>
 }
 
 interface AutocompleteContext {
@@ -48,9 +56,11 @@ interface SuggestionItem {
 	title?: string
 	username?: string
 	name?: string
+	// What is written into the filter instead of the title (custom field names and options).
+	insertText?: string
 }
 
-export type AutocompleteField = 'labels' | 'users' | 'projects' | 'status' | 'statusCategory'
+export type AutocompleteField = 'labels' | 'users' | 'projects' | 'status' | 'statusCategory' | 'customFields' | 'customFieldOptions'
 
 /**
  * Calculates the replacement range for autocomplete selection.
@@ -92,7 +102,7 @@ export function calculateReplacementRange(
 export interface AutocompleteItem {
 	id: number | string
 	title: string
-	item: Label | IUser | ProjectResponse | {id: number | string, title: string}
+	item: Label | IUser | ProjectResponse | {id: number | string, title: string, insertText?: string}
 	fieldType: AutocompleteField
 	context: AutocompleteContext
 }
@@ -103,6 +113,7 @@ export default Extension.create<FilterAutocompleteOptions>({
 	addOptions() {
 		return {
 			projectId: undefined,
+			getCustomFields: undefined,
 		}
 	},
 
@@ -327,7 +338,35 @@ export default Extension.create<FilterAutocompleteOptions>({
 			let autocompleteContext: AutocompleteContext | null = null
 			let fieldType: AutocompleteField | null = null
 
-			for (const field of AUTOCOMPLETE_FIELDS) {
+			// Loading the fields of every project is left until the user is working in the input.
+			const customFields = this.options.getCustomFields && view.hasFocus() ? await this.options.getCustomFields() : []
+			const custom = detectCustomFieldAutocomplete(textUpToCursor, customFields)
+			let customSuggestions: SuggestionItem[] | undefined
+			if (custom) {
+				const keyword = textUpToCursor.slice(custom.start)
+				autocompleteContext = {
+					field: custom.field?.name ?? 'customField',
+					prefix: '',
+					keyword,
+					search: custom.search,
+					operator: custom.operator ?? '',
+					startPos: custom.start,
+					endPos: custom.end,
+					isComplete: isFilterExpressionComplete(text.substring(from), keyword, custom.operator ?? ''),
+					quoteChar: custom.quoteChar,
+				}
+				if (custom.kind === 'name') {
+					fieldType = 'customFields'
+					customSuggestions = suggestCustomFieldNames(customFields, custom.search)
+				} else if (custom.field?.type === 'user') {
+					fieldType = 'users'
+				} else {
+					fieldType = 'customFieldOptions'
+					customSuggestions = suggestCustomFieldOptions(custom.field!, custom.operator ?? '', custom.search, custom.quoteChar)
+				}
+			}
+
+			for (const field of custom ? [] : AUTOCOMPLETE_FIELDS) {
 				const pattern = new RegExp(`(${field}\\s*${FILTER_OPERATORS_REGEX}\\s*)(["']?)([^"'&|()]*)?$`, 'ig')
 				const match = pattern.exec(textUpToCursor)
 
@@ -384,7 +423,7 @@ export default Extension.create<FilterAutocompleteOptions>({
 				return
 			}
 
-			const suggestions = await fetchSuggestions(autocompleteContext, fieldType)
+			const suggestions = customSuggestions ?? await fetchSuggestions(autocompleteContext, fieldType)
 
 			const items = suggestions.map(item => ({
 				id: item.id,
@@ -415,7 +454,9 @@ export default Extension.create<FilterAutocompleteOptions>({
 							// Handle selection
 							const newValue = item.fieldType === 'users'
 								? (item.item as IUser).username
-								: (item.item as ProjectResponse | Label).title
+								: (item.fieldType === 'customFields' || item.fieldType === 'customFieldOptions')
+									? (item.item as {insertText?: string}).insertText
+									: (item.item as ProjectResponse | Label).title
 							// Use currentAutocompleteContext (outer variable) for up-to-date positions
 							// The local autocompleteContext would be stale since this callback
 							// was created on first component render

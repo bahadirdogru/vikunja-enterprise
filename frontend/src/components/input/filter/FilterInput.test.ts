@@ -74,6 +74,16 @@ vi.mock('@tiptap/vue-3', async () => {
 	}
 })
 
+vi.mock('@/client/queries/customFields', () => ({
+	customFieldsQuery: (projectId: number) => ({
+		queryKey: ['test-custom-fields', projectId],
+		queryFn: async () => [
+			{id: 4, project_id: projectId, title: 'Stage', type: 'select', position: 1, options: [{id: 31, title: 'Review'}]},
+			{id: 5, project_id: projectId, title: 'Cost center', type: 'text', position: 2, options: []},
+		],
+	}),
+}))
+
 import FilterInput from './FilterInput.vue'
 
 describe('FilterInput label loading', () => {
@@ -113,6 +123,41 @@ describe('FilterInput label loading', () => {
 		await nextTick()
 
 		expect(editorState.text).toBe('labels = Personal')
+		wrapper.unmount()
+	})
+})
+
+describe('FilterInput custom fields', () => {
+	beforeEach(() => {
+		editorState.text = ''
+		editorState.dispatch.mockReset()
+		labelState.labels!.value = []
+		labelState.isPending!.value = false
+	})
+
+	it('shows custom field names and option titles once the fields are loaded', async () => {
+		const wrapper = shallowMount(FilterInput, {
+			props: {modelValue: 'cf_5 like x && cf_4 = 31', projectId: 1},
+			global: {mocks: {$t: (key: string) => key}},
+		})
+		expect(editorState.text).toBe('cf_5 like x && cf_4 = 31')
+
+		await vi.waitFor(() => expect(editorState.text).toBe('"Cost center" like x && Stage = Review'))
+		wrapper.unmount()
+	})
+
+	it('sends names as ids and keeps the display text', async () => {
+		const emitted: string[] = []
+		const wrapper = shallowMount(FilterInput, {
+			props: {modelValue: '', projectId: 1, 'onUpdate:modelValue': (value: string) => emitted.push(value)},
+			global: {mocks: {$t: (key: string) => key}},
+		})
+		await vi.waitFor(() => expect(editorState.dispatch).toHaveBeenCalled())
+
+		editorState.text = '"Cost center" like x && Stage = Review'
+		editorState.options!.onUpdate({editor: editorState.editor!})
+
+		expect(emitted.at(-1)).toBe('cf_5 like x && cf_4 = 31')
 		wrapper.unmount()
 	})
 })
