@@ -480,3 +480,38 @@ func TestSchedule_DaylightSavingTime(t *testing.T) {
 		assert.Equal(t, []bool{true, false, true}, got)
 	})
 }
+
+// A schedule with an occurrence every minute and a gap of a year (more occurrences than the search walks through)
+// fires once, and not again on the ticks that follow.
+func TestSchedule_AGapOfAYearFiresOnceNotOnEveryTick(t *testing.T) {
+	reset(t)
+	clearTasks(t, projectOwned)
+	advance := fakeClock(t)
+	addRule(t, projectOwned, user1, rule(spec.TriggerSchedule, map[string]any{"cron": "* * * * *"}, nil, setPriority(1)))
+	newTask(t, projectOwned, "t", user1)
+
+	advance(365 * 24 * time.Hour)
+	assert.Equal(t, 1, tick(t))
+	assert.Zero(t, tick(t), "the same minute again")
+	advance(10 * time.Second)
+	assert.Zero(t, tick(t))
+	advance(time.Minute)
+	assert.Equal(t, 1, tick(t), "the next occurrence")
+	assert.Zero(t, tick(t))
+}
+
+func TestLatestOccurrence_FindsTheLatestForDenseAndSparseSchedules(t *testing.T) {
+	loc := time.UTC
+	base := time.Date(2025, 1, 1, 0, 0, 0, 0, loc)
+	at := time.Date(2026, 3, 4, 5, 6, 30, 0, loc)
+	for expr, want := range map[string]time.Time{
+		"* * * * *":      time.Date(2026, 3, 4, 5, 6, 0, 0, loc),
+		"*/7 * * * *":    time.Date(2026, 3, 4, 5, 0, 0, 0, loc),
+		"0 9-17 * * 1-5": time.Date(2026, 3, 3, 17, 0, 0, 0, loc),
+		"@yearly":        time.Date(2026, 1, 1, 0, 0, 0, 0, loc),
+	} {
+		sched, err := spec.CronParser.Parse(expr)
+		require.NoError(t, err)
+		assert.Equal(t, want, latestOccurrence(sched, base, at), expr)
+	}
+}

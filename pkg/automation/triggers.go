@@ -352,16 +352,43 @@ func ownerMayFire(rule *models.AutomationRule) (bool, error) {
 	return false, s.Commit()
 }
 
+// maxOccurrenceSteps bounds how many occurrences latestOccurrence walks through in one go.
+const maxOccurrenceSteps = 10000
+
 // latestOccurrence returns the last cron occurrence in (base, at], zero when there is none. A server that was down
-// for a while fires once for everything it missed, not once per missed occurrence.
+// for a while fires once for everything it missed, not once per missed occurrence, however long it was away.
 func latestOccurrence(sched interface{ Next(time.Time) time.Time }, base, at time.Time) time.Time {
-	var last time.Time
+	last, capped := lastOccurrenceWithin(sched, base, at, maxOccurrenceSteps)
+	if !capped {
+		return last
+	}
+	// A dense schedule and a long gap: walking from the start would take as long as the gap is. The latest
+	// occurrence is near the end, so look at windows that end at "at" and grow until one holds an occurrence.
+	for window := time.Minute; ; window *= 8 {
+		start := at.Add(-window)
+		if !start.After(base) {
+			// The window reaches back to the start: nothing is left to skip. What the first walk found is a valid
+			// occurrence; the next tick continues from it.
+			return last
+		}
+		if found, _ := lastOccurrenceWithin(sched, start, at, maxOccurrenceSteps); !found.IsZero() {
+			return found
+		}
+	}
+}
+
+// lastOccurrenceWithin walks the occurrences after base up to at and returns the last one. capped is set when the
+// walk stopped at maxSteps while occurrences were left.
+func lastOccurrenceWithin(sched interface{ Next(time.Time) time.Time }, base, at time.Time, maxSteps int) (last time.Time, capped bool) {
 	next := sched.Next(base)
-	for i := 0; i < 100000 && !next.IsZero() && !next.After(at); i++ {
+	for i := 0; !next.IsZero() && !next.After(at); i++ {
+		if i == maxSteps {
+			return last, true
+		}
 		last = next
 		next = sched.Next(next)
 	}
-	return last
+	return last, false
 }
 
 func tickSchedule(rule *models.AutomationRule) (int, error) {
@@ -394,20 +421,15 @@ func tickSchedule(rule *models.AutomationRule) (int, error) {
 		return 0, err
 	}
 
-	// Find the work first (reads only), then claim and write in one transaction.
-	targets, note, err := scheduleTargets(rule, at)
-	if err != nil {
-		return 0, err
-	}
-
 	s := db.NewSession()
 	defer s.Close()
-	// The claim: the occurrence is stored as the last fired time, only when it is newer than what is stored. Of
-	// several replicas, exactly one changes the row.
+	// The claim comes first, so of several replicas only one scans the tasks: the occurrence is stored as the last
+	// fired time, only when it is newer than what is stored. Of several replicas, exactly one changes the row. The
+	// claim, the scan and the events share one transaction: a crash in between claims nothing.
 	affected, err := s.Where(builder.And(
 		builder.Eq{"id": rule.ID, "enabled": true},
 		builder.Or(builder.IsNull{"last_fired_at"}, builder.Lt{"last_fired_at": dbTime(due)}),
-	)).Cols("last_fired_at", "last_fire_note").NoAutoTime().Update(&models.AutomationRule{LastFiredAt: due, LastFireNote: truncate(note, 250)})
+	)).Cols("last_fired_at").NoAutoTime().Update(&models.AutomationRule{LastFiredAt: due})
 	if err != nil {
 		_ = s.Rollback()
 		return 0, err
@@ -415,6 +437,15 @@ func tickSchedule(rule *models.AutomationRule) (int, error) {
 	if affected != 1 {
 		_ = s.Rollback()
 		return 0, nil
+	}
+	targets, note, err := scheduleTargets(s, rule, at)
+	if err != nil {
+		_ = s.Rollback()
+		return 0, err
+	}
+	if _, err = s.ID(rule.ID).Cols("last_fire_note").NoAutoTime().Update(&models.AutomationRule{LastFireNote: truncate(note, 250)}); err != nil {
+		_ = s.Rollback()
+		return 0, err
 	}
 	owner, _ := user.GetUserByID(s, rule.OwnerID)
 	for _, taskID := range targets {
@@ -440,14 +471,12 @@ func tickSchedule(rule *models.AutomationRule) (int, error) {
 // scheduleTargets returns the tasks a schedule firing starts a run for: the tasks of the project that match the
 // conditions, up to the cap per tick. For the project scope it is a single entry without a task. note says what
 // happened (capped, or the number of tasks).
-func scheduleTargets(rule *models.AutomationRule, at time.Time) (targets []int64, note string, err error) {
+func scheduleTargets(s *xorm.Session, rule *models.AutomationRule, at time.Time) (targets []int64, note string, err error) {
 	if !spec.TriggerHasTask(rule.Trigger) {
 		return []int64{0}, "project: one run", nil
 	}
 	maxTasks := config.AutomationTickMaxTasks.GetInt()
 	maxScan := config.AutomationTickMaxScan.GetInt()
-	s := db.NewReadSession()
-	defer s.Close()
 
 	scanned := 0
 	capped := false
