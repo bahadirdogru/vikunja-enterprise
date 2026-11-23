@@ -16,7 +16,7 @@ The sketches below are schematic. They show structure, not appearance, and they 
 - [Forms](#forms)
 - [Empty, loading and error states](#empty-loading-and-error-states)
 - [Security-relevant UX](#security-relevant-ux)
-- [Not yet verified in a browser](#not-yet-verified-in-a-browser)
+- [Browser verification](#browser-verification)
 
 ## Principles
 
@@ -227,6 +227,8 @@ Failed queries toast through a global handler unless the consumer renders its ow
 - **Little traffic from the public form page.** A logged-out visitor sends only the instance `/info` the app always loads, the definition, and later the submission.
 - **Abuse protection stays out of the way.** The honeypot is invisible to people and assistive technology; a rate-limit answer shows the retry time.
 
-## Not yet verified in a browser
+## Browser verification
 
-Parts of the interface have been type-checked and unit-tested but have **not** been checked manually in a browser, as the [roadmap](docs/enterprise/ROADMAP.md) records: the form branding (brand name, accent colour, footer, logo), the newest dashboard widgets (time in status, workload, time tracking), CSV export and the previous-period comparison, and the automation editor support for the schedule, overdue, due soon, manual and incoming webhook triggers and the wait, create task and notify actions, including the manual run dialog. Earlier parts were exercised in a browser at the time they were built; the roadmap log lists what was and was not covered each time (for example, a server-side 422 on a form was only shown with a mocked response, and forbidden and team-restricted transitions were not exercised). The contrast behaviour of accent colours on real pages has not been checked, and no accessibility audit has been done. Treat the descriptions above of those newest parts as design intent confirmed by unit tests, and check the roadmap for the current state.
+The newest parts of the interface were exercised in a real browser (Chromium, through the Playwright specs in `frontend/tests/e2e/forms/form-branding.spec.ts`, `frontend/tests/e2e/dashboards/dashboard-widgets.spec.ts` and `frontend/tests/e2e/automation/automation-triggers-actions.spec.ts`), with screenshots reviewed at desktop width, at 390 px and in dark mode: form branding in the builder and on the public page, the time in status, workload and tracked time widgets, the previous-period comparison, CSV export, and the automation editor for the schedule, overdue, due soon, manual and incoming webhook triggers and the wait, create task and notify actions, including the manual run dialog and the `automation.notify` notification. That pass found and fixed four defects: unreadable link and button text for some accent colours on the public form, durations shown as bare seconds on chart axes, a widget preview that sent the previous type's configuration, and a wrapping accent swatch in the builder.
+
+Still not verified, as the [roadmap](docs/enterprise/ROADMAP.md) records: schedule, overdue and due-soon rules fired by the ticker and the continuation after a wait were not driven through the browser; the webhook signature header, the workload estimate field and a server-side validation error in the form builder were not exercised; the screens were checked in English only; the form builder's live preview does not show the accent colour; and no accessibility audit has been done. Earlier parts were exercised at the time they were built; the roadmap log lists what was and was not covered each time.
