@@ -1170,7 +1170,7 @@
                 {
                     "key": "maxdepth",
                     "default_value": "3",
-                    "comment": "How deep a chain of rules may go: an action of a rule can trigger another rule, whose action triggers a third one, and so on. Events caused by a chain longer than this are recorded as skipped runs and not executed."
+                    "comment": "How deep a chain of rules may go: an action of a rule can trigger another rule, whose action triggers a third one, and so on. Events caused by a chain longer than this are recorded as skipped runs and not executed. 0 forbids chains; a negative value is replaced by the default."
                 },
                 {
                     "key": "maxactions",
@@ -1190,7 +1190,7 @@
                 {
                     "key": "ratelimit",
                     "default_value": "60",
-                    "comment": "The maximum number of runs per rule per minute. Runs above the limit are recorded as skipped and not executed."
+                    "comment": "The maximum number of runs per rule per minute. Runs above the limit are recorded as skipped and not executed. 0 (or a negative value) turns the limit off."
                 },
                 {
                     "key": "workers",
@@ -1234,7 +1234,7 @@
                         {
                             "key": "maxtasks",
                             "default_value": "100",
-                            "comment": "The maximum number of runs one rule starts per tick (schedule: matching tasks; overdue / due soon: tasks). 0 means no cap (the scan limit still applies). When more tasks match, the rest is not started in this tick (a schedule tick records that it was capped on the rule; overdue and due soon pick up the rest on the next tick)."
+                            "comment": "The maximum number of runs one rule starts per tick (schedule: matching tasks; overdue / due soon: tasks). 0 (or a negative value) means no cap (the scan limit still applies). When more tasks match, the rest is not started in this tick (a schedule tick records that it was capped on the rule; overdue and due soon pick up the rest on the next tick)."
                         },
                         {
                             "key": "maxscan",

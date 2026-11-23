@@ -287,6 +287,19 @@ func TestAutomationLimitsAreClamped(t *testing.T) {
 		assert.Equal(t, defaultAutomationWebhookMaxBody, AutomationWebhookMaxBody.GetInt())
 		assert.Equal(t, defaultAutomationMaxPendingWaits, AutomationMaxPendingWaits.GetInt())
 	})
+	t.Run("a negative depth gets the default, a negative rate limit or task cap means off", func(t *testing.T) {
+		initConfigFromYAML(t, "automation:\n  maxdepth: -2\n  ratelimit: -1\n  ticker:\n    maxtasks: -7\n")
+
+		assert.Equal(t, defaultAutomationMaxDepth, AutomationMaxDepth.GetInt())
+		assert.Equal(t, 0, AutomationRateLimit.GetInt())
+		assert.Equal(t, 0, AutomationTickMaxTasks.GetInt())
+	})
+	t.Run("zero depth and rate limit are kept", func(t *testing.T) {
+		initConfigFromYAML(t, "automation:\n  maxdepth: 0\n  ratelimit: 0\n")
+
+		assert.Equal(t, 0, AutomationMaxDepth.GetInt())
+		assert.Equal(t, 0, AutomationRateLimit.GetInt())
+	})
 	t.Run("positive values are kept", func(t *testing.T) {
 		initConfigFromYAML(t, "automation:\n  ticker:\n    maxscan: 77\n  webhook:\n    maxbody: 1024\n  maxpendingwaits: 3\n")
 

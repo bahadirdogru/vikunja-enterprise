@@ -157,7 +157,15 @@ func ParseCron(expr string) (cron.Schedule, error) {
 	case strings.HasPrefix(lower, "tz=") || strings.HasPrefix(lower, "cron_tz="):
 		return nil, errors.New("a time zone prefix is not supported: schedules run in the time zone of the server")
 	}
-	return CronParser.Parse(expr)
+	sched, err := CronParser.Parse(expr)
+	if err != nil {
+		return nil, err
+	}
+	// 30 February parses and never happens: a schedule that cannot fire is a mistake, not a rule that waits.
+	if sched.Next(time.Now()).IsZero() {
+		return nil, errors.New("the schedule has no next occurrence (for example a day that no month has)")
+	}
+	return sched, nil
 }
 
 // MinWait is the shortest pause of the wait action.

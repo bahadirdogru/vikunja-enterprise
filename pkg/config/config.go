@@ -595,7 +595,7 @@ func initDefaultConfig() {
 	FormsPublicRequestRateLimit.setDefault(60)
 	// Automation
 	AutomationEnabled.setDefault(true)
-	AutomationMaxDepth.setDefault(3)
+	AutomationMaxDepth.setDefault(defaultAutomationMaxDepth)
 	AutomationMaxActions.setDefault(25)
 	AutomationStepTimeout.setDefault(10 * time.Second)
 	AutomationRunTimeout.setDefault(60 * time.Second)
@@ -1032,10 +1032,11 @@ const (
 	defaultAutomationTickMaxScan     = 5000
 	defaultAutomationWebhookMaxBody  = 64 * 1024
 	defaultAutomationMaxPendingWaits = 1000
+	defaultAutomationMaxDepth        = 3
 )
 
 // ClampAutomationLimits replaces automation limits that are zero or negative, where that has no defined meaning,
-// with their defaults. "No limit" is not offered for these: they protect the server from work that is not bounded
+// with their defaults; a negative max depth gets its default, a negative rate limit or task cap means 0 (off). "No limit" is not offered for these: they protect the server from work that is not bounded
 // otherwise.
 func ClampAutomationLimits() {
 	for key, fallback := range map[Key]int{
@@ -1046,6 +1047,18 @@ func ClampAutomationLimits() {
 		if key.GetInt() <= 0 {
 			log.Warningf("Configured %s is %d, which is not a limit: using %d", key, key.GetInt(), fallback)
 			key.Set(fallback)
+		}
+	}
+	// A negative depth would skip every run, which is not what anyone means: 0 is the way to forbid chains.
+	if AutomationMaxDepth.GetInt() < 0 {
+		log.Warningf("Configured %s is %d, which is not a limit: using %d", AutomationMaxDepth, AutomationMaxDepth.GetInt(), defaultAutomationMaxDepth)
+		AutomationMaxDepth.Set(defaultAutomationMaxDepth)
+	}
+	// 0 turns these two off, so a negative value means the same.
+	for _, key := range []Key{AutomationRateLimit, AutomationTickMaxTasks} {
+		if key.GetInt() < 0 {
+			log.Warningf("Configured %s is %d: treating it as 0 (off)", key, key.GetInt())
+			key.Set(0)
 		}
 	}
 }

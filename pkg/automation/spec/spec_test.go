@@ -425,7 +425,7 @@ func TestValidate_PayloadFieldsAndCron(t *testing.T) {
 	assert.Empty(t, Validate(&Doc{Trigger: hook, Conditions: good, Actions: []*Action{create}}, 25))
 	assert.NotEmpty(t, Validate(&Doc{Trigger: hook, Conditions: bad, Actions: []*Action{create}}, 25))
 
-	for expr, valid := range map[string]bool{"0 9 * * 1": true, "*/15 8-18 * * 1-5": true, "@hourly": true, "0 9 * *": false, "0 0 9 * * *": false, "nope": false} {
+	for expr, valid := range map[string]bool{"0 9 * * 1": true, "0 0 30 2 *": false, "0 0 31 4 *": false, "*/15 8-18 * * 1-5": true, "@hourly": true, "0 9 * *": false, "0 0 9 * * *": false, "nope": false} {
 		issues := Validate(&Doc{Trigger: Trigger{Type: TriggerSchedule, Options: map[string]any{"cron": expr}}, Actions: []*Action{{Type: ActionSetDone, Params: map[string]any{"done": true}}}}, 25)
 		assert.Equal(t, valid, len(issues) == 0, expr)
 	}
