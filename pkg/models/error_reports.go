@@ -282,3 +282,31 @@ func (err ErrReportTimeout) HTTPError() web.HTTPError {
 		Message:  "The report took too long. Narrow the filter or the time range.",
 	}
 }
+
+// ErrReportTooManyRows represents an error where a report or export would have to read more rows than allowed.
+type ErrReportTooManyRows struct {
+	Rows int64
+	Max  int
+}
+
+// IsErrReportTooManyRows checks if an error is ErrReportTooManyRows.
+func IsErrReportTooManyRows(err error) bool {
+	_, ok := err.(ErrReportTooManyRows)
+	return ok
+}
+
+func (err ErrReportTooManyRows) Error() string {
+	return fmt.Sprintf("Report would read too many rows [Rows: %d, Max: %d]", err.Rows, err.Max)
+}
+
+// ErrCodeReportTooManyRows holds the unique world-error code of this error
+const ErrCodeReportTooManyRows = 23010
+
+// HTTPError holds the http error description
+func (err ErrReportTooManyRows) HTTPError() web.HTTPError {
+	return web.HTTPError{
+		HTTPCode: http.StatusBadRequest,
+		Code:     ErrCodeReportTooManyRows,
+		Message:  fmt.Sprintf("This would need more than the allowed %d rows. Narrow the filter, the project or the time range.", err.Max),
+	}
+}

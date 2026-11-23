@@ -267,6 +267,7 @@ const (
 	ReportsMaxGroups                  Key = `reports.maxgroups`
 	ReportsMaxBuckets                 Key = `reports.maxbuckets`
 	ReportsTimeout                    Key = `reports.timeout`
+	ReportsMaxRows                    Key = `reports.maxrows`
 	AutomationScriptsEnabled          Key = `automation.scripts.enabled`
 	AutomationScriptsTimeout          Key = `automation.scripts.timeout`
 	AutomationScriptsConditionTimeout Key = `automation.scripts.conditiontimeout`
@@ -604,6 +605,7 @@ func initDefaultConfig() {
 	ReportsMaxGroups.setDefault(200)
 	ReportsMaxBuckets.setDefault(366)
 	ReportsTimeout.setDefault(20 * time.Second)
+	ReportsMaxRows.setDefault(50000)
 	AutomationScriptsEnabled.setDefault(true)
 	AutomationScriptsTimeout.setDefault(5 * time.Second)
 	AutomationScriptsConditionTimeout.setDefault(time.Second)

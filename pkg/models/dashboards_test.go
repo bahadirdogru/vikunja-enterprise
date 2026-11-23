@@ -357,6 +357,9 @@ func TestDashboard_Validation(t *testing.T) {
 		{"task list sort", &Dashboard{Title: "x", Widgets: []*DashboardWidget{widgetOf("task_list", map[string]any{"sort_by": []string{"nope"}})}}, "widgets[0].config.sort_by[0]", cfUser1},
 		{"status time needs a project", &Dashboard{Title: "x", Widgets: []*DashboardWidget{widgetOf("status_time", map[string]any{})}}, "widgets[0].config.project_id", cfUser1},
 		{"time tracking group", &Dashboard{Title: "x", Widgets: []*DashboardWidget{widgetOf("time_tracking", map[string]any{"group_by": "x"})}}, "widgets[0].config.group_by", cfUser1},
+		{"status time group", &Dashboard{Title: "x", Widgets: []*DashboardWidget{widgetOf("status_time", map[string]any{"project_id": 11, "group_by": "priority"})}}, "widgets[0].config.group_by", cfUser1},
+		{"status time unreadable project", &Dashboard{Title: "x", Widgets: []*DashboardWidget{widgetOf("status_time", map[string]any{"project_id": 3})}}, "widgets[0].config.project_id", &user.User{ID: 5}},
+		{"time tracking project the user cannot read", &Dashboard{Title: "x", Widgets: []*DashboardWidget{widgetOf("time_tracking", map[string]any{"project_id": 3})}}, "widgets[0].config.project_id", &user.User{ID: 5}},
 		{"time tracking date", &Dashboard{Title: "x", Widgets: []*DashboardWidget{widgetOf("time_tracking", map[string]any{"from": "bogus"})}}, "widgets[0].config.from", cfUser1},
 	}
 	for _, c := range invalid {
@@ -394,13 +397,26 @@ func TestDashboard_Validation(t *testing.T) {
 			widgetOf("task_list", map[string]any{"filter": "due_date < now", "sort_by": []string{"due_date", "id"}, "order_by": []string{"asc"}, "columns": []string{"title"}, "limit": 10}),
 			widgetOf("workload", map[string]any{"estimate_field": "cf_3", "project_id": 1}),
 			widgetOf("status_time", map[string]any{"project_id": 11, "from": "2026-01-01"}),
+			widgetOf("status_time", map[string]any{"project_id": 11, "group_by": "assignee", "filter": "done = false"}),
 			widgetOf("time_tracking", map[string]any{"group_by": "user", "from": "now-30d"}),
+			widgetOf("time_tracking", map[string]any{"group_by": "label", "project_id": 1}),
 			widgetOf("text", map[string]any{"text": "# hi"}),
 		}
 		d, err := saveDash(t, cfUser1, &Dashboard{Title: "All types", Widgets: valid})
 		require.NoError(t, err)
 		assert.Len(t, d.Widgets, len(valid))
 	})
+}
+
+func TestDashboard_NumberCompareTravelsWithTheRequest(t *testing.T) {
+	db.LoadAndAssertFixtures(t)
+	d, err := saveDash(t, cfUser1, &Dashboard{Title: "Compare", Widgets: []*DashboardWidget{
+		widgetOf("number", map[string]any{"request": map[string]any{"time": map[string]any{"field": "created", "from": "now-30d"}}, "compare": "previous_period"}),
+	}})
+	require.NoError(t, err)
+	cfg := d.Widgets[0].Config
+	assert.Equal(t, "previous_period", cfg["compare"])
+	assert.Equal(t, "previous_period", cfg["request"].(map[string]any)["compare"])
 }
 
 func TestDashboard_ProjectDashboardPinsItsProject(t *testing.T) {

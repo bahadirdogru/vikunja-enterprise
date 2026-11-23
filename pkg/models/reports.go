@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"sort"
 	"strconv"
 	"strings"
@@ -69,6 +70,17 @@ type ReportRequest struct {
 	Field              string      `json:"field,omitempty" doc:"The numeric field sum, avg, min and max work on: percent_done, time_spent (seconds of finished time entries) or cf_<id> of a number, currency, rating or progress field. Tasks without a value are ignored."`
 	Time               *ReportTime `json:"time,omitempty" doc:"Makes the report a time series: values are split into buckets of this date field."`
 	Limit              int         `json:"limit,omitempty" minimum:"0" doc:"Keep this many groups per level (20 when omitted); the rest is folded into one other group."`
+	Compare            string      `json:"compare,omitempty" enum:"previous_period" doc:"previous_period also computes the measure for the period of equal length right before the time range (the same number of buckets, shifted back) and returns it as comparison. Needs time and cannot be combined with group_by."`
+}
+
+// ReportComparison is the value of the previous period next to the value of the requested one.
+type ReportComparison struct {
+	Value        float64  `json:"value" doc:"The measure over the previous period."`
+	Total        int64    `json:"total" doc:"The number of distinct tasks of the previous period."`
+	Delta        float64  `json:"delta" doc:"value of the report minus the value of the previous period."`
+	DeltaPercent *float64 `json:"delta_percent" doc:"The change in percent of the previous value. null when the previous value is 0."`
+	From         string   `json:"from" doc:"Start of the previous period, RFC 3339."`
+	To           string   `json:"to" doc:"End of the previous period (exclusive), RFC 3339."`
 }
 
 // ReportPoint is the value of one time bucket.
@@ -103,17 +115,18 @@ type ReportTimeInfo struct {
 
 // TaskReport is the result of a report.
 type TaskReport struct {
-	Groups      []*ReportGroup  `json:"groups" doc:"The groups, largest value first. Empty without group_by."`
-	Series      []*ReportPoint  `json:"series,omitempty" doc:"The time series of all tasks, for a time series without group_by."`
-	Total       int64           `json:"total" doc:"The number of distinct tasks the report counted, also when a task is part of several groups."`
-	Value       float64         `json:"value" doc:"The measure over all counted tasks."`
-	Measure     string          `json:"measure"`
-	Field       string          `json:"field,omitempty"`
-	Unit        string          `json:"unit" doc:"What value counts: tasks, seconds or the unit of the field (empty)."`
-	MultiValued bool            `json:"multi_valued" doc:"True when a task can be part of several groups (assignee, label, multi select, user fields), so group values can add up to more than total."`
-	Excluded    int64           `json:"excluded,omitempty" doc:"Time series only: tasks that were left out because the date field is empty."`
-	Time        *ReportTimeInfo `json:"time,omitempty"`
-	Truncated   bool            `json:"truncated,omitempty" doc:"True when groups were folded into other."`
+	Groups      []*ReportGroup    `json:"groups" doc:"The groups, largest value first. Empty without group_by."`
+	Series      []*ReportPoint    `json:"series,omitempty" doc:"The time series of all tasks, for a time series without group_by."`
+	Total       int64             `json:"total" doc:"The number of distinct tasks the report counted, also when a task is part of several groups."`
+	Value       float64           `json:"value" doc:"The measure over all counted tasks."`
+	Measure     string            `json:"measure"`
+	Field       string            `json:"field,omitempty"`
+	Unit        string            `json:"unit" doc:"What value counts: tasks, seconds or the unit of the field (empty)."`
+	MultiValued bool              `json:"multi_valued" doc:"True when a task can be part of several groups (assignee, label, multi select, user fields), so group values can add up to more than total."`
+	Excluded    int64             `json:"excluded,omitempty" doc:"Time series only: tasks that were left out because the date field is empty."`
+	Time        *ReportTimeInfo   `json:"time,omitempty"`
+	Truncated   bool              `json:"truncated,omitempty" doc:"True when groups were folded into other."`
+	Comparison  *ReportComparison `json:"comparison,omitempty" doc:"The previous period, when compare is previous_period."`
 }
 
 // reportAgg accumulates the aggregates of a group, enough to fold groups together for every measure.
@@ -178,6 +191,7 @@ type reportPlan struct {
 	unit        string
 	loc         *time.Location
 	timeCfg     *reportTimePlan
+	cmpCfg      *reportTimePlan
 	limit       int
 	maxGroups   int
 }
@@ -189,6 +203,8 @@ type reportTimePlan struct {
 	join      *reportJoin
 	bounds    []time.Time
 	indexExpr string
+	// rangeCond restricts the tasks to the reported range. It is nil for a plan that only buckets (the workload
+	// report), which then reads every task of the base query.
 	rangeCond builder.Cond
 }
 
@@ -296,6 +312,9 @@ func buildReportPlan(s *xorm.Session, a web.Auth, in ReportRequest) (*reportPlan
 			return nil, err
 		}
 	}
+	if err = plan.buildCompare(); err != nil {
+		return nil, err
+	}
 	return plan, nil
 }
 
@@ -377,10 +396,15 @@ func (p *reportPlan) buildTime() error {
 		return err
 	}
 
-	column, joinTable, joinCond := reportTimeColumn(t.Field)
+	p.timeCfg = newReportTimePlan(t.Field, t.Bucket, bounds)
+	return nil
+}
+
+func newReportTimePlan(field, bucket string, bounds []time.Time) *reportTimePlan {
+	column, joinTable, joinCond := reportTimeColumn(field)
 	tp := &reportTimePlan{
-		field:     t.Field,
-		bucket:    t.Bucket,
+		field:     field,
+		bucket:    bucket,
 		column:    column,
 		bounds:    bounds,
 		indexExpr: reportBucketIndexExpr(column, bounds),
@@ -392,7 +416,42 @@ func (p *reportPlan) buildTime() error {
 	if joinTable != "" {
 		tp.join = &reportJoin{joinTable, joinCond}
 	}
-	p.timeCfg = tp
+	return tp
+}
+
+// buildCompare plans the previous period: as many buckets as the range has, shifted back by that many buckets, so a
+// range of three months is compared with the three months before it, whatever their length in days.
+func (p *reportPlan) buildCompare() error {
+	switch p.req.Compare {
+	case "":
+		return nil
+	case "previous_period":
+	default:
+		return ErrReportInvalidParameter{Param: "compare", Reason: fmt.Sprintf("%q is not previous_period", p.req.Compare)}
+	}
+	if p.timeCfg == nil {
+		return ErrReportInvalidParameter{Param: "compare", Reason: "needs time"}
+	}
+	if len(p.dims) > 0 {
+		return ErrReportInvalidParameter{Param: "compare", Reason: "cannot be combined with group_by"}
+	}
+	tp := p.timeCfg
+	n := len(tp.bounds) - 1
+	start := tp.bounds[0]
+	y, m, d := start.Date()
+	switch tp.bucket {
+	case ReportBucketMonth:
+		start = time.Date(y, m-time.Month(n), 1, 0, 0, 0, 0, start.Location())
+	case ReportBucketWeek:
+		start = time.Date(y, m, d-7*n, 0, 0, 0, 0, start.Location())
+	default:
+		start = time.Date(y, m, d-n, 0, 0, 0, 0, start.Location())
+	}
+	bounds := []time.Time{start}
+	for i := 0; i < n; i++ {
+		bounds = append(bounds, reportBucketNext(bounds[i], tp.bucket))
+	}
+	p.cmpCfg = newReportTimePlan(tp.field, tp.bucket, bounds)
 	return nil
 }
 
@@ -447,7 +506,7 @@ func (r *reportRun) query(groupDims []*reportDim, withBucket bool, extra builder
 	}
 
 	conds := []builder.Cond{builder.In("tasks.id", r.base)}
-	if tp != nil {
+	if tp != nil && tp.rangeCond != nil {
 		conds = append(conds, tp.rangeCond)
 	}
 	if extra != nil {
@@ -638,6 +697,12 @@ func (r *reportRun) execute() (*TaskReport, error) {
 	rep.Total = overall.n
 	rep.Value = overall.value(plan.measure)
 
+	if plan.cmpCfg != nil {
+		if rep.Comparison, err = r.compare(rep); err != nil {
+			return nil, err
+		}
+	}
+
 	if tp := plan.timeCfg; tp != nil {
 		rep.Time = &ReportTimeInfo{
 			Field:    tp.field,
@@ -719,6 +784,34 @@ func (r *reportRun) execute() (*TaskReport, error) {
 		rep.Groups = append(rep.Groups, g)
 	}
 	return rep, nil
+}
+
+// compare runs the totals of the previous period.
+func (r *reportRun) compare(rep *TaskReport) (*ReportComparison, error) {
+	prevPlan := *r.plan
+	prevPlan.timeCfg = r.plan.cmpCfg
+	prev := &reportRun{s: r.s, a: r.a, plan: &prevPlan, base: r.base}
+	rows, err := prev.query(nil, false, nil)
+	if err != nil {
+		return nil, err
+	}
+	var agg reportAgg
+	if len(rows) > 0 {
+		agg = rows[0].agg
+	}
+	tp := r.plan.cmpCfg
+	c := &ReportComparison{
+		Value: agg.value(r.plan.measure),
+		Total: agg.n,
+		From:  tp.bounds[0].In(r.plan.loc).Format(time.RFC3339),
+		To:    tp.bounds[len(tp.bounds)-1].In(r.plan.loc).Format(time.RFC3339),
+	}
+	c.Delta = rep.Value - c.Value
+	if c.Value != 0 {
+		pct := c.Delta / math.Abs(c.Value) * 100
+		c.DeltaPercent = &pct
+	}
+	return c, nil
 }
 
 func (r *reportRun) toGroup(n *reportNode) *ReportGroup {

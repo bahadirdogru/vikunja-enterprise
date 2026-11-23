@@ -59,14 +59,17 @@ type widgetWorkloadConfig struct {
 
 type widgetStatusTimeConfig struct {
 	ProjectID int64  `json:"project_id,omitempty"`
+	Filter    string `json:"filter,omitempty"`
+	GroupBy   string `json:"group_by,omitempty"`
 	From      string `json:"from,omitempty"`
 	To        string `json:"to,omitempty"`
 }
 
 type widgetTimeTrackingConfig struct {
-	From    string `json:"from,omitempty"`
-	To      string `json:"to,omitempty"`
-	GroupBy string `json:"group_by,omitempty"`
+	ProjectID int64  `json:"project_id,omitempty"`
+	From      string `json:"from,omitempty"`
+	To        string `json:"to,omitempty"`
+	GroupBy   string `json:"group_by,omitempty"`
 }
 
 type widgetTextConfig struct {
@@ -198,6 +201,10 @@ func (w *DashboardWidget) validate(s *xorm.Session, a web.Auth, dashboardProject
 		if err := scopeWidgetProject(s, a, dashboardProjectID, &c.Request.ProjectID, path+".config.request.project_id"); err != nil {
 			return err
 		}
+		if w.Type == WidgetTypeNumber && c.Compare != "" {
+			// The report computes the comparison, so the compare setting travels with the request.
+			c.Request.Compare = c.Compare
+		}
 		if err := validateWidgetShape(w.Type, c, path+".config"); err != nil {
 			return err
 		}
@@ -259,6 +266,12 @@ func (w *DashboardWidget) validate(s *xorm.Session, a web.Auth, dashboardProject
 		if c.ProjectID <= 0 {
 			return ErrDashboardInvalid{Param: path + ".config.project_id", Reason: "is required: statuses belong to the workflow of one project"}
 		}
+		if err := validateWidgetFilter(s, a, c.Filter); err != nil {
+			return err
+		}
+		if c.GroupBy != "" && !slices.Contains([]string{StatusTimeGroupAssignee, StatusTimeGroupLabel}, c.GroupBy) {
+			return ErrDashboardInvalid{Param: path + ".config.group_by", Reason: "must be assignee or label"}
+		}
 		if err := validateWidgetDates(path+".config", c.From, c.To); err != nil {
 			return err
 		}
@@ -268,8 +281,11 @@ func (w *DashboardWidget) validate(s *xorm.Session, a web.Auth, dashboardProject
 		if err := decodeWidgetConfig(w.Config, c, path); err != nil {
 			return err
 		}
-		if c.GroupBy != "" && !slices.Contains([]string{"user", "project", "day"}, c.GroupBy) {
-			return ErrDashboardInvalid{Param: path + ".config.group_by", Reason: "must be user, project or day"}
+		if err := scopeWidgetProject(s, a, dashboardProjectID, &c.ProjectID, path+".config.project_id"); err != nil {
+			return err
+		}
+		if c.GroupBy != "" && !slices.Contains([]string{TimeTrackingGroupUser, TimeTrackingGroupProject, TimeTrackingGroupLabel, TimeTrackingGroupDay}, c.GroupBy) {
+			return ErrDashboardInvalid{Param: path + ".config.group_by", Reason: "must be user, project, label or day"}
 		}
 		if err := validateWidgetDates(path+".config", c.From, c.To); err != nil {
 			return err
