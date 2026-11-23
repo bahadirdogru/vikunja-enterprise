@@ -18,6 +18,7 @@ package models
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"code.vikunja.io/api/pkg/db"
@@ -60,6 +61,12 @@ func TestWorkflow_DoneStartIsChecked(t *testing.T) {
 		err := createTaskAs(t, task, apU1)
 		require.Error(t, err)
 		assert.True(t, IsErrApprovalRequired(err), "got %T: %v", err, err)
+		required, ok := errors.AsType[ErrApprovalRequired](err)
+		require.True(t, ok)
+		assert.False(t, required.Requestable, "there is no task to request the approval for")
+		assert.Equal(t, env.done, required.ToStatusID)
+		assert.NotEmpty(t, required.ToStatusTitle, "named like the refusal of the checkbox")
+		assert.Equal(t, false, required.HTTPError().Details.(map[string]any)["requestable"])
 		db.AssertCount(t, "task_statuses", builder.Eq{"status_id": env.done}, 0)
 		db.AssertCount(t, "approval_requests", builder.Eq{"project_id": apProject}, 0)
 	})
@@ -122,6 +129,9 @@ func TestWorkflow_DoneStartIsChecked(t *testing.T) {
 		err := updateTaskAs(t, &Task{ID: 1, Title: "task #1", Done: true, ProjectID: apProject}, apU1)
 		require.Error(t, err)
 		assert.True(t, IsErrApprovalRequired(err), "got %T: %v", err, err)
+		required, ok := errors.AsType[ErrApprovalRequired](err)
+		require.True(t, ok)
+		assert.False(t, required.Requestable, "the move was rolled back, the task is still in its old project")
 		db.AssertCount(t, "task_statuses", builder.Eq{"status_id": env.done}, 0)
 		db.AssertExists(t, "tasks", map[string]interface{}{"id": 1, "project_id": 1}, false)
 	})

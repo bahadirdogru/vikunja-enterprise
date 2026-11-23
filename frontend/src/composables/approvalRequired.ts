@@ -48,7 +48,7 @@ export function handleApprovalRequired(cause: unknown, task: {id?: number, proje
 	if (status !== '') {
 		message = t(reopening ? 'approvals.doneBlocked.needsReopen' : 'approvals.doneBlocked.needsDone', {status})
 	}
-	error({message}, problem.toStatusId === 0 ? [] : [{
+	error({message}, problem.toStatusId === 0 || !problem.requestable ? [] : [{
 		title: t('approvals.doneBlocked.request'),
 		callback: () => {
 			approvalRequestTarget.value = {

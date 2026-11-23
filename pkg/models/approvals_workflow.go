@@ -59,6 +59,7 @@ func newErrApprovalRequired(s *xorm.Session, task *Task, from, to *WorkflowStatu
 		ToStatusID:       to.ID,
 		ToStatusTitle:    to.Title,
 		ToStatusCategory: string(to.Category),
+		Requestable:      true,
 	}
 	pending := &ApprovalRequest{}
 	has, lookupErr := s.Where(builder.And(

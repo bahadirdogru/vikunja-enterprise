@@ -210,6 +210,10 @@ type ErrApprovalRequired struct {
 	ToStatusCategory string
 	// PendingApprovalID is the open request for the same task and target status, 0 if there is none.
 	PendingApprovalID int64
+	// Requestable tells whether the client can ask for the approval with POST /tasks/{task}/status. It cannot when
+	// the refused change was the creation of a done task or the move of a done task into the project: the task is
+	// not in the project (any more), so there is nothing to request the approval for.
+	Requestable bool
 }
 
 // IsErrApprovalRequired checks if an error is ErrApprovalRequired.
@@ -240,6 +244,7 @@ func (err ErrApprovalRequired) HTTPError() web.HTTPError {
 			"to_status_category":  err.ToStatusCategory,
 			"pending_approval_id": err.PendingApprovalID,
 			"approval_pending":    err.PendingApprovalID != 0,
+			"requestable":         err.Requestable,
 		},
 	}
 }

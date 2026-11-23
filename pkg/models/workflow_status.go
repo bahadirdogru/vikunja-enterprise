@@ -253,7 +253,10 @@ func (d *workflowDef) checkDoneStart(s *xorm.Session, a web.Auth, t *Task) error
 		return err
 	}
 	if d.approvalRuleFor(from, to) != nil {
-		return ErrApprovalRequired{TaskID: t.ID, FromStatusID: from.ID, ToStatusID: to.ID}
+		// Nothing exists to request the approval for: the creation or the move is rolled back as a whole.
+		err := newErrApprovalRequired(s, t, from, to)
+		err.Requestable = false
+		return err
 	}
 	return nil
 }

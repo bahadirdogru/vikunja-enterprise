@@ -281,6 +281,9 @@ export type ApprovalProblem =
 		toStatusCategory: string
 		// The open request for the same status, 0 when there is none.
 		pendingApprovalId: number
+		// False when the refused change was a creation or a move into the project: the task is not there to
+		// request the approval for. Servers that do not say are treated as requestable.
+		requestable: boolean
 	}
 	| {kind: 'notFound'}
 	| {kind: 'invalidRequest', message: string}
@@ -318,6 +321,7 @@ export function readApprovalProblem(cause: unknown): ApprovalProblem {
 				toStatusTitle: typeof details.to_status_title === 'string' ? details.to_status_title : '',
 				toStatusCategory: typeof details.to_status_category === 'string' ? details.to_status_category : '',
 				pendingApprovalId: typeof details.pending_approval_id === 'number' ? details.pending_approval_id : 0,
+				requestable: details.requestable !== false,
 			}
 		case APPROVAL_ERROR_CODE.notFound:
 			return {kind: 'notFound'}

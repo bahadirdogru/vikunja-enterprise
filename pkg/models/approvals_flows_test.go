@@ -250,6 +250,7 @@ func TestApprovals_Callers(t *testing.T) {
 		assert.Equal(t, env.task.ID, required.TaskID)
 		assert.Equal(t, env.todo, required.FromStatusID)
 		assert.Equal(t, env.done, required.ToStatusID)
+		assert.True(t, required.Requestable, "the task is where it was, the approval can be requested")
 		assert.Equal(t, 409, required.HTTPError().HTTPCode)
 		assert.Equal(t, ErrCodeApprovalRequired, required.HTTPError().Code)
 

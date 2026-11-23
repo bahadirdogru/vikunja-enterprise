@@ -108,7 +108,9 @@ describe('problems', () => {
 			toStatusTitle: '',
 			toStatusCategory: '',
 			pendingApprovalId: 0,
+			requestable: true,
 		})
+		expect(readApprovalProblem({code: 24007, details: {to_status_id: 4, requestable: false}})).toMatchObject({requestable: false})
 		expect(readApprovalProblem({
 			code: 24007,
 			details: {
@@ -128,6 +130,7 @@ describe('problems', () => {
 			toStatusTitle: 'Done',
 			toStatusCategory: 'done',
 			pendingApprovalId: 12,
+			requestable: true,
 		})
 		expect(readApprovalProblem({code: 1})).toEqual({kind: 'other'})
 		expect(isDoneRequiresApproval({code: 24007})).toBe(true)
