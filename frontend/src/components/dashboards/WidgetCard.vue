@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import {computed, ref} from 'vue'
+import {computed, ref, toRef} from 'vue'
 import {useIsFetching} from '@tanstack/vue-query'
 import {useI18n} from 'vue-i18n'
 
 import {reportKeys} from '@/client/queries/reports'
 import {taskKeys} from '@/client/queries/tasks'
 import {useProjects} from '@/composables/useProjects'
+import {useWidgetExport} from '@/composables/useWidgetExport'
 import type {WidgetDisplay} from '@/helpers/dashboardDisplay'
 import {summarizeFilter, widgetFilter, widgetProjectId} from '@/helpers/dashboards'
 import Dropdown from '@/components/misc/Dropdown.vue'
@@ -44,6 +45,8 @@ const projectStore = useProjects()
 const queryClient = useQueryClient()
 const fetching = useIsFetching({predicate: query => query.queryKey[0] === reportKeys.all[0] || query.queryKey[0] === taskKeys.all[0]})
 const refreshing = ref(false)
+
+const widgetExport = useWidgetExport(toRef(props, 'type'), toRef(props, 'config'))
 
 const subtitle = computed(() => {
 	const parts: string[] = []
@@ -120,7 +123,7 @@ function setDisplay(patch: WidgetDisplay) {
 					<Icon icon="arrows-rotate" />
 				</BaseButton>
 				<Dropdown
-					v-if="canWrite || (isChart && hasLegendOptions)"
+					v-if="canWrite || (isChart && hasLegendOptions) || widgetExport.canExportData.value"
 					:trigger-label="t('dashboards.widget.menu', {title: heading})"
 				>
 					<template v-if="isChart && type === 'bar'">
@@ -143,6 +146,22 @@ function setDisplay(patch: WidgetDisplay) {
 						@click="setDisplay({legend: !(display.legend ?? true)})"
 					>
 						{{ t('dashboards.widget.toggleLegend') }}
+					</DropdownItem>
+					<DropdownItem
+						v-if="widgetExport.canExportData.value"
+						icon="download"
+						data-test="widget-export"
+						@click="widgetExport.exportData()"
+					>
+						{{ type === 'task_list' ? t('dashboards.widget.exportTasks') : t('dashboards.widget.exportCsv') }}
+					</DropdownItem>
+					<DropdownItem
+						v-if="widgetExport.canExportTasks.value"
+						icon="download"
+						data-test="widget-export-tasks"
+						@click="widgetExport.exportTasks()"
+					>
+						{{ t('dashboards.widget.exportTasks') }}
 					</DropdownItem>
 					<template v-if="canWrite">
 						<DropdownItem

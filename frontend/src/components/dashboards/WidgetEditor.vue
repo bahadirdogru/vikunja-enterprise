@@ -99,8 +99,20 @@ const fieldOptions = computed(() => [
 const timeFieldOptions = computed(() => (opts.value?.time_fields ?? []).map(f => ({value: f.name, label: label(f)})))
 const bucketOptions = computed(() => (opts.value?.buckets ?? ['day', 'week', 'month']).map(b => ({value: b, label: t(`dashboards.buckets.${b}`)})))
 const presetOptions = computed(() => [
+	...(draft.type === 'status_time' ? [{value: 'all', label: t('dashboards.ranges.all')}] : []),
 	...RANGE_PRESETS.map(p => ({value: p, label: t(`dashboards.ranges.${p}`)})),
 	{value: 'custom', label: t('dashboards.ranges.custom')},
+])
+const statusGroupOptions = computed(() => [
+	{value: '', label: t('dashboards.editor.none')},
+	{value: 'assignee', label: t('reports.dimension.assignee')},
+	{value: 'label', label: t('reports.dimension.label')},
+])
+const trackedGroupOptions = computed(() => ['user', 'project', 'label', 'day'].map(g => ({value: g, label: t(`dashboards.timeTracking.groups.${g}`)})))
+// An estimate is a number the people of the project fill in: only numeric custom fields are offered.
+const estimateOptions = computed(() => [
+	{value: '', label: t('dashboards.editor.none')},
+	...(opts.value ? measureFields(opts.value, 'sum').filter(f => f.name.startsWith('cf_')).map(f => ({value: f.name, label: label(f as ReportOptionResponse)})) : []),
 ])
 const projectOptions = computed(() => [
 	{value: 0, label: t('dashboards.editor.allProjects')},
@@ -139,7 +151,10 @@ watch(opts, value => {
 		draft.thenBy = ''
 	}
 	if (draft.timeField && !value.time_fields.some(f => f.name === draft.timeField)) {
-		draft.timeField = draft.type === 'line' ? 'created' : ''
+		draft.timeField = draft.type === 'line' || draft.type === 'number' ? 'created' : ''
+	}
+	if (draft.estimateField && !value.measures.some(m => m.name === 'sum' && m.fields.some(f => f.name === draft.estimateField))) {
+		draft.estimateField = ''
 	}
 	if (draft.field && !measureFields(value, draft.measure).some(f => f.name === draft.field)) {
 		draft.field = ''
@@ -194,8 +209,10 @@ watch(() => ({...draft}), () => {
 const formError = computed(() => serverErrors.form ?? null)
 const usesGroup = computed(() => ['bar', 'donut', 'line'].includes(draft.type))
 const usesMeasure = computed(() => ['number', 'bar', 'donut', 'line'].includes(draft.type))
-const usesTime = computed(() => ['line', 'created_vs_done'].includes(draft.type))
-const usesFilter = computed(() => draft.type !== 'text')
+const usesTime = computed(() => ['line', 'created_vs_done', 'status_time', 'time_tracking'].includes(draft.type) || (draft.type === 'number' && draft.compare))
+const usesTimeField = computed(() => draft.type === 'line' || (draft.type === 'number' && draft.compare))
+const usesBucket = computed(() => ['line', 'created_vs_done'].includes(draft.type))
+const usesFilter = computed(() => draft.type !== 'text' && draft.type !== 'time_tracking')
 const orientation = computed({
 	get: () => draft.display.orientation ?? '',
 	set: (value: string) => {
@@ -373,9 +390,70 @@ const projectLabel = computed(() => projectStore.projectsArray.find(p => p.id ==
 					</FormField>
 				</template>
 
+				<label
+					v-if="draft.type === 'number'"
+					class="checkbox"
+				>
+					<input
+						v-model="draft.compare"
+						type="checkbox"
+						data-control="compare"
+					>
+					{{ t('dashboards.editor.compare') }}
+				</label>
+				<p
+					v-if="draft.type === 'number' && draft.compare"
+					class="help"
+				>
+					{{ t('dashboards.editor.compareHint') }}
+				</p>
+
+				<FormField
+					v-if="draft.type === 'status_time'"
+					v-slot="{id}"
+					:label="t('dashboards.editor.splitBy')"
+				>
+					<FormSelect
+						:id="id"
+						v-model="draft.groupBy"
+						:options="statusGroupOptions"
+						:error="errorFor('group_by')"
+						data-control="group_by"
+					/>
+				</FormField>
+				<FormField
+					v-if="draft.type === 'time_tracking'"
+					v-slot="{id}"
+					:label="t('dashboards.editor.addUpBy')"
+				>
+					<FormSelect
+						:id="id"
+						v-model="draft.groupBy"
+						:options="trackedGroupOptions"
+						:error="errorFor('group_by')"
+						data-control="group_by"
+					/>
+				</FormField>
+				<FormField
+					v-if="draft.type === 'workload'"
+					v-slot="{id}"
+					:label="t('dashboards.editor.estimateField')"
+				>
+					<FormSelect
+						:id="id"
+						v-model="draft.estimateField"
+						:options="estimateOptions"
+						:error="errorFor('estimate_field')"
+						data-control="estimate_field"
+					/>
+					<p class="help">
+						{{ t('dashboards.editor.estimateHint') }}
+					</p>
+				</FormField>
+
 				<template v-if="usesTime">
 					<FormField
-						v-if="draft.type === 'line'"
+						v-if="usesTimeField"
 						v-slot="{id}"
 						:label="t('dashboards.editor.timeField')"
 					>
@@ -388,6 +466,7 @@ const projectLabel = computed(() => projectStore.projectsArray.find(p => p.id ==
 						/>
 					</FormField>
 					<FormField
+						v-if="usesBucket"
 						v-slot="{id}"
 						:label="t('dashboards.editor.bucket')"
 					>

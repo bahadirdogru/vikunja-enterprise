@@ -20,6 +20,9 @@ import LineChart from '@/components/charts/LineChart.vue'
 import NumberTile from '@/components/charts/NumberTile.vue'
 import TaskListWidget from './TaskListWidget.vue'
 import TextWidget from './TextWidget.vue'
+import StatusTimeWidget from './StatusTimeWidget.vue'
+import TimeTrackingWidget from './TimeTrackingWidget.vue'
+import WorkloadWidget from './WorkloadWidget.vue'
 
 export type DrillRequest = {
 	selection: ChartSelection | null
@@ -135,6 +138,27 @@ const loading = computed(() => isPending.value && props.enabled)
 			v-else-if="type === 'text'"
 			:text="String(config.text ?? '')"
 		/>
+		<WorkloadWidget
+			v-else-if="type === 'workload'"
+			:config="config"
+			:title="title"
+			:enabled="enabled"
+			@error="emit('error', $event)"
+		/>
+		<StatusTimeWidget
+			v-else-if="type === 'status_time'"
+			:config="config"
+			:title="title"
+			:enabled="enabled"
+			@error="emit('error', $event)"
+		/>
+		<TimeTrackingWidget
+			v-else-if="type === 'time_tracking'"
+			:config="config"
+			:title="title"
+			:enabled="enabled"
+			@error="emit('error', $event)"
+		/>
 		<ChartState
 			v-else-if="hasChartError"
 			kind="error"
@@ -150,6 +174,7 @@ const loading = computed(() => isPending.value && props.enabled)
 			:value="report?.value ?? 0"
 			:unit="report?.unit ?? 'tasks'"
 			:label="title"
+			:previous="report?.comparison?.value ?? null"
 			:loading="loading"
 			:selectable="canDrill"
 			:disabled-reason="reasonFor({})"

@@ -3,8 +3,7 @@ import type {IconProp} from '@fortawesome/fontawesome-svg-core'
 import type {LayoutItem, LayoutLimits} from '@/helpers/dashboardLayout'
 import {GRID_COLUMNS} from '@/helpers/dashboardLayout'
 
-// Widget types the backend can serve data for. status_time, workload and time_tracking are deferred (step 4c).
-export const OFFERED_WIDGET_TYPES = ['number', 'bar', 'donut', 'line', 'created_vs_done', 'task_list', 'text'] as const
+export const OFFERED_WIDGET_TYPES = ['number', 'bar', 'donut', 'line', 'created_vs_done', 'task_list', 'workload', 'status_time', 'time_tracking', 'text'] as const
 export type WidgetType = typeof OFFERED_WIDGET_TYPES[number]
 
 export const WIDGET_ICONS: Record<WidgetType, IconProp> = {
@@ -14,6 +13,9 @@ export const WIDGET_ICONS: Record<WidgetType, IconProp> = {
 	line: 'chart-line',
 	created_vs_done: 'arrow-trend-up',
 	task_list: 'list',
+	workload: 'users',
+	status_time: 'hourglass-half',
+	time_tracking: 'clock',
 	text: 'align-left',
 }
 
@@ -24,6 +26,9 @@ export const WIDGET_SIZES: Record<WidgetType, {w: number, h: number} & LayoutLim
 	line: {w: 6, h: 4, minW: 4, minH: 3},
 	created_vs_done: {w: 6, h: 4, minW: 4, minH: 3},
 	task_list: {w: 6, h: 4, minW: 3, minH: 3},
+	workload: {w: 6, h: 4, minW: 4, minH: 3},
+	status_time: {w: 6, h: 4, minW: 4, minH: 3},
+	time_tracking: {w: 6, h: 4, minW: 4, minH: 3},
 	text: {w: 4, h: 2, minW: 2, minH: 2},
 }
 
@@ -53,6 +58,7 @@ export type ReportRequestDraft = {
 	field?: string
 	time?: ReportTimeDraft
 	limit?: number
+	compare?: string
 }
 
 // Drops what is empty or implied, in a fixed key order, so equal requests share a cache key and the server cache.
@@ -99,15 +105,19 @@ export function normalizeReportRequest(draft: ReportRequestDraft): ReportRequest
 	if (draft.limit && draft.limit > 0) {
 		out.limit = draft.limit
 	}
+	if (draft.compare && out.time) {
+		out.compare = draft.compare
+	}
 	return out
 }
 
-export type RangePreset = 'last7' | 'last30' | 'last90' | 'thisMonth' | 'thisYear' | 'custom'
+// 'all' is no range at all, for the time in status of the whole history.
+export type RangePreset = 'last7' | 'last30' | 'last90' | 'thisMonth' | 'thisYear' | 'custom' | 'all'
 
-export const RANGE_PRESETS: Exclude<RangePreset, 'custom'>[] = ['last7', 'last30', 'last90', 'thisMonth', 'thisYear']
+export const RANGE_PRESETS: Exclude<RangePreset, 'custom' | 'all'>[] = ['last7', 'last30', 'last90', 'thisMonth', 'thisYear']
 
 // Relative expressions the server resolves at request time, so a saved widget always shows "the last 30 days".
-const presetRanges: Record<Exclude<RangePreset, 'custom'>, {from: string, to: string}> = {
+const presetRanges: Record<Exclude<RangePreset, 'custom' | 'all'>, {from: string, to: string}> = {
 	last7: {from: 'now-7d', to: 'now'},
 	last30: {from: 'now-30d', to: 'now'},
 	last90: {from: 'now-90d', to: 'now'},
@@ -115,11 +125,11 @@ const presetRanges: Record<Exclude<RangePreset, 'custom'>, {from: string, to: st
 	thisYear: {from: 'now/y', to: 'now'},
 }
 
-export function rangeForPreset(preset: Exclude<RangePreset, 'custom'>): {from: string, to: string} {
+export function rangeForPreset(preset: Exclude<RangePreset, 'custom' | 'all'>): {from: string, to: string} {
 	return {...presetRanges[preset]}
 }
 
-export function presetForRange(from: string | undefined, to: string | undefined): RangePreset {
+export function presetForRange(from: string | undefined, to: string | undefined): Exclude<RangePreset, 'all'> {
 	const f = from || 'now-90d'
 	const t = to || 'now'
 	for (const preset of RANGE_PRESETS) {
@@ -158,6 +168,27 @@ export type CreatedVsDoneConfig = {
 	to?: string
 }
 
+export type WorkloadConfig = {
+	project_id?: number
+	filter?: string
+	estimate_field?: string
+}
+
+export type StatusTimeConfig = {
+	project_id?: number
+	filter?: string
+	group_by?: string
+	from?: string
+	to?: string
+}
+
+export type TimeTrackingConfig = {
+	project_id?: number
+	group_by?: string
+	from?: string
+	to?: string
+}
+
 export function configRequest(widget: Pick<WidgetDraft, 'config'>): ReportRequestDraft {
 	const request = widget.config.request
 	return request && typeof request === 'object' ? request as ReportRequestDraft : {}
@@ -170,7 +201,10 @@ export function requestsForWidget(type: string, config: Record<string, unknown>)
 		case 'bar':
 		case 'donut':
 		case 'line': {
-			const request = normalizeReportRequest(configRequest({config}))
+			const draft = configRequest({config})
+			// The compare setting of a number widget travels with the request, the server computes both periods.
+			const compare = type === 'number' ? (config as {compare?: string}).compare : undefined
+			const request = normalizeReportRequest({...draft, compare: compare ?? draft.compare})
 			if (type === 'line' && !request.time) {
 				return []
 			}
@@ -195,14 +229,14 @@ export function hasReportRequest(type: string): boolean {
 }
 
 export function widgetFilter(type: string, config: Record<string, unknown>): string {
-	if (type === 'created_vs_done' || type === 'task_list') {
+	if (type === 'created_vs_done' || type === 'task_list' || type === 'workload' || type === 'status_time') {
 		return String((config as {filter?: string}).filter ?? '')
 	}
 	return configRequest({config}).filter ?? ''
 }
 
 export function widgetProjectId(type: string, config: Record<string, unknown>): number {
-	if (type === 'created_vs_done' || type === 'task_list') {
+	if (['created_vs_done', 'task_list', 'workload', 'status_time', 'time_tracking'].includes(type)) {
 		return Number((config as {project_id?: number}).project_id ?? 0)
 	}
 	return Number(configRequest({config}).project_id ?? 0)
@@ -308,4 +342,4 @@ export function serverFieldError(error: unknown): ServerFieldError | null {
 	return {param, control, message, code: e.code ?? 0}
 }
 
-export const DASHBOARD_ERROR_CODES = [23001, 23002, 23003, 23004, 23005, 23006, 23007, 23008, 23009] as const
+export const DASHBOARD_ERROR_CODES = [23001, 23002, 23003, 23004, 23005, 23006, 23007, 23008, 23009, 23010] as const

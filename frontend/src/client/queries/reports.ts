@@ -29,6 +29,7 @@ export type TaskReportResponse = {
 	multi_valued: boolean
 	excluded: number
 	truncated: boolean
+	comparison: ReportComparisonResponse | null
 	time: {
 		field: string
 		bucket: string
@@ -88,6 +89,7 @@ export function normalizeReport(report: TaskReport): TaskReportResponse {
 		multi_valued: report.multi_valued ?? false,
 		excluded: report.excluded ?? 0,
 		truncated: report.truncated ?? false,
+		comparison: normalizeComparison(report),
 		time: report.time?.field
 			? {
 				field: report.time.field,
@@ -174,4 +176,29 @@ export function taskReportQuery(request: ReportRequestDraft, enabled = true) {
 
 export function ensureReportOptions(projectId: number) {
 	return queryClient.ensureQueryData(reportOptionsQuery(projectId))
+}
+
+export type ReportComparisonResponse = {
+	value: number
+	total: number
+	delta: number
+	delta_percent: number | null
+	from: string
+	to: string
+}
+
+// The previous period of a number widget with compare set.
+export function normalizeComparison(report: TaskReport): ReportComparisonResponse | null {
+	const c = report.comparison
+	if (!c) {
+		return null
+	}
+	return {
+		value: c.value ?? 0,
+		total: c.total ?? 0,
+		delta: c.delta ?? 0,
+		delta_percent: c.delta_percent ?? null,
+		from: c.from ?? '',
+		to: c.to ?? '',
+	}
 }

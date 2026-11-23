@@ -1751,6 +1751,7 @@
 		"23007": "Bileşen bu panoya ait değil.",
 		"23008": "Pano veya bileşenlerinden biri geçerli değil.",
 		"23009": "Rapor çok uzun sürdü. Filtreyi veya dönemi daraltın.",
+		"23010": "Bu işlem çok fazla satır gerektirir. Filtreyi, projeyi veya dönemi daraltın.",
 		"4016": "Geçersiz görev alanı.",
 		"4017": "Geçersiz filtre karşılaştırıcısı.",
 		"4018": "Geçersiz filtre bağlayıcısı.",
@@ -2338,7 +2339,9 @@
 			"remove": "Kaldır",
 			"removeTitle": "Bu bileşen kaldırılsın mı?",
 			"removeText": "Bileşen panodan kaldırılır. Görevler etkilenmez.",
-			"copySuffix": "(kopya)"
+			"copySuffix": "(kopya)",
+			"exportCsv": "CSV olarak dışa aktar",
+			"exportTasks": "Görevleri dışa aktar (CSV)"
 		},
 		"types": {
 			"number": {
@@ -2365,6 +2368,18 @@
 				"name": "Görev listesi",
 				"description": "Görevlerin kendisi, örneğin gecikenler."
 			},
+			"workload": {
+				"name": "İş yükü",
+				"description": "Kişi başına açık görevler, bitiş tarihine göre ayrılmış."
+			},
+			"status_time": {
+				"name": "Durumda geçen süre",
+				"description": "Görevlerin her iş akışı durumunda ne kadar kaldığı."
+			},
+			"time_tracking": {
+				"name": "Takip edilen süre",
+				"description": "Kişi, proje, etiket veya gün başına toplanan zaman kayıtları."
+			},
 			"text": {
 				"name": "Not",
 				"description": "Bu panoyu okuyanlar için bir metin."
@@ -2378,8 +2393,54 @@
 		"text": {
 			"empty": "Bu not boş."
 		},
+		"export": {
+			"bucket": "Dönem"
+		},
+		"statusTime": {
+			"metric": "Gösterilen süre",
+			"metrics": {
+				"average": "Ortalama",
+				"median": "Medyan",
+				"total": "Toplam"
+			},
+			"empty": "Bu dönemde hiçbir görev bir durumda zaman geçirmedi.",
+			"tasks": "görev yok | {count} görev | {count} görev",
+			"truncated": "Yalnızca en çok göreve sahip gruplar gösteriliyor."
+		},
+		"workload": {
+			"metric": "Gösterilen",
+			"metrics": {
+				"count": "Görevler",
+				"estimate": "Tahmin"
+			},
+			"unassigned": "Atanmamış",
+			"buckets": {
+				"overdue": "Gecikmiş",
+				"this_week": "Bu hafta",
+				"next_week": "Gelecek hafta",
+				"later": "Daha sonra",
+				"no_due_date": "Bitiş tarihi yok"
+			},
+			"empty": "Açık görev yok.",
+			"open": "açık görev yok | {count} açık görev | {count} açık görev",
+			"truncated": "Yalnızca en çok açık göreve sahip kişiler gösteriliyor."
+		},
+		"timeTracking": {
+			"groups": {
+				"user": "Kişi",
+				"project": "Proje",
+				"label": "Etiket",
+				"day": "Gün"
+			},
+			"empty": "Bu dönemde zaman takip edilmedi.",
+			"total": "{count} kayıtta {time} | {count} kayıtta {time}",
+			"running": "çalışan zamanlayıcı yok | {count} çalışan zamanlayıcı sayılmıyor | {count} çalışan zamanlayıcı sayılmıyor",
+			"truncated": "Yalnızca en çok zamana sahip gruplar gösteriliyor, kalanı \"Diğer\" altında toplanır.",
+			"unavailable": "Zaman takibi bu sunucuda kullanılamıyor."
+		},
 		"drilldown": {
 			"title": "{title} görevleri",
+			"exportCsv": "CSV olarak dışa aktar",
 			"empty": "Eşleşen görev yok.",
 			"pages": "Sayfalar",
 			"previous": "Önceki",
@@ -2413,7 +2474,8 @@
 			"last90": "Son 90 gün",
 			"thisMonth": "Bu ay",
 			"thisYear": "Bu yıl",
-			"custom": "Özel aralık"
+			"custom": "Özel aralık",
+			"all": "Tüm geçmiş"
 		},
 		"sort": {
 			"due_date": "Bitiş tarihi",
@@ -2463,6 +2525,12 @@
 			"stacked": "İkinci özelliği üst üste yığ",
 			"showLegend": "Göstergeyi göster",
 			"displayHint": "Görünüm seçenekleri bu tarayıcıda saklanır, panonun parçası değildir.",
+			"compare": "Önceki dönemle karşılaştır",
+			"compareHint": "Sayının, aşağıda seçilen dönemden hemen önceki aynı uzunluktaki döneme göre nasıl değiştiğini gösterir.",
+			"splitBy": "Şuna göre ayır",
+			"addUpBy": "Şuna göre topla",
+			"estimateField": "Tahmin alanı",
+			"estimateHint": "Projenin bir sayı alanı, örneğin bir görevin kaç saat süreceğine dair tahmin. Değerler kişi başına toplanır.",
 			"preview": "Önizleme",
 			"previewIdle": "Önizlemeyi görmek için formu tamamlayın.",
 			"problems": {
@@ -2470,7 +2538,8 @@
 				"timeFieldRequired": "Grafiğin izleyeceği tarihi seçin.",
 				"fieldRequired": "Hesaplanacak alanı seçin.",
 				"dateRequired": "Bir tarih girin.",
-				"listLimitRange": "1 ile 100 arasında bir sayı girin."
+				"listLimitRange": "1 ile 100 arasında bir sayı girin.",
+				"projectRequired": "Projeyi seçin: durumlar tek bir projenin iş akışına aittir."
 			}
 		}
 	},

@@ -7,6 +7,9 @@ import {customFieldsQuery} from '@/client/queries/customFields'
 import {reportOptionsQuery} from '@/client/queries/reports'
 import {tasksQuery, type TaskFilterParams} from '@/client/queries/tasks'
 import {userSearchQuery} from '@/client/queries/userSearch'
+import {fetchTasksCsv} from '@/client/queries/reportWidgets'
+import {downloadBlob} from '@/helpers/downloadBlob'
+import {error as showError} from '@/message'
 import {drilldownFilter, drilldownInputFor} from '@/helpers/dashboardDrilldown'
 import {widgetProjectId} from '@/helpers/dashboards'
 import {groupLabel, type ChartSelection} from '@/helpers/charts'
@@ -119,6 +122,25 @@ const conditions = computed(() => {
 	const point = baseInput.value.point?.bucket
 	return result.value.ok ? [...named, ...(point ? [point] : [])] : []
 })
+const exporting = ref(false)
+async function exportCsv() {
+	if (!ready.value || exporting.value) {
+		return
+	}
+	exporting.value = true
+	try {
+		const blob = await fetchTasksCsv({
+			project_id: projectId.value > 0 ? projectId.value : undefined,
+			filter: filter.value,
+			filter_include_nulls: includeNulls.value,
+		})
+		downloadBlob(URL.createObjectURL(blob), 'tasks.csv')
+	} catch (e) {
+		showError(e)
+	} finally {
+		exporting.value = false
+	}
+}
 const blocked = computed(() => {
 	if (result.value.ok || unresolvedUser.value || (needsOptions.value && fieldsQuery.isFetching.value)) {
 		return null
@@ -167,12 +189,23 @@ const blocked = computed(() => {
 			:message="t('dashboards.drilldown.empty')"
 		/>
 		<template v-else>
-			<p
-				class="drilldown__count"
-				data-test="drilldown-count"
-			>
-				{{ t('charts.tasks', {count: total}, {plural: total}) }}
-			</p>
+			<div class="drilldown__head">
+				<p
+					class="drilldown__count"
+					data-test="drilldown-count"
+				>
+					{{ t('charts.tasks', {count: total}, {plural: total}) }}
+				</p>
+				<button
+					type="button"
+					class="button is-small"
+					data-test="drilldown-export"
+					:disabled="exporting"
+					@click="exportCsv"
+				>
+					{{ t('dashboards.drilldown.exportCsv') }}
+				</button>
+			</div>
 			<ul class="drilldown__list">
 				<TaskRow
 					v-for="task in items"
@@ -222,8 +255,16 @@ const blocked = computed(() => {
 	color: var(--text-light);
 }
 
-.drilldown__count {
+.drilldown__head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: .5rem;
 	margin: 0 0 .25rem;
+}
+
+.drilldown__count {
+	margin: 0;
 	font-weight: 600;
 }
 

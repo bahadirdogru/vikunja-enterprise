@@ -1869,6 +1869,7 @@
     "23007": "The widget does not belong to this dashboard.",
     "23008": "The dashboard or one of its widgets is not valid.",
     "23009": "The report took too long. Narrow the filter or the period.",
+    "23010": "This would need too many rows. Narrow the filter, the project or the period.",
     "4016": "Invalid task field.",
     "4017": "Invalid task filter comparator.",
     "4018": "Invalid task filter concatenator.",
@@ -2524,7 +2525,9 @@
       "remove": "Remove",
       "removeTitle": "Remove this widget?",
       "removeText": "The widget is removed from the dashboard. The tasks are not affected.",
-      "copySuffix": "(copy)"
+      "copySuffix": "(copy)",
+      "exportCsv": "Export CSV",
+      "exportTasks": "Export tasks (CSV)"
     },
     "types": {
       "number": {
@@ -2551,6 +2554,18 @@
         "name": "Task list",
         "description": "The tasks themselves, for example what is overdue."
       },
+      "workload": {
+        "name": "Workload",
+        "description": "Open tasks per person, split by when they are due."
+      },
+      "status_time": {
+        "name": "Time in status",
+        "description": "How long tasks stay in each workflow status."
+      },
+      "time_tracking": {
+        "name": "Tracked time",
+        "description": "Time entries added up per person, project, label or day."
+      },
       "text": {
         "name": "Note",
         "description": "Some text for the people who read this dashboard."
@@ -2564,8 +2579,54 @@
     "text": {
       "empty": "This note is empty."
     },
+    "export": {
+      "bucket": "Period"
+    },
+    "statusTime": {
+      "metric": "Time shown",
+      "metrics": {
+        "average": "Average",
+        "median": "Median",
+        "total": "Total"
+      },
+      "empty": "No task has spent time in a status in this period.",
+      "tasks": "no tasks | {count} task | {count} tasks",
+      "truncated": "Only the groups with the most tasks are shown."
+    },
+    "workload": {
+      "metric": "Shown",
+      "metrics": {
+        "count": "Tasks",
+        "estimate": "Estimate"
+      },
+      "unassigned": "Unassigned",
+      "buckets": {
+        "overdue": "Overdue",
+        "this_week": "This week",
+        "next_week": "Next week",
+        "later": "Later",
+        "no_due_date": "No due date"
+      },
+      "empty": "There are no open tasks.",
+      "open": "no open tasks | {count} open task | {count} open tasks",
+      "truncated": "Only the people with the most open tasks are shown."
+    },
+    "timeTracking": {
+      "groups": {
+        "user": "Person",
+        "project": "Project",
+        "label": "Label",
+        "day": "Day"
+      },
+      "empty": "No time was tracked in this period.",
+      "total": "{time} in {count} entry | {time} in {count} entries",
+      "running": "no running timers | {count} running timer is not counted | {count} running timers are not counted",
+      "truncated": "Only the groups with the most time are shown, the rest is folded into \"Other\".",
+      "unavailable": "Time tracking is not available on this server."
+    },
     "drilldown": {
       "title": "Tasks in {title}",
+      "exportCsv": "Export CSV",
       "empty": "No tasks match.",
       "pages": "Pages",
       "previous": "Previous",
@@ -2599,7 +2660,8 @@
       "last90": "Last 90 days",
       "thisMonth": "This month",
       "thisYear": "This year",
-      "custom": "Custom range"
+      "custom": "Custom range",
+      "all": "All of the history"
     },
     "sort": {
       "due_date": "Due date",
@@ -2649,6 +2711,12 @@
       "stacked": "Stack the second property",
       "showLegend": "Show the legend",
       "displayHint": "Display options are kept in this browser, they are not part of the dashboard.",
+      "compare": "Compare with the previous period",
+      "compareHint": "Shows how the number changed against the period of the same length right before the one chosen below.",
+      "splitBy": "Split by",
+      "addUpBy": "Add up by",
+      "estimateField": "Estimate field",
+      "estimateHint": "A number field of the project, for example the hours you expect a task to take. Its values are added up per person.",
       "preview": "Preview",
       "previewIdle": "Complete the form to see a preview.",
       "problems": {
@@ -2656,7 +2724,8 @@
         "timeFieldRequired": "Choose the date this chart follows.",
         "fieldRequired": "Choose the field to calculate with.",
         "dateRequired": "Enter a date.",
-        "listLimitRange": "Enter a number between 1 and 100."
+        "listLimitRange": "Enter a number between 1 and 100.",
+        "projectRequired": "Choose the project: statuses belong to the workflow of one project."
       }
     }
   },

@@ -56,10 +56,10 @@ describe('WidgetEditor', () => {
 	})
 	afterEach(() => vi.useRealTimers())
 
-	it('starts at the gallery with the offered types only', async () => {
+	it('starts at the gallery with the offered types, 4c ones included', async () => {
 		const wrapper = mountEditor({widget: null})
 		expect(wrapper.findAll('[data-type]').map(b => b.attributes('data-type'))).toEqual([
-			'number', 'bar', 'donut', 'line', 'created_vs_done', 'task_list', 'text',
+			'number', 'bar', 'donut', 'line', 'created_vs_done', 'task_list', 'workload', 'status_time', 'time_tracking', 'text',
 		])
 	})
 

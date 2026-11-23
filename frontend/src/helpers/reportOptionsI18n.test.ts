@@ -43,7 +43,7 @@ describe('report option translations', () => {
 			...options.buckets.map(b => `dashboards.buckets.${b}`),
 			...['last7', 'last30', 'last90', 'thisMonth', 'thisYear', 'custom'].map(r => `dashboards.ranges.${r}`),
 			...['due_date', 'priority', 'created', 'updated', 'title', 'id', 'done_at', 'percent_done'].map(f => `dashboards.sort.${f}`),
-			...[23001, 23002, 23003, 23004, 23005, 23006, 23007, 23008, 23009].map(c => `error.${c}`),
+			...[23001, 23002, 23003, 23004, 23005, 23006, 23007, 23008, 23009, 23010].map(c => `error.${c}`),
 			...['number', 'bar', 'donut', 'line', 'created_vs_done', 'task_list', 'text'].flatMap(t => [`dashboards.types.${t}.name`, `dashboards.types.${t}.description`]),
 			...['other', 'null_filter', 'include_nulls', 'status_entered', 'needs_username', 'needs_options', 'unknown_dimension'].map(r => `dashboards.drilldown.blocked.${r}`),
 		]
