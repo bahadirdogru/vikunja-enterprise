@@ -26,6 +26,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"xorm.io/xorm/schemas"
 )
 
 func countProjectTasks(t *testing.T) int64 {
@@ -127,6 +128,11 @@ func TestRender_PayloadPathsMayContainHyphens(t *testing.T) {
 
 // A marker insert that fails for another reason than a lost claim is an error, not "someone else was faster".
 func TestClaimDue_ARealInsertErrorIsReturnedNotSwallowed(t *testing.T) {
+	// The failing insert is provoked with a trigger, which is DDL of the dialect: there is no portable way to make
+	// an insert of valid values fail without a unique violation.
+	if db.Type() != schemas.SQLITE {
+		t.Skip("needs a SQLite trigger to make the marker insert fail")
+	}
 	reset(t)
 	clearTasks(t, projectOwned)
 	fakeClock(t)
@@ -160,4 +166,32 @@ func TestClaimDue_ARealInsertErrorIsReturnedNotSwallowed(t *testing.T) {
 	claimed, err = claimDue(getRule(t, r.ID), stored, now(), true)
 	require.NoError(t, err)
 	assert.False(t, claimed)
+}
+
+// An origin row left for a task id (the database hands the id out again, or the daily cleanup has not run) is
+// replaced, not a unique violation that would fail the run.
+func TestRecordTaskOrigin_ReplacesAStaleRowForTheSameTask(t *testing.T) {
+	reset(t)
+	s := db.NewSession()
+	defer s.Close()
+	_, err := s.Insert(&models.AutomationTaskOrigin{
+		TaskID: 777,
+		RunID:  1,
+		Depth:  1,
+	})
+	require.NoError(t, err)
+
+	markSession(s, origin{runID: 2, depth: 2})
+	defer sessionOrigins.Delete(s)
+	require.NoError(t, recordTaskOrigin(s, 777))
+	require.NoError(t, recordTaskOrigin(s, 777))
+
+	got, err := taskOriginOf(s, 777)
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.EqualValues(t, 2, got.RunID)
+	assert.EqualValues(t, 3, got.Depth)
+	n, err := s.Where("task_id = ?", 777).Count(&models.AutomationTaskOrigin{})
+	require.NoError(t, err)
+	assert.EqualValues(t, 1, n)
 }
