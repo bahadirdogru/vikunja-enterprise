@@ -5,12 +5,18 @@ export const CSV_BOM = '﻿'
 
 export type CsvCell = string | number | null | undefined
 
+// Whitespace as unicode.IsSpace of Go sees it (the byte order mark aside), so both writers decide alike.
+const startsWithSpace = /^\s/
+const formulaAfterSpace = /^\s*[=+\-@]/
+
+// A spreadsheet skips leading whitespace before it decides a cell is a formula.
 export function csvSafeText(value: string): string {
-	return /^[=+\-@\t\r]/.test(value) ? `'${value}` : value
+	return /^[\t\r]/.test(value) || formulaAfterSpace.test(value) ? `'${value}` : value
 }
 
+// Like encoding/csv: fields with a separator, a quote, a line break or a leading space are quoted.
 function quote(value: string): string {
-	return /[",\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value
+	return /[",\r\n]/.test(value) || startsWithSpace.test(value) || value === '\\.' ? `"${value.replace(/"/g, '""')}"` : value
 }
 
 // Numbers are written by us and keep their sign, text is guarded.

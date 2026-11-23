@@ -57,10 +57,10 @@ func csvColumn(t *testing.T, records [][]string, header string) int {
 
 func TestCSV_Encoding(t *testing.T) {
 	t.Run("formula injection guard", func(t *testing.T) {
-		for _, v := range []string{"=1+1", "+1", "-1", "@SUM(A1)", "\tcmd", "\rcmd"} {
+		for _, v := range []string{"=1+1", "+1", "-1", "@SUM(A1)", "\tcmd", "\rcmd", " =1+1", "  -1", "\u00a0@SUM(A1)"} {
 			assert.Equal(t, "'"+v, csvSafeCell(v), v)
 		}
-		for _, v := range []string{"", "plain", "a=b", "1+1", "'quoted"} {
+		for _, v := range []string{"", "plain", "a=b", "1+1", "'quoted", " ", " plain", " a=b"} {
 			assert.Equal(t, v, csvSafeCell(v), v)
 		}
 	})
@@ -86,6 +86,12 @@ func TestCSV_Encoding(t *testing.T) {
 		assert.Equal(t, "İğdır şğüöç", records[2][0])
 		assert.Equal(t, "-5", records[2][1], "numbers formatted by the server are not guarded")
 		assert.Equal(t, []string{"'-dash", "'@user"}, records[3])
+	})
+
+	t.Run("a field with a leading space is quoted, like the browser writes it", func(t *testing.T) {
+		raw, err := (&CSVTable{Header: []string{"a"}, Rows: [][]CSVCell{{textCell(" lead")}, {textCell(" =1+1")}}}).Bytes()
+		require.NoError(t, err)
+		assert.Equal(t, csvBOM+"a\r\n\" lead\"\r\n' =1+1\r\n", string(raw))
 	})
 
 	t.Run("invalid utf-8 is replaced", func(t *testing.T) {

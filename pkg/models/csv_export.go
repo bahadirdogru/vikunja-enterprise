@@ -20,21 +20,28 @@ import (
 	"bytes"
 	"encoding/csv"
 	"strings"
+	"unicode"
 )
 
 // csvBOM makes Excel read the file as UTF-8, so Turkish characters survive.
 const csvBOM = "\xef\xbb\xbf"
 
 // csvSafeCell neutralizes a cell that a spreadsheet would run as a formula: one starting with =, +, -, @, a tab or a
-// carriage return gets a single quote in front. Numbers the exports write themselves are formatted by us and must not
+// carriage return gets a single quote in front, and so does one whose first character after leading whitespace is one
+// of them (spreadsheets skip the whitespace). Numbers the exports write themselves are formatted by us and must not
 // pass through here, a negative number would be damaged.
 func csvSafeCell(v string) string {
 	if v == "" {
 		return v
 	}
-	switch v[0] {
-	case '=', '+', '-', '@', '\t', '\r':
+	if v[0] == '\t' || v[0] == '\r' {
 		return "'" + v
+	}
+	if rest := strings.TrimLeftFunc(v, unicode.IsSpace); rest != "" {
+		switch rest[0] {
+		case '=', '+', '-', '@':
+			return "'" + v
+		}
 	}
 	return v
 }

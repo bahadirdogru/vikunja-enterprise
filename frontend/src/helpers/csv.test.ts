@@ -4,10 +4,10 @@ import {CSV_BOM, csvCell, csvSafeText, toCsv} from './csv'
 
 describe('csv', () => {
 	it('guards cells a spreadsheet would run as a formula', () => {
-		for (const value of ['=1+1', '+1', '-1', '@SUM(A1)', '\tcmd', '\rcmd']) {
+		for (const value of ['=1+1', '+1', '-1', '@SUM(A1)', '\tcmd', '\rcmd', ' =1+1', '  -1', '\u00a0@SUM(A1)']) {
 			expect(csvSafeText(value)).toBe(`'${value}`)
 		}
-		for (const value of ['', 'plain', 'a=b', '1+1']) {
+		for (const value of ['', 'plain', 'a=b', '1+1', ' ', ' plain', ' a=b']) {
 			expect(csvSafeText(value)).toBe(value)
 		}
 	})
@@ -23,6 +23,12 @@ describe('csv', () => {
 		expect(csvCell('a,b')).toBe('"a,b"')
 		expect(csvCell('say "hi"')).toBe('"say ""hi"""')
 		expect(csvCell('two\nlines')).toBe('"two\nlines"')
+	})
+
+	it('quotes a field with a leading space like the server does', () => {
+		expect(csvCell(' lead')).toBe('" lead"')
+		expect(csvCell(' =1+1')).toBe('\' =1+1')
+		expect(csvCell('trail ')).toBe('trail ')
 	})
 
 	it('starts with a byte order mark and keeps Turkish characters', () => {
