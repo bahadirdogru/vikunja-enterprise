@@ -459,7 +459,10 @@ export function redirectTarget(url: string): URL | null {
 // ---- branding ------------------------------------------------------------------------------------------------------
 
 // The CSS variables that turn the page's primary color into the accent color. Empty for no or an invalid accent.
-// The text on the accent is chosen for contrast.
+// The text on the accent is chosen for contrast (--fp-button-text, applied to the buttons by the page).
+// --primary and its derived variables are declared on :root as hsla(var(--primary-h) ...) and resolved there, so
+// changing only the hue/saturation/lightness parts below the root has no effect on descendants: every variable that
+// colors the page is emitted resolved, with the formulas of styles/custom-properties/colors.scss.
 export function accentStyle(accent: string): Record<string, string> {
 	const m = /^#([0-9a-f]{6})$/i.exec(accent)
 	if (!m) return {}
@@ -482,11 +485,20 @@ export function accentStyle(accent: string): Record<string, string> {
 	}
 	const lin = (c: number) => c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
 	const luminance = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+	const hue = `${Math.round(h)}deg`
+	const sat = `${Math.round(s * 100)}%`
+	const light = Math.round(l * 100)
+	const hsla = (lightness: number, alpha = 1) => `hsla(${hue}, ${sat}, ${lightness}%, ${alpha})`
 	return {
-		'--primary-h': `${Math.round(h)}deg`,
-		'--primary-s': `${Math.round(s * 100)}%`,
-		'--primary-l': `${Math.round(l * 100)}%`,
+		'--primary-h': hue,
+		'--primary-s': sat,
+		'--primary-l': `${light}%`,
 		'--primary-a': '1',
-		'--button-text-color': luminance > 0.4 ? '#000000' : '#ffffff',
+		'--primary': hsla(light),
+		'--primary-light': hsla(96),
+		'--primary-dark': hsla(Math.max(light - 12, 0)),
+		'--link': hsla(light),
+		'--link-hover': hsla(light, 0.75),
+		'--fp-button-text': luminance > 0.4 ? '#000000' : '#ffffff',
 	}
 }

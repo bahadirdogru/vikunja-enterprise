@@ -355,6 +355,11 @@ watch(() => props.token, () => {
 </template>
 
 <style lang="scss" scoped>
+// The accent color sets --fp-button-text; the buttons declare --button-text-color themselves, so it is set on them.
+.fp :deep(.button) {
+	--button-text-color: var(--fp-button-text, #ffffff);
+}
+
 .fp {
 	min-block-size: 100vh;
 	background: var(--site-background);

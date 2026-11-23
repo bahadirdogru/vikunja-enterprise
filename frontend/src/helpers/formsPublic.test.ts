@@ -239,8 +239,18 @@ describe('definitionFromDraft (the preview)', () => {
 
 describe('accentStyle', () => {
 	it('turns a hex color into primary variables with readable text', () => {
-		expect(accentStyle('#ff0000')).toMatchObject({'--primary-h': '0deg', '--primary-s': '100%', '--primary-l': '50%', '--button-text-color': '#ffffff'})
-		expect(accentStyle('#ffff00')['--button-text-color']).toBe('#000000')
+		expect(accentStyle('#ff0000')).toMatchObject({'--primary-h': '0deg', '--primary-s': '100%', '--primary-l': '50%', '--fp-button-text': '#ffffff'})
+		expect(accentStyle('#ffff00')['--fp-button-text']).toBe('#000000')
+	})
+
+	it('emits the resolved colors, because the root variables are already resolved for descendants', () => {
+		expect(accentStyle('#ff0000')).toMatchObject({
+			'--primary': 'hsla(0deg, 100%, 50%, 1)',
+			'--primary-dark': 'hsla(0deg, 100%, 38%, 1)',
+			'--primary-light': 'hsla(0deg, 100%, 96%, 1)',
+			'--link': 'hsla(0deg, 100%, 50%, 1)',
+			'--link-hover': 'hsla(0deg, 100%, 50%, 0.75)',
+		})
 	})
 
 	it('ignores empty and malformed values', () => {
