@@ -170,3 +170,22 @@ describe('approval notifications', () => {
 		expect(notificationDoer(notification('approval.requested', {doer: SAM}))).toEqual(SAM)
 	})
 })
+
+describe('form notifications', () => {
+	const payload = {form_id: 2, form_title: 'Cover request', submitter_name: 'Ada', submitter_email: 'ada@example.com', task: TASK, project: PROJECT, doer: SAM}
+
+	it('names the submitter, the form and the task', () => {
+		expect(notificationText(notification(NOTIFICATION_NAMES.FORM_SUBMITTED, payload)))
+			.toBe('Ada submitted the form “Cover request”, creating #12')
+		expect(notificationText(notification(NOTIFICATION_NAMES.FORM_SUBMITTED, {...payload, submitter_name: '', submitter_email: 'ada@example.com'})))
+			.toBe('ada@example.com submitted the form “Cover request”, creating #12')
+		expect(notificationText(notification(NOTIFICATION_NAMES.FORM_SUBMITTED, {...payload, submitter_name: '', submitter_email: ''})))
+			.toBe('The form “Cover request” was submitted, creating #12')
+	})
+
+	it('links to the task and shows no doer (the owner of a form did nothing)', () => {
+		expect(notificationRoute(notification('form.submitted', payload))).toEqual({name: 'task.detail', params: {id: 3}})
+		expect(notificationRoute(notification('form.submitted', {form_title: 'x'}))).toBeNull()
+		expect(notificationDoer(notification('form.submitted', payload))).toBeUndefined()
+	})
+})

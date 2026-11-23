@@ -4,6 +4,7 @@
 import {computed} from 'vue'
 import {useI18n} from 'vue-i18n'
 
+import AutomationSelect from '@/components/automation/AutomationSelect.vue'
 import ParamInput from '@/components/automation/ParamInput.vue'
 import {useAutomationContext} from '@/components/automation/context'
 import {
@@ -58,6 +59,11 @@ const needsSibling = computed(() => {
 const waitingForField = computed(() => kind.value === 'any' && !customField.value
 	&& props.siblings.some(p => p.kind === 'custom_field'))
 
+// The form.submitted trigger names a form by id; the project's forms are a better input than a number.
+const formChoices = computed(() => context.forms && props.param.name === 'form_id' && kind.value === 'number'
+	? context.forms.map(form => ({value: form.id, label: form.title}))
+	: null)
+
 const isCondition = computed(() => kind.value === 'condition')
 </script>
 
@@ -99,6 +105,16 @@ const isCondition = computed(() => kind.value === 'condition')
 		>
 			{{ $t('automation.param.chooseFieldFirst') }}
 		</p>
+		<AutomationSelect
+			v-else-if="formChoices"
+			:id="id"
+			:model-value="values[param.name]"
+			:options="formChoices"
+			:label="labelText"
+			:placeholder="$t('automation.param.choose')"
+			:invalid="messages.length > 0"
+			@update:modelValue="emit('update', param.name, $event)"
+		/>
 		<ParamInput
 			v-else-if="kind !== null"
 			:id="id"

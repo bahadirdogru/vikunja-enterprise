@@ -15,6 +15,7 @@ export const NOTIFICATION_NAMES = {
 	'APPROVAL_REQUESTED': 'approval.requested',
 	'APPROVAL_RESOLVED': 'approval.resolved',
 	'APPROVAL_REMINDER': 'approval.reminder',
+	'FORM_SUBMITTED': 'form.submitted',
 } as const
 
 function record(value: unknown): Record<string, unknown> {
@@ -22,6 +23,8 @@ function record(value: unknown): Record<string, unknown> {
 }
 
 export function notificationDoer(n: DatabaseNotification): User | undefined {
+	// The owner of a form is no actor of a submission.
+	if (n.name === NOTIFICATION_NAMES.FORM_SUBMITTED) return undefined
 	const doer = record(record(n.notification).doer)
 	return typeof doer.id === 'number' ? doer as User : undefined
 }
@@ -36,6 +39,8 @@ export function notificationText(n: DatabaseNotification, user: Pick<User, 'id'>
 	const doer = record(payload.doer) as User
 	const approval = record(payload.approval)
 	const approvalTitle = typeof approval.title === 'string' ? approval.title : ''
+	const formTitle = typeof payload.form_title === 'string' ? payload.form_title : ''
+	const submitter = [payload.submitter_name, payload.submitter_email].find(v => typeof v === 'string' && v !== '')
 	let who: string
 	switch (n.name) {
 		case NOTIFICATION_NAMES.TASK_COMMENT:
@@ -66,6 +71,11 @@ export function notificationText(n: DatabaseNotification, user: Pick<User, 'id'>
 			return `Reminder for ${getTaskIdentifier(task)} ${task.title} (${project.title})`
 		case NOTIFICATION_NAMES.TASK_MENTIONED:
 			return `${getDisplayName(doer)} mentioned you on ${getTaskIdentifier(task)}`
+		case NOTIFICATION_NAMES.FORM_SUBMITTED:
+			// The doer is the form owner, who did nothing: the text is about the submitter.
+			return typeof submitter === 'string'
+				? `${submitter} submitted the form “${formTitle}”, creating ${getTaskIdentifier(task)}`
+				: `The form “${formTitle}” was submitted, creating ${getTaskIdentifier(task)}`
 		case NOTIFICATION_NAMES.APPROVAL_REQUESTED:
 			return `asked for your approval: “${approvalTitle}” on ${getTaskIdentifier(task)}`
 		case NOTIFICATION_NAMES.APPROVAL_REMINDER:
@@ -92,6 +102,7 @@ export function notificationRoute(n: DatabaseNotification): RouteLocationRaw | n
 		NOTIFICATION_NAMES.TASK_REMINDER,
 		NOTIFICATION_NAMES.TASK_MENTIONED,
 		NOTIFICATION_NAMES.TASK_CREATED,
+		NOTIFICATION_NAMES.FORM_SUBMITTED,
 		NOTIFICATION_NAMES.APPROVAL_REQUESTED,
 		NOTIFICATION_NAMES.APPROVAL_RESOLVED,
 		NOTIFICATION_NAMES.APPROVAL_REMINDER,

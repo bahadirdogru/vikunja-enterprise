@@ -18,6 +18,7 @@ import Modal from '@/components/misc/Modal.vue'
 import {automationCatalogQuery, automationRulesQuery, type AutomationRuleResponse} from '@/client/queries/automation'
 import {automationSecretsQuery} from '@/client/queries/automationSecrets'
 import {customFieldsQuery} from '@/client/queries/customFields'
+import {formsQuery} from '@/client/queries/forms'
 import {workflowQuery} from '@/client/queries/workflow'
 import {PERMISSIONS} from '@/constants/permissions'
 import {useGoBack} from '@/composables/useGoBack'
@@ -43,6 +44,9 @@ const fieldsResult = useQuery(computed(() => ({...customFieldsQuery(props.projec
 // A failing list leaves the rule editor with a plain text input for secret names.
 const secretsResult = useQuery(computed(() => ({...automationSecretsQuery(props.projectId), enabled: enabled.value, retry: false})))
 const secretNames = computed(() => secretsResult.data.value ? secretsResult.data.value.map(secret => secret.name) : null)
+// Only the form.submitted trigger needs the forms; a failing list leaves its option a number input.
+const formsResult = useQuery(computed(() => ({...formsQuery(props.projectId), enabled: enabled.value, retry: false})))
+const forms = computed(() => formsResult.data.value ? formsResult.data.value.map(form => ({id: form.id, title: form.title})) : null)
 const workflowResult = useQuery(computed(() => ({...workflowQuery(props.projectId), enabled: enabled.value})))
 
 const loadError = computed(() => projectError.value ?? catalogResult.error.value ?? rulesResult.error.value
@@ -168,6 +172,7 @@ const editingTitle = computed(() => mode.value.kind === 'edit'
 				:custom-fields="customFields"
 				:statuses="statuses"
 				:secrets="secretNames"
+				:forms="forms"
 				:rule="mode.rule"
 				:preset="mode.preset"
 				@close="backToList"

@@ -48,6 +48,7 @@ const props = defineProps<{
 	customFields: CustomFieldResponse[]
 	statuses: AutomationStatus[]
 	secrets?: string[] | null
+	forms?: {id: number, title: string}[] | null
 	// The rule to edit; null starts a new one (optionally from a template draft).
 	rule: AutomationRuleResponse | null
 	preset?: RuleDraft | null
@@ -98,6 +99,7 @@ const context: AutomationContext = {
 	get customFields() { return props.customFields },
 	get statuses() { return props.statuses },
 	get secrets() { return props.secrets ?? null },
+	get forms() { return props.forms ?? null },
 	errors,
 	lines,
 }

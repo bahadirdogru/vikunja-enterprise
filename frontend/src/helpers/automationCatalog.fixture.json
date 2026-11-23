@@ -144,6 +144,19 @@
           "default": "any"
         }
       ]
+    },
+    {
+      "type": "form.submitted",
+      "title_key": "automation.trigger.form_submitted",
+      "event": "form.submitted",
+      "options": [
+        {
+          "name": "form_id",
+          "kind": "number",
+          "required": false,
+          "title_key": "automation.option.form_id"
+        }
+      ]
     }
   ],
   "fields": [
@@ -1059,6 +1072,65 @@
       "title_key": "automation.field.event_new_cancel_reason"
     },
     {
+      "name": "event.new.form_id",
+      "kind": "number",
+      "operators": [
+        "=",
+        "!=",
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "in",
+        "not in",
+        "is_empty",
+        "is_not_empty"
+      ],
+      "title_key": "automation.field.event_new_form_id"
+    },
+    {
+      "name": "event.new.form_title",
+      "kind": "string",
+      "operators": [
+        "=",
+        "!=",
+        "like",
+        "in",
+        "not in",
+        "is_empty",
+        "is_not_empty"
+      ],
+      "title_key": "automation.field.event_new_form_title"
+    },
+    {
+      "name": "event.new.submitter_name",
+      "kind": "string",
+      "operators": [
+        "=",
+        "!=",
+        "like",
+        "in",
+        "not in",
+        "is_empty",
+        "is_not_empty"
+      ],
+      "title_key": "automation.field.event_new_submitter_name"
+    },
+    {
+      "name": "event.new.submitter_email",
+      "kind": "string",
+      "operators": [
+        "=",
+        "!=",
+        "like",
+        "in",
+        "not in",
+        "is_empty",
+        "is_not_empty"
+      ],
+      "title_key": "automation.field.event_new_submitter_email"
+    },
+    {
       "name": "cf_1",
       "kind": "number",
       "operators": [
@@ -1534,7 +1606,10 @@
     "project.title",
     "event.approval.id",
     "event.approval.title",
-    "event.approval.outcome"
+    "event.approval.outcome",
+    "event.form.title",
+    "event.form.submitter_name",
+    "event.form.submitter_email"
   ],
   "script": {
     "language": "javascript",

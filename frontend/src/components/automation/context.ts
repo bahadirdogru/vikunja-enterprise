@@ -13,6 +13,8 @@ export type AutomationContext = {
 	statuses: AutomationStatus[]
 	// Names of the project secrets, or null when the backend has no secrets list.
 	secrets: string[] | null
+	// The forms of the project (for the form option of the form.submitted trigger), or null when they are not known.
+	forms?: {id: number, title: string}[] | null
 	// Messages by path (client and server validation).
 	errors: ComputedRef<Map<string, string[]>>
 	// Position of a script syntax error by path (the server reports line and column).
