@@ -68,17 +68,25 @@ func lockDuration() time.Duration {
 
 // recoverStuck gives events back whose worker disappeared: they stay in processing past locked_until. Events that
 // used up their attempts become dead instead.
+//
+// It looks before it writes. The workers call this on every poll, and an update takes the write lock of an SQLite
+// database even when it matches no row. A transaction that has read and then wants to write is not made to wait for
+// that lock, it fails at once with "database is locked", so an idle worker must not write.
 func recoverStuck(s *xorm.Session) error {
 	stuck := builder.And(
 		builder.Eq{"status": models.AutomationEventProcessing},
 		builder.Lt{"locked_until": dbTime(now())},
 	)
+	found, err := s.Where(stuck).Exist(&models.AutomationEvent{})
+	if err != nil || !found {
+		return err
+	}
 	if _, err := s.Where(builder.And(stuck, builder.Gte{"attempts": config.AutomationMaxAttempts.GetInt()})).
 		Cols("status", "locked_until").
 		Update(&models.AutomationEvent{Status: models.AutomationEventDead}); err != nil {
 		return err
 	}
-	_, err := s.Where(stuck).Cols("status", "locked_until").
+	_, err = s.Where(stuck).Cols("status", "locked_until").
 		Update(&models.AutomationEvent{Status: models.AutomationEventPending})
 	return err
 }

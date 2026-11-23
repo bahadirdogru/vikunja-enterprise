@@ -215,6 +215,25 @@ func TestWorker_StartedWorkersProcessEvents(t *testing.T) {
 	Stop()
 }
 
+// An idle poll must only read: on SQLite every write takes the database write lock, and a request that has read
+// and then writes fails at once with "database is locked" when a worker holds it.
+func TestWorker_IdlePollDoesNotWrite(t *testing.T) {
+	reset(t)
+
+	// A request in the middle of its transaction. On SQLite it holds the write lock until it ends.
+	s := db.NewSession()
+	defer s.Close()
+	_, err := s.ID(1).Cols("title").Update(&models.Task{Title: "being edited"})
+	require.NoError(t, err)
+
+	started := time.Now()
+	n, err := ProcessPending(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, 0, n)
+	assert.Less(t, time.Since(started), 2*time.Second, "the poll did not wait for the write lock")
+	require.NoError(t, s.Rollback())
+}
+
 func TestWorker_CleanupDeletesOldFinishedWork(t *testing.T) {
 	reset(t)
 	r := insertRawRule(t, projectOwned, user1, spec.TriggerTaskCreated, rawAct("test.count", "key", "c"))
