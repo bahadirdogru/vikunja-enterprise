@@ -215,7 +215,9 @@ func fakeClock(t *testing.T) (advance func(time.Duration)) {
 	return func(d time.Duration) { clock = clock.Add(d) }
 }
 
-func newSession() *xorm.Session { return db.NewSession() }
+// newSession returns a session without a transaction. Tests keep sessions open across reset(), and an open transaction
+// holds metadata locks on MySQL that make the fixture reload hang forever.
+func newSession() *xorm.Session { return db.NewAutocommitSession() }
 
 func mustCommitAssign(t *testing.T, taskID int64) {
 	t.Helper()
