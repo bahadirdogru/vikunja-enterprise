@@ -72,6 +72,8 @@ The fork's keys, with their defaults (the meaning of each is on the module page)
 | `automation.scripts.maxcallstack` | `512` | [Automation](automation.md) |
 | `automation.scripts.maxresults` | `200` | [Automation](automation.md) |
 | `automation.scripts.httptimeout` | `10s` | [Automation](automation.md) |
+| `customfields.maxfieldsperproject` | `100` | [Custom fields](custom-fields.md) |
+| `customfields.maxoptionsperfield` | `200` | [Custom fields](custom-fields.md) |
 | `reports.cachettl` | `30s` | [Dashboards and reports](dashboards-reports.md) |
 | `reports.maxgroups` | `200` | [Dashboards and reports](dashboards-reports.md) |
 | `reports.maxbuckets` | `366` | [Dashboards and reports](dashboards-reports.md) |
