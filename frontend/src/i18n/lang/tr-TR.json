@@ -17,7 +17,7 @@
 		"modeLabel": "Karar şekli",
 		"due": "Bitiş tarihi",
 		"overdue": "gecikti",
-		"age": "Bekleme süresi",
+		"age": "Talep edildi",
 		"resolvedAt": "Sonuçlandı",
 		"progress": "{done}/{total} onayladı",
 		"progressLabel": "İlerleme",
@@ -67,7 +67,7 @@
 			"viaApproval": "bir onay talebiyle"
 		},
 		"cancelReason": {
-			"cancelled_by_requester": "Talep, talep eden veya bir proje yöneticisi tarafından iptal edildi.",
+			"cancelled_by_requester": "Talebi, talep eden kişi veya bir proje yöneticisi iptal etti.",
 			"task_deleted": "Görev silindi.",
 			"task_moved": "Görev başka bir projeye taşındı.",
 			"workflow_removed": "Projenin iş akışı kaldırıldı.",
@@ -80,7 +80,7 @@
 			"requester_lost_access": "Talep edenin göreve erişimi kalmadı.",
 			"requester_not_in_team": "Talep eden artık değişikliğin sınırlı olduğu bir ekipte değil.",
 			"requester_deleted": "Talep eden artık yok.",
-			"no_approvers": "Karar verebilecek, göreve erişimi olan kimse kalmadı.",
+			"no_approvers": "Göreve erişimi olan ve karar verebilecek kimse kalmadı.",
 			"unknown": "Talep iptal edildi."
 		},
 		"marker": {
@@ -112,7 +112,7 @@
 		"page": {
 			"tabsLabel": "Onay listeleri",
 			"tabs": {
-				"waiting": "Benden bekleyenler",
+				"waiting": "Beni bekleyenler",
 				"requested": "Benim taleplerim",
 				"history": "Geçmiş"
 			},
@@ -1767,7 +1767,7 @@
 		"add": "Tepki ekle"
 	},
 	"error": {
-		"24001": "Bu onay talebi yok.",
+		"24001": "Bu onay talebi bulunamadı.",
 		"24002": "Bu onay talebi zaten sonuçlandı.",
 		"24003": "Bu talebin onaylayanlarından biri değilsin.",
 		"24004": "Bu talebe zaten karar verdin.",
@@ -1777,13 +1777,13 @@
 		"24008": "Kendi talebine karar veremezsin.",
 		"24009": "Onay talebi geçerli değil.",
 		"24010": "Paylaşım bağlantılarıyla onay istenemez.",
-		"25001": "Bu form yok.",
+		"25001": "Bu form bulunamadı.",
 		"25002": "Form geçerli değil.",
 		"25003": "Bu form şu an yanıt almıyor.",
-		"25004": "Bu formu kullanmak için lütfen oturum açın.",
-		"25005": "Bu formu kullanma izniniz yok.",
+		"25004": "Bu formu kullanmak için giriş yap.",
+		"25005": "Bu formu kullanma yetkin yok.",
 		"25006": "Bazı yanıtlar geçerli değil.",
-		"25007": "Çok fazla gönderim yapıldı. Daha sonra tekrar deneyin.",
+		"25007": "Çok fazla yanıt gönderildi. Daha sonra tekrar dene.",
 		"25008": "Bu sunucuda formlar kapalı.",
 		"25009": "Logo kullanılamadı. En fazla 1 MB ve 4096 x 4096 piksel boyutunda bir PNG, JPEG, GIF veya WebP görseli kullan.",
 		"1001": "Bu kullanıcı adı zaten kapılmış.",
@@ -1856,7 +1856,7 @@
 		"21007": "Görev bu durum değişikliğinin gereklerini karşılamıyor.",
 		"21008": "Kaldırılan durumlardaki görevlerin taşınacağı bir durum seç.",
 		"21009": "İş akışı durumları, yalnızca projede bir iş akışı varsa sütun olarak kullanılabilir.",
-		"21010": "Bu panonun sütunları iş akışı durumlarıdır. Bunları iş akışı ayarlarından değiştir.",
+		"21010": "Bu görünümün sütunları iş akışı durumlarıdır. Bunları iş akışı ayarlarından değiştir.",
 		"22001": "Bu otomasyon kuralı bulunamadı.",
 		"22002": "Otomasyon kuralı geçerli değil.",
 		"22003": "Bu otomasyon çalıştırması bulunamadı.",
@@ -1865,18 +1865,18 @@
 		"22006": "Gizli anahtar geçerli değil: adda harf, rakam ve alt çizgi kullan, rakamla başlamasın (en fazla 64 karakter); değer en fazla 8 KiB olabilir.",
 		"22007": "Bu gizli anahtar bulunamadı.",
 		"22008": "Gizli anahtarın şifresi artık çözülemiyor. Yeniden gir.",
-		"22009": "Bu otomasyon çalıştırılamaz: kapalı ya da elle tetikleyicisi yok.",
-		"22010": "Bu webhook adresi mevcut değil.",
+		"22009": "Bu otomasyon çalıştırılamaz: kapalı ya da elle çalıştırma tetikleyicisi yok.",
+		"22010": "Bu webhook adresi bulunamadı.",
 		"22011": "İsteğin imzası geçerli değil. Gizli anahtarı ve zaman damgasını kontrol et (gönderenin saati birkaç dakikadan fazla sapmış olabilir) ve her çağrıyı yeniden imzaladığından emin ol.",
-		"22012": "Bu webhook'a çok fazla çağrı yapıldı. Daha sonra yeniden dene.",
+		"22012": "Bu webhook'a çok fazla çağrı yapıldı. Daha sonra tekrar dene.",
 		"22013": "İsteğin gövdesi bir JSON nesnesi olmalı.",
 		"22014": "Bu proje otomasyon kuralı sınırına ulaştı. İhtiyacın olmayan bir kuralı sil ya da bir yöneticiden automation.maxrulesperproject değerini yükseltmesini iste.",
 		"23001": "Rapor ayarlarından biri geçerli değil.",
 		"23002": "Bu grafik çok fazla zaman aralığına sahip olurdu. Daha kısa bir dönem veya daha büyük adımlar seç.",
-		"23003": "Bu grafik çok fazla gruba sahip olurdu. Daha az grup göster.",
+		"23003": "Bu grafikte çok fazla grup olurdu. Daha az grup göster.",
 		"23004": "Bu alan görevleri gruplamak için kullanılamaz.",
 		"23005": "Bu ayar, paylaşım bağlantısı üzerinden raporlanamaz.",
-		"23006": "Pano mevcut değil.",
+		"23006": "Pano bulunamadı.",
 		"23007": "Bileşen bu panoya ait değil.",
 		"23008": "Pano veya bileşenlerinden biri geçerli değil.",
 		"23009": "Rapor çok uzun sürdü. Filtreyi veya dönemi daralt.",
@@ -2148,9 +2148,9 @@
 		"intro": "Bu alanlar projedeki her görevde görünür.",
 		"onlyAdminsCanEdit": "Özel alanları yalnızca proje yöneticileri yönetebilir.",
 		"add": "Alan ekle",
-		"createSuccess": "Özel alan başarıyla oluşturuldu.",
-		"updateSuccess": "Özel alan başarıyla güncellendi.",
-		"deleteSuccess": "Özel alan başarıyla silindi.",
+		"createSuccess": "Özel alan oluşturuldu.",
+		"updateSuccess": "Özel alan güncellendi.",
+		"deleteSuccess": "Özel alan silindi.",
 		"deleteTitle": "\"{title}\" alanı silinsin mi?",
 		"deleteText": "Bu projedeki tüm görevlerde bu alan için girilmiş bütün değerler silinecek. Görevlerin kendisi silinmez. Bu işlem geri alınamaz!",
 		"editField": "\"{title}\" alanını düzenle",
@@ -2205,9 +2205,9 @@
 			"addOption": "Seçenek ekle"
 		},
 		"errors": {
-			"titleRequired": "Lütfen bir başlık gir.",
+			"titleRequired": "Bir başlık gir.",
 			"titleTooLong": "Başlık en fazla 250 karakter olabilir.",
-			"notANumber": "Lütfen bir sayı gir.",
+			"notANumber": "Bir sayı gir.",
 			"minGreaterThanMax": "En az değer, en çok değerden büyük olamaz.",
 			"precision": "Ondalık basamak 0 ile {max} arasında bir tam sayı olmalıdır.",
 			"currency": "Üç harfli bir para birimi kodu kullan, örneğin TRY.",
@@ -2216,18 +2216,18 @@
 			"optionTitle": "Her seçeneğin en fazla 250 karakterlik bir adı olmalıdır.",
 			"optionColor": "Seçenek renkleri #aabbcc biçiminde olmalıdır.",
 			"value": {
-				"string": "Lütfen metin gir.",
+				"string": "Metin gir.",
 				"url": "http:// veya https:// ile başlayan geçerli bir web adresi gir.",
 				"email": "Geçerli bir e-posta adresi gir.",
-				"number": "Lütfen bir sayı gir.",
+				"number": "Bir sayı gir.",
 				"min": "Değer en az {min} olmalıdır.",
 				"max": "Değer en fazla {max} olmalıdır.",
 				"progress": "İlerleme 0 ile 100 arasında olmalıdır.",
 				"rating": "Puan 1 ile {max} arasında bir tam sayı olmalıdır.",
 				"boolean": "Geçersiz değer.",
-				"date": "Lütfen geçerli bir tarih seç.",
-				"option": "Lütfen mevcut seçeneklerden birini seç.",
-				"user": "Lütfen geçerli kullanıcılar seç."
+				"date": "Geçerli bir tarih seç.",
+				"option": "Mevcut seçeneklerden birini seç.",
+				"user": "Geçerli kullanıcılar seç."
 			}
 		},
 		"value": {
@@ -2250,7 +2250,7 @@
 	"workflow": {
 		"approval": {
 			"title": "Onay",
-			"marker": "Onay gerekir",
+			"marker": "Onay gerekli",
 			"requires": "Onay gerektirir",
 			"requiresHint": "Durum hemen değişmez. Önce seçtiğin kişilerin onaylaması gerekir.",
 			"mode": {
@@ -2278,7 +2278,7 @@
 			},
 			"choose": "Seç…",
 			"add": "Ekle",
-			"removeSource": "{name} kaldır",
+			"removeSource": "{name} öğesini kaldır",
 			"sourceLabel": {
 				"user": "{name}",
 				"team": "{name} ekibi",
@@ -2290,7 +2290,7 @@
 				"team": "Proje hiçbir ekiple paylaşılmamış.",
 				"custom_field": "Projede kişi türünde özel alan yok."
 			},
-			"rejectedStatus": "Reddedilirse şuraya taşı",
+			"rejectedStatus": "Reddedilirse taşınacağı durum",
 			"rejectedStay": "Mevcut durumda kalsın",
 			"rejectedStatusHint": "Ret yorumu göreve eklenir.",
 			"dueIn": "Karar süresi",
@@ -2299,14 +2299,14 @@
 			"allowSelf": "Talep eden kendi talebini onaylayabilir"
 		},
 		"title": "İş akışı",
-		"onlyAdminsCanEdit": "İş akışını yalnızca proje yöneticileri düzenleyebilir.",
+		"onlyAdminsCanEdit": "İş akışını yalnızca proje yöneticileri yönetebilir.",
 		"saveSuccess": "İş akışı kaydedildi.",
 		"disableSuccess": "İş akışı devre dışı bırakıldı.",
 		"save": "İş akışını kaydet",
 		"unsaved": "Kaydedilmemiş değişiklikler var",
 		"empty": {
 			"title": "Bu projede henüz iş akışı yok",
-			"text": "İş akışı, görevlere Yapılacak, Devam ediyor ve Tamamlandı gibi gerçek durumlar ve bu durumlar arasındaki geçişler için kurallar verir: geçişi kimin yapabileceği, hangi alanların doldurulması gerektiği ve yorum zorunlu olup olmadığı.",
+			"text": "İş akışı, görevlere Yapılacak, Devam ediyor ve Tamamlandı gibi gerçek durumlar ve bu durumlar arasındaki geçişler için kurallar verir: geçişi kimin yapabileceği, hangi alanların doldurulması gerektiği ve yorumun zorunlu olup olmadığı.",
 			"kanban": "Durum görevin kendisine aittir ve her görünümde aynıdır. Yalnızca tek bir görünümde görevleri gruplayan kanban sütunlarından bağımsızdır.",
 			"enable": "İş akışını etkinleştir",
 			"draftHint": "Bu bir başlangıç taslağı. Durumları ve kuralları düzenle, ardından iş akışını etkinleştirmek için kaydet."
@@ -2337,7 +2337,7 @@
 			"remove": "\"{title}\" durumunu kaldır",
 			"removeHint": "Yeni görevler başlangıç durumunda açılır. Daha önce kullanılmış bir durum kaldırılırsa arşivlenir, geçmişi okunabilir kalır.",
 			"archived": "{count} arşivlenmiş durum | {count} arşivlenmiş durum",
-			"archivedHint": "Arşivlenmiş durumlar seçicilerde görünmez ama geçmişi korunur."
+			"archivedHint": "Arşivlenmiş durumlar seçicilerde görünmez ama geçmişleri korunur."
 		},
 		"validation": {
 			"approvalApproversRequired": "En az bir onaylayan ekle.",
@@ -2375,10 +2375,10 @@
 			"add": "Geçiş ekle",
 			"empty": "Henüz ek kural yok. Her durum değişikliğine izin verilir.",
 			"emptyRestricted": "Hiç geçiş listelenmedi, bu yüzden görevlerin durumu değiştirilemez. En az bir geçiş ekle.",
-			"from": "Başlangıç durumu",
+			"from": "Kaynak durum",
 			"to": "Hedef durum",
 			"buttonLabel": "Düğme etiketi",
-			"buttonLabelPlaceholder": "İsteğe bağlı, ör. Tasarıma gönder",
+			"buttonLabelPlaceholder": "İsteğe bağlı, örn. Tasarıma gönder",
 			"minPermission": "En düşük yetki",
 			"permission": {
 				"write": "Görevi düzenleyebilen",
@@ -2386,7 +2386,7 @@
 			},
 			"requireComment": "Yorum zorunlu",
 			"requiredFields": "Zorunlu alanlar",
-			"requiredFieldsHint": "Görev bu değişikliği yapmadan önce bu alanlar doldurulmuş olmalı.",
+			"requiredFieldsHint": "Bu değişiklik yapılmadan önce görevde bu alanlar doldurulmuş olmalı.",
 			"teams": "İzin verilen ekipler",
 			"teamsHint": "İsteğe bağlı. Ekip seçilirse bu değişikliği yalnızca ekip üyeleri ve proje yöneticileri yapabilir.",
 			"noTeams": "Henüz hiçbir ekibin üyesi değilsin.",
@@ -2396,11 +2396,11 @@
 				"comment": "Yorum",
 				"fields": "Zorunlu alanlar",
 				"teams": "Ekipler",
-				"admin": "Yalnızca yönetici"
+				"admin": "Yalnızca yöneticiler"
 			}
 		},
 		"matrix": {
-			"caption": "Hangi durum değişiklikleri listelendi. Satırlar görevin ayrıldığı, sütunlar girdiği durumdur.",
+			"caption": "Listelenen durum değişiklikleri. Satırlar görevin ayrıldığı durumu, sütunlar girdiği durumu gösterir.",
 			"corner": "Nereden \\ Nereye",
 			"cell": "{from} durumundan {to} durumuna",
 			"hint": "Satırdaki durumdan sütundaki duruma geçişe izin vermek için hücreyi işaretle. Kurallarını düzenlemek için işaretli bir hücreyi seç."
@@ -2434,7 +2434,7 @@
 		"dialog": {
 			"title": "Durumu \"{status}\" olarak değiştir",
 			"fieldsIntro": "Görevin durumu değişmeden önce aşağıdakileri doldur.",
-			"chooseDate": "Bir tarih seç",
+			"chooseDate": "Tarih seç",
 			"comment": "Yorum",
 			"commentPlaceholder": "Durum neden değişiyor?",
 			"commentRequired": "Bu değişiklik için yorum yazmak zorunlu.",
@@ -2448,22 +2448,22 @@
 		},
 		"errors": {
 			"notAllowed": "Bu durum değişikliğine iş akışı izin vermiyor.",
-			"forbiddenPermission": "Bu durum değişikliği için gereken yetkiye sahip değilsin.",
+			"forbiddenPermission": "Bu durum değişikliği için yetkin yok.",
 			"forbiddenTeam": "Bu durum değişikliğini yalnızca izin verilen ekiplerin üyeleri yapabilir.",
 			"statusGone": "Bu durum artık yok. Görevi yenileyip tekrar dene."
 		},
 		"kanban": {
 			"mode": "İş akışı durumları",
 			"modeHint": "Projenin iş akışındaki her durum için bir sütun. Bir kartı taşımak görevin durumunu değiştirir ve iş akışının kurallarına uyar.",
-			"managed": "Bu panonun sütunları projenin iş akışındaki durumlardır. Bunları iş akışı ayarlarından düzenle.",
-			"noWorkflow": "Bu projenin artık bir iş akışı olmadığı için bu panoda sütun yok. İş akışını yeniden etkinleştir ya da görünümü elle yönetilen sütunlara geçir."
+			"managed": "Bu görünümün sütunları projenin iş akışındaki durumlardır. Bunları iş akışı ayarlarından düzenle.",
+			"noWorkflow": "Bu projenin artık bir iş akışı olmadığı için bu görünümde sütun yok. İş akışını yeniden etkinleştir ya da görünümü elle yönetilen sütunlara geçir."
 		}
 	},
 	"charts": {
 		"loading": "Grafik yükleniyor",
 		"noData": "Bu filtre için veri yok",
 		"error": "Grafik yüklenemedi.",
-		"multiValued": "Bir görev birden fazla grupta sayılabilir; bu yüzden gruplar görev sayısından büyük bir toplam verir.",
+		"multiValued": "Bir görev birden fazla grupta sayılabilir; bu yüzden grupların toplamı görev sayısından fazla olabilir.",
 		"noValue": "Değer yok",
 		"other": "Diğer",
 		"distinct": "Bir kez sayılan görevler",
@@ -2492,7 +2492,7 @@
 		"scopeLabel": "Kimin için",
 		"createHint": "Yeni pano, istediğin gibi değiştirebileceğin birkaç bileşenle başlar. Proje panosunu projeyi okuyabilen herkes görür.",
 		"titleRequired": "Panoya bir ad ver.",
-		"empty": "Henüz pano yok. İşlerin nerede durduğunu görmek için bir pano oluştur.",
+		"empty": "Henüz pano yok. İşlerin ne durumda olduğunu görmek için bir pano oluştur.",
 		"loadError": "Pano yüklenemedi.",
 		"widgetCount": "bileşen yok | {count} bileşen | {count} bileşen",
 		"rename": "{title} panosunu yeniden adlandır",
@@ -2500,13 +2500,13 @@
 		"deleteTitle": "Bu pano silinsin mi?",
 		"deleteText": "\"{title}\" ve tüm bileşenleri silinecek. Görevler etkilenmez.",
 		"deleted": "Pano silindi.",
-		"defaultTitle": "{project} özeti",
+		"defaultTitle": "{project}: genel bakış",
 		"projectEmpty": "Bu projenin henüz panosu yok. Proje yöneticisi bir pano oluşturabilir.",
 		"projectEmptyAdmin": "Bu projenin henüz panosu yok. Varsayılan panoyla başla: açık görevler, durum, zaman içindeki ilerleme, iş yükü ve geciken görevler.",
 		"createDefault": "Varsayılan panoyu oluştur",
 		"allDashboards": "Tüm panolar",
 		"edit": "Panoyu düzenle",
-		"doneEditing": "Bitti",
+		"doneEditing": "Tamam",
 		"addWidget": "Bileşen ekle",
 		"undo": "Geri al",
 		"editHint": "Bileşeni taşımak için başlığından sürükle, yeniden boyutlandırmak için köşesini kullan. Klavyede başlığa odaklanıp ok tuşlarıyla taşı, Shift ile ok tuşlarını kullanarak yeniden boyutlandır.",
@@ -2520,22 +2520,22 @@
 			"saving": "Kaydediliyor…",
 			"saved": "Tüm değişiklikler kaydedildi",
 			"failed": "Yerleşim kaydedilemedi.",
-			"retry": "Yeniden dene"
+			"retry": "Tekrar dene"
 		},
 		"grid": {
 			"draggable": "taşınabilir bileşen",
 			"moveLabel": "{title}. Ok tuşları bileşeni taşır, Shift ve ok tuşları yeniden boyutlandırır.",
-			"moved": "{title}, {column}. sütun {row}. satıra taşındı.",
+			"moved": "{title} taşındı: {column}. sütun, {row}. satır.",
 			"resized": "{title} artık {w} sütun genişliğinde ve {h} satır yüksekliğinde."
 		},
 		"widget": {
 			"refresh": "Yenile",
 			"menu": "{title} seçenekleri",
 			"toggleOrientation": "Çubuk yönünü değiştir",
-			"toggleStacked": "Yığılmış ve gruplu görünümü değiştir",
+			"toggleStacked": "Yığılmış ve gruplu görünüm arasında geçiş yap",
 			"toggleLegend": "Göstergeyi göster veya gizle",
 			"edit": "Düzenle",
-			"duplicate": "Çoğalt",
+			"duplicate": "Kopyala",
 			"remove": "Kaldır",
 			"removeTitle": "Bu bileşen kaldırılsın mı?",
 			"removeText": "Bileşen panodan kaldırılır. Görevler etkilenmez.",
@@ -2546,7 +2546,7 @@
 		"types": {
 			"number": {
 				"name": "Sayı",
-				"description": "Tek bir rakam, örneğin açık görev sayısı."
+				"description": "Tek bir sayı, örneğin açık görev sayısı."
 			},
 			"bar": {
 				"name": "Çubuk grafik",
@@ -2588,7 +2588,7 @@
 		"taskList": {
 			"empty": "Bu filtreyle eşleşen görev yok.",
 			"due": "Bitiş",
-			"showAll": "Tüm {count} görevi göster"
+			"showAll": "{count} görevin tümünü göster"
 		},
 		"text": {
 			"empty": "Bu not boş."
@@ -2605,7 +2605,7 @@
 			},
 			"empty": "Bu dönemde hiçbir görev bir durumda zaman geçirmedi.",
 			"tasks": "görev yok | {count} görev | {count} görev",
-			"truncated": "Yalnızca en çok göreve sahip gruplar gösteriliyor."
+			"truncated": "Yalnızca en çok görev içeren gruplar gösteriliyor."
 		},
 		"workload": {
 			"metric": "Gösterilen",
@@ -2623,7 +2623,7 @@
 			},
 			"empty": "Açık görev yok.",
 			"open": "açık görev yok | {count} açık görev | {count} açık görev",
-			"truncated": "Yalnızca en çok açık göreve sahip kişiler gösteriliyor."
+			"truncated": "Yalnızca en çok açık görevi olan kişiler gösteriliyor."
 		},
 		"timeTracking": {
 			"groups": {
@@ -2632,9 +2632,9 @@
 				"label": "Etiket",
 				"day": "Gün"
 			},
-			"empty": "Bu dönemde zaman takip edilmedi.",
+			"empty": "Bu dönemde süre kaydedilmedi.",
 			"total": "{count} kayıtta {time} | {count} kayıtta {time}",
-			"running": "çalışan zamanlayıcı yok | {count} çalışan zamanlayıcı sayılmıyor | {count} çalışan zamanlayıcı sayılmıyor",
+			"running": "çalışan sayaç yok | {count} çalışan sayaç hesaba katılmıyor | {count} çalışan sayaç hesaba katılmıyor",
 			"truncated": "Yalnızca en çok zamana sahip gruplar gösteriliyor, kalanı \"Diğer\" altında toplanır.",
 			"unavailable": "Zaman takibi bu sunucuda kullanılamıyor."
 		},
@@ -2647,9 +2647,9 @@
 			"next": "Sonraki",
 			"blocked": {
 				"other": "Katlanmış \"diğer\" grubu listelenemez: \"ilk gruplardan biri olmayan\" için bir filtre yok.",
-				"null_filter": "\"Değer yok\" bu filtreyle birlikte listelenemez: değeri olmayan görevleri de katan seçeneği gerektirir, bu da diğer koşulları değiştirirdi.",
+				"null_filter": "\"Değer yok\" bu filtreyle birlikte listelenemez: değeri olmayan görevleri de dâhil eden seçenek gerekir ve bu seçenek diğer koşulları da değiştirir.",
 				"include_nulls": "Bu bileşenin filtresi değeri olmayan görevleri de içerdiği için tek bir grup listelenemez.",
-				"status_entered": "Bir görevin duruma girdiği an bir filtre alanı değildir; bu dönemin görevleri listelenemez.",
+				"status_entered": "Görevin duruma giriş zamanı bir filtre alanı olmadığı için bu dönemin görevleri listelenemiyor.",
 				"needs_username": "Kişi bulunamadı, bu yüzden görevleri listelenemiyor.",
 				"needs_options": "Bu alanın seçenekleri yüklenemedi.",
 				"unknown_dimension": "Bu grup bir filtreye çevrilemiyor."
@@ -2697,9 +2697,9 @@
 			"thisProject": "Bu proje",
 			"allProjects": "Tüm projelerim",
 			"filter": "Filtre",
-			"groupBy": "Grupla",
-			"seriesBy": "Çizgileri ayır",
-			"thenBy": "Ardından grupla",
+			"groupBy": "Gruplama ölçütü",
+			"seriesBy": "Çizgi ayırma ölçütü",
+			"thenBy": "İkinci gruplama ölçütü",
 			"none": "Yok",
 			"choose": "Seç…",
 			"measure": "Değer",
@@ -2710,14 +2710,14 @@
 			"from": "Başlangıç",
 			"to": "Bitiş",
 			"limit": "Gösterilen grup sayısı",
-			"sortBy": "Sırala",
+			"sortBy": "Sıralama ölçütü",
 			"order": "Sıra",
 			"ascending": "Artan",
 			"descending": "Azalan",
 			"listLimit": "Görev sayısı",
 			"text": "Metin",
 			"textPlaceholder": "Bir not yaz…",
-			"display": "Görünüm",
+			"display": "Gösterim",
 			"orientation": "Çubuk yönü",
 			"orientationAuto": "Otomatik",
 			"vertical": "Dikey",
@@ -2727,16 +2727,16 @@
 			"displayHint": "Görünüm seçenekleri bu tarayıcıda saklanır, panonun parçası değildir.",
 			"compare": "Önceki dönemle karşılaştır",
 			"compareHint": "Sayının, aşağıda seçilen dönemden hemen önceki aynı uzunluktaki döneme göre nasıl değiştiğini gösterir.",
-			"splitBy": "Şuna göre ayır",
-			"addUpBy": "Şuna göre topla",
+			"splitBy": "Ayırma ölçütü",
+			"addUpBy": "Toplama ölçütü",
 			"estimateField": "Tahmin alanı",
 			"estimateHint": "Projenin bir sayı alanı, örneğin bir görevin kaç saat süreceğine dair tahmin. Değerler kişi başına toplanır.",
-			"preview": "Önizleme",
-			"previewIdle": "Önizlemeyi görmek için formu tamamla.",
+			"preview": "Ön izleme",
+			"previewIdle": "Ön izlemeyi görmek için formu tamamla.",
 			"problems": {
 				"groupByRequired": "Neye göre gruplanacağını seç.",
 				"timeFieldRequired": "Grafiğin izleyeceği tarihi seç.",
-				"fieldRequired": "Hesaplanacak alanı seç.",
+				"fieldRequired": "Hesaplamada kullanılacak alanı seç.",
 				"dateRequired": "Bir tarih gir.",
 				"listLimitRange": "1 ile 100 arasında bir sayı gir.",
 				"projectRequired": "Projeyi seç: durumlar tek bir projenin iş akışına aittir."
@@ -2789,18 +2789,18 @@
 		"off": "Kapalı",
 		"enableRule": "\"{title}\" kuralını etkinleştir",
 		"edit": "\"{title}\" kuralını düzenle",
-		"runsOf": "\"{title}\" çalıştırmalarını göster",
-		"duplicate": "\"{title}\" kuralını çoğalt",
+		"runsOf": "\"{title}\" kuralının çalıştırmalarını göster",
+		"duplicate": "\"{title}\" kuralını kopyala",
 		"delete": "\"{title}\" kuralını sil",
 		"neverRun": "Henüz çalışmadı",
-		"disabledBadge": "Sistem tarafından devre dışı bırakıldı",
+		"disabledBadge": "Sistem devre dışı bıraktı",
 		"deleteConfirm": {
 			"title": "Bu kural silinsin mi?",
 			"text": "\"{title}\" kuralı ve tüm çalıştırma kayıtları silinecek. Bu işlem geri alınamaz."
 		},
 		"leave": {
 			"title": "Kaydedilmemiş değişiklikler atılsın mı?",
-			"text": "Kuralda kaydedilmemiş değişiklikler var. Şimdi ayrılırsan kaybolacaklar.",
+			"text": "Kuralda kaydedilmemiş değişiklikler var. Şimdi çıkarsan kaybolur.",
 			"addressTitle": "Adresi kopyalamadan çıkılsın mı?",
 			"addressText": "Webhook adresi yalnızca bir kez gösterilir ve kopyalanmadı. Şimdi çıkarsan kaybolur ve yeni bir adres oluşturman gerekir."
 		},
@@ -2820,15 +2820,15 @@
 			},
 			"assignCreator": {
 				"title": "Yeni görevleri oluşturana ata",
-				"description": "Bir görev oluşturulduğunda, onu oluşturan kişiye atar."
+				"description": "Bir görev oluşturulduğunda görevi oluşturan kişiye atar."
 			},
 			"dueOnAssigned": {
 				"title": "Biri atanınca bitiş tarihi 3 gün sonra",
-				"description": "Bir atanan eklendiğinde bitiş tarihini bugünden 3 gün sonrasına ayarlar."
+				"description": "Göreve biri atandığında bitiş tarihini bugünden üç gün sonrasına ayarlar."
 			},
 			"dueOnCreated": {
 				"title": "Yeni görevlere varsayılan bitiş tarihi",
-				"description": "Bitiş tarihi olmadan oluşturulan göreve, bugünden 1 hafta sonrasını verir."
+				"description": "Bitiş tarihi olmadan oluşturulan bir görevin bitiş tarihini bugünden bir hafta sonrasına ayarlar."
 			}
 		},
 		"rule": {
@@ -2838,7 +2838,7 @@
 			"enabled": "Kural etkin"
 		},
 		"summary": {
-			"line": "\"{trigger}\" olduğunda → {actions}",
+			"line": "\"{trigger}\" → {actions}",
 			"conditions": "koşullu ({count})",
 			"noTrigger": "tetikleyici seçilmedi",
 			"noActions": "henüz eylem yok"
@@ -2877,7 +2877,7 @@
 			"type": "Eylem türü",
 			"moveUp": "{n}. eylemi yukarı taşı",
 			"moveDown": "{n}. eylemi aşağı taşı",
-			"duplicate": "{n}. eylemi çoğalt",
+			"duplicate": "{n}. eylemi kopyala",
 			"remove": "{n}. eylemi kaldır",
 			"unknown": "\"{type}\" eylemi bu sunucuda tanınmıyor.",
 			"set_field": "Görev alanını ayarla",
@@ -2937,7 +2937,7 @@
 			"addItem": "Değer ekle",
 			"removeItem": "{n}. değeri kaldır",
 			"noWorkflow": "Bu projede iş akışı yok, bu yüzden seçilecek durum yok.",
-			"chooseFirst": "Önce \"{param}\" seç.",
+			"chooseFirst": "Önce şunu seç: \"{param}\".",
 			"chooseFieldFirst": "Önce özel alanı seç.",
 			"insertPlaceholder": "Yer tutucu ekle…",
 			"invalidJson": "Bu geçerli bir JSON değil.",
@@ -2953,20 +2953,20 @@
 			"text": "Metin",
 			"title": "Başlık",
 			"description": "Açıklama",
-			"assignee": "Atanan (isteğe bağlı)",
+			"assignee": "Atanan kişi (isteğe bağlı)",
 			"due_offset": "Bitiş tarihi, şu andan itibaren (isteğe bağlı)",
 			"relation_kind": "İlişki (isteğe bağlı)",
 			"project_id": "Proje",
-			"condition": "Şu durumda dur",
+			"condition": "Bu koşul sağlanırsa dur",
 			"source": "Betik",
 			"url": "Adres (URL)",
 			"method": "Yöntem",
 			"headers": "Başlıklar",
-			"body": "İçerik",
-			"secret": "İmza gizli anahtarı (isteğe bağlı)",
+			"body": "Gövde",
+			"secret": "İmza anahtarı (isteğe bağlı)",
 			"priority": "Öncelik (0 ile 5 arası, isteğe bağlı)",
 			"duration": "Bekleme süresi",
-			"recipients": "Bildirilecekler",
+			"recipients": "Bildirilecek kişiler",
 			"team_id": "Ekip (isteğe bağlı)",
 			"message": "Mesaj"
 		},
@@ -2976,8 +2976,8 @@
 			"now": "Şimdi",
 			"tomorrow": "Yarın",
 			"inThreeDays": "3 gün sonra",
-			"inOneWeek": "1 hafta sonra",
-			"oneWeekAgo": "1 hafta önce",
+			"inOneWeek": "Bir hafta sonra",
+			"oneWeekAgo": "Bir hafta önce",
 			"none": "Tarihi temizle"
 		},
 		"duration": {
@@ -2993,7 +2993,7 @@
 			"limits": "Sınırlar",
 			"limitName": "Sınır",
 			"limitValue": "Değer",
-			"limitDescription": "Ne olur",
+			"limitDescription": "Aşıldığında",
 			"errorAt": "{line}. satır, {column}. sütunda sözdizimi hatası.",
 			"disabledNote": "Bu sunucuda betikler kapalı. Betik salt okunur gösterilir ve kural çalışınca hata verir. Yöneticiden betikleri açmasını (automation.scripts.enabled) iste ya da betiği kaldır.",
 			"snippet": {
@@ -3014,11 +3014,11 @@
 		"validation": {
 			"required": "Bu alan zorunlu.",
 			"atLeastOneAction": "En az bir eylem ekle.",
-			"duration": "Bir sayı ve bir birim kullan: m, h, d veya w, örneğin 30m ya da 3d.",
+			"duration": "Bir sayı ve bir birim kullan: m, h, d veya w; örneğin 30m ya da 3d.",
 			"minDuration": "En az 1 dakika olmalı.",
 			"recipients": "En az bir alıcı ya da bir ekip belirt.",
 			"cron": {
-				"every": "{'@every'} ile yazılan aralıklar desteklenmiyor. Beş alan ya da hazır ayarlardan birini kullan.",
+				"every": "{'@every'} ile yazılan aralıklar desteklenmiyor. Beş alan ya da hazır şablonlardan birini kullan.",
 				"timezone": "Saat dilimi öneki desteklenmiyor: zamanlamalar sunucunun saat diliminde çalışır.",
 				"fields": "Beş alan kullan: dakika, saat, ayın günü, ay ve haftanın günü.",
 				"syntax": "Bu geçerli bir cron ifadesi değil.",
@@ -3041,15 +3041,15 @@
 			"wouldFail": "Başarısız olurdu",
 			"scriptOutput": "Betik çıktısı ve çağrıları",
 			"payload": {
-				"label": "Simüle edilen istek gövdesi (isteğe bağlı)",
+				"label": "Denemede kullanılacak istek gövdesi (isteğe bağlı)",
 				"help": "event.payload olarak okunabilen bir JSON nesnesi. En çok 64 KiB.",
 				"json": "Bu geçerli bir JSON değil.",
-				"object": "Gövde bir JSON nesnesi olmalıdır.",
+				"object": "Gövde bir JSON nesnesi olmalı.",
 				"size": "Gövde 64 KiB'tan büyük."
 			}
 		},
 		"runs": {
-			"title": "\"{title}\" çalıştırmaları",
+			"title": "\"{title}\" kuralının çalıştırmaları",
 			"filter": "Durum",
 			"allStatuses": "Tümü (bu sayfa)",
 			"empty": "Bu kural henüz çalışmadı.",
@@ -3079,13 +3079,13 @@
 		},
 		"skipReason": {
 			"conditions_not_met": "Koşullar sağlanmadı",
-			"flow_stopped": "\"Koşul sağlanırsa dur\" eylemi tarafından durduruldu",
+			"flow_stopped": "\"Koşul sağlanırsa dur\" eylemiyle durduruldu",
 			"max_depth": "Kurallar birbirini çok fazla zincirleme tetikledi",
 			"rate_limit": "Dakikadaki çalıştırma sınırı aşıldı",
 			"self_trigger": "Kural kendini tetikleyecekti",
 			"task_not_found": "Görev artık yok",
 			"owner_not_admin": "Kuralın sahibi artık proje yöneticisi değil",
-			"owner_unavailable": "Kuralın sahibi kullanılamıyor",
+			"owner_unavailable": "Kuralın sahibinin hesabı kullanılamıyor",
 			"rule_changed": "Kural, çalıştırma beklerken değiştirildi",
 			"rule_disabled": "Kural devre dışı bırakıldı"
 		},
@@ -3115,7 +3115,7 @@
 			"task_comment_added": "Bir yorum eklendiğinde",
 			"task_attachment_added": "Bir ek eklendiğinde",
 			"manual": "Biri görevden elle çalıştırdığında",
-			"schedule": "Belirli bir zamanlamada",
+			"schedule": "Zamanlamaya göre",
 			"task_overdue": "Bir görevin süresi geçtiğinde",
 			"task_due_soon": "Bir bitiş tarihi yaklaştığında",
 			"webhook_incoming": "Harici bir hizmet bir web adresini çağırdığında"
@@ -3132,7 +3132,7 @@
 			"cron": "Zamanlama (cron ifadesi)",
 			"scope": "Şunun için çalışır",
 			"offset": "Bitiş tarihinden ne kadar önce",
-			"secret": "İmza gizli anahtarı (isteğe bağlı)"
+			"secret": "İmza anahtarı (isteğe bağlı)"
 		},
 		"op": {
 			"eq": "eşittir",
@@ -3185,36 +3185,36 @@
 			"event_doer_id": "Değişikliği yapan kişi (kimlik)",
 			"event_doer_username": "Değişikliği yapan kişi (kullanıcı adı)",
 			"event_doer_name": "Değişikliği yapan kişi (ad)",
-			"event_old_title": "Önce: Başlık",
-			"event_old_description": "Önce: Açıklama",
-			"event_old_done": "Önce: Tamamlandı",
-			"event_old_priority": "Önce: Öncelik",
-			"event_old_percent_done": "Önce: Tamamlanma yüzdesi",
-			"event_old_due_date": "Önce: Bitiş tarihi",
-			"event_old_start_date": "Önce: Başlangıç tarihi",
-			"event_old_end_date": "Önce: Sonlanma tarihi",
-			"event_old_hex_color": "Önce: Renk",
-			"event_old_project_id": "Önce: Proje",
-			"event_old_repeat_after": "Önce: Tekrar aralığı",
-			"event_old_status": "Önce: Durum",
-			"event_old_status_category": "Önce: Durum kategorisi",
-			"event_new_title": "Sonra: Başlık",
-			"event_new_description": "Sonra: Açıklama",
-			"event_new_done": "Sonra: Tamamlandı",
-			"event_new_priority": "Sonra: Öncelik",
-			"event_new_percent_done": "Sonra: Tamamlanma yüzdesi",
-			"event_new_due_date": "Sonra: Bitiş tarihi",
-			"event_new_start_date": "Sonra: Başlangıç tarihi",
-			"event_new_end_date": "Sonra: Sonlanma tarihi",
-			"event_new_hex_color": "Sonra: Renk",
-			"event_new_project_id": "Sonra: Proje",
-			"event_new_repeat_after": "Sonra: Tekrar aralığı",
-			"event_new_status": "Sonra: Durum",
-			"event_new_status_category": "Sonra: Durum kategorisi",
+			"event_old_title": "Önce: başlık",
+			"event_old_description": "Önce: açıklama",
+			"event_old_done": "Önce: tamamlandı",
+			"event_old_priority": "Önce: öncelik",
+			"event_old_percent_done": "Önce: tamamlanma yüzdesi",
+			"event_old_due_date": "Önce: bitiş tarihi",
+			"event_old_start_date": "Önce: başlangıç tarihi",
+			"event_old_end_date": "Önce: sonlanma tarihi",
+			"event_old_hex_color": "Önce: renk",
+			"event_old_project_id": "Önce: proje",
+			"event_old_repeat_after": "Önce: tekrar aralığı",
+			"event_old_status": "Önce: durum",
+			"event_old_status_category": "Önce: durum kategorisi",
+			"event_new_title": "Sonra: başlık",
+			"event_new_description": "Sonra: açıklama",
+			"event_new_done": "Sonra: tamamlandı",
+			"event_new_priority": "Sonra: öncelik",
+			"event_new_percent_done": "Sonra: tamamlanma yüzdesi",
+			"event_new_due_date": "Sonra: bitiş tarihi",
+			"event_new_start_date": "Sonra: başlangıç tarihi",
+			"event_new_end_date": "Sonra: sonlanma tarihi",
+			"event_new_hex_color": "Sonra: renk",
+			"event_new_project_id": "Sonra: proje",
+			"event_new_repeat_after": "Sonra: tekrar aralığı",
+			"event_new_status": "Sonra: durum",
+			"event_new_status_category": "Sonra: durum kategorisi",
 			"event_old_value": "Önce: değer",
 			"event_new_value": "Sonra: değer",
-			"event_old_assignee": "Önce: atanan",
-			"event_new_assignee": "Sonra: atanan",
+			"event_old_assignee": "Önce: atanan kişi",
+			"event_new_assignee": "Sonra: atanan kişi",
 			"event_new_comment": "Sonra: yorum",
 			"event_new_attachment_name": "Sonra: ek adı",
 			"event_payload": "Webhook'a gönderilen veri"
@@ -3261,7 +3261,7 @@
 		"secrets": {
 			"title": "Gizli anahtarlar",
 			"new": "Yeni gizli anahtar",
-			"intro": "Gizli anahtarlar; betikler (secrets.get) ve HTTP istekleri (başlık değerlerinde ve içerikte {'{{secrets.NAME}}'}) için token ve imza anahtarı gibi değerleri tutar. Değer şifreli saklanır ve bir daha gösterilemez.",
+			"intro": "Gizli anahtarlar; betikler (secrets.get) ve HTTP istekleri (başlık değerlerinde ve içerikte {'{{secrets.NAME}}'}) için erişim anahtarı ve imza anahtarı gibi değerleri tutar. Değer şifreli saklanır ve bir daha gösterilemez.",
 			"security": "Gizli anahtarlar görüntülenmeye karşı korunur, betiği yazan kişiye karşı değil: her proje yöneticisi, bir gizli anahtarı seçtiği bir sunucuya gönderen betik yazabilir.",
 			"empty": "Bu projede henüz gizli anahtar yok.",
 			"name": "Ad",
@@ -3278,8 +3278,8 @@
 			"replace": "Değeri değiştir",
 			"replaceAria": "{name} değerini değiştir",
 			"deleteAria": "{name} gizli anahtarını sil",
-			"createdAt": "oluşturuldu",
-			"updatedAt": "değer girildi",
+			"createdAt": "oluşturuldu:",
+			"updatedAt": "değer girildi:",
 			"unreadable": "Okunamıyor",
 			"unreadableHelp": "Sunucu gizli anahtarı değiştiği için kayıtlı değerin şifresi artık çözülemiyor. Değeri yeniden gir; o zamana kadar bunu kullanan betikler hata verir.",
 			"newOption": "Yeni gizli anahtar…",
@@ -3293,9 +3293,9 @@
 			}
 		},
 		"cron": {
-			"help": "Beş alan: dakika, saat, ayın günü, ay, haftanın günü. Örneğin 0 9 * * 1 her pazartesi 09:00 demektir. Saatler senin değil, sunucunun saat dilimindedir. Şunlar da kabul edilir: {'@hourly'}, {'@daily'}, {'@weekly'}, {'@monthly'} ve {'@yearly'}.",
+			"help": "Beş alan: dakika, saat, ayın günü, ay, haftanın günü. Örneğin 0 9 * * 1 her pazartesi saat 09.00 demektir. Saatler senin değil, sunucunun saat dilimindedir. Şunlar da kabul edilir: {'@hourly'}, {'@daily'}, {'@weekly'}, {'@monthly'} ve {'@yearly'}.",
 			"presets": {
-				"label": "Hazır ayarlar",
+				"label": "Hazır şablonlar",
 				"hourly": "Her saat",
 				"daily": "Her gün",
 				"weekly": "Her hafta",
@@ -3313,7 +3313,7 @@
 				"offset": "Örneğin 24h veya 2d. En az 1 dakika."
 			},
 			"webhook_incoming": {
-				"secret": "Seçilirse her çağrı iki başlık taşımalıdır: X-Vikunja-Timestamp (Unix zamanı, saniye cinsinden) ve X-Vikunja-Signature: sha256=HEX; HEX, zaman damgasının, bir noktanın, bu webhook'un adresindeki jetonun, bir noktanın ve istek gövdesinin bu anahtarla hesaplanan HMAC-SHA256 değeridir. Geçerli imzası olmayan, zaman damgası eski olan ya da iki kez gönderilen çağrılar reddedilir."
+				"secret": "Seçilirse her çağrı iki başlık taşımalıdır: X-Vikunja-Timestamp (Unix zamanı, saniye cinsinden) ve X-Vikunja-Signature: sha256=HEX. HEX; zaman damgası, nokta, bu webhook'un adresindeki erişim anahtarı, nokta ve istek gövdesi art arda eklenerek oluşan metnin bu gizli anahtarla hesaplanan HMAC-SHA256 değeridir. Geçerli imzası olmayan, zaman damgası eski olan ya da iki kez gönderilen çağrılar reddedilir."
 			},
 			"wait": {
 				"duration": "1 dakikadan yöneticinin belirlediği üst sınıra kadar (varsayılan 30 gün), örneğin 30m, 12h, 3d veya 2w. Bu eylemden sonraki eylemler daha sonra çalışır; koşullar yeniden denetlenmez."
@@ -3323,7 +3323,7 @@
 				"message": "Bildirimin metni. Yer tutucular kural çalışırken doldurulur."
 			},
 			"task_create": {
-				"title": "Yer tutucular kullanılabilir; webhook verisi de dahildir. Görev bu projede oluşturulur.",
+				"title": "Yer tutucular kullanılabilir; webhook verisi de buna dâhildir. Görev bu projede oluşturulur.",
 				"due_offset": "Görevin oluşturulduğu andan itibaren sayılır, örneğin 3d."
 			}
 		},
@@ -3336,23 +3336,23 @@
 		},
 		"webhook": {
 			"afterSave": "Webhook adresi, kuralı kaydettiğinde oluşturulur.",
-			"onlyOnce": "Bu adresi şimdi kopyala. Gizli bir token içerir ve bir daha gösterilemez. Adrese sahip olan herkes bu kuralı başlatabilir.",
+			"onlyOnce": "Bu adresi şimdi kopyala. Gizli bir erişim anahtarı içerir ve bir daha gösterilemez. Adrese sahip olan herkes bu kuralı başlatabilir.",
 			"url": "Webhook adresi",
 			"copy": "Kopyala",
 			"copied": "Adres kopyalandı.",
 			"copyFailed": "Adres kopyalanamadı. Seçip elle kopyala.",
-			"hidden": "Bu kuralın bir webhook adresi var. Adres gizli bir token içerir ve yalnızca özeti (hash) saklandığı için bir daha gösterilemez.",
+			"hidden": "Bu kuralın bir webhook adresi var. Adres, yalnızca özeti (hash) saklanan gizli bir erişim anahtarı içerdiği için bir daha gösterilemez.",
 			"rotate": "Yeni adres oluştur",
 			"rotateAgain": "Yeni bir adres daha oluştur",
-			"rotateHelp": "Eski adres hemen çalışmaz olur.",
+			"rotateHelp": "Eski adres hemen geçersiz olur.",
 			"rotateUncertain": "Yeni adres oluşturma isteği tamamlanmadı. Adres şimdiden değişmiş olabilir; bu yüzden daha önce gösterilen adres artık güvenilir değil ve kaldırıldı. Yeni bir adres daha oluştur.",
 			"saveFirst": "Önce değişikliklerini kaydet.",
 			"usage": "Gövdesi bir JSON nesnesi olan bir POST isteği gönder (boş gövde için {'{}'} kullan). İstek hemen yanıtlanır ve kural arka planda çalışır.",
-			"signature": "Bir imza anahtarı seçildiyse çağrılar X-Vikunja-Timestamp (Unix zamanı, saniye cinsinden) ve X-Vikunja-Signature: sha256=HEX başlıklarını taşımalıdır (HEX, zaman damgasının, bir noktanın, bu webhook'un adresindeki jetonun, bir noktanın ve ham gövdenin anahtarla hesaplanan HMAC-SHA256 değeridir). Başka bir webhook için yapılmış imza burada kabul edilmez.",
+			"signature": "Bir imza anahtarı seçildiyse çağrılar X-Vikunja-Timestamp (Unix zamanı, saniye cinsinden) ve X-Vikunja-Signature: sha256=HEX başlıklarını taşımalıdır (HEX; zaman damgası, nokta, bu webhook'un adresindeki erişim anahtarı, nokta ve ham gövde art arda eklenerek oluşan metnin gizli anahtarla hesaplanan HMAC-SHA256 değeridir). Başka bir webhook için yapılmış imza burada kabul edilmez.",
 			"replay": "İmzalı çağrılar tekrar oynatmaya (replay) karşı korunur: zaman damgası birkaç dakikadan (varsayılan 5) eski olan çağrı ve aynı imzayla gelen ikinci çağrı (kabul edilmiş bir çağrının yeniden denemesi de) reddedilir. Her çağrıda yeni bir zaman damgası ve imza gönder. İmza anahtarı olmayan bir webhook imzalı değildir ve korunmaz: adresi bilen herkes onu çağırabilir.",
 			"rotateConfirm": {
 				"title": "Yeni webhook adresi oluşturulsun mu?",
-				"text": "Geçerli adres hemen çalışmaz olur. Onu kullanan her hizmete yeni adres verilmelidir."
+				"text": "Geçerli adres hemen geçersiz olur. Onu kullanan her hizmete yeni adres verilmelidir."
 			}
 		},
 		"manual": {
@@ -3383,12 +3383,12 @@
 		},
 		"on": "Açık",
 		"off": "Kapalı",
-		"enableForm": "\"{title}\" formu yanıt alsın",
-		"copyLink": "\"{title}\" bağlantısını kopyala",
+		"enableForm": "\"{title}\" formu için yanıt kabul et",
+		"copyLink": "\"{title}\" formunun bağlantısını kopyala",
 		"openForm": "\"{title}\" formunu yeni sekmede aç",
 		"edit": "\"{title}\" formunu düzenle",
-		"submissionsOf": "\"{title}\" yanıtlarını göster",
-		"duplicate": "\"{title}\" formunu çoğalt",
+		"submissionsOf": "\"{title}\" formunun yanıtlarını göster",
+		"duplicate": "\"{title}\" formunu kopyala",
 		"delete": "\"{title}\" formunu sil",
 		"disabledBadge": "Sistem tarafından kapatıldı",
 		"disabledReason": {
@@ -3403,14 +3403,14 @@
 		},
 		"deleteConfirm": {
 			"title": "Bu form silinsin mi?",
-			"text": "\"{title}\" bağlantısı çalışmaz olur ve yanıt listesi silinir. Formun oluşturduğu görevler korunur."
+			"text": "\"{title}\" formunun bağlantısı çalışmaz olur ve yanıt listesi silinir. Formun oluşturduğu görevler korunur."
 		},
 		"access": {
 			"members": "Proje üyeleri",
 			"membersShort": "Üyeler",
-			"membersHelp": "Yalnızca bu projeyi görebilen, oturum açmış kişiler.",
-			"users": "Oturum açmış kullanıcılar",
-			"usersShort": "Oturum açanlar",
+			"membersHelp": "Yalnızca bu projeyi görebilen, giriş yapmış kişiler.",
+			"users": "Giriş yapmış kullanıcılar",
+			"usersShort": "Giriş yapanlar",
 			"usersHelp": "Bu sunucuda hesabı olan herkes.",
 			"public": "Bağlantıya sahip herkes",
 			"publicShort": "Herkese açık",
@@ -3459,13 +3459,13 @@
 			"show": "Yanıtları göster ({count})",
 			"back": "Geri",
 			"heading": "Yanıtlar",
-			"title": "\"{title}\" yanıtları",
+			"title": "\"{title}\" formunun yanıtları",
 			"empty": "Bu formu henüz kimse göndermedi.",
-			"date": "Alındı",
+			"date": "Alınma zamanı",
 			"submitter": "Gönderen",
 			"task": "Görev",
 			"anonymous": "Anonim",
-			"signedIn": "oturum açmış"
+			"signedIn": "giriş yapmış"
 		},
 		"builder": {
 			"sections": "Formun bölümleri",
@@ -3490,7 +3490,7 @@
 			"removeField": "\"{name}\" alanını formdan kaldır",
 			"required": "Zorunlu",
 			"hiddenBadge": "Gösterilmez",
-			"needsAttention": "Kontrol et",
+			"needsAttention": "Kontrol gerekli",
 			"label": "Soru",
 			"labelHiddenPlaceholder": "Gönderene gösterilmez",
 			"help": "Yardım metni",
@@ -3533,7 +3533,7 @@
 			"notifyHelp": "Bu kişilere her yanıt için bildirim gider.",
 			"submitter": "Gönderen hakkında bilgiler",
 			"submitterHelp": "Formun sonunda sorulur ve görev açıklamasına eklenir.",
-			"submitterOnlyPublic": "Yalnızca herkese açık formlarda sorulur. Oturum açmış kişiler hesaplarıyla tanınır.",
+			"submitterOnlyPublic": "Yalnızca herkese açık formlarda sorulur. Giriş yapmış kişiler hesaplarıyla tanınır.",
 			"mode": {
 				"off": "Sorma",
 				"optional": "Sor, isteğe bağlı",
@@ -3551,12 +3551,12 @@
 			"copyFailed": "Kopyalanamadı. Metni seçip elle kopyala.",
 			"open": "Aç",
 			"who": {
-				"members": "Yalnızca bu projeyi görebilen kişiler kullanabilir; önce oturum açarlar.",
-				"users": "Bu sunucuda hesabı olan herkes kullanabilir; önce oturum açarlar.",
+				"members": "Yalnızca bu projeyi görebilen kişiler kullanabilir; önce giriş yaparlar.",
+				"users": "Bu sunucuda hesabı olan herkes kullanabilir; önce giriş yaparlar.",
 				"public": "Bağlantıya sahip herkes kullanabilir, hesap gerekmez."
 			},
 			"regenerate": "Yeni bağlantı oluştur",
-			"regenerateHelp": "Bağlantı olmaması gereken kişilere ulaştıysa kullan.",
+			"regenerateHelp": "Bağlantı, ulaşmaması gereken kişilere ulaştıysa bunu kullan.",
 			"regenerateConfirm": {
 				"title": "Yeni bağlantı oluşturulsun mu?",
 				"text": "Eski bağlantı hemen çalışmaz olur. Onu içeren sayfalar ve e-postalar \"Bu form yok\" mesajı gösterir."
@@ -3564,18 +3564,18 @@
 			"regenerated": "Formun yeni bir bağlantısı var.",
 			"embed": "Bir web sayfasına göm",
 			"copyEmbed": "Gömme kodunu kopyala",
-			"embedHelp": "Bunu bir sayfanın HTML'ine yapıştır. Bazı sunucular veya ara sunucular (proxy) gömmeyi yasaklar; çerçeve boş kalırsa forma bağlantı ver.",
-			"noQr": "QR kod henüz sunulmuyor."
+			"embedHelp": "Bunu bir sayfanın HTML'sine yapıştır. Bazı sunucular veya ara sunucular (proxy) gömmeyi yasaklar; çerçeve boş kalırsa forma bağlantı ver.",
+			"noQr": "QR kodu henüz sunulmuyor."
 		},
 		"preview": {
-			"title": "Önizleme",
-			"hide": "Önizlemeyi gizle",
-			"show": "Önizlemeyi göster",
-			"help": "İnsanların göreceği görünüm bu. Deneyebilirsin; hiçbir şey gönderilmez.",
-			"nothingSent": "Bu bir önizlemedir. Hiçbir şey gönderilmedi."
+			"title": "Ön izleme",
+			"hide": "Ön izlemeyi gizle",
+			"show": "Ön izlemeyi göster",
+			"help": "İnsanlar formu böyle görür. Deneyebilirsin; hiçbir şey gönderilmez.",
+			"nothingSent": "Bu bir ön izleme. Hiçbir şey gönderilmedi."
 		},
 		"branding": {
-			"title": "Markalama",
+			"title": "Marka görünümü",
 			"help": "Herkese açık sayfanın uygulama yerine senin markanı göstermesini sağla.",
 			"name": "Marka adı",
 			"accent": "Vurgu rengi",
@@ -3592,7 +3592,7 @@
 				"type": "Logo PNG, JPEG, GIF veya WebP görseli olmalıdır.",
 				"size": "Logo çok büyük. En fazla 1 MB olabilir."
 			},
-			"hideFooter": "Alt bilgideki “Vikunja altyapısıyla çalışır” bağlantısını gizle"
+			"hideFooter": "Alt bilgideki \"Vikunja altyapısıyla çalışır\" bağlantısını gizle"
 		},
 		"errors": {
 			"accentColor": "#1973ff gibi bir renk gir.",
@@ -3606,7 +3606,7 @@
 			"titleRequired": "Formun bir başlığı olmalı.",
 			"publicDisabled": "Bu sunucuda herkese açık formlar kapalı.",
 			"tooManyFields": "Bir formda en fazla {max} alan olabilir.",
-			"targetGone": "Bu alan artık projede yok. Kaldır.",
+			"targetGone": "Bu alan artık projede yok. Alanı kaldır.",
 			"targetTwice": "Bu zaten formda var.",
 			"labelRequired": "İnsanların göreceği soruyu yaz.",
 			"hiddenNeedsDefault": "Gösterilmeyen zorunlu bir alanın değeri olmalı.",
@@ -3630,12 +3630,12 @@
 			"fileLimits": "En fazla {count} dosya, her biri en çok {size}.",
 			"removeFile": "{name} dosyasını kaldır",
 			"remove": "Kaldır",
-			"aboutYou": "Sizin hakkınızda",
+			"aboutYou": "Hakkınızda",
 			"name": "Adınız",
 			"email": "E-posta adresiniz",
 			"honeypot": "Bu alanı boş bırakın",
 			"submit": "Gönder",
-			"fixErrors": "Lütfen {count} yanıtı kontrol edin. | Lütfen {count} yanıtı kontrol edin.",
+			"fixErrors": "{count} yanıtı kontrol edin. | {count} yanıtı kontrol edin.",
 			"errors": {
 				"required": "Bu alan zorunlu.",
 				"tooManyFiles": "En fazla {max} dosya ekleyebilirsiniz.",
@@ -3644,33 +3644,33 @@
 			"loading": "Form yükleniyor",
 			"notFound": {
 				"title": "Bu form yok",
-				"text": "Bağlantı yanlış olabilir ya da form silinmiş veya bağlantısı değiştirilmiş olabilir. Size gönderen kişiden güncel bağlantıyı isteyin."
+				"text": "Bağlantı yanlış olabilir ya da form silinmiş veya bağlantısı değiştirilmiş olabilir. Formu size gönderen kişiden güncel bağlantıyı isteyin."
 			},
 			"unavailable": {
 				"title": "Bu form kullanılamıyor",
 				"closed": "Bu form kapandı ve artık yanıt almıyor.",
 				"full": "Bu form en fazla yanıt sayısına ulaştı ve artık yanıt almıyor.",
-				"disabled": "Bu form şu an kapalı. Daha sonra tekrar deneyin ya da size gönderen kişiye sorun."
+				"disabled": "Bu form şu an kapalı. Daha sonra tekrar deneyin ya da formu size gönderen kişiye sorun."
 			},
 			"login": {
-				"title": "Lütfen oturum açın",
-				"text": "Bu form yalnızca oturum açmış kişiler içindir. Oturum açın, forma geri döneceksiniz.",
-				"button": "Oturum aç"
+				"title": "Lütfen giriş yapın",
+				"text": "Bu form yalnızca giriş yapmış kişiler içindir. Giriş yaptıktan sonra forma geri döneceksiniz.",
+				"button": "Giriş yap"
 			},
 			"forbidden": {
 				"title": "Bu formu kullanamazsınız",
-				"text": "Hesabınızın bu formu göndermeye izni yok. Size gönderen kişiye sorun."
+				"text": "Hesabınızın bu formu göndermeye izni yok. Formu size gönderen kişiye sorun."
 			},
 			"rate": {
 				"title": "Çok fazla istek"
 			},
-			"rateLimited": "Çok fazla gönderim yapıldı. Lütfen {minutes} dakika sonra tekrar deneyin. | Çok fazla gönderim yapıldı. Lütfen {minutes} dakika sonra tekrar deneyin.",
-			"rateLimitedNoTime": "Çok fazla gönderim yapıldı. Lütfen biraz sonra tekrar deneyin.",
+			"rateLimited": "Çok fazla yanıt gönderildi. Lütfen {minutes} dakika sonra tekrar deneyin. | Çok fazla yanıt gönderildi. Lütfen {minutes} dakika sonra tekrar deneyin.",
+			"rateLimitedNoTime": "Çok fazla yanıt gönderildi. Lütfen biraz sonra tekrar deneyin.",
 			"error": {
-				"title": "Bir şeyler ters gitti"
+				"title": "Bir sorun oluştu"
 			},
 			"networkError": "Forma ulaşılamadı. Bağlantınızı kontrol edip tekrar deneyin.",
-			"failed": "Form gönderilemedi. Lütfen tekrar deneyin.",
+			"failed": "Form gönderilemedi. Tekrar deneyin.",
 			"retry": "Tekrar dene",
 			"thanks": "Teşekkürler, yanıtınız gönderildi.",
 			"redirecting": "Birazdan {host} adresine yönlendirileceksiniz.",

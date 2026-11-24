@@ -140,17 +140,17 @@
 			"requested": {
 				"subject": "Onay istendi: \"%[1]s\", \"%[2]s\" görevinde (%[3]s)",
 				"message": "%[1]s onayını istiyor: \"%[2]s\", \"%[3]s\" görevinde (%[4]s).",
-				"due": "Lütfen %[1]s tarihine kadar karar ver."
+				"due": "%[1]s tarihine kadar karar ver."
 			},
 			"resolved": {
-				"subject": "\"%[1]s\" onayı, \"%[2]s\" görevinde (%[3]s) %[4]s",
+				"subject": "\"%[2]s\" görevindeki (%[3]s) \"%[1]s\" onayı %[4]s",
 				"message_requester": "\"%[2]s\" görevindeki (%[3]s) \"%[1]s\" onay talebin %[4]s.",
 				"message_others": "\"%[2]s\" görevindeki (%[3]s) \"%[1]s\" onay talebi %[5]s tarafından %[4]s. Artık karar vermen gerekmiyor.",
 				"message_others_system": "\"%[2]s\" görevindeki (%[3]s) \"%[1]s\" onay talebi %[4]s. Artık karar vermen gerekmiyor.",
 				"reason": "Gerekçe: %[1]s"
 			},
 			"reminder": {
-				"subject": "Hatırlatma: \"%[2]s\" görevindeki (%[3]s) \"%[1]s\" onayına karar ver",
+				"subject": "Hatırlatma: \"%[2]s\" görevindeki (%[3]s) \"%[1]s\" onay talebi için karar ver",
 				"message": "%[2]s tarafından istenen \"%[1]s\" onay talebi, \"%[3]s\" görevinde (%[4]s) %[5]s tarihine kadar karara bağlanmalıydı ve hâlâ kararını bekliyor."
 			}
 		},
