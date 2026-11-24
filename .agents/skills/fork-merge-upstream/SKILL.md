@@ -27,7 +27,14 @@ description: Merge upstream Vikunja (`upstream/main`) into this fork and bring t
 
 4. **Regenerate, do not hand-merge, generated files**: `frontend/src/client/generated`, `pkg/yaegi_symbols`, `pkg/swagger/`. Run the repo's generators with `LC_ALL=C`.
 
-5. **Translations.** Upstream adds strings to `en.json` only. Translate every new key into `tr-TR.json` in a separate commit (`i18n(tr): ...`), and remove keys upstream removed. Check parity with the `fork-i18n` skill.
+5. **Translations.** Upstream's `tr-TR.json` files are written by its Crowdin sync (`chore(i18n): update translations via Crowdin`); the fork's files are the same files with the fork's keys added. Before merging, run `python3 .agents/skills/fork-i18n/check_turkish.py --upstream` to see the upstream keys whose Turkish the fork changed. When a merge conflicts in `tr-TR.json`, resolve per key:
+   - **Fork keys** (not in upstream's `en.json`): keep ours.
+   - **Upstream keys the fork did not change:** take theirs.
+   - **Upstream keys the fork changed** (the `--upstream` list): keep ours, unless upstream's new value fixes the same error; then take theirs, so the fork's difference shrinks.
+   - **Upstream keys the fork translated because upstream had none:** take upstream's new Turkish when it has no error under section 15 of the [Turkish standard](../../docs/turkish-style.md).
+   - Never reorder or reformat the file while resolving.
+
+   Do not restyle Crowdin's Turkish in the merge commit. Afterwards, translate the new upstream keys that Crowdin has not translated yet, run `check_parity.py`, and fix what it reports (for example *siz* forms or rejected terms in new Crowdin strings) in a separate commit (`i18n(tr): ...`). Remove keys upstream removed. Corrections of upstream keys are worth proposing in upstream's Crowdin too; each one accepted there is a line less that can conflict.
 
 6. **Migrations.** Upstream's new migrations run before or between the fork's by timestamp. Check that none of them touches a table or column a fork migration also changes.
 
