@@ -491,12 +491,16 @@ writing scripts needs project admin and why the kill switch exists.
 *What is not protected*: (1) **Memory and CPU up to the limits.** Every script runs
 in a child process (see "Script processes" below) that is killed half a second after
 its timeout and, on Linux, cannot map more than `automation.scripts.maxmemory`
-(256 MiB) beyond what it uses at start. So a malicious script costs at most one core
-for its timeout plus half a second and that much memory, times the number of
-concurrent workers (`automation.workers`, 4) plus concurrent test runs. On macOS and
-Windows the memory limit is only the soft limit of the Go runtime, so there a script
-can still allocate until the timeout kills it. (2) **Idle script processes**: up to
-`automation.workers` + 1 wait for the next script, about 13 MB of private memory each.
+(256 MiB) beyond what it uses before its first script. At most `automation.workers`
+(4) + 2 script processes live at a time: every worker can always get one, dry runs and
+the compile check on save share the two others, so parallel test requests of one
+project admin wait or are refused as busy and cannot take a worker's process. So a
+malicious script costs at most one core for its timeout plus half a second and that
+much memory, times `automation.workers` + 2; the server reads at most 4 MiB of one
+message of a script process. On macOS, the BSDs and Windows the memory limit is only
+the soft limit of the Go runtime, so there a script can still allocate until the
+timeout kills it. (2) **Idle script processes**: up to `automation.workers` + 1 wait
+for the next script (about 65 MB of private memory each with a development build).
 (3) **Database locks**: a script runs inside the
 transaction of its step, so a script (or `http.request`) that waits for the network
 holds that transaction open, and on SQLite the write lock, for up to the step
@@ -527,6 +531,7 @@ it is the timeout of the script.
 | Memory of a script (hard limit on Linux) | 256 MiB | `automation.scripts.maxmemory` |
 | Runs per rule per minute (excess is skipped and recorded) | 60 | `automation.ratelimit` |
 | Concurrent workers | 4 | `automation.workers` |
+| Live script processes (dry runs and checks share 2 of them) | workers + 2 | derived from `automation.workers` |
 | Retries with exponential backoff, then `dead` | 5 | `automation.maxattempts` |
 | Consecutive failed runs before a rule is disabled | 20 | `automation.maxconsecutivefailures` |
 | Poll interval / cache TTL / retention (days) | 1 s / 30 s / 30 | `automation.pollinterval`, `automation.cachettl`, `automation.retention` |
@@ -539,38 +544,68 @@ context); the run timeout cancels the whole run. Both count as temporary failure
 rule with more actions than `maxactions` (the limit was lowered after it was saved)
 fails its run without executing anything.
 
-The script timeout is enforced three times: a timer interrupts the interpreter
-(`vm.Interrupt`; an interrupt cannot be caught by the script, not even in a `finally`),
+The script timeout is enforced four times: a timer interrupts the interpreter
+(`vm.Interrupt`; an interrupt cannot be caught by the script, not even in a `finally`);
 the same deadline is the context of every blocking host call (HTTP), which is
-cancelled, and half a second after the deadline the server kills the script process.
-A script that runs into its own timeout fails its step for good ("the script ran
-longer than 5s and was stopped"); when the step or run timeout ends it first, it is
-the temporary failure those are. The interrupt alone is only seen between JavaScript
-instructions; the kill is what stops a single native call that never returns to the
-interpreter (an array built-in over a huge array-like such as
+cancelled, and no new host call is answered after it; half a second after the deadline
+the server kills the script process; and the process ends itself 1.5 s after the
+deadline, or as soon as the server is gone (its input closes or its parent changes),
+also inside a native call. A script that runs into its own timeout fails its step for
+good ("the script ran longer than 5s and was stopped"); when the step or run timeout
+ends it first, it is the temporary failure those are. The interrupt alone is only seen
+between JavaScript instructions; the kill is what stops a single native call that never
+returns to the interpreter (an array built-in over a huge array-like such as
 `Array.prototype.indexOf.call({length: 2**53 - 1}, 1)`, a huge `sort`, `join`,
-`JSON.stringify` or `eval`, big integer arithmetic). A script that allocates more than
-`automation.scripts.maxmemory` fails with "the script used more than 256 MiB of memory
-and was stopped". Neither can hold a worker nor take the server down.
+`JSON.stringify` or `eval`, big integer arithmetic). A worker is held at most for the
+timeout plus half a second plus the host call in flight at the deadline (a database
+call is bounded by the step timeout, an HTTP request by its own timeout). A script that
+allocates more than `automation.scripts.maxmemory` fails with "the script used more
+than 256 MiB of memory and was stopped". The Go runtime needs part of the limit: at the
+default a script can allocate about 190 MiB in one typed array, about 390000 small
+objects or about 2 million short strings (at 512 MiB: 440 MiB, 780000, 4 million).
 
 **Script processes.** A script, and the compile check when a rule is saved, runs in a
-child process: the same Vikunja binary started again with
-`VIKUNJA_AUTOMATION_SCRIPT_PROCESS=1` and nothing else of the server's environment
-(no database password, no service secret; only `TZ` so dates are the same). The
-server sends the source, the event, the task and the limits as JSON over a pipe and
-answers every host call (`vikunja.*`, `http.fetch`, `secrets.get`) on the goroutine of
-the step, so database work stays in the step's transaction and under the owner's
-permissions; the arguments are checked again on the server side. A process serves one
-script at a time, each with a fresh interpreter. After a script that finished in time
-it waits in a pool (`automation.workers` + 1, ended after a minute idle or 1000
-scripts); a process whose script timed out, crashed or broke the protocol is killed and
-never reused. On Linux it is killed as well when the server exits, and the CPU-time
-limit of the operating system (timeout plus 2 s) ends it even if nobody is left to
-kill it. The overhead is about 0.8 ms per script with a pooled process and about
-25 ms when a process has to be started (measured with a static release-style build;
-a UPX-compressed binary starts more slowly). What crosses the pipe is JSON: a number
-that is not finite (`NaN`, `Infinity`) cannot be passed to a `vikunja.*` call ("the
-value cannot be passed to the host"), and one message is at most 32 MiB.
+child process: on Linux the running binary itself (`/proc/self/exe`, so an upgrade
+that replaced the file does not matter), elsewhere the file at its path, started again
+with `VIKUNJA_AUTOMATION_SCRIPT_PROCESS=1`, `GOMAXPROCS=1`, `MALLOC_ARENA_MAX=1` and
+nothing else of the server's environment (no database password, no service secret;
+only `TZ` so dates are the same). The server treats the child as hostile. A new
+process has to identify itself within 5 s with the protocol version and the build of
+the server; anything else (an older or upstream binary without the script process,
+another build) is killed, and the log asks to restart Vikunja. The server then sends
+the source, the event, the task and the limits as JSON over a pipe with a sequence
+number and answers every host call (`vikunja.*`, `http.fetch`, `secrets.get`) on the
+goroutine of the step, so database work stays in the step's transaction and under the
+owner's permissions. It checks the sequence number of every message, refuses a line
+longer than 4 MiB before holding it, and enforces the limits of the run again (calls,
+requests, sizes of strings, size and depth of values); a child that breaks any of it
+is killed. A process serves one script at a time, each with a fresh interpreter. It
+waits in a pool (`automation.workers` + 1, ended after a minute idle or 1000 scripts)
+only after a script that succeeded or threw an ordinary exception, with nothing left
+unread on its output, and only when the next script gets about the room of a new
+process: a script that left more than 8 MiB of garbage has the heap collected and
+returned before the next one, and a process whose address space grew by more than
+32 MiB is retired, because the Go runtime never returns address space. After a
+timeout, a stack or memory error, a crash or a broken protocol the process is killed.
+On Linux it is the first choice of the kernel's OOM killer and is killed when the
+server exits. The overhead is about 0.7 ms per script with a pooled process and about
+25 ms when a process has to be started (measured with a development build; a
+UPX-compressed binary starts more slowly). What crosses the pipe is JSON: `NaN`,
+`Infinity` and `-0` from the server reach the script unchanged, but a number that is
+not finite cannot be passed to a `vikunja.*` call ("the value cannot be passed to the
+host"); the return value, an error message and a stack are cut off at 16 KiB, the log
+at 256 KiB, and a host call larger than 4 MiB throws.
+
+**Who is blamed.** A script that threw, hit its timeout, overflowed the stack, exceeded
+the memory limit or passed more than the limits allow fails its step for good, which
+counts towards disabling the rule. A SIGKILL the server did not send counts as the
+memory limit: it is what the kernel's OOM killer does, and the processes are pooled
+only when clean, so it is the script that ran. A failure of the machinery (no process
+could be started, it did not identify itself, it broke the protocol or died for
+another reason, no process was free in time) is temporary: the step is retried, and
+when the retries run out the run fails without counting towards
+`automation.maxconsecutivefailures`. So one project's scripts cannot get another
+project's rules disabled through the shared processes.
 
 A rule that fails 20 times in a row is disabled automatically with the reason
 `too_many_failures` (visible on the rule). The owner is not notified in 3a/3b: that

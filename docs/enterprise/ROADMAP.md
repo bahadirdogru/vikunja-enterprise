@@ -279,6 +279,39 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   class is open-ended. Not closed: the memory limit is only soft on macOS and
   Windows; a script still costs up to one core for its timeout + 0.5 s; idle
   pooled processes take about 13 MB each.
+- Script processes, adversarial review. A pooled process kept the previous
+  script's heap: two `new Float64Array(20*2**20)` in one process, the second
+  failed with the memory error and counted against its (maybe another
+  project's) rule. Now the heap is collected and returned between scripts
+  when more than 8 MiB of garbage is left, `MALLOC_ARENA_MAX=1` stops glibc
+  from reserving 64 MiB of address space per thread, and the child reports
+  its spare address space: a process is pooled only after a success or an
+  ordinary exception and within 32 MiB of a new one, else retired. The
+  CPU rlimit did nothing (Go ignores `SIGXCPU`); a watchdog goroutine in the
+  child exits 1.5 s after the deadline or when stdin closes or the parent
+  changes; preemption lets it run inside a native call with `GOMAXPROCS=1`
+  (a child whose parent was SIGKILLed while it spun in `indexOf`: gone after
+  0.04 s, before still running at 30 s). Children are `/proc/self/exe` on
+  Linux and must send a hello with protocol and build within 5 s; started
+  from one locked thread (Pdeathsig). Live processes capped at workers + 2
+  (dry runs and checks share 2, wait within their timeout, else "busy").
+  Lines over 4 MiB are refused before buffering (was 32 MiB with two
+  copies); results, errors and logs are cut in the child; the parent counts
+  calls and requests and checks sizes again; sequence numbers; unread output
+  kills; the child gets `oom_score_adj` 1000. Machinery failures (spawn,
+  hello, protocol, busy, unexplained death) are temporary and, when the
+  retries run out, do not count towards disabling the rule; a SIGKILL not
+  sent by the server counts as the script's memory. `NaN`, `Infinity` and
+  `-0` from the host reach the script unchanged. The compile check takes
+  the request context. Headroom at 256 MiB: 190 MiB in one typed array,
+  390000 small objects, 2.1 million short strings (default kept). Overhead
+  0.7 ms per pooled script (0.3 ms before with this development build),
+  28 ms per process start; idle pooled process 65 MB private with a
+  development build. Not closed: host calls do not take the deadline
+  (a worker is held for timeout + 0.5 s + the host call in flight); the
+  memory limit is soft on macOS, the BSDs and Windows (no Job Objects);
+  the compile check still falls back to compiling in the server when no
+  script process can be started.
 - Review-pass operational notes: run code generators with `LC_ALL=C` on
   machines with a Turkish locale (the dotless `i` breaks generated
   identifiers). Vitest's on-disk module cache is disabled in
@@ -307,6 +340,8 @@ Open after the review pass, not fixed because they need a decision:
 
 - Automation: retrying one failed run re-queues the whole event, so rules
   created after the event run for it too. No cap on rules per project.
+- Automation: goja's `find`, `findIndex`, `findLast` and `findLastIndex` on
+  an array-like hit a nil-pointer panic (reported as an internal error).
 - Automation: the incoming webhook signature covers the body only, so a
   captured request can be replayed until the secret or address changes.
 - Approvals: an approved transition is performed for a requester whose
