@@ -89,7 +89,7 @@ Settings come from `config.yml` or `VIKUNJA_*` environment variables. The fork's
 
 This is a development fork. All six modules are implemented in the backend and the web client, but that is not the same as finished or proven. Which suites have been run on which database, which parts of the interface were checked in a browser, and what is still open are all recorded in the [roadmap](docs/enterprise/ROADMAP.md), which is the single source of truth and is updated more often than this file. Read it before relying on the fork. Organisation / multi-tenant hierarchy and AI features are deferred.
 
-The fork's endpoints are not exposed over MCP, and the incoming webhook signature has no replay protection; both are documented in [API.md](API.md).
+The fork's endpoints are not exposed over MCP, and an incoming webhook without a signing secret is not signed and so not protected against replays (signed ones are); both are documented in [API.md](API.md).
 
 ## Relationship to upstream
 

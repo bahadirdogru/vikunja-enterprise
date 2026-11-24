@@ -197,8 +197,8 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   loop guards (task origins, depth, a header the API refuses with 508 on
   requests the engine sends). Editor forms, webhook address shown once,
   "Run automation..." on a task, `automation.notify` notification. Checked
-  in a browser, see the browser pass below. No replay protection on the
-  webhook signature.
+  in a browser, see the browser pass below. (The replay protection of the
+  signature came later, see the hardening entry at the end of the log.)
 - PostgreSQL 18 and 19: full `test:feature` and `test:web` pass uncached on
   PostgreSQL 18.7 and 19.0 (commit 995b6414f). The fork tests on the newest
   stable PostgreSQL and recommends 18 or newer. The minimum versions in
@@ -358,6 +358,41 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   number of requests in flight. Checked with model and `/api/v2` tests; not
   checked in a browser.
 
+- Automation: replay protection for the incoming webhook. A call to a hook
+  that names a secret now carries `X-Vikunja-Timestamp` and
+  `X-Vikunja-Signature: sha256=` + HMAC-SHA256 over `timestamp.body`
+  (unreleased trigger, so the body-only signature is refused, not kept).
+  Timestamp window `automation.webhook.tolerance` (default 5m, 0 or less
+  becomes the default), up to 1 minute ahead accepted. Accepted signatures
+  are kept in the new table `automation_webhook_seen` (unique on rule and
+  signature, migration 20261128100000) because several instances can share
+  one database and the keyvalue store is per process unless Redis is
+  configured; the row is inserted in the transaction of the queued event, so
+  a call refused for its payload or the rate limit does not use its
+  signature up, and two identical calls at once race on the unique index
+  (6 parallel identical calls: exactly 1 accepted, run on SQLite). The 30 s
+  ticker deletes expired rows. Bad signature, malformed or missing header,
+  stale or future timestamp and replay are one 401 / 22011 answer (reason
+  only in the debug log). Hooks WITHOUT a secret stay callable unsigned
+  and are not replay protected; this is documented. Verified: unit tests
+  (valid, replay, stale, future, body-only signature, tampered body,
+  malformed headers, unsigned hook unchanged, expiry cleanup, ticker
+  cleanup, concurrent replay), `/api/v2` tests, the migration test (unique
+  index, expiry index), the editor strings (en and tr) in vitest. Not
+  checked: two real server processes against one PostgreSQL or MySQL
+  (the cross-instance refusal is shown by the memory being a table, in one
+  process), the editor text in a browser, a sender in another language.
+  Changing `automation.webhook.tolerance` upward does not bring back rows
+  already deleted: calls captured earlier can be replayed until their new
+  window ends.
+- Hardening verification (cap on rules per project and replay protection):
+  `mage test:feature` and `mage test:web` pass uncached (`GOFLAGS=-count=1`)
+  on SQLite, PostgreSQL 18 and MySQL 8, one database at a time. MySQL found
+  the first draft of the new table: xorm builds the unique index name from
+  the table name and the index name, and 64 characters is the limit there;
+  the index is now called `rule_sig`. `mage lint` reports only the 12 known
+  `unused` findings in `pkg/license/`.
+
 ## Remaining
 
 - Default dashboards for new projects with a workflow (4c).
@@ -382,8 +417,6 @@ Open after the review pass, not fixed because they need a decision:
   created after the event run for it too.
 - Automation: goja's `find`, `findIndex`, `findLast` and `findLastIndex` on
   an array-like hit a nil-pointer panic (reported as an internal error).
-- Automation: the incoming webhook signature covers the body only, so a
-  captured request can be replayed until the secret or address changes.
 - Approvals: an approved transition is performed for a requester whose
   account was disabled; a request whose only approver was disabled stays
   pending.

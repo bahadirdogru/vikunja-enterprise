@@ -59,6 +59,7 @@ The fork's keys, with their defaults (the meaning of each is on the module page)
 | `automation.maxpendingwaits` | `1000` | [Automation](automation.md) |
 | `automation.maxrulesperproject` | `100` | [Automation](automation.md) |
 | `automation.webhook.maxbody` | `65536` | [Automation](automation.md) |
+| `automation.webhook.tolerance` | `5m` | [Automation](automation.md) |
 | `automation.webhook.ratelimit` | `60` | [Automation](automation.md) |
 | `automation.scripts.enabled` | `true` | [Automation](automation.md) |
 | `automation.scripts.timeout` | `5s` | [Automation](automation.md) |

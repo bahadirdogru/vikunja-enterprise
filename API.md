@@ -181,7 +181,7 @@ Schema violations (an enum, a range, a missing required property) are `422`, and
 | 22008 | 409 | A secret cannot be decrypted (`service.secret` changed) | secrets |
 | 22009 | 409 | The rule cannot be run this way (disabled, or no manual trigger) | manual run |
 | 22010 | 404 | Webhook not found (unknown token, disabled rule, other trigger) | incoming webhook |
-| 22011 | 401 | Signature missing or wrong | incoming webhook |
+| 22011 | 401 | Signature or timestamp missing, wrong, stale or in the future, or the call was already accepted (replay); one answer for all | incoming webhook |
 | 22012 | 429 | Webhook rate limited, with `Retry-After` | incoming webhook |
 | 22013 | 400 | The webhook body is not a JSON object | incoming webhook |
 | 22014 | 409 | The project already has `automation.maxrulesperproject` rules; only adding is refused | rule create, project duplicate |
@@ -230,13 +230,20 @@ Besides the public endpoints of upstream (`/info`, `/health`, the OpenAPI docume
 
 The form routes are *optional-auth*: with no `Authorization` header the caller is anonymous; with a header it is validated like anywhere (an invalid or expired token is `401` code `11`). Link shares are not users: they get `403` on `users` and `members` forms and are treated as anonymous on `public` forms.
 
-**Incoming webhook.** `POST /api/v2/automation/hooks/{token}` with a JSON object body (`{}` for none; at most `automation.webhook.maxbody` bytes, `413` above) starts the rule asynchronously and answers `202` with `{"queued": true}`. The body becomes `event.payload` for templates and conditions. Unknown tokens, disabled rules and rules with another trigger are all the same `404` (code 22010). If the rule names a project secret, the call must carry the header
+**Incoming webhook.** `POST /api/v2/automation/hooks/{token}` with a JSON object body (`{}` for none; at most `automation.webhook.maxbody` bytes, `413` above) starts the rule asynchronously and answers `202` with `{"queued": true}`. The body becomes `event.payload` for templates and conditions. Unknown tokens, disabled rules and rules with another trigger are all the same `404` (code 22010). If the rule names a project secret, the call must carry the headers
 
 ```text
-X-Vikunja-Signature: sha256=<hex HMAC-SHA256 of the raw body, keyed with the secret>
+X-Vikunja-Timestamp: <Unix time in seconds, digits only>
+X-Vikunja-Signature: sha256=<64 hex digits: HMAC-SHA256 of the timestamp, a dot and the raw body, keyed with the secret>
 ```
 
-and a missing or wrong signature is `401` (code 22011), compared in constant time and checked before the rate limit counts. **The signature has no replay protection.** It covers the body only, with no timestamp or nonce, so whoever captured a signed request can send it again until the secret or the address is changed. Rules keep no state between runs, so they cannot filter out requests they have seen. Rotate the address (`POST /api/v2/projects/{project}/automations/{rule}/webhook-token`) or the secret when a capture is suspected, and put a verifying proxy in front of Vikunja where more is needed.
+for example `ts=$(date +%s); sig=$(printf '%s.%s' "$ts" "$body" | openssl dgst -sha256 -hmac "$secret" -hex | sed 's/^.* //')`, then `-H "X-Vikunja-Timestamp: $ts" -H "X-Vikunja-Signature: sha256=$sig"`. The headers are parsed strictly: the timestamp is 1 to 11 ASCII digits (no sign, space or fraction), the signature is exactly `sha256=` and 64 hex digits, anything else is refused without being decoded. The MAC is compared in constant time, and the whole check runs before the rate limit counts.
+
+**Replay protection.** A signed call is accepted once. The timestamp may be at most `automation.webhook.tolerance` (default 5 minutes) in the past and at most one minute in the future (clock skew of the sender); the signature covers the timestamp, so it cannot be changed. Within the window, an exact repeat of an accepted call is refused: the accepted signatures are kept in the table `automation_webhook_seen` (unique on rule and signature), so every instance that shares the database refuses them, and the ticker deletes them once their timestamp is out of the window. A call that is refused for another reason after the signature checked out (a body that is not a JSON object, the rate limit) does not use its signature up. Send a new timestamp, and so a new signature, with every call, also for retries.
+
+A wrong or malformed signature, a missing, stale or future timestamp, a signature over the body alone (the scheme before this change) and a replay are all the same `401` with code 22011 and the same body, so a caller learns nothing about which part failed (the reason is logged at debug level on the server). When a correct sender is refused, check its clock and that it signs every call anew.
+
+**Unsigned webhooks are not protected.** A rule that names no secret takes unsigned calls, as before: the address is its only credential, nothing is checked or remembered, and whoever has the address can call it as often as the rate limit allows (headers sent anyway are ignored). Rotate the address (`POST /api/v2/projects/{project}/automations/{rule}/webhook-token`) when it leaks, and name a secret for any hook that needs more.
 
 ## Endpoints added by the fork
 
