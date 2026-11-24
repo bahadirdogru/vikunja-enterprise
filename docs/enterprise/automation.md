@@ -694,8 +694,8 @@ syntax error in the source (`actions[2].params.source`, `conditions.all[1].scrip
 22006 invalid secret name or value (400), 22007 secret not found (404), 22008 secret
 cannot be decrypted (409). 22001
 rule not found, 22003 run not found, 22004 run cannot be retried (409; only runs
-with the status `failed`). Retrying a run puts its event back in the queue; steps
-that succeeded are not executed again. 22009 the rule cannot be run (409: disabled, or no manual trigger), 22010 webhook not
+with the status `failed`). Retrying a run queues an event for that run alone (the event it was made for is
+not touched); steps that succeeded are not executed again. 22009 the rule cannot be run (409: disabled, or no manual trigger), 22010 webhook not
 found (404), 22011 invalid signature (401), 22012 webhook rate limited (429 with
 `Retry-After`), 22013 the webhook body is not a JSON object (400).
 

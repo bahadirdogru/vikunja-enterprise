@@ -471,7 +471,10 @@ func TestAutomationRun_ReadAndRetry(t *testing.T) {
 		require.NoError(t, s.Commit())
 		assert.Equal(t, AutomationRunRunning, retry.Run.Status)
 		db.AssertExists(t, "automation_runs", map[string]interface{}{"id": failed.ID, "status": AutomationRunRunning}, false)
-		db.AssertExists(t, "automation_events", map[string]interface{}{"id": failed.EventID, "status": AutomationEventPending, "attempts": 0}, false)
+		// Only this run is queued, by an event of its own; the event the run was made for is left as it is, or every
+		// other rule of it would run again.
+		db.AssertExists(t, "automation_events", map[string]interface{}{"id": failed.EventID, "status": AutomationEventDead, "attempts": 5}, false)
+		db.AssertExists(t, "automation_events", map[string]interface{}{"name": spec.EventResume, "rule_id": r.ID, "status": AutomationEventPending, "attempts": 0}, false)
 		db.AssertExists(t, "automation_run_steps", map[string]interface{}{"run_id": failed.ID, "position": 0, "status": AutomationStepSuccess}, false)
 	})
 

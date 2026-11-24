@@ -190,7 +190,7 @@ Project secrets (`automation_secrets`) are named values (`^[A-Za-z_][A-Za-z0-9_]
 ## Runs, retry and history
 
 - `GET .../runs` lists the runs of a rule newest first; `GET .../runs/{run}` returns one with its steps.
-- A run that is `failed` can be retried: `POST .../runs/{run}/retry` puts its event back in the queue; steps that succeeded are not executed again and the run resumes at the first step that did not (`22004` for other statuses). Retrying one failed run re-queues the whole event, so rules created after the event run for it too.
+- A run that is `failed` can be retried: `POST .../runs/{run}/retry` queues an event for that run alone (the kind a `wait` writes: it names the run and its rule); steps that succeeded are not executed again and the run resumes at the first step that did not (`22004` for other statuses). The event the run was made for is not touched, so no other rule of it runs again and a rule created or enabled after the event does not run for it. A run that is held by a `wait` is continued when the wait ends. If the retry fails temporarily it is retried with the usual backoff up to `automation.maxattempts`, then the run fails again.
 - A resumed run first checks that the steps it recorded still are the actions at their positions; if the rule was edited so they are not, the run is `aborted` with `rule_changed`. Editing the action that failed and retrying works.
 - A failure that will happen again (a permission or workflow rejection, an invalid value, a vanished task) fails the run at once. Anything else leaves the run `running` and the event goes back to `pending` with exponential backoff (10 s, 20 s, 40 s, ...) until `automation.maxattempts`, then the event is `dead` and the run `failed`.
 - Finished events, runs and steps are deleted by a daily job at 03:17 server time (`automation.retention` days, `0` keeps everything). Runs that are still running are never deleted; runs that wait longer than their waits plus a day are failed by the same job.
@@ -452,7 +452,6 @@ From the [roadmap](../enterprise/ROADMAP.md):
 - Code paths that commit their own sessions (cron, CalDAV, importers) only log a failed outbox insert, so those changes are lost to automation.
 - A rule enabled on one replica can miss another replica's events for up to `automation.cachettl`.
 - The catalog does not expose `automation.waitmax` or `service.timezone` to the editor; the stuck-run reaper does not disable rules or update metrics; the `stop` step is still recognised by an output prefix; no templates gallery for the time, manual and webhook trigger types; no e-mail action; no owner notification on auto-disable.
-- Retrying one failed run re-queues the whole event.
 - The editor for the time, manual and webhook triggers and actions was checked in a browser (see the roadmap); rules fired by the ticker, wait continuations, signed webhook calls and the Turkish strings were not.
 - Not exposed over MCP; the automation routes are not in the allow-list.
 - Which databases the engine tests have been run on is recorded in the roadmap.

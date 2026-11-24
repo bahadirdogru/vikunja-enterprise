@@ -134,7 +134,8 @@ func (r *AutomationRun) ReadOne(s *xorm.Session, _ web.Auth) error {
 	return addAutomationEventNames(s, []*AutomationRun{r})
 }
 
-// AutomationRunRetry puts a failed run back in the queue. The steps that succeeded are not executed again.
+// AutomationRunRetry puts a failed run back in the queue. The steps that succeeded are not executed again, and no other
+// run of its event is touched.
 type AutomationRunRetry struct {
 	ProjectID int64 `json:"-" param:"project"`
 	RuleID    int64 `json:"-" param:"rule"`
@@ -146,7 +147,7 @@ type AutomationRunRetry struct {
 	web.Permissions `xorm:"-" json:"-"`
 }
 
-// Create resets the event of the run so a worker picks it up again.
+// Create queues an event for this run alone, so a worker picks it up again.
 // @Summary Retry a failed automation run
 func (rr *AutomationRunRetry) Create(s *xorm.Session, _ web.Auth) error {
 	run, err := getAutomationRunOfRule(s, rr.RunID, rr.RuleID, rr.ProjectID)
@@ -157,9 +158,11 @@ func (rr *AutomationRunRetry) Create(s *xorm.Session, _ web.Auth) error {
 		return ErrAutomationRunNotRetryable{RunID: run.ID, Status: run.Status}
 	}
 
-	// A run whose last successful step is a wait is continued by a resume event only: the original event is held back
-	// by the wait guard and would leave the run running with nothing to continue it.
-	resumeAt, waiting, err := pendingAutomationWait(s, run.ID)
+	// The run is continued by an event of its own, the one a wait writes: it names the run and its rule, so only this
+	// run is executed again. Putting the original event back in the queue would run every rule of the event once
+	// more, including the ones that were created, or enabled, after it happened. A run whose last successful step is a
+	// wait is held back for the end of the wait; the original event is held back by the wait guard anyway.
+	resumeAt, _, err := pendingAutomationWait(s, run.ID)
 	if err != nil {
 		return err
 	}
@@ -172,14 +175,7 @@ func (rr *AutomationRunRetry) Create(s *xorm.Session, _ web.Auth) error {
 	if _, err = s.ID(run.ID).Cols("status", "error", "skip_reason", "finished").Update(run); err != nil {
 		return err
 	}
-	if waiting {
-		err = insertAutomationResumeEvent(s, run, resumeAt)
-	} else {
-		_, err = s.ID(run.EventID).
-			Cols("status", "attempts", "run_after", "locked_until", "last_error").
-			Update(&AutomationEvent{Status: AutomationEventPending, RunAfter: time.Now()})
-	}
-	if err != nil {
+	if err = insertAutomationResumeEvent(s, run, resumeAt); err != nil {
 		return err
 	}
 	rr.Run = run

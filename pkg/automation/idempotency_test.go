@@ -318,3 +318,60 @@ func TestRetry_AReapedRunInItsWaitIsContinued(t *testing.T) {
 	assert.Equal(t, models.AutomationRunSuccess, after.Status, after.Error)
 	assert.Equal(t, 1, counter("after"))
 }
+
+func TestIdempotency_RetryOfOneRunDoesNotRerunTheEvent(t *testing.T) {
+	reset(t)
+	resetCounters()
+	failing := insertRawRule(t, projectOwned, user1, spec.TriggerTaskCreated,
+		rawAct("test.count", "key", "a"),
+		rawAct("test.reject"),
+		rawAct("test.count", "key", "c"),
+	)
+	// A rule that was switched off when the event happened and one that did not exist yet: neither has a run for it.
+	off := insertRawRule(t, projectOwned, user1, spec.TriggerTaskCreated, rawAct("test.count", "key", "off"))
+	setRuleEnabled(t, off, false)
+
+	newTask(t, projectOwned, "task", user1)
+	drain(t)
+	run := allRuns(t, failing.ID)[0]
+	require.Equal(t, models.AutomationRunFailed, run.Status)
+	eventsBefore := allEvents(t)
+	require.Len(t, eventsBefore, 1)
+	eventID := eventsBefore[0].ID
+	require.Equal(t, models.AutomationEventDone, eventsBefore[0].Status)
+
+	late := insertRawRule(t, projectOwned, user1, spec.TriggerTaskCreated, rawAct("test.count", "key", "late"))
+	setRuleEnabled(t, off, true)
+
+	retryRun(t, failing, run)
+	drain(t)
+
+	assert.Equal(t, 0, counter("late"), "a rule created after the event does not run for it")
+	assert.Equal(t, 0, counter("off"), "a rule that was off when the event happened does not run for it")
+	assert.Empty(t, allRuns(t, late.ID))
+	assert.Empty(t, allRuns(t, off.ID))
+	assert.Equal(t, 1, counter("a"), "the step that succeeded is not repeated")
+	assert.Equal(t, 0, counter("c"))
+	assert.Equal(t, models.AutomationRunFailed, getRun(t, run.ID).Status, "the broken step failed again")
+	assert.Equal(t, 2, attemptsOf("reject"))
+	for _, ev := range allEvents(t) {
+		if ev.ID == eventID {
+			assert.Equal(t, models.AutomationEventDone, ev.Status, "the original event is left as it was")
+		}
+	}
+
+	// The run belongs to the event it was made for: nothing else was written for it.
+	runs := allRuns(t, failing.ID)
+	require.Len(t, runs, 1)
+	assert.Equal(t, eventID, runs[0].EventID)
+}
+
+func setRuleEnabled(t *testing.T, r *models.AutomationRule, enabled bool) {
+	t.Helper()
+	s := db.NewSession()
+	defer s.Close()
+	_, err := s.ID(r.ID).Cols("enabled").Update(&models.AutomationRule{Enabled: enabled})
+	require.NoError(t, err)
+	require.NoError(t, s.Commit())
+	models.ResetAutomationCache()
+}

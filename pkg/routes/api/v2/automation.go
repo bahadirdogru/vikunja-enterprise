@@ -183,7 +183,7 @@ func RegisterAutomationRoutes(api huma.API) {
 	Register(api, huma.Operation{
 		OperationID: "automation-runs-retry",
 		Summary:     "Retry a failed automation run",
-		Description: "Puts a failed run back in the queue. Steps that succeeded are not executed again; the run resumes at the first step that did not. Only runs with the status failed can be retried (409 otherwise). Needs admin access to the project.",
+		Description: "Puts a failed run back in the queue, as an event for this run alone: no other rule of the original event runs again. Steps that succeeded are not executed again; the run resumes at the first step that did not. Only runs with the status failed can be retried (409 otherwise). Needs admin access to the project.",
 		Method:      http.MethodPost,
 		Path:        "/projects/{project}/automations/{rule}/runs/{run}/retry",
 		// Queues work, it does not create a resource.
