@@ -310,8 +310,30 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   development build. Not closed: host calls do not take the deadline
   (a worker is held for timeout + 0.5 s + the host call in flight); the
   memory limit is soft on macOS, the BSDs and Windows (no Job Objects);
-  the compile check still falls back to compiling in the server when no
-  script process can be started.
+  the child is no sandbox (same uid, reused across projects).
+- Script processes, second review. The server built the whole JSON of the
+  start and of every host-call answer (HTML escaped, 6 bytes per `<`)
+  before the child refused it at 64 MiB: `tasks.find` of 100 tasks with
+  1 MiB descriptions took 2.3 GiB in one call, 4 runs on a 20 MiB task
+  1.4 GiB, and the child's death was "unavailable", retried five times and
+  never counted. Now both directions are estimated before encoding (8 MiB
+  to the child, no HTML escapes): an answer above it is an exception in the
+  script, a task above it fails the step for good without blame (anyone
+  with write access can make one; fields are not cut, a script writing one
+  back would destroy it). Measured after: 0 MiB extra for both repros.
+  Blame is default-deny once the start was sent (an exit code, closed
+  output or garbage from the child is the script's), except a SIGKILL the
+  server did not send: not counted, retried only before an `http.fetch`
+  (else failed, since a retry repeats the request). The hello has its own
+  5 s; the compile check never falls back to compiling in the server (it
+  refused the save instead; 7.9 s in the server reproduced before). One
+  interactive process per project. Lost wake-up of waiters fixed, memory
+  message says "hit the memory limit of N MiB", one error at worker start
+  when scripts cannot run, every run of a given-up event fails with its
+  own rule's error, the child is started with an argument so an upstream
+  binary stops with "unknown command". Not closed: two projects can still
+  hold both extra processes; memory pressure on the server can fail any
+  rule's run (not counted); the child is no sandbox.
 - Review-pass operational notes: run code generators with `LC_ALL=C` on
   machines with a Turkish locale (the dotless `i` breaks generated
   identifiers). Vitest's on-disk module cache is disabled in
