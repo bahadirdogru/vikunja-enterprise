@@ -257,6 +257,7 @@ const (
 	AutomationTickMaxScan         Key = `automation.ticker.maxscan`
 	AutomationWaitMax             Key = `automation.waitmax`
 	AutomationMaxPendingWaits     Key = `automation.maxpendingwaits`
+	AutomationMaxRulesPerProject  Key = `automation.maxrulesperproject`
 	AutomationWebhookMaxBody      Key = `automation.webhook.maxbody`
 	AutomationWebhookRateLimit    Key = `automation.webhook.ratelimit`
 
@@ -612,6 +613,7 @@ func initDefaultConfig() {
 	AutomationTickMaxScan.setDefault(defaultAutomationTickMaxScan)
 	AutomationWaitMax.setDefault(30 * 24 * time.Hour)
 	AutomationMaxPendingWaits.setDefault(defaultAutomationMaxPendingWaits)
+	AutomationMaxRulesPerProject.setDefault(defaultAutomationMaxRulesPerProject)
 	AutomationWebhookMaxBody.setDefault(defaultAutomationWebhookMaxBody)
 	AutomationWebhookRateLimit.setDefault(60)
 
@@ -1031,10 +1033,11 @@ func InitConfig() {
 
 // The defaults the automation limits fall back to when they are set to a value that has no meaning.
 const (
-	defaultAutomationTickMaxScan     = 5000
-	defaultAutomationWebhookMaxBody  = 64 * 1024
-	defaultAutomationMaxPendingWaits = 1000
-	defaultAutomationMaxDepth        = 3
+	defaultAutomationTickMaxScan        = 5000
+	defaultAutomationWebhookMaxBody     = 64 * 1024
+	defaultAutomationMaxPendingWaits    = 1000
+	defaultAutomationMaxRulesPerProject = 100
+	defaultAutomationMaxDepth           = 3
 )
 
 // ClampAutomationLimits replaces automation limits that are zero or negative, where that has no defined meaning,
@@ -1042,9 +1045,10 @@ const (
 // otherwise.
 func ClampAutomationLimits() {
 	for key, fallback := range map[Key]int{
-		AutomationTickMaxScan:     defaultAutomationTickMaxScan,
-		AutomationWebhookMaxBody:  defaultAutomationWebhookMaxBody,
-		AutomationMaxPendingWaits: defaultAutomationMaxPendingWaits,
+		AutomationTickMaxScan:        defaultAutomationTickMaxScan,
+		AutomationWebhookMaxBody:     defaultAutomationWebhookMaxBody,
+		AutomationMaxPendingWaits:    defaultAutomationMaxPendingWaits,
+		AutomationMaxRulesPerProject: defaultAutomationMaxRulesPerProject,
 	} {
 		if key.GetInt() <= 0 {
 			log.Warningf("Configured %s is %d, which is not a limit: using %d", key, key.GetInt(), fallback)

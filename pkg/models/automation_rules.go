@@ -459,11 +459,35 @@ func ownerOf(a web.Auth) (int64, error) {
 	return u.ID, nil
 }
 
+// checkAutomationRuleLimit refuses to add `adding` rules to a project that would then have more than
+// automation.maxrulesperproject. Only adding is checked: a project that is over the limit (it was lowered after the
+// rules were made) keeps its rules, which can still be edited, disabled and deleted. The count and the insert are
+// not locked together, so concurrent creates can overshoot by about the number of requests in flight; that is
+// accepted for a limit that protects against a runaway client, not against a determined admin (the alternative is
+// engine-specific locking).
+func checkAutomationRuleLimit(s *xorm.Session, projectID int64, adding int64) error {
+	limit := int64(config.AutomationMaxRulesPerProject.GetInt())
+	if limit <= 0 {
+		return nil
+	}
+	count, err := s.Where("project_id = ?", projectID).Count(&AutomationRule{})
+	if err != nil {
+		return err
+	}
+	if count+adding > limit {
+		return ErrAutomationRuleLimitReached{ProjectID: projectID, Limit: limit}
+	}
+	return nil
+}
+
 // Create validates and stores a rule. The creator becomes its owner.
 // @Summary Create an automation rule
 func (r *AutomationRule) Create(s *xorm.Session, a web.Auth) error {
 	ownerID, err := ownerOf(a)
 	if err != nil {
+		return err
+	}
+	if err = checkAutomationRuleLimit(s, r.ProjectID, 1); err != nil {
 		return err
 	}
 	if err = r.Validate(s, a); err != nil {

@@ -121,6 +121,10 @@ func duplicateAutomationRulesForProject(s *xorm.Session, doerID, sourceProjectID
 	if len(rules) == 0 {
 		return nil
 	}
+	// A project over the limit cannot be duplicated whole, and half a copy would be a silent loss.
+	if err := checkAutomationRuleLimit(s, targetProjectID, int64(len(rules))); err != nil {
+		return err
+	}
 
 	optionFields := map[int64]bool{}
 	fields := []*CustomField{}

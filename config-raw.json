@@ -1254,6 +1254,11 @@
                     "comment": "The maximum number of runs of one project that wait at the same time (the wait action). A wait step over the limit fails. Must be greater than 0: a value of 0 or less is replaced with the default."
                 },
                 {
+                    "key": "maxrulesperproject",
+                    "default_value": "100",
+                    "comment": "The maximum number of automation rules one project can have. Creating or duplicating a rule over the limit is refused (409, error code 22014); rules a project already has above the limit keep running and can be edited, disabled and deleted. Must be greater than 0: a value of 0 or less is replaced with the default."
+                },
+                {
                     "key": "webhook",
                     "comment": "Incoming webhooks: the public endpoint POST /api/v2/automation/hooks/{token} that starts rules with the trigger webhook.incoming.",
                     "children": [

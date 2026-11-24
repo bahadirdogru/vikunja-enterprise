@@ -285,3 +285,33 @@ func (err ErrAutomationHookPayloadInvalid) HTTPError() web.HTTPError {
 		Message:  "The body has to be a JSON object.",
 	}
 }
+
+// ErrAutomationRuleLimitReached represents an error where a project already has as many automation rules as
+// automation.maxrulesperproject allows, so no rule can be added to it.
+type ErrAutomationRuleLimitReached struct {
+	ProjectID int64
+	Limit     int64
+}
+
+// IsErrAutomationRuleLimitReached checks if an error is ErrAutomationRuleLimitReached.
+func IsErrAutomationRuleLimitReached(err error) bool {
+	_, ok := errors.AsType[ErrAutomationRuleLimitReached](err)
+	return ok
+}
+
+func (err ErrAutomationRuleLimitReached) Error() string {
+	return fmt.Sprintf("Automation rule limit reached [ProjectID: %d, Limit: %d]", err.ProjectID, err.Limit)
+}
+
+// ErrCodeAutomationRuleLimitReached holds the unique world-error code of this error
+const ErrCodeAutomationRuleLimitReached = 22014
+
+// HTTPError holds the http error description. It is a 409 like the other errors that depend on what the project
+// holds right now (22004, 22009): deleting a rule makes the same request work.
+func (err ErrAutomationRuleLimitReached) HTTPError() web.HTTPError {
+	return web.HTTPError{
+		HTTPCode: http.StatusConflict,
+		Code:     ErrCodeAutomationRuleLimitReached,
+		Message:  fmt.Sprintf("This project has reached the limit of %d automation rules.", err.Limit),
+	}
+}

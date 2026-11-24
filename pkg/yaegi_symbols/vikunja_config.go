@@ -46,6 +46,7 @@ func init() {
 		"AutomationMaxConsecutiveFails":              reflect.ValueOf(config.AutomationMaxConsecutiveFails),
 		"AutomationMaxDepth":                         reflect.ValueOf(config.AutomationMaxDepth),
 		"AutomationMaxPendingWaits":                  reflect.ValueOf(config.AutomationMaxPendingWaits),
+		"AutomationMaxRulesPerProject":               reflect.ValueOf(config.AutomationMaxRulesPerProject),
 		"AutomationPollInterval":                     reflect.ValueOf(config.AutomationPollInterval),
 		"AutomationRateLimit":                        reflect.ValueOf(config.AutomationRateLimit),
 		"AutomationRetention":                        reflect.ValueOf(config.AutomationRetention),

@@ -98,7 +98,7 @@ func RegisterAutomationRoutes(api huma.API) {
 	Register(api, huma.Operation{
 		OperationID: "automations-create",
 		Summary:     "Create an automation rule",
-		Description: "Creates a rule. The trigger, conditions and actions are validated against the catalog and every id (status, custom field, label, project) has to exist and be usable by you; problems are returned together as 400 with code 22002 and the path of each one, e.g. actions[1].params.status_id. The rule runs as you: it can never do more than you could do by hand, and it is disabled when you stop being admin of the project. Needs admin access to the project.",
+		Description: "Creates a rule. The trigger, conditions and actions are validated against the catalog and every id (status, custom field, label, project) has to exist and be usable by you; problems are returned together as 400 with code 22002 and the path of each one, e.g. actions[1].params.status_id. A project can have at most automation.maxrulesperproject rules (default 100); a project that has that many (or more, when the limit was lowered) refuses new rules with 409 and code 22014, while its existing rules keep running and can be edited, disabled and deleted. The rule runs as you: it can never do more than you could do by hand, and it is disabled when you stop being admin of the project. Needs admin access to the project.",
 		Method:      http.MethodPost,
 		Path:        "/projects/{project}/automations",
 		Tags:        tags,
