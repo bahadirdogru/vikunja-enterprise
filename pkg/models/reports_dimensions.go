@@ -21,8 +21,6 @@ import (
 	"strconv"
 	"strings"
 
-	"code.vikunja.io/api/pkg/user"
-
 	"xorm.io/builder"
 	"xorm.io/xorm"
 )
@@ -257,8 +255,8 @@ func resolveStatusLabels(s *xorm.Session, keys []reportKey) (map[string]reportLa
 	if len(ids) == 0 {
 		return out, nil
 	}
-	statuses := []*WorkflowStatus{}
-	if err := s.Where(builder.In("id", ids)).Find(&statuses); err != nil {
+	statuses, err := findByIDs[WorkflowStatus](s, ids)
+	if err != nil {
 		return nil, err
 	}
 	for _, st := range statuses {
@@ -291,7 +289,7 @@ func resolveUserLabels(s *xorm.Session, keys []reportKey) (map[string]reportLabe
 	if len(ids) == 0 {
 		return out, nil
 	}
-	users, err := user.GetUsersByIDs(s, ids)
+	users, err := usersByIDs(s, ids)
 	if err != nil {
 		return nil, err
 	}
@@ -307,8 +305,8 @@ func resolveLabelLabels(s *xorm.Session, keys []reportKey) (map[string]reportLab
 	if len(ids) == 0 {
 		return out, nil
 	}
-	labels := []*Label{}
-	if err := s.Where(builder.In("id", ids)).Find(&labels); err != nil {
+	labels, err := findByIDs[Label](s, ids)
+	if err != nil {
 		return nil, err
 	}
 	for _, l := range labels {
@@ -327,7 +325,7 @@ func resolveProjectLabels(s *xorm.Session, keys []reportKey) (map[string]reportL
 	if len(ids) == 0 {
 		return out, nil
 	}
-	projects, err := GetProjectsMapByIDs(s, ids)
+	projects, err := projectsByIDs(s, ids)
 	if err != nil {
 		return nil, err
 	}
@@ -386,8 +384,8 @@ func resolveOptionLabels(s *xorm.Session, keys []reportKey) (map[string]reportLa
 	if len(ids) == 0 {
 		return out, nil
 	}
-	options := []*CustomFieldOption{}
-	if err := s.Where(builder.In("id", ids)).Find(&options); err != nil {
+	options, err := findByIDs[CustomFieldOption](s, ids)
+	if err != nil {
 		return nil, err
 	}
 	for _, o := range options {

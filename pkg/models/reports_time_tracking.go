@@ -26,7 +26,6 @@ import (
 
 	"code.vikunja.io/api/pkg/config"
 	"code.vikunja.io/api/pkg/db"
-	"code.vikunja.io/api/pkg/user"
 	"code.vikunja.io/api/pkg/web"
 
 	"xorm.io/builder"
@@ -269,7 +268,7 @@ func RunTimeTrackingReport(ctx context.Context, s *xorm.Session, a web.Auth, req
 				ids = append(ids, e.UserID)
 			}
 		}
-		users, err := user.GetUsersByIDs(s, ids)
+		users, err := usersByIDs(s, ids)
 		if err != nil {
 			return nil, wrapReportError(err)
 		}
@@ -285,7 +284,7 @@ func RunTimeTrackingReport(ctx context.Context, s *xorm.Session, a web.Auth, req
 				ids = append(ids, id)
 			}
 		}
-		projects, err := GetProjectsMapByIDs(s, ids)
+		projects, err := projectsByIDs(s, ids)
 		if err != nil {
 			return nil, wrapReportError(err)
 		}

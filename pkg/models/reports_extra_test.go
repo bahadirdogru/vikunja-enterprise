@@ -31,6 +31,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"xorm.io/xorm"
 )
 
 // parseCSV checks the byte order mark and returns the records.
@@ -1210,4 +1211,57 @@ func TestReport_ExportIDChunks(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotEmpty(t, labels, "the fixture labels are found among 1500 ids")
 	assert.Len(t, uniqueIDs(ids), 1500)
+}
+
+// The names of the groups are looked up by id. A report of a large instance has more distinct users, projects, labels,
+// statuses and options than a database accepts parameters in one statement.
+func TestReport_LookupsOfManyIDs(t *testing.T) {
+	env := setupReportEnv(t)
+	const n = 33000 // above the 32766 parameters of SQLite, the lowest limit of the supported versions after 3.32
+
+	keys := make([]reportKey, 0, n)
+	for i := int64(1); i <= n; i++ {
+		keys = append(keys, reportKey{canon: itoa(i), value: i})
+	}
+	s := db.NewSession()
+	defer s.Close()
+	for name, fn := range map[string]func(*xorm.Session, []reportKey) (map[string]reportLabel, error){
+		"users":    resolveUserLabels,
+		"projects": resolveProjectLabels,
+		"labels":   resolveLabelLabels,
+		"statuses": resolveStatusLabels,
+		"options":  resolveOptionLabels,
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, err := fn(s, keys)
+			require.NoError(t, err)
+		})
+	}
+
+	t.Run("time tracking by user over many users", func(t *testing.T) {
+		const users = 33000
+		batch := make([]*TimeEntry, 0, 500)
+		flush := func() {
+			if len(batch) == 0 {
+				return
+			}
+			ins := db.NewSession()
+			defer ins.Close()
+			_, err := ins.Insert(&batch)
+			require.NoError(t, err)
+			require.NoError(t, ins.Commit())
+			batch = batch[:0]
+		}
+		for i := 0; i < users; i++ {
+			batch = append(batch, &TimeEntry{UserID: int64(100000 + i), ProjectID: env.project, StartTime: repTime("2026-01-12 15:00:00"), EndTime: tp(repTime("2026-01-12 16:00:00"))})
+			if len(batch) == 500 {
+				flush()
+			}
+		}
+		flush()
+		rep, err := runTimeTracking(cfUser1, TimeTrackingRequest{GroupBy: "user", From: "2026-01-01", To: "2026-01-31", Timezone: "UTC", Limit: 5})
+		require.NoError(t, err)
+		assert.GreaterOrEqual(t, rep.Entries, int64(users))
+		assert.True(t, rep.Truncated)
+	})
 }
