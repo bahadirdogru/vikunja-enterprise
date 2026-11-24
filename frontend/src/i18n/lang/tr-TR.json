@@ -1848,6 +1848,9 @@
 		"4013": "Görev sıralama parametresi geçersiz.",
 		"4014": "Görev sıralama yönü geçersiz.",
 		"4015": "Görev yorumu bulunamadı.",
+		"20006": "Bu projedeki özel alan sayısı sınıra ({limit}) ulaştı. İhtiyacın olmayan bir alanı sil ya da bir yöneticiden customfields.maxfieldsperproject değerini yükseltmesini iste.",
+		"20007": "Bir alanda en fazla {limit} seçenek olabilir. Bazı seçenekleri kaldır ya da bir yöneticiden customfields.maxoptionsperfield değerini yükseltmesini iste.",
+		"20008": "Bu değer çok uzun. En fazla {limit} bayt saklanabilir; temel Latin alfabesi dışındaki karakterler en fazla dört bayt yer kaplar.",
 		"21001": "Bu projede iş akışı yok.",
 		"21002": "İş akışı tanımı geçerli değil.",
 		"21003": "İş akışı durumu bulunamadı.",
@@ -2218,6 +2221,7 @@
 			"optionColor": "Seçenek renkleri #aabbcc biçiminde olmalıdır.",
 			"value": {
 				"string": "Metin gir.",
+				"tooLong": "Bu değer çok uzun. En fazla {max} bayt saklanabilir; temel Latin alfabesi dışındaki karakterler en fazla dört bayt yer kaplar.",
 				"url": "http:// veya https:// ile başlayan geçerli bir web adresi gir.",
 				"email": "Geçerli bir e-posta adresi gir.",
 				"number": "Bir sayı gir.",

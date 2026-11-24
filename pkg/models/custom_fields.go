@@ -250,6 +250,12 @@ func (cf *CustomField) Create(s *xorm.Session, a web.Auth) (err error) {
 	if err = cf.validate(); err != nil {
 		return err
 	}
+	if err = checkCustomFieldCanBeAdded(s, cf.ProjectID); err != nil {
+		return err
+	}
+	if err = checkCustomFieldOptionCount(0, len(cf.Options), 0); err != nil {
+		return err
+	}
 
 	// A link share's id is not a user id.
 	cf.CreatedByID = 0
@@ -351,6 +357,13 @@ func (cf *CustomField) Update(s *xorm.Session, a web.Auth) (err error) {
 	}
 	if cf.Position == 0 {
 		cf.Position = existing.Position
+	}
+	storedOptions, err := s.Where("custom_field_id = ?", cf.ID).Count(&CustomFieldOption{})
+	if err != nil {
+		return err
+	}
+	if err = checkCustomFieldOptionCount(cf.ID, len(cf.Options), int(storedOptions)); err != nil {
+		return err
 	}
 
 	_, err = s.ID(cf.ID).

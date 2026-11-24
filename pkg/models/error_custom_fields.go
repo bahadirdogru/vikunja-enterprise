@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"code.vikunja.io/api/pkg/web"
 )
@@ -160,5 +161,111 @@ func (err ErrCustomFieldInvalidValue) HTTPError() web.HTTPError {
 		HTTPCode: http.StatusBadRequest,
 		Code:     ErrCodeCustomFieldInvalidValue,
 		Message:  "The value is not valid for this custom field: " + err.Reason,
+	}
+}
+
+// ErrCustomFieldLimitReached represents an error where a project already has the maximum number of custom fields.
+type ErrCustomFieldLimitReached struct {
+	ProjectID int64
+	Limit     int64
+}
+
+// IsErrCustomFieldLimitReached checks if an error is ErrCustomFieldLimitReached.
+func IsErrCustomFieldLimitReached(err error) bool {
+	_, ok := errors.AsType[ErrCustomFieldLimitReached](err)
+	return ok
+}
+
+func (err ErrCustomFieldLimitReached) Error() string {
+	return fmt.Sprintf("Custom field limit reached [ProjectID: %d, Limit: %d]", err.ProjectID, err.Limit)
+}
+
+// ErrCodeCustomFieldLimitReached holds the unique world-error code of this error
+const ErrCodeCustomFieldLimitReached = 20006
+
+// HTTPError holds the http error description. It is a 409 like the other limits that depend on what the project
+// holds right now (22014): deleting a field makes the same request work.
+func (err ErrCustomFieldLimitReached) HTTPError() web.HTTPError {
+	return web.HTTPError{
+		HTTPCode:   http.StatusConflict,
+		Code:       ErrCodeCustomFieldLimitReached,
+		Message:    fmt.Sprintf("This project has reached the limit of %d custom fields.", err.Limit),
+		I18nParams: map[string]string{"limit": strconv.FormatInt(err.Limit, 10)},
+	}
+}
+
+// ErrCustomFieldOptionLimitReached represents an error where a field would have more options than allowed.
+type ErrCustomFieldOptionLimitReached struct {
+	CustomFieldID int64
+	Limit         int64
+}
+
+// IsErrCustomFieldOptionLimitReached checks if an error is ErrCustomFieldOptionLimitReached.
+func IsErrCustomFieldOptionLimitReached(err error) bool {
+	_, ok := errors.AsType[ErrCustomFieldOptionLimitReached](err)
+	return ok
+}
+
+func (err ErrCustomFieldOptionLimitReached) Error() string {
+	return fmt.Sprintf("Custom field option limit reached [CustomFieldID: %d, Limit: %d]", err.CustomFieldID, err.Limit)
+}
+
+// ErrCodeCustomFieldOptionLimitReached holds the unique world-error code of this error
+const ErrCodeCustomFieldOptionLimitReached = 20007
+
+// HTTPError holds the http error description. It is a 400: the submitted list is what is too long, removing
+// options from it makes the same request work.
+func (err ErrCustomFieldOptionLimitReached) HTTPError() web.HTTPError {
+	return web.HTTPError{
+		HTTPCode:   http.StatusBadRequest,
+		Code:       ErrCodeCustomFieldOptionLimitReached,
+		Message:    fmt.Sprintf("A custom field can have at most %d options.", err.Limit),
+		I18nParams: map[string]string{"limit": strconv.FormatInt(err.Limit, 10)},
+	}
+}
+
+// ErrCustomFieldValueTooLong represents an error where a text value is longer than the database can store. It is
+// also an ErrCustomFieldInvalidValue (see As), so callers that treat invalid values specially, such as forms,
+// keep working.
+type ErrCustomFieldValueTooLong struct {
+	CustomFieldID int64
+	Type          CustomFieldType
+	Length        int
+	Limit         int
+}
+
+// IsErrCustomFieldValueTooLong checks if an error is ErrCustomFieldValueTooLong.
+func IsErrCustomFieldValueTooLong(err error) bool {
+	_, ok := errors.AsType[ErrCustomFieldValueTooLong](err)
+	return ok
+}
+
+func (err ErrCustomFieldValueTooLong) reason() string {
+	return fmt.Sprintf("the value is too long, at most %d bytes are stored", err.Limit)
+}
+
+func (err ErrCustomFieldValueTooLong) Error() string {
+	return fmt.Sprintf("Custom field value is too long [CustomFieldID: %d, Type: %s, Bytes: %d, Limit: %d]", err.CustomFieldID, err.Type, err.Length, err.Limit)
+}
+
+// As lets errors.As find an ErrCustomFieldInvalidValue in it.
+func (err ErrCustomFieldValueTooLong) As(target any) bool {
+	if t, ok := target.(*ErrCustomFieldInvalidValue); ok {
+		*t = ErrCustomFieldInvalidValue{CustomFieldID: err.CustomFieldID, Type: err.Type, Reason: err.reason()}
+		return true
+	}
+	return false
+}
+
+// ErrCodeCustomFieldValueTooLong holds the unique world-error code of this error
+const ErrCodeCustomFieldValueTooLong = 20008
+
+// HTTPError holds the http error description
+func (err ErrCustomFieldValueTooLong) HTTPError() web.HTTPError {
+	return web.HTTPError{
+		HTTPCode:   http.StatusBadRequest,
+		Code:       ErrCodeCustomFieldValueTooLong,
+		Message:    "The value is not valid for this custom field: " + err.reason(),
+		I18nParams: map[string]string{"limit": strconv.Itoa(err.Limit)},
 	}
 }

@@ -1470,6 +1470,22 @@
             ]
         },
         {
+            "key": "customfields",
+            "comment": "Custom fields: typed fields a project admin defines for the tasks of one project.",
+            "children": [
+                {
+                    "key": "maxfieldsperproject",
+                    "default_value": "100",
+                    "comment": "The maximum number of custom fields one project can have. Creating a field over the limit is refused (409, error code 20006); a project that already has more fields (the limit was lowered) keeps them, and they can be edited and deleted. Duplicating a project copies its fields whatever the limit. Must be greater than 0: a value of 0 or less is replaced with the default."
+                },
+                {
+                    "key": "maxoptionsperfield",
+                    "default_value": "200",
+                    "comment": "The maximum number of options one select or multi select field can have. Saving a field with more options than the limit and than it already has is refused (400, error code 20007); a field that already has more options (the limit was lowered) keeps them and can be edited and shrunk. Must be greater than 0: a value of 0 or less is replaced with the default."
+                }
+            ]
+        },
+        {
             "key": "license",
             "children": [
                 {

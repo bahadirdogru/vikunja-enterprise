@@ -152,7 +152,7 @@ Schema violations (an enum, a range, a missing required property) are `422`, and
 
 | Range | Module | File |
 |---|---|---|
-| 20001 - 20005 | Custom fields | `pkg/models/error_custom_fields.go` |
+| 20001 - 20008 | Custom fields | `pkg/models/error_custom_fields.go` |
 | 21001 - 21010 | Workflows | `pkg/models/error_workflow.go` |
 | 22001 - 22014 | Automation (22005 - 22008 are scripts and secrets) | `pkg/models/error_automation.go`, `pkg/models/error_automation_secrets.go` |
 | 23001 - 23010 | Reports and dashboards | `pkg/models/error_reports.go` |
@@ -169,6 +169,9 @@ Schema violations (an enum, a range, a missing required property) are `422`, and
 | 20002 | 400 | Invalid custom field definition | custom fields |
 | 20003 | 400 | The type of a field cannot change | custom fields |
 | 20005 | 400 | Value not valid for the field | custom field values |
+| 20006 | 409 | The project already has `customfields.maxfieldsperproject` fields; only adding is refused | custom field create |
+| 20007 | 400 | The field would have more than `customfields.maxoptionsperfield` options and more than it has now | custom field create and update |
+| 20008 | 400 | A text value is longer than 65535 bytes (also reported as an invalid value to code that checks for one) | custom field values |
 | 21002 | 400 | Invalid workflow definition (`details.issues`) | workflow PUT |
 | 21005 | 400 | The workflow does not allow this status change | status change |
 | 21006 | 403 | Not allowed to perform this transition (permission or team) | status change |

@@ -260,7 +260,7 @@ func validateURLValue(f *CustomField, v any) (string, error) {
 	if err != nil || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https") {
 		return "", invalidValue(f, "expected an http or https url")
 	}
-	return str, nil
+	return str, checkCustomFieldTextLength(f, str)
 }
 
 func validateEmailValue(f *CustomField, v any) (string, error) {
@@ -272,7 +272,7 @@ func validateEmailValue(f *CustomField, v any) (string, error) {
 	if err != nil || addr.Address != str {
 		return "", invalidValue(f, "expected an email address")
 	}
-	return str, nil
+	return str, checkCustomFieldTextLength(f, str)
 }
 
 func validateDateValue(f *CustomField, v any) (time.Time, error) {
@@ -365,6 +365,9 @@ func buildCustomFieldValueRows(s *xorm.Session, f *CustomField, task *Task, raw 
 		str, ok := raw.(string)
 		if !ok {
 			return nil, invalidValue(f, "expected a string")
+		}
+		if err := checkCustomFieldTextLength(f, str); err != nil {
+			return nil, err
 		}
 		r := row()
 		r.ValueText = &str

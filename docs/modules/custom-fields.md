@@ -16,7 +16,7 @@ Audience: project admins define fields; project members fill and read them; oper
 - **Field value.** Belongs to a task and a field. Single-value types have at most one row per (task, field); `multi_select` and `user` have one row per selected option or user.
 - **Types.** `text`, `long_text`, `number`, `currency`, `date`, `checkbox`, `select`, `multi_select`, `user`, `url`, `email`, `rating`, `progress`. The type cannot be changed after creation (error `20003`).
 - **Config keys** by type: `min`, `max` (number, currency), `precision` (0 to 10, number and currency), `currency` (ISO 4217 code of at most three characters, currency), `max_rating` (1 to 10, default 5, rating).
-- **Validation on write.** Number and currency respect `min` and `max`; rating is an integer from 1 to `max_rating`; progress is 0 to 100; url and email are format-checked; select and multi select option ids must belong to the field; user ids must have read access to the task's project. Failures are `20005` (invalid value) or `20004` (unknown option).
+- **Validation on write.** Number and currency respect `min` and `max`; rating is an integer from 1 to `max_rating`; progress is 0 to 100; url and email are format-checked; select and multi select option ids must belong to the field; user ids must have read access to the task's project. Failures are `20005` (invalid value), `20008` (a text value longer than 65535 bytes; also an invalid value for callers that check for one, such as forms) or `20004` (unknown option).
 - **JSON shape of a value** depends on the type: string (`text`, `long_text`, `url`, `email`), number (`number`, `currency`, `rating`, `progress`), RFC 3339 string (`date`), boolean (`checkbox`), option id (`select`), array of option ids (`multi_select`), array of user ids (`user`). Sending `null`, or an empty array for `multi_select` and `user`, clears the value.
 - **Field references** in other documents (filters, workflow required fields, automation conditions and actions, form targets, report dimensions) are written `cf_<id>`.
 
@@ -94,7 +94,12 @@ An update of a definition replaces the submitted options: options with an id are
 
 ## Configuration keys
 
-The module has no configuration keys of its own. Field values share the file and database settings of the instance.
+| Key | Default | Meaning |
+|---|---|---|
+| `customfields.maxfieldsperproject` | `100` | The most custom fields one project can have. Creating a field over the limit is refused (`409`, code `20006`). A project that already has more fields (the limit was lowered) keeps them, and they can be edited and deleted; duplicating a project copies its fields whatever the limit. Concurrent creates can overshoot by about the number of requests in flight. A value of 0 or less is read as the default. |
+| `customfields.maxoptionsperfield` | `200` | The most options one select or multi select field can have. Creating or saving a field with more options than the limit **and** than it already has is refused (`400`, code `20007`); a field that already has more options keeps them and can be edited and shrunk, not grown. A value of 0 or less is read as the default. |
+
+Field values share the file and database settings of the instance.
 
 ## UI
 
@@ -117,8 +122,8 @@ More in [DESIGN.md](../../DESIGN.md#custom-fields).
 ## Limits and safety
 
 - A definition title is at most 250 characters; option titles 250; `precision` 0 to 10; `max_rating` 1 to 10.
-- There is **no cap** on fields per project or options per field.
-- `value_text` is a `text` column (64 KB on MySQL) and text values are not length-checked on write.
+- At most `customfields.maxfieldsperproject` fields per project (default 100) and `customfields.maxoptionsperfield` options per field (default 200); only adding is refused, see [Configuration keys](#configuration-keys).
+- A text, long text, url or email value is at most **65535 bytes** (not characters: a euro sign is three bytes, an emoji four), the size of the `value_text` column on MySQL, so a value that is stored on one database is stored on all three (`20008`). The check runs for every writer of values: the API, forms, automation and scripts. Field descriptions (`text` column as well) are not length-checked.
 - Date `=` compares the exact stored instant; use a range for a day.
 
 ## Known gaps and open decisions
@@ -126,7 +131,6 @@ More in [DESIGN.md](../../DESIGN.md#custom-fields).
 From the [roadmap](../enterprise/ROADMAP.md):
 
 - Not exposed over MCP.
-- No cap on fields per project or options per field; no length check on text values.
 - `vikunja.tasks.find` in scripts with `cf_` filters was not tested.
 - UI: hover and focus styling and the read-only state for users without write access were not exercised in a browser; long text shows a single clipped line until focused.
 - Which databases the custom field tests have been run on is recorded in the roadmap.
@@ -140,8 +144,9 @@ From the [roadmap](../enterprise/ROADMAP.md):
 | Filter and sort | `pkg/models/custom_field_filter.go` |
 | Expand | `pkg/models/custom_field_expand.go` |
 | Events | `pkg/models/custom_field_events.go` |
-| Errors | `pkg/models/error_custom_fields.go` (`20001` to `20005`) |
+| Errors | `pkg/models/error_custom_fields.go` (`20001` to `20008`) |
 | Routes | `pkg/routes/api/v2/custom_fields.go` |
 | Migration | `pkg/migration/20261122120000.go` |
-| Tests | `pkg/models/custom_fields_test.go`, `pkg/models/custom_field_filter_test.go`, `pkg/models/custom_field_expand_test.go`, `pkg/webtests/huma_custom_field_test.go`, `pkg/webtests/huma_custom_field_filter_test.go` |
+| Limits | `pkg/models/custom_field_limits.go` |
+| Tests | `pkg/models/custom_field_limits_test.go`, `pkg/models/custom_fields_test.go`, `pkg/models/custom_field_filter_test.go`, `pkg/models/custom_field_expand_test.go`, `pkg/webtests/huma_custom_field_test.go`, `pkg/webtests/huma_custom_field_filter_test.go` |
 | Frontend | `frontend/src/components/custom-fields/`, `frontend/src/views/project/settings/ProjectSettingsCustomFields.vue`, `frontend/src/client/queries/customFields.ts`, `frontend/src/helpers/customFields.ts`, `customFieldDisplay.ts`, `customFieldFilter.ts` |

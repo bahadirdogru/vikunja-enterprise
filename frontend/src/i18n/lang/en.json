@@ -1851,6 +1851,9 @@
     "4013": "The task sort param is invalid.",
     "4014": "The task sort order is invalid.",
     "4015": "The task comment does not exist.",
+    "20006": "This project has reached the maximum number of custom fields ({limit}). Delete a field you do not need, or ask an administrator to raise customfields.maxfieldsperproject.",
+    "20007": "A field can have at most {limit} options. Remove some options, or ask an administrator to raise customfields.maxoptionsperfield.",
+    "20008": "This value is too long. At most {limit} bytes can be stored; characters outside the basic Latin alphabet take up to four bytes each.",
     "21001": "This project has no workflow.",
     "21002": "The workflow definition is not valid.",
     "21003": "The workflow status does not exist.",
@@ -2218,6 +2221,7 @@
       "optionColor": "Option colors must look like #aabbcc.",
       "value": {
         "string": "Please enter text.",
+        "tooLong": "This value is too long. At most {max} bytes can be stored; characters outside the basic Latin alphabet take up to four bytes each.",
         "url": "Enter a valid web address starting with http:// or https://.",
         "email": "Enter a valid email address.",
         "number": "Please enter a number.",

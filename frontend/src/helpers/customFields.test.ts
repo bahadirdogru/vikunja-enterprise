@@ -70,6 +70,17 @@ describe('isCustomFieldValueEmpty', () => {
 	})
 })
 
+describe('validateCustomFieldValue text length', () => {
+	it('counts bytes, not characters', () => {
+		expect(validateCustomFieldValue({type: 'long_text'}, 'a'.repeat(65535))).toBeNull()
+		expect(validateCustomFieldValue({type: 'long_text'}, 'a'.repeat(65536)))
+			.toEqual({key: 'customFields.errors.value.tooLong', params: {max: 65535}})
+		// 21845 euro signs are 65535 bytes, one more is not.
+		expect(validateCustomFieldValue({type: 'text'}, '\u20ac'.repeat(21845))).toBeNull()
+		expect(validateCustomFieldValue({type: 'text'}, '\u20ac'.repeat(21846))?.key).toBe('customFields.errors.value.tooLong')
+	})
+})
+
 describe('validateCustomFieldValue', () => {
 	it('accepts null for every type', () => {
 		expect(validateCustomFieldValue({type: 'rating'}, null)).toBeNull()

@@ -82,6 +82,8 @@ func init() {
 		"CorsEnable":                                 reflect.ValueOf(config.CorsEnable),
 		"CorsMaxAge":                                 reflect.ValueOf(config.CorsMaxAge),
 		"CorsOrigins":                                reflect.ValueOf(config.CorsOrigins),
+		"CustomFieldsMaxFieldsPerProject":            reflect.ValueOf(config.CustomFieldsMaxFieldsPerProject),
+		"CustomFieldsMaxOptionsPerField":             reflect.ValueOf(config.CustomFieldsMaxOptionsPerField),
 		"DatabaseDatabase":                           reflect.ValueOf(config.DatabaseDatabase),
 		"DatabaseHost":                               reflect.ValueOf(config.DatabaseHost),
 		"DatabaseMaxConnectionLifetime":              reflect.ValueOf(config.DatabaseMaxConnectionLifetime),

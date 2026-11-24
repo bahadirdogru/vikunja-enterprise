@@ -115,9 +115,25 @@ export function isCustomFieldValueEmpty(field: FieldLike, value: unknown): boole
 	return field.type === 'checkbox' && value === false
 }
 
+// The most a text value may hold, in bytes: value_text is a 64 KB column on MySQL. Characters count with all
+// of their UTF-8 bytes, like on the server.
+export const MAX_TEXT_VALUE_BYTES = 65535
+
+function textTooLong(value: unknown): ValidationError | null {
+	return typeof value === 'string' && new TextEncoder().encode(value).length > MAX_TEXT_VALUE_BYTES
+		? {key: 'customFields.errors.value.tooLong', params: {max: MAX_TEXT_VALUE_BYTES}}
+		: null
+}
+
 export function validateCustomFieldValue(field: FieldLike, value: unknown): ValidationError | null {
 	if (value === null || value === undefined) {
 		return null
+	}
+	if (field.type === 'text' || field.type === 'long_text' || field.type === 'url' || field.type === 'email') {
+		const tooLong = textTooLong(value)
+		if (tooLong) {
+			return tooLong
+		}
 	}
 
 	switch (field.type) {

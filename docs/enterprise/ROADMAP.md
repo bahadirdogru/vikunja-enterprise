@@ -429,6 +429,23 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   `workflow_status_move_test.go` failed before the change and pass after
   it; `TestWorkflow*` and `TestApprovals*` pass on SQLite. Not measured with
   a large N.
+- Custom field limits (fixed). New keys `customfields.maxfieldsperproject`
+  (100) and `customfields.maxoptionsperfield` (200), error codes 20006 (409),
+  20007 (400) and 20008 (400, also an invalid value to code that checks for
+  one, so forms need no change). Only adding is refused: a project or field
+  that is already above the limit keeps working, can be edited, and an
+  option list can shrink. Text, long text, url and email values are checked
+  in bytes against 65535, the size of MySQL's `text` column, so a value that
+  one database stores all three store; multi-byte characters count with
+  their bytes. The messages of the three codes are in the error table of
+  both frontend languages (with the limit as parameter) and the value editor
+  checks the byte length before sending. Verified: the new Go tests failed
+  before the change and pass after it (`custom_field_limits_test.go`, the
+  wire test `huma_custom_field_limits_test.go`), the vitest tests of the
+  helper and the message table pass; en and tr keys and placeholders are
+  identical. Not verified: the editor in a browser; concurrent creates can
+  overshoot the field limit by the requests in flight; field descriptions
+  are still not length-checked.
 
 ## Remaining
 
@@ -456,8 +473,6 @@ Open after the review pass, not fixed because they need a decision:
   an array-like hit a nil-pointer panic (reported as an internal error).
 - Reports: the response size is unbounded in groups x children x buckets
   (13 MB measured with two 20-option fields and 366 buckets).
-- Custom fields: no cap on fields per project or options per field;
-  `value_text` is 64 KB on MySQL and values are not length-checked.
 - Forms: the e-mail of a signed-in submitter is never recorded although the
   field documentation says so; the title of a closed members form is shown
   to an anonymous holder of the link; no hourly limit on members forms;

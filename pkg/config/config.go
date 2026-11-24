@@ -262,6 +262,9 @@ const (
 	AutomationWebhookRateLimit    Key = `automation.webhook.ratelimit`
 	AutomationWebhookTolerance    Key = `automation.webhook.tolerance`
 
+	CustomFieldsMaxFieldsPerProject Key = `customfields.maxfieldsperproject`
+	CustomFieldsMaxOptionsPerField  Key = `customfields.maxoptionsperfield`
+
 	FormsEnabled                Key = `forms.enabled`
 	FormsMaxBodySize            Key = `forms.maxbodysize`
 	FormsMaxAttachments         Key = `forms.maxattachments`
@@ -618,6 +621,10 @@ func initDefaultConfig() {
 	AutomationWebhookMaxBody.setDefault(defaultAutomationWebhookMaxBody)
 	AutomationWebhookRateLimit.setDefault(60)
 	AutomationWebhookTolerance.setDefault(defaultAutomationWebhookTolerance)
+
+	// Custom fields
+	CustomFieldsMaxFieldsPerProject.setDefault(100)
+	CustomFieldsMaxOptionsPerField.setDefault(200)
 
 	// Reports
 	ReportsCacheTTL.setDefault(30 * time.Second)
