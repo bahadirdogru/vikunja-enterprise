@@ -261,6 +261,53 @@ func checkFormAccess(s *xorm.Session, f *Form, a web.Auth) error {
 	return nil
 }
 
+// formSubmitter is what a submission knows about who sent it.
+type formSubmitter struct {
+	user *user.User
+	// name and email are shown on the task and in the event: what the form collected, the name of the account of a
+	// signed-in submitter when it collected none.
+	name, email string
+	// accountEmail is the address of the account. It is only stored on the submission, see formSubmitterDetails.
+	accountEmail string
+}
+
+// formSubmitterDetails resolves the submitter of a request.
+//
+// What the submitter says about themselves only counts when the form asks for it: it is validated only then, and a
+// signed-in submitter is otherwise recorded with what their account knows. The e-mail address of the account is not
+// told to anybody but the people who may read the submissions: it is neither put into the task nor into the event,
+// whose audience is wider (everybody who can read the task, rules and webhooks). A public form is anonymous by
+// nature: a signed-in visitor is not asked whether they want their account address kept, so it is never taken there.
+func formSubmitterDetails(s *xorm.Session, form *Form, req *FormSubmitRequest) (*formSubmitter, error) {
+	d := &formSubmitter{user: formSubmitterUser(req.Auth)}
+	if d.user != nil {
+		// The claims of a token only carry the id and the username: the name and e-mail address come from the
+		// account. GetUserByID leaves the address out; only this lookup returns it.
+		full, err := user.GetUserWithEmail(s, &user.User{ID: d.user.ID})
+		switch {
+		case err == nil:
+			d.user = full
+		case user.IsErrUserDoesNotExist(err):
+			return nil, ErrFormNotAllowed{}
+		default:
+			return nil, err
+		}
+	}
+	switch {
+	case form.Settings.CollectName:
+		d.name = cleanFormText(req.SubmitterName, false)
+	case d.user != nil:
+		d.name = d.user.GetName()
+	}
+	if form.Settings.CollectEmail {
+		d.email = cleanFormText(req.SubmitterEmail, false)
+	}
+	if d.user != nil && form.Access != FormAccessPublic {
+		d.accountEmail = d.user.Email
+	}
+	return d, nil
+}
+
 // checkFormReachable decides whether the caller may be told about the form at all, and whether it takes submissions.
 // A form that is not public tells its title and state (disabled, closed, full) only to somebody who may submit it:
 // the access check comes first. An anonymous caller to a form that takes no submissions gets the answer of an
@@ -557,40 +604,12 @@ func submitForm(s *xorm.Session, req *FormSubmitRequest) (*FormSubmitResult, err
 		return nil, err
 	}
 
-	submitter := formSubmitterUser(req.Auth)
-	if submitter != nil {
-		// The claims of a token only carry the id and the username: the name and e-mail address come from the account.
-		// GetUserByID leaves the address out; only this lookup returns it.
-		full, uerr := user.GetUserWithEmail(s, &user.User{ID: submitter.ID})
-		switch {
-		case uerr == nil:
-			submitter = full
-		case user.IsErrUserDoesNotExist(uerr):
-			return nil, ErrFormNotAllowed{}
-		default:
-			return nil, uerr
-		}
+	details, err := formSubmitterDetails(s, form, req)
+	if err != nil {
+		return nil, err
 	}
-	// What the submitter says about themselves only counts when the form asks for it: it is validated only then,
-	// and a signed-in submitter is otherwise recorded with what their account knows. The e-mail address of the
-	// account is not told to anybody but the people who may read the submissions: it is neither put into the task nor
-	// into the event, whose audience is wider (everybody who can read the task, rules and webhooks).
-	var name, email, accountEmail string
+	submitter, name, email := details.user, details.name, details.email
 	var fieldErrs []FormFieldError
-	switch {
-	case form.Settings.CollectName:
-		name = cleanFormText(req.SubmitterName, false)
-	case submitter != nil:
-		name = submitter.GetName()
-	}
-	if form.Settings.CollectEmail {
-		email = cleanFormText(req.SubmitterEmail, false)
-	}
-	if submitter != nil && form.Access != FormAccessPublic {
-		// A public form is anonymous by nature: a signed-in visitor is not asked whether they want their account
-		// address kept.
-		accountEmail = submitter.Email
-	}
 	fieldErrs = append(fieldErrs, validateSubmitter(form.Settings, name, email)...)
 
 	answers, attachErrs, err := collectFormAnswers(s, form, req, name, email, now, owner)
@@ -630,7 +649,7 @@ func submitForm(s *xorm.Session, req *FormSubmitRequest) (*FormSubmitResult, err
 		Created:        now,
 	}
 	if sub.SubmitterEmail == "" {
-		sub.SubmitterEmail = truncateRunes(accountEmail, 250)
+		sub.SubmitterEmail = truncateRunes(details.accountEmail, 250)
 	}
 	if _, err = s.Insert(sub); err != nil {
 		return nil, err
