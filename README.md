@@ -10,6 +10,7 @@ vikunja-enterprise is an independent community fork of [Vikunja](https://github.
 > Almost everything here is their work. If Vikunja is useful to you, please [support the upstream project](https://vikunja.io/support/).
 
 - Website: <https://vikunja.bahadirdogru.com>
+- Maintainer: [Bahadır Doğru](https://bahadirdogru.com)
 - Fork: <https://github.com/bahadirdogru/vikunja-enterprise>
 - Upstream: <https://github.com/go-vikunja/vikunja>
 - Image: `ghcr.io/bahadirdogru/vikunja-enterprise` (linux/amd64 and linux/arm64)

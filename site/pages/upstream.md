@@ -7,6 +7,8 @@
 
 ## What the fork is
 
+The fork is built and maintained by [Bahadır Doğru](https://bahadirdogru.com), who is not part of the Vikunja project. Other work by the same author is listed on [bahadirdogru.com](https://bahadirdogru.com).
+
 - The same Go API, Vue 3 frontend, database layer and single-binary deployment, plus six modules that live in their own packages, files and tables: [custom fields](../../docs/modules/custom-fields.md), [workflows](../../docs/modules/workflows.md), [approvals](../../docs/modules/approvals.md), [automation](../../docs/modules/automation.md), [dashboards and reports](../../docs/modules/dashboards-reports.md) and [forms](../../docs/modules/forms.md).
 - A development project. The aim in the name is to offer a copy of Vikunja that is complete and properly built in every respect up to enterprise level. It is an aim, not a claim; the [roadmap](../../docs/enterprise/ROADMAP.md) says what is done, what was tested on which database, and what is open.
 - Licensed under AGPL-3.0-or-later, as upstream, with the same terms for anyone who runs it as a service.

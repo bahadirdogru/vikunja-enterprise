@@ -28,6 +28,8 @@ PAGES_DIR = os.path.join(HERE, "pages")
 SITE = "https://vikunja.bahadirdogru.com"
 REPO = "https://github.com/bahadirdogru/vikunja-enterprise"
 UPSTREAM = "https://github.com/go-vikunja/vikunja"
+AUTHOR = "Bahadır Doğru"
+AUTHOR_SITE = "https://bahadirdogru.com"
 CSP = (
     "default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self'; "
     "object-src 'none'; base-uri 'none'; form-action 'none'"
@@ -370,6 +372,7 @@ class Builder:
             '<meta http-equiv="Content-Security-Policy" content="%s">' % CSP,
             "<title>%s</title>" % html.escape(title),
             '<meta name="description" content="%s">' % html.escape(page.desc, quote=True),
+            '<meta name="author" content="%s">' % html.escape(AUTHOR, quote=True),
         ]
         if page.out == "404.html":
             lines.append('<meta name="robots" content="noindex">')
@@ -486,6 +489,7 @@ class Builder:
         <li><a href="https://vikunja.io/support/">Support upstream</a></li>
       </ul></div>
     </nav>
+    <p class="footer-by">A project by <a class="by-link" href="%(author_site)s" rel="author">%(author)s<span class="by-domain">bahadirdogru.com</span></a></p>
   </div>
 </footer>""" % {
             "a": li("index.html", "Home"), "b": li("getting-started.html", "Get started"),
@@ -494,7 +498,7 @@ class Builder:
             "g": li("architecture.html", "Architecture"), "h": li("configuration.html", "Configuration"),
             "i": li("security.html", "Security"), "j": li("contributing.html", "Contributing")
             + "\n        " + li("license.html", "License"),
-            "repo": REPO, "up": UPSTREAM,
+            "repo": REPO, "up": UPSTREAM, "author": html.escape(AUTHOR), "author_site": AUTHOR_SITE,
         }
 
     def sidebar(self, page):
