@@ -585,7 +585,9 @@ the same path, which outside Linux is what gets started after an upgrade) stop w
 "unknown command" instead of starting a server for those 5 s. When the workers start,
 one process is started as a check; if that fails, one error in the log says why
 scripts cannot run. The compile check is never done in the server: when no script
-process is available, the save is refused with "the script could not be checked". The
+process is available, the save is refused with "the script could not be checked".
+Only new or changed script sources are checked, so a rule can still be disabled, or
+edited outside its scripts, while checking is unavailable. The
 server sends the source, the event, the task and the limits as JSON over a pipe with a
 sequence number (at most 8 MiB, without HTML escapes; a larger task or event fails the
 step for good with "the task or the event is too large to be passed to a script",
@@ -594,7 +596,9 @@ it that large; fields are not cut, since a script that writes a cut field back w
 lose the rest) and answers every host call (`vikunja.*`, `http.fetch`, `secrets.get`)
 on the goroutine of the step, so database work stays in the step's transaction and
 under the owner's permissions; an answer larger than 8 MiB is an exception in the
-script instead. It checks the sequence number of every message, refuses a line longer
+script instead, and if the script does not catch it, the step fails for good without
+counting against the rule, like an oversized start. A task or event nested deeper than
+1000 levels (an incoming webhook can send that) is refused the same way. It checks the sequence number of every message, refuses a line longer
 than 4 MiB before holding it, and enforces the limits of the run again (calls,
 requests, sizes of strings, size and depth of values); a child that breaks any of it
 is killed. A process serves one script at a time, each with a fresh interpreter. It

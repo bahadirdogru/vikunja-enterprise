@@ -334,6 +334,13 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   binary stops with "unknown command". Not closed: two projects can still
   hold both extra processes; memory pressure on the server can fail any
   rule's run (not counted); the child is no sandbox.
+- Script processes, third pass: an answer too large for the script that it
+  does not catch is not counted either (someone with write access to a task
+  the owner can read could otherwise get the rule disabled); payloads nested
+  deeper than 1000 levels are refused like oversized ones and keep the
+  process; specials count in the size estimate; a save checks only new or
+  changed script sources, so a rule can be disabled while checking is
+  unavailable.
 - Review-pass operational notes: run code generators with `LC_ALL=C` on
   machines with a Turkish locale (the dotless `i` breaks generated
   identifiers). Vitest's on-disk module cache is disabled in
