@@ -22,6 +22,7 @@ import {
 } from '@/helpers/formsPublic'
 import {FORM_ERROR} from '@/helpers/forms'
 import {saveLastVisited} from '@/helpers/saveLastVisited'
+import {FORK_HOME} from '@/urls'
 import {sanitizeProjectDescription} from '@/helpers/sanitizeProjectDescription'
 
 const props = defineProps<{
@@ -346,7 +347,7 @@ watch(() => props.token, () => {
 			class="fp__footer"
 		>
 			<a
-				href="https://vikunja.io"
+				:href="FORK_HOME"
 				target="_blank"
 				rel="noopener noreferrer"
 			>{{ $t('forms.public.poweredBy') }}</a>
