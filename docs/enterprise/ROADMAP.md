@@ -192,6 +192,12 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   "Run automation..." on a task, `automation.notify` notification. Checked
   in a browser, see the browser pass below. No replay protection on the
   webhook signature.
+- PostgreSQL 18 and 19: full `test:feature` and `test:web` pass uncached on
+  PostgreSQL 18.7 and 19.0 (commit 995b6414f). The fork tests on the newest
+  stable PostgreSQL and recommends 18 or newer. The minimum versions in
+  `.agents/docs/databases.md` are upstream's and are left as they are, so
+  the fork's SQL stays portable and upstream stays mergeable; they are not
+  tested here.
 - Database pass after automation 3d: `test:feature` passes on SQLite,
   PostgreSQL 17 and MySQL 8, `test:web` on all three, run uncached after the fixes (the 3d failures on
   PostgreSQL and MySQL were test problems, see below). Go caches test results
