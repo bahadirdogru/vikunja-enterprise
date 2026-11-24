@@ -56,6 +56,7 @@ func init() {
 		"AutomationScriptsMaxCallStack":              reflect.ValueOf(config.AutomationScriptsMaxCallStack),
 		"AutomationScriptsMaxHTTPRequests":           reflect.ValueOf(config.AutomationScriptsMaxHTTPRequests),
 		"AutomationScriptsMaxLogSize":                reflect.ValueOf(config.AutomationScriptsMaxLogSize),
+		"AutomationScriptsMaxMemory":                 reflect.ValueOf(config.AutomationScriptsMaxMemory),
 		"AutomationScriptsMaxResponseSize":           reflect.ValueOf(config.AutomationScriptsMaxResponseSize),
 		"AutomationScriptsMaxResults":                reflect.ValueOf(config.AutomationScriptsMaxResults),
 		"AutomationScriptsMaxSource":                 reflect.ValueOf(config.AutomationScriptsMaxSource),

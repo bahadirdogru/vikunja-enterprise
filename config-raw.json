@@ -1271,7 +1271,7 @@
                 },
                 {
                     "key": "scripts",
-                    "comment": "JavaScript in automation rules (script action, script condition, http.fetch inside scripts) and the outgoing `http.request` action. Scripts run in an embedded pure-Go interpreter with a small API; see docs/enterprise/automation.md for the API and the security model. There is no hard memory cap: allocation inside the interpreter is bounded only by the timeout.",
+                    "comment": "JavaScript in automation rules (script action, script condition, http.fetch inside scripts) and the outgoing `http.request` action. Scripts run in an embedded pure-Go interpreter with a small API, each in a child process of Vikunja that is killed at the script timeout and has a memory limit (`maxmemory`); see docs/enterprise/automation.md for the API and the security model.",
                     "children": [
                         {
                             "key": "enabled",
@@ -1322,6 +1322,11 @@
                             "key": "maxresults",
                             "default_value": "200",
                             "comment": "The maximum number of tasks `vikunja.tasks.find` returns."
+                        },
+                        {
+                            "key": "maxmemory",
+                            "default_value": "268435456",
+                            "comment": "The memory a script may allocate, in bytes. Every script runs in a child process of Vikunja (the same binary), which is killed at the script timeout; on Linux this is a hard limit of the address space of that process, and a script that exceeds it fails with \"the script used more than N MiB of memory\". On macOS and Windows it is only the soft limit of the Go runtime. 0 turns the limit off."
                         },
                         {
                             "key": "httptimeout",

@@ -16,9 +16,10 @@
 
 // Package script runs the JavaScript of automation rules in an embedded, pure Go interpreter (goja).
 //
-// Every run gets a fresh interpreter that is thrown away afterwards. The only globals are the standard ECMAScript
-// built-ins plus event, task, project, vikunja, http, secrets, log and console.log. Everything handed to the
-// script is built as plain JavaScript objects; no Go value with methods or pointers is ever exposed. Everything
+// Every run gets a fresh interpreter in a short-lived child process of its own (isolate.go), which is killed at the
+// deadline and runs under a memory limit; the host calls of the script are answered by the parent over a pipe.
+// The only globals are the standard ECMAScript built-ins plus event, task, project, vikunja, http, secrets, log and
+// console.log. Everything handed to the script is built as plain JavaScript objects; no Go value with methods or pointers is ever exposed. Everything
 // the script can do beyond computing goes through the Host interface, which the caller implements.
 package script
 
@@ -40,7 +41,8 @@ import (
 
 func init() {
 	// The interpreter cannot interrupt a regular expression that backtracks catastrophically (it is native code),
-	// so the regexp engine itself gets a limit. Only the interpreter uses this package of regexp2.
+	// so the regexp engine itself gets a limit. Only the interpreter uses this package of regexp2. The script
+	// process lowers it to the timeout of its script.
 	regexp2.DefaultMatchTimeout = 2 * time.Second
 }
 
@@ -64,12 +66,6 @@ type SyntaxError struct {
 
 func (e *SyntaxError) Error() string {
 	return fmt.Sprintf("line %d, column %d: %s", e.Line, e.Column, e.Message)
-}
-
-// Check compiles a source without running it.
-func Check(source string) *SyntaxError {
-	_, err := compile(source)
-	return err
 }
 
 // isWrapperCall reports whether the program is exactly one call of one function literal.
@@ -145,6 +141,8 @@ const (
 	ErrTimeout ErrorKind = "timeout"
 	// ErrStackOverflow is the call stack limit.
 	ErrStackOverflow ErrorKind = "stack_overflow"
+	// ErrMemory is the memory limit of the script process.
+	ErrMemory ErrorKind = "memory"
 	// ErrBadResult is a condition script that did not return a value.
 	ErrBadResult ErrorKind = "bad_result"
 	// ErrInternal is a bug.
@@ -207,9 +205,10 @@ type runtime struct {
 	jsonPars goja.Callable
 }
 
-// Run executes the script. A *Error is a failure of the script itself; any other error (a cancelled parent
-// context) is not.
-func Run(ctx context.Context, in *Input) (res *Result, err error) {
+// runLocal executes the script in this process. Only the script process (see isolate.go) calls it: a single call
+// of native code of the interpreter never sees the interrupt, so in this process a script can outlive its timeout
+// and exhaust memory.
+func runLocal(ctx context.Context, in *Input) (res *Result, err error) {
 	started := time.Now()
 	prg, synErr := compile(in.Source)
 	if synErr != nil {

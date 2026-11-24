@@ -40,6 +40,9 @@ type Limits struct {
 	MaxExportNodes int
 	// MaxValueBytes bounds a single string crossing from the script to the host.
 	MaxValueBytes int
+	// MaxMemory is the memory limit of the script process in bytes (0: none). Only enforced where the operating
+	// system has a limit for the address space of a process (Linux and the BSDs).
+	MaxMemory int64
 }
 
 // ActionLimits are the limits of a script action, from the configuration.
@@ -53,6 +56,7 @@ func ActionLimits() Limits {
 		MaxResults:      config.AutomationScriptsMaxResults.GetInt(),
 		MaxExportNodes:  100000,
 		MaxValueBytes:   config.AutomationScriptsMaxResponseSize.GetInt(),
+		MaxMemory:       config.AutomationScriptsMaxMemory.GetInt64(),
 	}
 }
 

@@ -285,6 +285,7 @@ const (
 	AutomationScriptsMaxLogSize       Key = `automation.scripts.maxlogsize`
 	AutomationScriptsMaxCallStack     Key = `automation.scripts.maxcallstack`
 	AutomationScriptsMaxResults       Key = `automation.scripts.maxresults`
+	AutomationScriptsMaxMemory        Key = `automation.scripts.maxmemory`
 	AutomationHTTPTimeout             Key = `automation.scripts.httptimeout`
 
 	AuditEnabled           Key = `audit.enabled`
@@ -630,6 +631,7 @@ func initDefaultConfig() {
 	AutomationScriptsMaxLogSize.setDefault(16 * 1024)
 	AutomationScriptsMaxCallStack.setDefault(512)
 	AutomationScriptsMaxResults.setDefault(200)
+	AutomationScriptsMaxMemory.setDefault(256 * 1024 * 1024)
 	AutomationHTTPTimeout.setDefault(10 * time.Second)
 	// Audit
 	AuditEnabled.setDefault(false)

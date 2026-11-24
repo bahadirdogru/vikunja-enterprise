@@ -302,6 +302,7 @@ func ScriptLimitDocs() []*spec.ScriptLimit {
 		{Name: "Log output per step (bytes)", ConfigKey: "automation.scripts.maxlogsize", Value: num(config.AutomationScriptsMaxLogSize), Description: "The rest of the log is dropped."},
 		{Name: "Call stack depth", ConfigKey: "automation.scripts.maxcallstack", Value: num(config.AutomationScriptsMaxCallStack), Description: "Deeper recursion fails the script."},
 		{Name: "Tasks returned by vikunja.tasks.find", ConfigKey: "automation.scripts.maxresults", Value: num(config.AutomationScriptsMaxResults), Description: "Further tasks are left out."},
+		{Name: "Memory (bytes)", ConfigKey: "automation.scripts.maxmemory", Value: strconv.FormatInt(config.AutomationScriptsMaxMemory.GetInt64(), 10), Description: "A script that allocates more is stopped and fails (\"the script used more than N MiB of memory\"); a hard limit on Linux only. 0 means no limit."},
 		{Name: "HTTP request timeout", ConfigKey: "automation.scripts.httptimeout", Value: secs(config.AutomationHTTPTimeout), Description: "Applies to every outgoing request, whatever a script asks for."},
 	}
 }
