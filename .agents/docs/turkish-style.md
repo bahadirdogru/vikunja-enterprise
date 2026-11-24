@@ -71,7 +71,7 @@ Imperative: *seç*, *gir*, *dene*, *ekle*. Possessive: *hesabın*, *şifreni*, *
 
 ### 3.4 If the owner chooses *siz*
 
-The switch would touch every instruction, question, error with a remedy, and second-person possessive, in upstream keys as well as fork keys. It would also mean converting every Turkish string that upstream's Crowdin delivers after each merge. Buttons, labels, headings and status messages would not change.
+The switch would touch every instruction, question, error with a remedy, and second-person possessive, in upstream keys as well as fork keys. The audit of November 2026 counted 552 strings with *sen* forms: 394 upstream keys and 158 fork keys (out of 3103). It would also mean converting every Turkish string that upstream's Crowdin delivers after each merge. Buttons, labels, headings and status messages would not change.
 
 ## 4. Capitalisation
 
@@ -256,6 +256,9 @@ One Turkish term per concept. Before inventing a term, search both `tr-TR.json` 
 | required / optional | zorunlu / isteğe bağlı | opsiyonel, gerekli (for fields) |
 | checkbox / option / select / multi-select | onay kutusu / seçenek / seçim / çoklu seçim | |
 | retry / try again | yeniden dene / tekrar dene | |
+| Done (button that ends an editing mode) | Tamam | Bitti |
+| display (options for how something is shown) | gösterim | görünüm (= view) |
+| Group by / Sort by / Split by (field labels) | Gruplama ölçütü / Sıralama ölçütü / Ayırma ölçütü | imperatives (*Grupla*, *Sırala*) on a label |
 
 ### Fork modules
 
@@ -288,6 +291,7 @@ One Turkish term per concept. Before inventing a term, search both `tr-TR.json` 
 | run (one execution of a rule) / run history | çalıştırma / çalıştırma geçmişi | çalışma |
 | test, dry run | deneme (*Kuralı dene*) | test, prova, kuru çalıştırma — confirmed |
 | secret | gizli anahtar | gizli dizi (Microsoft, not understood by users), sır |
+| token in a webhook address | erişim anahtarı | token, jeton (keeps it apart from *gizli anahtar* and *imza anahtarı*) |
 | signing secret / signature | imza anahtarı / imza | |
 | rate limit | istek sınırı; for rule runs *çalıştırma sınırı* | hız sınırı (calque) |
 | payload | veri | yük (calque) |
