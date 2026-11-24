@@ -35,6 +35,9 @@ import (
 // would fail the same way, so the run fails right away.
 type ActionError struct {
 	Msg string
+	// NoBlame keeps the failure from counting towards disabling the rule: it is permanent, but not the rule's
+	// doing (a task too large to be passed to a script, a script process killed by someone else).
+	NoBlame bool
 }
 
 func (e *ActionError) Error() string { return e.Msg }

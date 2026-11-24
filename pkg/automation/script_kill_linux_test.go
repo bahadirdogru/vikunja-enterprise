@@ -63,8 +63,9 @@ func killScriptProcesses(t *testing.T) int {
 	return killed
 }
 
-// TestScript_AChildKilledInTheMiddleOfAHostCall: the script changed the task, then its process dies while the
-// server answers the next host call. The step's transaction is rolled back and the run is recorded once.
+// TestScript_AChildKilledInTheMiddleOfAHostCall: the script changed the task, then its process is killed (as the
+// OOM killer would) while the server answers its http.fetch. The step's transaction is rolled back, the run is
+// recorded once, failed but not counted, and not retried because the request would be sent again.
 func TestScript_AChildKilledInTheMiddleOfAHostCall(t *testing.T) {
 	reset(t)
 	allowLoopback(t)
@@ -82,6 +83,8 @@ func TestScript_AChildKilledInTheMiddleOfAHostCall(t *testing.T) {
 	assert.EqualValues(t, 1, srv.count())
 	assert.Equal(t, models.AutomationRunFailed, run.Status)
 	assert.Contains(t, run.Error, "killed by the operating system")
+	assert.Zero(t, getRule(t, run.RuleID).ConsecutiveFailures, "a kill the server did not send is nobody's fault")
+	assert.Equal(t, models.AutomationEventDone, allEvents(t)[len(allEvents(t))-1].Status, "not retried: the request would be sent again")
 	require.Len(t, steps, 1)
 	assert.Equal(t, models.AutomationStepFailed, steps[0].Status)
 	assert.Equal(t, "Original title", task.Title, "the change of the killed script was rolled back")

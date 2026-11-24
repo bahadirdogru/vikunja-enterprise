@@ -28,6 +28,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"xorm.io/xorm"
 )
 
 // runawaySource does its work in one native call of the interpreter, where the interrupt of the timeout is
@@ -144,4 +145,54 @@ func TestScript_AFailureOfTheMachineryIsNotTheRulesFault(t *testing.T) {
 			assert.True(t, stored.Enabled)
 		})
 	}
+}
+
+// TestScript_ATaskTooLargeForAScriptFailsTheRunWithoutBlame: any member who can write the task can make it that
+// large, so the run fails for good (running it again fails the same way) but does not count against the rule.
+func TestScript_ATaskTooLargeForAScriptFailsTheRunWithoutBlame(t *testing.T) {
+	reset(t)
+	config.AutomationMaxConsecutiveFails.Set(1)
+	r := addRule(t, projectOwned, user1, rule(spec.TriggerTaskCreated, nil, nil, scriptAction(`return task.description.length`)))
+	mustCommit(t, func(s *xorm.Session) error {
+		return (&models.Task{Title: "huge", Description: strings.Repeat("x", 9<<20), ProjectID: projectOwned}).Create(s, user1)
+	})
+	drain(t)
+	runs := allRuns(t, r.ID)
+	require.Len(t, runs, 1)
+	assert.Equal(t, models.AutomationRunFailed, runs[0].Status)
+	assert.Contains(t, runs[0].Error, "too large to be passed to a script")
+	stored := getRule(t, r.ID)
+	assert.Zero(t, stored.ConsecutiveFailures)
+	assert.True(t, stored.Enabled)
+	events := allEvents(t)
+	assert.Equal(t, models.AutomationEventDone, events[len(events)-1].Status, "not retried")
+}
+
+// TestWorker_AGivenUpEventFailsEachRunWithTheErrorOfItsOwnRule: before, every run got the first rule's error, so
+// a machinery failure of one rule decided the blame of the others.
+func TestWorker_AGivenUpEventFailsEachRunWithTheErrorOfItsOwnRule(t *testing.T) {
+	reset(t)
+	retryBase = time.Hour
+	advance := fakeClock(t)
+	config.AutomationMaxAttempts.Set(2)
+	allowLoopback(t)
+	srv := countingServer(t, 500, "boom")
+	scripted := addRule(t, projectOwned, user1, rule(spec.TriggerTaskCreated, nil, nil, scriptAction(`return 1`)))
+	failing := addRule(t, projectOwned, user1, rule(spec.TriggerTaskCreated, nil, nil, httpAction(map[string]any{"url": srv.url + "/x"})))
+	t.Cleanup(script.SetTestExecutable(filepath.Join(t.TempDir(), "missing")))
+
+	newTask(t, projectOwned, "t", user1)
+	drain(t)
+	advance(time.Hour)
+	drain(t)
+
+	machinery := allRuns(t, scripted.ID)[0]
+	assert.Equal(t, models.AutomationRunFailed, machinery.Status)
+	assert.Contains(t, machinery.Error, "cannot start the script process")
+	assert.Zero(t, getRule(t, scripted.ID).ConsecutiveFailures)
+
+	own := allRuns(t, failing.ID)[0]
+	assert.Equal(t, models.AutomationRunFailed, own.Status)
+	assert.Contains(t, own.Error, "500")
+	assert.EqualValues(t, 1, getRule(t, failing.ID).ConsecutiveFailures, "its own failure counts")
 }

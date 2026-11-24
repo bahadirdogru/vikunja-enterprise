@@ -19,9 +19,11 @@ package automation
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"sync"
 	"time"
 
+	"code.vikunja.io/api/pkg/automation/script"
 	"code.vikunja.io/api/pkg/automation/spec"
 	"code.vikunja.io/api/pkg/config"
 	"code.vikunja.io/api/pkg/cron"
@@ -219,7 +221,7 @@ func failRunningRuns(s *xorm.Session, ev *models.AutomationEvent, cause error) {
 			rule = &models.AutomationRule{ID: run.RuleID}
 		}
 		rc := &runContext{ev: ev, rule: rule, run: run}
-		if err := rc.finish(s, models.AutomationRunFailed, "", cause); err != nil {
+		if err := rc.finish(s, models.AutomationRunFailed, "", causeFor(cause, run.RuleID)); err != nil {
 			log.Errorf("[automation] could not fail run %d: %v", run.ID, err)
 		}
 	}
@@ -251,17 +253,47 @@ func handleEvent(ctx context.Context, ev *models.AutomationEvent) error {
 	}
 
 	var firstErr error
+	byRule := map[int64]error{}
 	for _, rule := range rules {
 		def := spec.TriggerByType(rule.Trigger.Type)
 		if def == nil || def.Event != ev.Name {
 			continue
 		}
 		renewLock(ev)
-		if err := runRule(ctx, ev, payload, rule); err != nil && firstErr == nil {
-			firstErr = err
+		if err := runRule(ctx, ev, payload, rule); err != nil {
+			byRule[rule.ID] = err
+			if firstErr == nil {
+				firstErr = err
+			}
 		}
 	}
-	return firstErr
+	if firstErr == nil {
+		return nil
+	}
+	return &ruleErrors{first: firstErr, byRule: byRule}
+}
+
+// ruleErrors are the failures worth retrying of the rules of one event. The event is retried for the first; when
+// it gives up, every run is failed with the error of its own rule.
+type ruleErrors struct {
+	first  error
+	byRule map[int64]error
+}
+
+func (e *ruleErrors) Error() string { return e.first.Error() }
+func (e *ruleErrors) Unwrap() error { return e.first }
+
+// causeFor is the error a run of the rule failed with when the event gave up.
+func causeFor(cause error, ruleID int64) error {
+	var re *ruleErrors
+	if !errors.As(cause, &re) {
+		return cause
+	}
+	if err, ok := re.byRule[ruleID]; ok {
+		return err
+	}
+	// The rule's own run did not fail this time: it has no error that could blame it.
+	return &ActionError{Msg: "the event was given up after its retries ran out (another rule of it kept failing: " + re.first.Error() + ")", NoBlame: true}
 }
 
 // renewLock gives the worker of a claimed event the lock duration again. The lock covers one run timeout, and every
@@ -396,6 +428,13 @@ func Start(parent context.Context) {
 		tickLoop(ctx)
 	}()
 	log.Infof("[automation] started %d workers", n)
+	if script.Enabled() {
+		go func() {
+			if err := script.Preflight(); err != nil {
+				log.Errorf("[automation] scripts cannot run on this server, every script step will fail until this is fixed: %v", err)
+			}
+		}()
+	}
 }
 
 // Stop stops the workers and waits for the runs in progress.

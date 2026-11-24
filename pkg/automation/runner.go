@@ -238,9 +238,7 @@ func (rc *runContext) finish(s *xorm.Session, status, reason string, runErr erro
 		rule.ConsecutiveFailures = 0
 		cols = append(cols, "consecutive_failures")
 	case models.AutomationRunFailed:
-		if errors.Is(runErr, script.ErrUnavailable) {
-			// The retries ran out on a failure of the script machinery (no free script process, one that could not
-			// start): the rule is not to blame, so it does not count towards disabling it.
+		if notBlamed(runErr) {
 			break
 		}
 		if _, err := s.ID(rc.rule.ID).Incr("consecutive_failures").Cols(cols...).NoAutoTime().Update(rule); err != nil {
@@ -250,6 +248,14 @@ func (rc *runContext) finish(s *xorm.Session, status, reason string, runErr erro
 	}
 	_, err := s.ID(rc.rule.ID).Cols(cols...).NoAutoTime().Update(rule)
 	return err
+}
+
+// notBlamed reports whether a failed run must not count towards disabling its rule: the retries ran out on a
+// failure of the script machinery (no free script process, none could be started), or the failure is permanent
+// but not the rule's doing (see ActionError.NoBlame).
+func notBlamed(err error) bool {
+	var actionErr *ActionError
+	return errors.Is(err, script.ErrUnavailable) || (errors.As(err, &actionErr) && actionErr.NoBlame)
 }
 
 func (rc *runContext) disableOnFailures(s *xorm.Session) error {
