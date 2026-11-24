@@ -147,7 +147,7 @@ async function doRotate() {
 			<ul class="webhook-panel__notes help">
 				<li>{{ $t('automation.webhook.usage') }}</li>
 				<li>{{ $t('automation.webhook.signature') }}</li>
-				<li>{{ $t('automation.webhook.noReplayProtection') }}</li>
+				<li>{{ $t('automation.webhook.replay') }}</li>
 			</ul>
 		</template>
 

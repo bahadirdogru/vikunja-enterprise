@@ -410,8 +410,9 @@ describe('RuleEditor', () => {
 			expect(sdk.automationsCreate).toHaveBeenCalledTimes(1)
 			expect(wrapper.get('#automation-webhook-url').element).toHaveProperty('value', hook.webhook_url)
 			expect(wrapper.text()).toContain('cannot be shown again')
-			expect(wrapper.text()).toContain('no replay protection')
+			expect(wrapper.text()).toContain('protected against replays')
 			expect(wrapper.text()).toContain('X-Vikunja-Signature')
+			expect(wrapper.text()).toContain('X-Vikunja-Timestamp')
 			const copy = wrapper.findAll('button').find(b => b.text() === 'Copy')!
 			await copy.trigger('click')
 			await flushPromises()

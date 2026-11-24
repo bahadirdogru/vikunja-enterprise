@@ -3313,7 +3313,7 @@
 				"offset": "Örneğin 24h veya 2d. En az 1 dakika."
 			},
 			"webhook_incoming": {
-				"secret": "Seçilirse her çağrı X-Vikunja-Signature: sha256=HEX başlığını taşımalıdır; HEX, istek gövdesinin bu anahtarla hesaplanan HMAC-SHA256 değeridir. Geçerli imzası olmayan çağrılar reddedilir."
+				"secret": "Seçilirse her çağrı iki başlık taşımalıdır: X-Vikunja-Timestamp (Unix zamanı, saniye cinsinden) ve X-Vikunja-Signature: sha256=HEX; HEX, zaman damgasının, bir noktanın ve istek gövdesinin bu anahtarla hesaplanan HMAC-SHA256 değeridir. Geçerli imzası olmayan, zaman damgası eski olan ya da iki kez gönderilen çağrılar reddedilir."
 			},
 			"wait": {
 				"duration": "1 dakikadan yöneticinin belirlediği üst sınıra kadar (varsayılan 30 gün), örneğin 30m, 12h, 3d veya 2w. Bu eylemden sonraki eylemler daha sonra çalışır; koşullar yeniden denetlenmez."
@@ -3348,8 +3348,8 @@
 			"rotateUncertain": "Yeni adres oluşturma isteği tamamlanmadı. Adres şimdiden değişmiş olabilir; bu yüzden daha önce gösterilen adres artık güvenilir değil ve kaldırıldı. Yeni bir adres daha oluştur.",
 			"saveFirst": "Önce değişikliklerini kaydet.",
 			"usage": "Gövdesi bir JSON nesnesi olan bir POST isteği gönder (boş gövde için {'{}'} kullan). İstek hemen yanıtlanır ve kural arka planda çalışır.",
-			"signature": "Bir imza anahtarı seçildiyse çağrılar X-Vikunja-Signature: sha256=HEX başlığını taşımalıdır (ham gövdenin anahtarla hesaplanan HMAC-SHA256 değeri).",
-			"noReplayProtection": "Tekrar oynatma (replay) saldırılarına karşı koruma yoktur: imza yalnızca gövdeyi kapsar, bu yüzden ele geçirilen bir istek, anahtar ya da adres değiştirilene kadar yeniden gönderilebilir. Sızıntıdan şüpheleniyorsan adresi ya da imza anahtarını yenile; daha fazlası gerekiyorsa Vikunja'nın önüne istekleri doğrulayan bir proxy koy.",
+			"signature": "Bir imza anahtarı seçildiyse çağrılar X-Vikunja-Timestamp (Unix zamanı, saniye cinsinden) ve X-Vikunja-Signature: sha256=HEX başlıklarını taşımalıdır (HEX, zaman damgasının, bir noktanın ve ham gövdenin anahtarla hesaplanan HMAC-SHA256 değeridir).",
+			"replay": "İmzalı çağrılar tekrar oynatmaya (replay) karşı korunur: zaman damgası birkaç dakikadan (varsayılan 5) eski olan çağrı ve aynı imzayla gelen ikinci çağrı reddedilir. Her çağrıda yeni bir zaman damgası ve imza gönder. İmza anahtarı olmayan bir webhook imzalı değildir ve korunmaz: adresi bilen herkes onu çağırabilir.",
 			"rotateConfirm": {
 				"title": "Yeni webhook adresi oluşturulsun mu?",
 				"text": "Geçerli adres hemen çalışmaz olur. Onu kullanan her hizmete yeni adres verilmelidir."
