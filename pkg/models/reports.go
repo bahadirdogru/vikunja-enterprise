@@ -821,8 +821,8 @@ func (r *reportRun) execute() (*TaskReport, error) {
 // point of a leaf group. The count is exact for the groups that were kept, so a request with few groups is never
 // refused for what its limit would allow in the worst case.
 func (r *reportRun) checkCells(kept []*reportNode, hasOther bool) error {
-	max := config.ReportsMaxCells.GetInt()
-	if max <= 0 {
+	limit := config.ReportsMaxCells.GetInt()
+	if limit <= 0 {
 		return nil
 	}
 	groups, leaves := int64(len(kept)), int64(len(kept))
@@ -846,8 +846,8 @@ func (r *reportRun) checkCells(kept []*reportNode, hasOther bool) error {
 	if tp := r.plan.timeCfg; tp != nil {
 		cells += leaves * int64(len(tp.bounds)-1)
 	}
-	if cells > int64(max) {
-		return ErrReportTooLarge{Cells: cells, Max: max}
+	if cells > int64(limit) {
+		return ErrReportTooLarge{Cells: cells, Max: limit}
 	}
 	return nil
 }
