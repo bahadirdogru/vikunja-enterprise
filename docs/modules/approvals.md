@@ -137,13 +137,13 @@ More in [DESIGN.md](../../DESIGN.md#approvals).
 - At most 50 approver sources per transition.
 - A request is created for at most the approvers who can read the task; a request cannot be created with nobody to decide.
 - Concurrency is serialized by the lock on the request row; the loser of a race gets `409`.
+- Locks are always taken in the same order: the task row, then the request row. A direct status change of the task locks the task first, so a decision or a cancellation of one of its requests does the same; the opposite order deadlocked on PostgreSQL (`40P01`) and MySQL (`1213`). `TestApprovals_DecisionAndStatusChangeDoNotDeadlock` covers it on PostgreSQL 18 and MySQL 8 (it is skipped on SQLite).
 - Approved transitions are re-checked at approval time, so a stale request cannot bypass a rule that changed meanwhile.
 
 ## Known gaps and open decisions
 
 From the [roadmap](../enterprise/ROADMAP.md):
 
-- A decision and a direct status change of the same task deadlock on PostgreSQL (the status change fails with `40P01`). Locking the task first in the decision path fixed it on PostgreSQL in a trial; MySQL was not checked.
 - An approved transition is performed for a requester whose account was disabled; a request whose only approver was disabled stays pending.
 - Approvers' Turkish backend strings are not added; other languages come from Crowdin.
 - Not exercised in a browser: an overdue request, the reminder notification and the table marker.

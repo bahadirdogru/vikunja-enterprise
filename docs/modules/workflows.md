@@ -161,7 +161,6 @@ From the [roadmap](../enterprise/ROADMAP.md):
 - Removing a status with `move_tasks_to` writes no history and fires no event.
 - A transition that requires a comment cannot be done through the done checkbox.
 - Enabling a workflow on an existing project assigns statuses in bulk without history rows.
-- A decision and a direct status change of the same task deadlocked on PostgreSQL in a trial (see [approvals](approvals.md)).
 - Not exercised in a browser: forbidden (403) and team-restricted transitions, inline server validation errors, forbidden moves, create-in-column that needs input, and a status board after its workflow is deleted.
 - Not exposed over MCP. WIP limits, SLA timers and workflow templates shared between projects are listed as later in the design document.
 - Which databases the workflow tests have been run on is recorded in the roadmap.

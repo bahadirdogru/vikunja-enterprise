@@ -131,6 +131,13 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   Open: one `./pkg/models/` run failed once and did not reproduce in ten
   further runs (failing test not captured); approvers' Turkish backend
   strings not added; new catalog keys have no UI translations until 5b.
+- Approvals: a decision and a direct status change of the same task
+  deadlocked (40P01 on PostgreSQL) because they locked the task row and the
+  request row in opposite order. Decisions, cancellations and approver removal
+  now lock the task first (`lockApprovalRequest`). The regression test
+  `TestApprovals_DecisionAndStatusChangeDoNotDeadlock` failed 150 of 150
+  rounds before the fix on PostgreSQL 18 (40P01) and on MySQL 8 (1213); after
+  it, it passed 5 runs on each. SQLite skips it (no row locks).
 - Approvals UI added (en + tr); frontend suite passes (3374 tests).
   Exercised in a browser with three users: approval settings in the workflow
   editor, request from the status menu and the done button, mode all and any,
@@ -284,10 +291,6 @@ Open after the review pass, not fixed because they need a decision:
   created after the event run for it too. No cap on rules per project.
 - Automation: the incoming webhook signature covers the body only, so a
   captured request can be replayed until the secret or address changes.
-- Approvals: a decision and a direct status change of the same task
-  deadlock on PostgreSQL (the status change fails with 40P01). Locking the
-  task first in the decision path fixed it on PostgreSQL in a trial; MySQL
-  not checked.
 - Approvals: an approved transition is performed for a requester whose
   account was disabled; a request whose only approver was disabled stays
   pending.

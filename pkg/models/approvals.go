@@ -218,11 +218,18 @@ func isLinkShareAuth(a web.Auth) bool {
 	return is
 }
 
-// lockApprovalRequest takes the write lock of a request before anything is read. A write first keeps SQLite from
-// failing a transaction that read and then writes after another writer committed (busy_timeout cannot fix that);
-// on PostgreSQL and MySQL it is a row lock that serializes decisions and cancellations of one request. The reads
-// that follow have to be locking reads for the same reason, see lockingSession.
+// lockApprovalRequest takes the write lock of a request before anything is read, after the lock of its task.
+// The order is task, then request, everywhere: a direct status change locks the task first and then looks at the
+// pending requests (to cancel them), and a decision moves the task. Locking the request first deadlocked the two on
+// PostgreSQL (40P01) and MySQL (1213). The task is found by a subquery, so the first statement is still a write:
+// that keeps SQLite from failing a transaction that read and then writes after another writer committed
+// (busy_timeout cannot fix that). On PostgreSQL and MySQL the writes are row locks that serialize decisions and
+// cancellations of one request. The reads that follow have to be locking reads for the same reason, see
+// lockingSession.
 func lockApprovalRequest(s *xorm.Session, id int64) error {
+	if _, err := s.Exec("UPDATE tasks SET id = id WHERE id IN (SELECT task_id FROM approval_requests WHERE id = ?)", id); err != nil {
+		return err
+	}
 	_, err := s.Table("approval_requests").Where("id = ?", id).Update(map[string]any{"id": id})
 	return err
 }
