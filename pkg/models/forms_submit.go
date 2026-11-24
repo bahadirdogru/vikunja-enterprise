@@ -282,6 +282,20 @@ func checkFormReachable(s *xorm.Session, f *Form, a web.Auth) error {
 	return nil
 }
 
+// CheckFormReachable looks up the form with the token and decides, from the auth alone, whether the caller may be
+// told about it and whether it takes submissions, with the answers of SubmitForm (and the same order). The routes call
+// it before they read a request body, so a body is only read for a form the caller may submit.
+func CheckFormReachable(token string, a web.Auth) error {
+	s := db.NewReadSession()
+	defer s.Close()
+	f, err := GetFormByToken(s, token)
+	if err != nil {
+		return err
+	}
+	normalizeForm(f)
+	return checkFormReachable(s, f, a)
+}
+
 // GetFormDefinition returns the public definition of the form with the token. a is the auth of the request, nil
 // when there is none.
 func GetFormDefinition(token string, a web.Auth) (*FormPublicDefinition, error) {

@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"image"
 	"image/png"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -615,4 +616,87 @@ func TestHumaForms_Branding(t *testing.T) {
 		rec = humaRequest(t, e, http.MethodDelete, logoPath, "", user1, "")
 		assert.EqualValues(t, models.ErrCodeFormsDisabled, formsDecode(t, rec)["code"], rec.Body.String())
 	})
+}
+
+type countingBody struct {
+	r io.Reader
+	n int
+}
+
+func (c *countingBody) Read(p []byte) (int, error) {
+	n, err := c.r.Read(p)
+	c.n += n
+	return n, err
+}
+
+// The body of a submission is only read for a form the caller may submit: a token that does not exist, a form for
+// members seen by an anonymous caller and a closed form are answered before anything is buffered.
+func TestHumaForms_BodyIsReadAfterTheFormIsKnown(t *testing.T) {
+	e, err := setupTestEnv()
+	require.NoError(t, err)
+	user1 := humaTokenFor(t, &testuser1)
+	user2 := humaTokenFor(t, &testuser2)
+	fields := `[{"target":"title","label":"Title","required":true},{"target":"attachments","label":"Files"}]`
+	config.FormsPublicAttachments.Set(true)
+	t.Cleanup(func() { config.FormsPublicAttachments.Set(false) })
+	_, pub := newPublicForm(t, e, user1, "public", fields, `{}`)
+	_, mem := newPublicForm(t, e, user1, "members", fields, `{}`)
+	_, closed := newPublicForm(t, e, user1, "members", fields, `{"close_date":"2020-01-01T00:00:00Z"}`)
+
+	var buf bytes.Buffer
+	w := multipart.NewWriter(&buf)
+	require.NoError(t, w.WriteField("data", `{"values":{"title":"x"}}`))
+	part, err := w.CreateFormFile("files", "big.txt")
+	require.NoError(t, err)
+	_, err = part.Write(bytes.Repeat([]byte("a"), 512<<10))
+	require.NoError(t, err)
+	require.NoError(t, w.Close())
+
+	send := func(path, token string) (*httptest.ResponseRecorder, int) {
+		body := &countingBody{r: bytes.NewReader(buf.Bytes())}
+		req := httptest.NewRequest(http.MethodPost, path, body)
+		req.Header.Set("Content-Type", w.FormDataContentType())
+		if token != "" {
+			req.Header.Set("Authorization", "Bearer "+token)
+		}
+		rec := httptest.NewRecorder()
+		e.ServeHTTP(rec, req)
+		return rec, body.n
+	}
+	for _, route := range []string{"/submissions/multipart"} {
+		t.Run("an unknown token", func(t *testing.T) {
+			rec, read := send("/api/v2/forms/does-not-exist"+route, "")
+			assert.Equal(t, http.StatusNotFound, rec.Code, rec.Body.String())
+			assert.EqualValues(t, models.ErrCodeFormDoesNotExist, formsDecode(t, rec)["code"])
+			assert.Zero(t, read, "the body was read")
+		})
+		t.Run("a members form without a login", func(t *testing.T) {
+			rec, read := send("/api/v2/forms/"+mem+route, "")
+			assert.Equal(t, http.StatusUnauthorized, rec.Code, rec.Body.String())
+			assert.Zero(t, read, "the body was read")
+		})
+		t.Run("a members form for somebody who is no member", func(t *testing.T) {
+			rec, read := send("/api/v2/forms/"+mem+route, user2)
+			assert.Equal(t, http.StatusForbidden, rec.Code, rec.Body.String())
+			assert.Zero(t, read, "the body was read")
+		})
+		t.Run("a closed members form tells an anonymous caller nothing", func(t *testing.T) {
+			rec, read := send("/api/v2/forms/"+closed+route, "")
+			assert.Equal(t, http.StatusNotFound, rec.Code, rec.Body.String())
+			assert.EqualValues(t, models.ErrCodeFormDoesNotExist, formsDecode(t, rec)["code"])
+			assert.NotContains(t, rec.Body.String(), "Public form")
+			assert.Zero(t, read, "the body was read")
+		})
+		t.Run("a closed members form tells a member why", func(t *testing.T) {
+			rec, read := send("/api/v2/forms/"+closed+route, user1)
+			assert.Equal(t, http.StatusGone, rec.Code, rec.Body.String())
+			assert.Contains(t, rec.Body.String(), `"reason":"closed"`)
+			assert.Zero(t, read, "the body was read")
+		})
+		t.Run("a form that may be submitted still reads and takes the body", func(t *testing.T) {
+			rec, read := send("/api/v2/forms/"+pub+route, "")
+			assert.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+			assert.Positive(t, read)
+		})
+	}
 }

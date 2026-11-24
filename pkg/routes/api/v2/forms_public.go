@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"code.vikunja.io/api/pkg/config"
+	"code.vikunja.io/api/pkg/log"
 	"code.vikunja.io/api/pkg/models"
 	"code.vikunja.io/api/pkg/modules/auth"
 	"code.vikunja.io/api/pkg/modules/humabridge"
@@ -103,18 +104,18 @@ func RegisterFormPublicRoutes(api huma.API) {
 		},
 	}, formPublicLogo)
 
-	Register(api, withFormBodyLimit(huma.Operation{
+	Register(api, withFormGate(api, withFormBodyLimit(huma.Operation{
 		OperationID:   "form-public-submit",
 		Summary:       "Submit a form",
-		Description:   "Validates the answers and creates a task in the project of the form, as the form owner, in one transaction. Answers are rejected with 422 (code 25006) and one entry per field: {field, code, message}. The response never contains the task id or project data on public forms. Public forms are limited per client address and per form (429 with Retry-After, code 25007). A non-empty honeypot is answered like a success and creates nothing. Use the multipart variant to send files.",
+		Description:   "Validates the answers and creates a task in the project of the form, as the form owner, in one transaction. Answers are rejected with 422 (code 25006) and one entry per field: {field, code, message}. The response never contains the task id or project data on public forms. Public forms are limited per client address and per form (429 with Retry-After, code 25007). A non-empty honeypot is answered like a success and creates nothing. The form is looked up and the caller checked before the request body is read. Use the multipart variant to send files.",
 		Method:        http.MethodPost,
 		Path:          "/forms/{token}/submissions",
 		DefaultStatus: http.StatusOK,
 		Tags:          tags,
 		Security:      publicSecurity,
-	}, int64(config.FormsMaxBodySize.GetInt())), formPublicSubmit)
+	}, int64(config.FormsMaxBodySize.GetInt()))), formPublicSubmit)
 
-	Register(api, withFormBodyLimit(huma.Operation{
+	Register(api, withFormGate(api, withFormBodyLimit(huma.Operation{
 		OperationID:   "form-public-submit-multipart",
 		Summary:       "Submit a form with files",
 		Description:   "Like the JSON submission, but as multipart/form-data: the part data holds the JSON of the submission as a string and the parts files the attachments. Everything happens in one transaction, so a rejected file creates nothing. Files are only accepted when the form asks for attachments (public forms: only when forms.public.attachments is enabled), at most forms.maxattachments of at most min(files.maxsize, forms.maxattachmentsize) each; executable and script types are rejected by extension and by sniffed content type.",
@@ -123,7 +124,7 @@ func RegisterFormPublicRoutes(api huma.API) {
 		DefaultStatus: http.StatusOK,
 		Tags:          tags,
 		Security:      publicSecurity,
-	}, formMultipartLimit()), formPublicSubmitMultipart)
+	}, formMultipartLimit())), formPublicSubmitMultipart)
 }
 
 func init() { AddRouteRegistrar(RegisterFormPublicRoutes) }
@@ -132,6 +133,42 @@ func withFormBodyLimit(op huma.Operation, limit int64) huma.Operation {
 	op.MaxBodyBytes = limit
 	op.BodyReadTimeout = 30 * time.Second
 	return op
+}
+
+func withFormGate(api huma.API, op huma.Operation) huma.Operation {
+	op.Middlewares = append(op.Middlewares, formReachableGate(api))
+	return op
+}
+
+// formReachableGate is Huma operation middleware: it looks the form up and checks what the caller may do with it
+// before Huma reads the request body, which for the multipart route means buffering up to the size of all files. A
+// token that does not exist, a form the caller may not submit and a form that takes no submissions are answered
+// without the body being read; the size limits of the operations stay as they are.
+func formReachableGate(api huma.API) func(huma.Context, func(huma.Context)) {
+	return func(ctx huma.Context, next func(huma.Context)) {
+		if err := models.CheckFormReachable(ctx.Param("token"), formAuth(ctx.Context())); err != nil {
+			writeFormGateError(api, ctx, formError(ctx.Context(), err))
+			return
+		}
+		next(ctx)
+	}
+}
+
+// writeFormGateError writes err the way Huma writes the error of a handler.
+func writeFormGateError(api huma.API, ctx huma.Context, err error) {
+	var se huma.StatusError
+	if !errors.As(err, &se) {
+		log.Errorf("forms: could not check a form before reading its body: %s", err)
+		_ = huma.WriteErr(api, ctx, http.StatusInternalServerError, "Internal Server Error")
+		return
+	}
+	ctx.SetHeader("Content-Type", "application/problem+json")
+	ctx.SetStatus(se.GetStatus())
+	body, terr := api.Transform(ctx, strconv.Itoa(se.GetStatus()), se)
+	if terr != nil {
+		body = se
+	}
+	_ = api.Marshal(ctx.BodyWriter(), "application/json", body)
 }
 
 func formMultipartLimit() int64 {
