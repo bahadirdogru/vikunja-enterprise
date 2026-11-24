@@ -375,3 +375,60 @@ func setRuleEnabled(t *testing.T, r *models.AutomationRule, enabled bool) {
 	require.NoError(t, s.Commit())
 	models.ResetAutomationCache()
 }
+
+func resumeEventsOf(t *testing.T, ruleID int64) int {
+	t.Helper()
+	n := 0
+	for _, ev := range allEvents(t) {
+		if ev.Name == spec.EventResume && ev.RuleID == ruleID {
+			n++
+		}
+	}
+	return n
+}
+
+func TestIdempotency_TwoRetriesOfOneRunQueueOneEvent(t *testing.T) {
+	reset(t)
+	resetCounters()
+	r := insertRawRule(t, projectOwned, user1, spec.TriggerTaskCreated, rawAct("test.reject"))
+	newTask(t, projectOwned, "task", user1)
+	drain(t)
+	run := allRuns(t, r.ID)[0]
+	require.Equal(t, models.AutomationRunFailed, run.Status)
+
+	// Both requests loaded the run while it was failed; the second one finds it running when it writes.
+	first := &models.AutomationRunRetry{ProjectID: projectOwned, RuleID: r.ID, RunID: run.ID}
+	second := &models.AutomationRunRetry{ProjectID: projectOwned, RuleID: r.ID, RunID: run.ID}
+	s1, s2 := db.NewSession(), db.NewSession()
+	defer s1.Close()
+	defer s2.Close()
+	require.NoError(t, first.Create(s1, user1))
+	require.NoError(t, s1.Commit())
+	err := second.Create(s2, user1)
+	assert.True(t, models.IsErrAutomationRunNotRetryable(err), "got %v", err)
+	assert.Equal(t, 1, resumeEventsOf(t, r.ID))
+}
+
+func TestIdempotency_RetryWithoutTheEventIsRefused(t *testing.T) {
+	reset(t)
+	resetCounters()
+	r := insertRawRule(t, projectOwned, user1, spec.TriggerTaskCreated, rawAct("test.reject"))
+	newTask(t, projectOwned, "task", user1)
+	drain(t)
+	run := allRuns(t, r.ID)[0]
+	require.Equal(t, models.AutomationRunFailed, run.Status)
+
+	s := db.NewSession()
+	_, err := s.ID(run.EventID).Delete(&models.AutomationEvent{})
+	require.NoError(t, err)
+	require.NoError(t, s.Commit())
+	s.Close()
+
+	err = commit(t, func(s2 *xorm.Session) error {
+		return (&models.AutomationRunRetry{ProjectID: projectOwned, RuleID: r.ID, RunID: run.ID}).Create(s2, user1)
+	})
+	require.Error(t, err)
+	assert.True(t, models.IsErrAutomationRunEventGone(err), "got %v", err)
+	assert.Equal(t, models.AutomationRunFailed, getRun(t, run.ID).Status, "the run is left as it was")
+	assert.Zero(t, resumeEventsOf(t, r.ID))
+}

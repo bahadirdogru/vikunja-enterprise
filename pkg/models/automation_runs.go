@@ -166,15 +166,35 @@ func (rr *AutomationRunRetry) Create(s *xorm.Session, _ web.Auth) error {
 	if err != nil {
 		return err
 	}
+	// The retention job deletes events before it deletes the runs that still reference them; without the event the
+	// payload of the run is gone and its actions would render the {{event.*}} placeholders empty.
+	hasEvent, err := s.ID(run.EventID).Exist(&AutomationEvent{})
+	if err != nil {
+		return err
+	}
+	if !hasEvent {
+		return ErrAutomationRunEventGone{RunID: run.ID}
+	}
 
-	// Back to running: the worker resumes a running run at its first step that did not succeed.
+	// Back to running: the worker resumes a running run at its first step that did not succeed. The transition is
+	// conditional, so two requests at once queue one event: the one that finds the run running already is refused.
+	affected, err := s.Where("id = ? AND status = ?", run.ID, AutomationRunFailed).
+		Cols("status", "error", "skip_reason", "finished").
+		Update(&AutomationRun{Status: AutomationRunRunning})
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		current := &AutomationRun{}
+		if _, err = s.ID(run.ID).Cols("status").Get(current); err != nil {
+			return err
+		}
+		return ErrAutomationRunNotRetryable{RunID: run.ID, Status: current.Status}
+	}
 	run.Status = AutomationRunRunning
 	run.Error = ""
 	run.SkipReason = ""
 	run.Finished = time.Time{}
-	if _, err = s.ID(run.ID).Cols("status", "error", "skip_reason", "finished").Update(run); err != nil {
-		return err
-	}
 	if err = insertAutomationResumeEvent(s, run, resumeAt); err != nil {
 		return err
 	}

@@ -190,7 +190,7 @@ Project secrets (`automation_secrets`) are named values (`^[A-Za-z_][A-Za-z0-9_]
 ## Runs, retry and history
 
 - `GET .../runs` lists the runs of a rule newest first; `GET .../runs/{run}` returns one with its steps.
-- A run that is `failed` can be retried: `POST .../runs/{run}/retry` queues an event for that run alone (the kind a `wait` writes: it names the run and its rule); steps that succeeded are not executed again and the run resumes at the first step that did not (`22004` for other statuses). The event the run was made for is not touched, so no other rule of it runs again and a rule created or enabled after the event does not run for it. A run that is held by a `wait` is continued when the wait ends. If the retry fails temporarily it is retried with the usual backoff up to `automation.maxattempts`, then the run fails again.
+- A run that is `failed` can be retried: `POST .../runs/{run}/retry` queues an event for that run alone (the kind a `wait` writes: it names the run and its rule); steps that succeeded are not executed again and the run resumes at the first step that did not (`22004` for other statuses). The event the run was made for is not touched, so no other rule of it runs again and a rule created or enabled after the event does not run for it. A run that is held by a `wait` is continued when the wait ends. Two retries of one run at once queue one event: the status change is conditional and the second request is refused with `22004`. A run whose event was already deleted by the retention job cannot be retried (`409` / `22015`), because the data of the event is gone. If the retry fails temporarily it is retried with the usual backoff up to `automation.maxattempts`, then the run fails again.
 - A resumed run first checks that the steps it recorded still are the actions at their positions; if the rule was edited so they are not, the run is `aborted` with `rule_changed`. Editing the action that failed and retrying works.
 - A failure that will happen again (a permission or workflow rejection, an invalid value, a vanished task) fails the run at once. Anything else leaves the run `running` and the event goes back to `pending` with exponential backoff (10 s, 20 s, 40 s, ...) until `automation.maxattempts`, then the event is `dead` and the run `failed`.
 - Finished events, runs and steps are deleted by a daily job at 03:17 server time (`automation.retention` days, `0` keeps everything). Runs that are still running are never deleted; runs that wait longer than their waits plus a day are failed by the same job.
@@ -384,7 +384,7 @@ All routes are on `/api/v2`; conventions are in [API.md](../../API.md). A `PATCH
 | DELETE | `/projects/{project}/automation-secrets/{name}` | `automation-secrets-delete` | admin on project | Delete a secret |
 | POST | `/automation/hooks/{token}` | `automation-hook-incoming` | none, the secret token is the credential | Call an incoming webhook of an automation rule |
 
-`POST .../automations/{rule}/run` takes `{"task_id": ...}` and answers `202` with `{"event_id": ..., "status": "queued"}`. Error codes `22001` to `22014` are listed in [API.md](../../API.md#errors).
+`POST .../automations/{rule}/run` takes `{"task_id": ...}` and answers `202` with `{"event_id": ..., "status": "queued"}`. Error codes `22001` to `22015` are listed in [API.md](../../API.md#errors).
 
 ## Configuration keys
 
@@ -472,7 +472,7 @@ From the [roadmap](../enterprise/ROADMAP.md):
 | Catalog and validation | `pkg/automation/spec/` |
 | Rules, runs, cache, lifecycle, permissions | `pkg/models/automation_rules.go`, `automation_runs.go`, `automation_cache.go`, `automation_lifecycle.go`, `automation_permissions.go`, `automation_support.go`, `automation_notification.go` |
 | Request guard | `pkg/routes/automation_guard.go` |
-| Errors | `pkg/models/error_automation.go`, `pkg/models/error_automation_secrets.go` (`22001` to `22014`) |
+| Errors | `pkg/models/error_automation.go`, `pkg/models/error_automation_secrets.go` (`22001` to `22015`) |
 | Routes | `pkg/routes/api/v2/automation.go`, `automation_hooks.go`, `automation_secrets.go` |
 | Migrations | `pkg/migration/20261122140000.go`, `20261123100000.go`, `20261127100000.go`, `20261128100000.go` |
 | Tests | `pkg/automation/*_test.go` (outbox, worker, limits, loops, scripts, ticker, triggers, http), `pkg/models/automation_test.go`, `pkg/webtests/huma_automation_test.go`, `huma_automation_secrets_test.go`, `huma_automation_triggers_test.go` |

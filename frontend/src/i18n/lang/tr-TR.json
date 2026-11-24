@@ -1875,6 +1875,7 @@
 		"22012": "Bu webhook'a çok fazla çağrı yapıldı. Daha sonra tekrar dene.",
 		"22013": "İsteğin gövdesi bir JSON nesnesi olmalı.",
 		"22014": "Bu proje otomasyon kuralı sınırına ulaştı. İhtiyacın olmayan bir kuralı sil ya da bir yöneticiden automation.maxrulesperproject değerini yükseltmesini iste.",
+		"22015": "Bu çalıştırma yeniden denenemez: çalıştırmanın dayandığı olay silinmiş.",
 		"23001": "Rapor ayarlarından biri geçerli değil.",
 		"23002": "Bu grafikte çok fazla gün, hafta veya ay olurdu. Daha kısa bir dönem seç ya da zamanı daha büyük bir birimle grupla.",
 		"23003": "Bu grafikte çok fazla grup olurdu. Daha az grup göster.",

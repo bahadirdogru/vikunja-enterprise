@@ -153,6 +153,35 @@ func (err ErrAutomationRunNotRetryable) HTTPError() web.HTTPError {
 	}
 }
 
+// ErrAutomationRunEventGone represents an error where a failed run cannot be retried because the event it was made
+// for was deleted: the data of the event (what changed, the webhook body) is gone, and a run that went on without it
+// would render every {{event.*}} placeholder empty.
+type ErrAutomationRunEventGone struct {
+	RunID int64
+}
+
+// IsErrAutomationRunEventGone checks if an error is ErrAutomationRunEventGone.
+func IsErrAutomationRunEventGone(err error) bool {
+	_, ok := errors.AsType[ErrAutomationRunEventGone](err)
+	return ok
+}
+
+func (err ErrAutomationRunEventGone) Error() string {
+	return fmt.Sprintf("Automation run cannot be retried, its event was deleted [RunID: %d]", err.RunID)
+}
+
+// ErrCodeAutomationRunEventGone holds the unique world-error code of this error
+const ErrCodeAutomationRunEventGone = 22015
+
+// HTTPError holds the http error description
+func (err ErrAutomationRunEventGone) HTTPError() web.HTTPError {
+	return web.HTTPError{
+		HTTPCode: http.StatusConflict,
+		Code:     ErrCodeAutomationRunEventGone,
+		Message:  "This run cannot be retried: the event it was made for has been deleted by the retention job.",
+	}
+}
+
 // ErrAutomationRuleNotRunnable represents an error where a rule cannot be started the way it was asked for: it is
 // disabled, or it has another trigger.
 type ErrAutomationRuleNotRunnable struct {

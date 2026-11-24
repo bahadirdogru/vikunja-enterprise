@@ -1878,6 +1878,7 @@
     "22012": "Too many calls to this webhook. Try again later.",
     "22013": "The body of the request has to be a JSON object.",
     "22014": "This project has reached the maximum number of automation rules. Delete a rule you do not need, or ask an administrator to raise automation.maxrulesperproject.",
+    "22015": "This run cannot be retried: the event it was made for has been deleted.",
     "23001": "A report setting is not valid.",
     "23002": "This chart would have too many days, weeks or months. Choose a shorter period or group time by a larger unit.",
     "23003": "This chart would have too many groups. Show fewer groups.",
