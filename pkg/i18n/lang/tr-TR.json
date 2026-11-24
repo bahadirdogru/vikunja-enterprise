@@ -178,7 +178,7 @@
 				"message": "%[1]s üzerinden yapılan taşıma işlemi bu kez ne yazık ki planlandığı gibi gitmedi.",
 				"retry": "Hiç dert etme! Daha önce yaptığın gibi baştan başlatıp bir şans daha ver. Bazen %[1]s tarafındaki anlık aksaklıklar yüzünden böyle pürüzler çıkabiliyor; genelde tekrar denemek işi çözer.",
 				"error": "Yolda ufak bir hataya takıldık: `%[2]s`.",
-				"report": "Neyin ters gittiğini inceleyebilmemiz için [forumumuzda](https://github.com/bahadirdogru/vikunja-enterprise/issues) ya da diğer iletişim kanallarımızda bize haber verirsen çok seviniriz.",
+				"report": "Neyin ters gittiğini inceleyebilmemiz için [bir sorun kaydı açarsan](https://github.com/bahadirdogru/vikunja-enterprise/issues) çok seviniriz.",
 				"working_on_it": "Hata zaten radarımızda; sorunu en kısa sürede çözmek için kolları sıvadık."
 			}
 		},

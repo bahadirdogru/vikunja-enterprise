@@ -88,7 +88,7 @@ func TestApprovals_Notifications(t *testing.T) {
 		assert.Contains(t, sent[0].Subject, "Approval requested")
 		assert.Contains(t, sent[0].Subject, "needs a sign-off")
 		assert.Contains(t, sent[0].Message, "asks for your approval")
-		assert.Contains(t, sent[0].Message, "Please decide until")
+		assert.Contains(t, sent[0].Message, "Please decide by")
 		assert.Contains(t, sent[0].Message, "tasks/")
 	})
 

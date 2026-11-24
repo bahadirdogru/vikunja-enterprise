@@ -140,7 +140,7 @@
             "requested": {
                 "subject": "Approval requested: \"%[1]s\" on \"%[2]s\" (%[3]s)",
                 "message": "%[1]s asks for your approval: \"%[2]s\" on the task \"%[3]s\" (%[4]s).",
-                "due": "Please decide until %[1]s."
+                "due": "Please decide by %[1]s."
             },
             "resolved": {
                 "subject": "The approval \"%[1]s\" on \"%[2]s\" (%[3]s) was %[4]s",
@@ -178,7 +178,7 @@
                 "message": "Looks like the move from %[1]s didn't go as planned this time.",
                 "retry": "No worries, though! Just give it another shot by starting over the same way you did before. Sometimes, these hiccups happen because of glitches on %[1]s's end, but trying again often does the trick.",
                 "error": "We bumped into a little error along the way: `%[2]s`.",
-                "report": "Please drop us a note about this [in the forum](https://github.com/bahadirdogru/vikunja-enterprise/issues) or any of the usual places so that we can take a look at why it failed.",
+                "report": "Please [open an issue](https://github.com/bahadirdogru/vikunja-enterprise/issues) about this so that we can take a look at why it failed.",
                 "working_on_it": "We've got the error message on our radar and are on it to get it sorted out soon."
             }
         },
