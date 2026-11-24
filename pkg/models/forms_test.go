@@ -1461,7 +1461,7 @@ func TestFormSubmit_SubmitterDetailsOnlyWhenAsked(t *testing.T) {
 		assert.NotContains(t, task.Description, "not an address")
 		sub := submissionOf(t, task)
 		assert.Equal(t, "user1", sub.SubmitterName)
-		assert.Equal(t, u1.Email, sub.SubmitterEmail)
+		assert.Equal(t, "user1@example.com", sub.SubmitterEmail)
 		require.NotNil(t, sub.SubmitterID)
 		assert.EqualValues(t, 1, *sub.SubmitterID)
 	})
@@ -1544,4 +1544,66 @@ func TestFormSubmit_FailureAfterTheTaskLeavesNothing(t *testing.T) {
 		err := (&files.File{ID: id}).LoadFileByID()
 		assert.True(t, files.IsErrFileDoesNotExist(err), "the blob %d of the rolled back file is still stored: %v", id, err)
 	}
+}
+
+// The auth of a request carries what the claims of a token hold: the id and the username, no e-mail address.
+func TestFormSubmit_AccountEmailOfSignedInSubmitter(t *testing.T) {
+	formsReset(t)
+	submissionOf := func(t *testing.T, task *Task) *FormSubmission {
+		t.Helper()
+		s := db.NewSession()
+		defer s.Close()
+		sub := &FormSubmission{}
+		has, err := s.Where("task_id = ?", task.ID).Get(sub)
+		require.NoError(t, err)
+		require.True(t, has)
+		return sub
+	}
+	emailOfEvent := func(t *testing.T) string {
+		t.Helper()
+		evs := events.GetDispatchedEvents("form.submitted")
+		require.Len(t, evs, 1)
+		return evs[0].(*FormSubmittedEvent).SubmitterEmail
+	}
+
+	t.Run("a signed-in submitter of a members form is recorded with the account address, and only there", func(t *testing.T) {
+		events.ClearDispatchedEvents()
+		f := createForm(t, baseForm(FormAccessMembers))
+		_, err := submit(t, f, map[string]any{"title": "x"}, asAuth(fU1))
+		require.NoError(t, err)
+		task := lastTask(t)
+		sub := submissionOf(t, task)
+		assert.Equal(t, "user1@example.com", sub.SubmitterEmail)
+		// Whoever can read the task, a rule or a webhook is not necessarily someone who may read the submissions.
+		assert.NotContains(t, task.Description, "user1@example.com")
+		assert.Empty(t, emailOfEvent(t))
+	})
+
+	t.Run("the same for a form of signed-in users", func(t *testing.T) {
+		f := createForm(t, baseForm(FormAccessUsers))
+		_, err := submit(t, f, map[string]any{"title": "x"}, asAuth(fU2))
+		require.NoError(t, err)
+		assert.Equal(t, "user2@example.com", submissionOf(t, lastTask(t)).SubmitterEmail)
+	})
+
+	t.Run("an address the form asked for wins over the account address", func(t *testing.T) {
+		events.ClearDispatchedEvents()
+		f := baseForm(FormAccessUsers)
+		f.Settings = &FormSettings{CollectEmail: true}
+		createForm(t, f)
+		_, err := submit(t, f, map[string]any{"title": "x"}, asAuth(fU2), func(r *FormSubmitRequest) { r.SubmitterEmail = "work@example.com" })
+		require.NoError(t, err)
+		assert.Equal(t, "work@example.com", submissionOf(t, lastTask(t)).SubmitterEmail)
+		assert.Equal(t, "work@example.com", emailOfEvent(t))
+	})
+
+	t.Run("a public form never takes the account address, signed in or not", func(t *testing.T) {
+		f := createForm(t, baseForm(FormAccessPublic))
+		_, err := submit(t, f, map[string]any{"title": "x"}, asAuth(fU1))
+		require.NoError(t, err)
+		assert.Empty(t, submissionOf(t, lastTask(t)).SubmitterEmail)
+		_, err = submit(t, f, map[string]any{"title": "y"})
+		require.NoError(t, err)
+		assert.Empty(t, submissionOf(t, lastTask(t)).SubmitterEmail)
+	})
 }

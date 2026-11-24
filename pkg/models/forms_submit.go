@@ -523,9 +523,24 @@ func submitForm(s *xorm.Session, req *FormSubmitRequest) (*FormSubmitResult, err
 	}
 
 	submitter := formSubmitterUser(req.Auth)
+	if submitter != nil {
+		// The claims of a token only carry the id and the username: the name and e-mail address come from the account.
+		// GetUserByID leaves the address out; only this lookup returns it.
+		full, uerr := user.GetUserWithEmail(s, &user.User{ID: submitter.ID})
+		switch {
+		case uerr == nil:
+			submitter = full
+		case user.IsErrUserDoesNotExist(uerr):
+			return nil, ErrFormNotAllowed{}
+		default:
+			return nil, uerr
+		}
+	}
 	// What the submitter says about themselves only counts when the form asks for it: it is validated only then,
-	// and a signed-in submitter is otherwise recorded with what the auth of the request knows.
-	var name, email string
+	// and a signed-in submitter is otherwise recorded with what their account knows. The e-mail address of the
+	// account is not told to anybody but the people who may read the submissions: it is neither put into the task nor
+	// into the event, whose audience is wider (everybody who can read the task, rules and webhooks).
+	var name, email, accountEmail string
 	var fieldErrs []FormFieldError
 	switch {
 	case form.Settings.CollectName:
@@ -533,11 +548,13 @@ func submitForm(s *xorm.Session, req *FormSubmitRequest) (*FormSubmitResult, err
 	case submitter != nil:
 		name = submitter.GetName()
 	}
-	switch {
-	case form.Settings.CollectEmail:
+	if form.Settings.CollectEmail {
 		email = cleanFormText(req.SubmitterEmail, false)
-	case submitter != nil:
-		email = submitter.Email
+	}
+	if submitter != nil && form.Access != FormAccessPublic {
+		// A public form is anonymous by nature: a signed-in visitor is not asked whether they want their account
+		// address kept.
+		accountEmail = submitter.Email
 	}
 	fieldErrs = append(fieldErrs, validateSubmitter(form.Settings, name, email)...)
 
@@ -577,6 +594,9 @@ func submitForm(s *xorm.Session, req *FormSubmitRequest) (*FormSubmitResult, err
 		IPHash:         ipHash,
 		Created:        now,
 	}
+	if sub.SubmitterEmail == "" {
+		sub.SubmitterEmail = truncateRunes(accountEmail, 250)
+	}
 	if _, err = s.Insert(sub); err != nil {
 		return nil, err
 	}
@@ -589,7 +609,7 @@ func submitForm(s *xorm.Session, req *FormSubmitRequest) (*FormSubmitResult, err
 		Doer:           owner,
 		SubmitterID:    sub.SubmitterID,
 		SubmitterName:  sub.SubmitterName,
-		SubmitterEmail: sub.SubmitterEmail,
+		SubmitterEmail: truncateRunes(email, 250),
 	})
 
 	if submitter != nil {

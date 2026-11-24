@@ -27,7 +27,7 @@ One transaction: lock the form row; check availability and access; the honeypot;
 
 - Hidden targets cannot be supplied by the client. A shown field missing from `values` takes its default.
 - Values are validated with the field's own rules; errors are `422` / `25006` with one entry per field: `required`, `invalid`, `too_long`, `too_many`, `unknown_field` (also for hidden targets), `file_too_large`, `file_type_not_allowed`, `attachments_disabled`; submitter details are `submitter.name` and `submitter.email`.
-- Rich text is HTML sanitized by an allow-list (basic formatting, links with http, https and mailto, no images, styles or handlers); text that is not HTML is escaped into paragraphs. Titles and custom field text are stored as plain text without control characters. A "Submitted by name <email>" paragraph is added to the description when a name or an e-mail address is known. `submitter.name` and `submitter.email` are only taken when the form collects them; otherwise they are ignored and a signed-in submitter is recorded with the account name.
+- Rich text is HTML sanitized by an allow-list (basic formatting, links with http, https and mailto, no images, styles or handlers); text that is not HTML is escaped into paragraphs. Titles and custom field text are stored as plain text without control characters. A "Submitted by name <email>" paragraph is added to the description when a name or an e-mail address is known. `submitter.name` and `submitter.email` are only taken when the form collects them; otherwise they are ignored and a signed-in submitter is recorded with the account name. On forms for `members` and `users` the e-mail address of the account is also stored on the submission (`submitter_email`, when the form did not collect an address; an address the form collected wins). It is read from the account, not from the token, and it is kept out of the task description, the placeholders and the `form.submitted` event, whose audience (everybody who can read the task, automation rules, webhooks) is wider than the project admins who can list the submissions. Public forms never take it, signed in or not.
 - Value caps (fixed): title 250 characters, text, url and email 10000, long text 50000.
 - Attachments travel in **one multipart request** (`POST /forms/{token}/submissions/multipart`): the part `data` holds the JSON and the parts `files` the files, in one transaction, so a rejected file creates nothing. The JSON endpoint cannot carry files; a form that asks for attachments requires the multipart one. Files are sniffed by content (not only by extension); executable, script, HTML and SVG types are rejected.
 - The response contains `message`, `redirect_url` and `submit_another`. `task_id` is added only for signed-in submitters who can read the project, never for public submissions. A honeypot hit (a non-empty `honeypot`) is answered like a success and creates nothing.
@@ -132,7 +132,7 @@ Project settings, Forms (project admins): a list with link copy, an open and clo
 
 ## Events and interaction with other modules
 
-- **Event** `form.submitted` (form id and title, submission id, task, doer = form owner, submitter id, name and e-mail; no token, no IP). Users in `settings.notify_user_ids` get the in-app (and mail) notification `form.submitted`, if they can read the project.
+- **Event** `form.submitted` (form id and title, submission id, task, doer = form owner, submitter id, name and the e-mail address the form collected, never the one of the account; no token, no IP). Users in `settings.notify_user_ids` get the in-app (and mail) notification `form.submitted`, if they can read the project.
 - **Automation**: `form.submitted` is a trigger (option `form_id`) with the condition fields `event.new.form_id`, `form_title`, `submitter_name`, `submitter_email` and the placeholders `{{event.form.title}}`, `{{event.form.submitter_name}}`, `{{event.form.submitter_email}}`. Its task is the created task; `task.created` of the same submission is delivered too ([automation](automation.md)).
 - **Custom fields**: a form field can target `cf_<id>` and reuses the field's validation ([custom fields](custom-fields.md)). **Workflows**: new tasks get the initial status, or `initial_status_id` ([workflows](workflows.md)).
 
@@ -160,7 +160,6 @@ Rate limits answer `429` with `Retry-After`; the hourly window runs on the clock
 
 From the [roadmap](../enterprise/ROADMAP.md):
 
-- The e-mail of a signed-in submitter is never recorded although the field documentation says so.
 - The title of a closed `members` form is shown to an anonymous holder of the link; there is no hourly limit on `members` forms.
 - Per-IP limits count full IPv6 addresses; hourly limits are check-then-insert; honeypot hits and validation failures only count against the per-minute request limit.
 - Uploads are buffered before the token is looked up.
