@@ -1956,7 +1956,7 @@
 	},
 	"timeTracking": {
 		"title": "Zaman takibi",
-		"stop": "Zamanlayıcıyı durdur",
+		"stop": "Sayacı durdur",
 		"running": "Sayaç çalışıyor",
 		"logTime": "Süre kaydet",
 		"editEntry": "Kaydı düzenle",
@@ -1966,7 +1966,7 @@
 			"taskSearch": "Bir görev ara…",
 			"commentPlaceholder": "Ne üzerinde çalıştın?",
 			"save": "Kaydet",
-			"startTimer": "Zamanlayıcıyı başlat",
+			"startTimer": "Sayacı başlat",
 			"update": "Kaydı güncelle",
 			"smartFill": "Son kayıttan doldur",
 			"endsSpanningEntriesAt": "Bu sayacı başlatmak, çakışan zaman kayıtlarını {time} saatinde sonlandırır.",
@@ -2056,7 +2056,7 @@
 			"confirmDeleteIntro": "{username} kullanıcısı nasıl silinsin?",
 			"deleteModeScheduled": "Silinmeyi zamanla",
 			"deleteModeScheduledHelp": "Kullanıcıya tıpkı kendi hesabını siliyormuş gibi bir onay e-postası gönderir ve süreci başlatır.",
-			"deleteModeNow": "Hemen sil",
+			"deleteModeNow": "Hemen şimdi sil",
 			"deleteModeNowHelp": "Kullanıcıyı ve tüm verilerini anında yok eder. Bu işlem kesinlikle geri alınamaz."
 		},
 		"projects": {
@@ -2074,7 +2074,7 @@
 			"create": "Davet bağlantısı oluştur",
 			"name": "Bağlantı adı",
 			"teams": "Katılacağı ekipler",
-			"maxUses": "En fazla kullanım",
+			"maxUses": "Maksimum kullanım",
 			"unlimited": "Sınırsız",
 			"uses": "Kullanım",
 			"expiresAt": "Bitiş tarihi",
