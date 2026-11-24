@@ -1417,7 +1417,11 @@
 			"usedAsCover": "Kapak resmi",
 			"play": "Oynat",
 			"playFile": "{file} dosyasını oynat",
-			"audioError": "Bu ses dosyası oynatılamadı."
+			"audioError": "Bu ses dosyası oynatılamadı.",
+			"viewMode": "Ek görünümü",
+			"viewDetailed": "Büyük önizlemelerle göster",
+			"viewList": "Liste olarak göster",
+			"viewGallery": "Galeri olarak göster"
 		},
 		"comment": {
 			"title": "Yorumlar",
