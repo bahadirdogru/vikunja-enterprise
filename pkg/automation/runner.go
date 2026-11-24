@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"code.vikunja.io/api/pkg/automation/script"
 	"code.vikunja.io/api/pkg/automation/spec"
 	"code.vikunja.io/api/pkg/config"
 	"code.vikunja.io/api/pkg/db"
@@ -237,6 +238,11 @@ func (rc *runContext) finish(s *xorm.Session, status, reason string, runErr erro
 		rule.ConsecutiveFailures = 0
 		cols = append(cols, "consecutive_failures")
 	case models.AutomationRunFailed:
+		if errors.Is(runErr, script.ErrUnavailable) {
+			// The retries ran out on a failure of the script machinery (no free script process, one that could not
+			// start): the rule is not to blame, so it does not count towards disabling it.
+			break
+		}
 		if _, err := s.ID(rc.rule.ID).Incr("consecutive_failures").Cols(cols...).NoAutoTime().Update(rule); err != nil {
 			return err
 		}
@@ -390,9 +396,13 @@ func (rc *runContext) checkConditions(runCtx context.Context, s *xorm.Session) (
 		return false, err
 	}
 	// The environment lets script conditions read as the owner; they never get a host that can write.
-	condEnv := &Env{Ctx: runCtx, S: s, Auth: rc.owner, Rule: rc.rule, Event: rc.payload, Now: now(), Sub: subject}
+	condEnv := &Env{Ctx: runCtx, S: s, Auth: rc.owner, Rule: rc.rule, Event: rc.payload, Now: now(), Sub: subject, RunID: rc.run.ID}
 	subject.Script = condEnv.scriptCondition
 	holds, err := Evaluate(rc.rule.Conditions, subject)
+	if errors.Is(err, script.ErrUnavailable) {
+		// The script machinery failed, not the condition: try again later.
+		return false, err
+	}
 	if err != nil {
 		return true, rc.finish(s, models.AutomationRunFailed, "", err)
 	}

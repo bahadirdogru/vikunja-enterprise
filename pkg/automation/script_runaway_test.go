@@ -16,10 +16,12 @@
 package automation
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"code.vikunja.io/api/pkg/automation/script"
 	"code.vikunja.io/api/pkg/automation/spec"
 	"code.vikunja.io/api/pkg/config"
 	"code.vikunja.io/api/pkg/models"
@@ -102,4 +104,44 @@ func TestScript_ANativeCallCannotOutliveTheTimeout(t *testing.T) {
 		assert.False(t, res.ConditionsMet)
 		assert.Contains(t, strings.Join(res.Notes, "\n"), "ran longer than 200ms")
 	})
+}
+
+// TestScript_AFailureOfTheMachineryIsNotTheRulesFault: when no script process can be started, the run is retried
+// and, when the retries ran out, fails without counting towards disabling the rule.
+func TestScript_AFailureOfTheMachineryIsNotTheRulesFault(t *testing.T) {
+	for name, r := range map[string]func() *models.AutomationRule{
+		"script action": func() *models.AutomationRule {
+			return rule(spec.TriggerTaskCreated, nil, nil, scriptAction(`return 1`))
+		},
+		"script condition": func() *models.AutomationRule {
+			return rule(spec.TriggerTaskCreated, nil, &spec.Condition{Script: "return true"}, setField("priority", 4))
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			reset(t)
+			retryBase = time.Hour
+			advance := fakeClock(t)
+			config.AutomationMaxAttempts.Set(2)
+			config.AutomationMaxConsecutiveFails.Set(1)
+			saved := addRule(t, projectOwned, user1, r())
+			t.Cleanup(script.SetTestExecutable(filepath.Join(t.TempDir(), "missing")))
+
+			newTask(t, projectOwned, "t", user1)
+			drain(t)
+			runs := allRuns(t, saved.ID)
+			require.Len(t, runs, 1)
+			assert.Equal(t, models.AutomationRunRunning, runs[0].Status, "temporary: retried")
+			events := allEvents(t)
+			assert.Contains(t, events[len(events)-1].LastError, "cannot start the script process")
+
+			advance(time.Hour)
+			drain(t)
+			runs = allRuns(t, saved.ID)
+			require.Len(t, runs, 1)
+			assert.Equal(t, models.AutomationRunFailed, runs[0].Status, "the retries ran out")
+			stored := getRule(t, saved.ID)
+			assert.Zero(t, stored.ConsecutiveFailures, "not the rule's fault")
+			assert.True(t, stored.Enabled)
+		})
+	}
 }
