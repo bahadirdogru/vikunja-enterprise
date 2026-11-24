@@ -69,6 +69,7 @@ func init() {
 		"AutomationWaitMax":                          reflect.ValueOf(config.AutomationWaitMax),
 		"AutomationWebhookMaxBody":                   reflect.ValueOf(config.AutomationWebhookMaxBody),
 		"AutomationWebhookRateLimit":                 reflect.ValueOf(config.AutomationWebhookRateLimit),
+		"AutomationWebhookTolerance":                 reflect.ValueOf(config.AutomationWebhookTolerance),
 		"AutomationWorkers":                          reflect.ValueOf(config.AutomationWorkers),
 		"AvatarGravatarBaseURL":                      reflect.ValueOf(config.AvatarGravatarBaseURL),
 		"AvatarGravaterExpiration":                   reflect.ValueOf(config.AvatarGravaterExpiration),

@@ -20,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -287,6 +288,16 @@ func TestAutomationLimitsAreClamped(t *testing.T) {
 		assert.Equal(t, defaultAutomationWebhookMaxBody, AutomationWebhookMaxBody.GetInt())
 		assert.Equal(t, defaultAutomationMaxPendingWaits, AutomationMaxPendingWaits.GetInt())
 		assert.Equal(t, defaultAutomationMaxRulesPerProject, AutomationMaxRulesPerProject.GetInt())
+	})
+	t.Run("a webhook tolerance of zero or less gets the default, a positive one is kept", func(t *testing.T) {
+		initConfigFromYAML(t, "automation:\n  webhook:\n    tolerance: 0s\n")
+		assert.Equal(t, defaultAutomationWebhookTolerance, AutomationWebhookTolerance.GetDuration())
+		initConfigFromYAML(t, "automation:\n  webhook:\n    tolerance: -1m\n")
+		assert.Equal(t, defaultAutomationWebhookTolerance, AutomationWebhookTolerance.GetDuration())
+		initConfigFromYAML(t, "automation:\n  webhook:\n    tolerance: 90s\n")
+		assert.Equal(t, 90*time.Second, AutomationWebhookTolerance.GetDuration())
+		initConfigFromYAML(t, "")
+		assert.Equal(t, 5*time.Minute, AutomationWebhookTolerance.GetDuration())
 	})
 	t.Run("a negative depth gets the default, a negative rate limit or task cap means off", func(t *testing.T) {
 		initConfigFromYAML(t, "automation:\n  maxdepth: -2\n  ratelimit: -1\n  ticker:\n    maxtasks: -7\n")

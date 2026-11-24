@@ -260,6 +260,7 @@ const (
 	AutomationMaxRulesPerProject  Key = `automation.maxrulesperproject`
 	AutomationWebhookMaxBody      Key = `automation.webhook.maxbody`
 	AutomationWebhookRateLimit    Key = `automation.webhook.ratelimit`
+	AutomationWebhookTolerance    Key = `automation.webhook.tolerance`
 
 	FormsEnabled                Key = `forms.enabled`
 	FormsMaxBodySize            Key = `forms.maxbodysize`
@@ -616,6 +617,7 @@ func initDefaultConfig() {
 	AutomationMaxRulesPerProject.setDefault(defaultAutomationMaxRulesPerProject)
 	AutomationWebhookMaxBody.setDefault(defaultAutomationWebhookMaxBody)
 	AutomationWebhookRateLimit.setDefault(60)
+	AutomationWebhookTolerance.setDefault(defaultAutomationWebhookTolerance)
 
 	// Reports
 	ReportsCacheTTL.setDefault(30 * time.Second)
@@ -1038,6 +1040,7 @@ const (
 	defaultAutomationMaxPendingWaits    = 1000
 	defaultAutomationMaxRulesPerProject = 100
 	defaultAutomationMaxDepth           = 3
+	defaultAutomationWebhookTolerance   = 5 * time.Minute
 )
 
 // ClampAutomationLimits replaces automation limits that are zero or negative, where that has no defined meaning,
@@ -1054,6 +1057,11 @@ func ClampAutomationLimits() {
 			log.Warningf("Configured %s is %d, which is not a limit: using %d", key, key.GetInt(), fallback)
 			key.Set(fallback)
 		}
+	}
+	// A tolerance of 0 would refuse every signed call.
+	if AutomationWebhookTolerance.GetDuration() <= 0 {
+		log.Warningf("Configured %s is %s, which is not a tolerance: using %s", AutomationWebhookTolerance, AutomationWebhookTolerance.GetDuration(), defaultAutomationWebhookTolerance)
+		AutomationWebhookTolerance.Set(defaultAutomationWebhookTolerance)
 	}
 	// A negative depth would skip every run, which is not what anyone means: 0 is the way to forbid chains.
 	if AutomationMaxDepth.GetInt() < 0 {
