@@ -155,7 +155,7 @@ Schema violations (an enum, a range, a missing required property) are `422`, and
 | 20001 - 20008 | Custom fields | `pkg/models/error_custom_fields.go` |
 | 21001 - 21010 | Workflows | `pkg/models/error_workflow.go` |
 | 22001 - 22014 | Automation (22005 - 22008 are scripts and secrets) | `pkg/models/error_automation.go`, `pkg/models/error_automation_secrets.go` |
-| 23001 - 23010 | Reports and dashboards | `pkg/models/error_reports.go` |
+| 23001 - 23011 | Reports and dashboards | `pkg/models/error_reports.go` |
 | 24001 - 24010 | Approvals | `pkg/models/error_approvals.go` |
 | 25001 - 25009 | Forms | `pkg/models/error_forms.go` |
 
@@ -194,6 +194,7 @@ Schema violations (an enum, a range, a missing required property) are `422`, and
 | 23008 | 400 | Invalid dashboard or widget, with the path | dashboards |
 | 23009 | 503 | The report took longer than `reports.timeout` | reports |
 | 23010 | 400 | More rows than `reports.maxrows` | reports, exports |
+| 23011 | 400 | More result cells (groups, child groups and time points) than `reports.maxcells` | task reports, exports |
 | 24002 | 409 | Approval already resolved or cancelled | approvals |
 | 24003 | 403 | You are not an approver of this request | approvals |
 | 24005 | 422 | A rejection needs a comment | approvals |

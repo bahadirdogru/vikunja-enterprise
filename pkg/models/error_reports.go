@@ -310,3 +310,32 @@ func (err ErrReportTooManyRows) HTTPError() web.HTTPError {
 		Message:  fmt.Sprintf("This would need more than the allowed %d rows. Narrow the filter, the project or the time range.", err.Max),
 	}
 }
+
+// ErrReportTooLarge represents an error where the result of a report would have more cells (groups, child groups and
+// time points) than allowed.
+type ErrReportTooLarge struct {
+	Cells int64
+	Max   int
+}
+
+// IsErrReportTooLarge checks if an error is ErrReportTooLarge.
+func IsErrReportTooLarge(err error) bool {
+	_, ok := errors.AsType[ErrReportTooLarge](err)
+	return ok
+}
+
+func (err ErrReportTooLarge) Error() string {
+	return fmt.Sprintf("Report result is too large [Cells: %d, Max: %d]", err.Cells, err.Max)
+}
+
+// ErrCodeReportTooLarge holds the unique world-error code of this error
+const ErrCodeReportTooLarge = 23011
+
+// HTTPError holds the http error description
+func (err ErrReportTooLarge) HTTPError() web.HTTPError {
+	return web.HTTPError{
+		HTTPCode: http.StatusBadRequest,
+		Code:     ErrCodeReportTooLarge,
+		Message:  fmt.Sprintf("This report would return %d values, at most %d are allowed. Use fewer groups, a larger time bucket or a shorter time range.", err.Cells, err.Max),
+	}
+}

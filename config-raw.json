@@ -1372,6 +1372,11 @@
                     "comment": "The maximum number of rows a report that is computed in memory (time in status, time tracking) or a CSV export of tasks reads. Requests that would read more are rejected."
                 },
                 {
+                    "key": "maxcells",
+                    "default_value": "50000",
+                    "comment": "The maximum number of values one task report returns: every group, every child group and every time point of a group. Reports that would return more are rejected before the time series are read. Set to 0 to disable the limit."
+                },
+                {
                     "key": "timeout",
                     "default_value": "20s",
                     "comment": "The maximum duration of the database queries of one report. The queries are cancelled when it is exceeded."

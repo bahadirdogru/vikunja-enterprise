@@ -209,6 +209,7 @@ func init() {
 		"RedisPassword":                              reflect.ValueOf(config.RedisPassword),
 		"ReportsCacheTTL":                            reflect.ValueOf(config.ReportsCacheTTL),
 		"ReportsMaxBuckets":                          reflect.ValueOf(config.ReportsMaxBuckets),
+		"ReportsMaxCells":                            reflect.ValueOf(config.ReportsMaxCells),
 		"ReportsMaxGroups":                           reflect.ValueOf(config.ReportsMaxGroups),
 		"ReportsMaxRows":                             reflect.ValueOf(config.ReportsMaxRows),
 		"ReportsTimeout":                             reflect.ValueOf(config.ReportsTimeout),

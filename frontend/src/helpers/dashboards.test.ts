@@ -12,6 +12,7 @@ import {
 	summarizeFilter,
 	widgetFilter,
 	OFFERED_WIDGET_TYPES,
+	widgetErrorText,
 } from './dashboards'
 import {layoutOf} from './dashboards'
 import {collides} from './dashboardLayout'
@@ -149,5 +150,20 @@ describe('server errors', () => {
 		expect(serverFieldError({code: 4019, detail: 'bad value'})).toEqual({param: 'filter', control: 'filter', message: 'bad value', code: 4019})
 		expect(serverFieldError({code: 500})).toBeNull()
 		expect(serverFieldError(null)).toBeNull()
+	})
+})
+
+describe('widgetErrorText', () => {
+	const t = (key: string) => `T:${key}`
+	const te = (key: string) => key === 'error.23011'
+
+	it('translates a report error code that has a message', () => {
+		expect(widgetErrorText({code: 23011, detail: 'English'}, t, te)).toBe('T:error.23011')
+	})
+
+	it('falls back to the server text for codes without a translation and for other errors', () => {
+		expect(widgetErrorText({code: 23010, detail: 'English'}, t, te)).toBe('English')
+		expect(widgetErrorText({code: 500, detail: 'Boom'}, t, te)).toBe('Boom')
+		expect(widgetErrorText(null, t, te)).toBeUndefined()
 	})
 })

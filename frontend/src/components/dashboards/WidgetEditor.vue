@@ -178,7 +178,7 @@ function errorFor(control: string): string | null {
 
 // The limits (buckets, groups, field kind) have a translated explanation; the others name the exact parameter.
 function messageFor(parsed: ServerFieldError): string {
-	return [23002, 23003, 23004].includes(parsed.code) && te(`error.${parsed.code}`) ? t(`error.${parsed.code}`) : parsed.message
+	return [23002, 23003, 23004, 23011].includes(parsed.code) && te(`error.${parsed.code}`) ? t(`error.${parsed.code}`) : parsed.message
 }
 
 function onPreviewError(error: unknown) {

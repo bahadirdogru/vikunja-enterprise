@@ -917,3 +917,45 @@ func TestReport_BucketsWhereMidnightDoesNotExist(t *testing.T) {
 		})
 	}
 }
+
+func TestReport_MaxCells(t *testing.T) {
+	env := setupReportEnv(t)
+	p := env.project
+	t.Cleanup(func() { config.ReportsMaxCells.Set(50000) })
+	timed := &ReportTime{Field: "created", Bucket: ReportBucketDay, From: "2026-01-01", To: "2026-03-31", Timezone: "UTC"}
+
+	t.Run("a time series over groups and children that exceeds the cap is refused", func(t *testing.T) {
+		config.ReportsMaxCells.Set(100)
+		_, err := runReportErr(cfUser1, ReportRequest{ProjectID: p, GroupBy: "done", ThenBy: "priority", Time: timed})
+		require.Error(t, err)
+		assert.True(t, IsErrReportTooLarge(err), "got %v", err)
+		var tooLarge ErrReportTooLarge
+		require.ErrorAs(t, err, &tooLarge)
+		assert.Greater(t, tooLarge.Cells, int64(100))
+		assert.Equal(t, 100, tooLarge.Max)
+		assert.Equal(t, ErrCodeReportTooLarge, tooLarge.HTTPError().Code)
+		assert.Equal(t, 400, tooLarge.HTTPError().HTTPCode)
+	})
+
+	t.Run("one level with a time series is refused too", func(t *testing.T) {
+		config.ReportsMaxCells.Set(50)
+		_, err := runReportErr(cfUser1, ReportRequest{ProjectID: p, GroupBy: "done", Time: timed})
+		assert.True(t, IsErrReportTooLarge(err), "got %v", err)
+	})
+
+	t.Run("a request within the cap works and 0 disables the cap", func(t *testing.T) {
+		config.ReportsMaxCells.Set(50000)
+		rep, err := runReportErr(cfUser1, ReportRequest{ProjectID: p, GroupBy: "done", ThenBy: "priority", Time: timed})
+		require.NoError(t, err)
+		assert.NotEmpty(t, rep.Groups)
+		config.ReportsMaxCells.Set(0)
+		_, err = runReportErr(cfUser1, ReportRequest{ProjectID: p, GroupBy: "done", ThenBy: "priority", Time: timed})
+		require.NoError(t, err)
+	})
+
+	t.Run("groups without a time series are counted too", func(t *testing.T) {
+		config.ReportsMaxCells.Set(2)
+		_, err := runReportErr(cfUser1, ReportRequest{ProjectID: p, GroupBy: "done", ThenBy: "priority"})
+		assert.True(t, IsErrReportTooLarge(err), "got %v", err)
+	})
+}

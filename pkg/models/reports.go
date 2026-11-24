@@ -793,6 +793,11 @@ func (r *reportRun) execute() (*TaskReport, error) {
 		}
 	}
 
+	// Everything the response will hold is known now, before the (largest) series statement runs.
+	if err = r.checkCells(kept, otherNode != nil); err != nil {
+		return nil, err
+	}
+
 	var series map[string]map[int]*reportAgg
 	var otherSeries map[int]*reportAgg
 	if plan.timeCfg != nil {
@@ -810,6 +815,41 @@ func (r *reportRun) execute() (*TaskReport, error) {
 		rep.Groups = append(rep.Groups, g)
 	}
 	return rep, nil
+}
+
+// checkCells refuses a result with more than reports.maxcells cells: every group, every child group and every time
+// point of a leaf group. The count is exact for the groups that were kept, so a request with few groups is never
+// refused for what its limit would allow in the worst case.
+func (r *reportRun) checkCells(kept []*reportNode, hasOther bool) error {
+	max := config.ReportsMaxCells.GetInt()
+	if max <= 0 {
+		return nil
+	}
+	groups, leaves := int64(len(kept)), int64(len(kept))
+	if hasOther {
+		groups++
+		leaves++
+	}
+	if len(r.plan.dims) == 2 {
+		// Only the first level has an other group that is not a leaf; the children carry the series.
+		leaves = 0
+		for _, p := range kept {
+			for _, c := range p.children {
+				groups++
+				if !c.other {
+					leaves++
+				}
+			}
+		}
+	}
+	cells := groups
+	if tp := r.plan.timeCfg; tp != nil {
+		cells += leaves * int64(len(tp.bounds)-1)
+	}
+	if cells > int64(max) {
+		return ErrReportTooLarge{Cells: cells, Max: max}
+	}
+	return nil
 }
 
 // compare runs the totals of the previous period.

@@ -2,6 +2,7 @@
 import {computed, ref, watch} from 'vue'
 import {useQuery} from '@tanstack/vue-query'
 import {useI18n} from 'vue-i18n'
+import {widgetErrorText} from '@/helpers/dashboards'
 
 import {statusTimeQuery} from '@/client/queries/reportWidgets'
 import {statusTimeGroups, STATUS_TIME_METRICS, type StatusTimeMetric} from '@/helpers/dashboardCharts'
@@ -22,7 +23,7 @@ const emit = defineEmits<{
 	error: [error: unknown]
 }>()
 
-const {t} = useI18n({useScope: 'global'})
+const {t, te} = useI18n({useScope: 'global'})
 // A per-viewer choice like the other display options: the stored config only says what to count.
 const metric = ref<StatusTimeMetric>('average')
 
@@ -31,7 +32,7 @@ watch(() => query.error.value, error => emit('error', error))
 
 const report = computed(() => query.data.value)
 const groups = computed(() => report.value ? statusTimeGroups(report.value, metric.value) : [])
-const errorText = computed(() => (query.error.value as {detail?: string} | null)?.detail)
+const errorText = computed(() => widgetErrorText(query.error.value, t, te))
 const metricOptions = computed(() => STATUS_TIME_METRICS.map(m => ({value: m, label: t(`dashboards.statusTime.metrics.${m}`)})))
 const hasData = computed(() => (report.value?.statuses.length ?? 0) > 0)
 </script>

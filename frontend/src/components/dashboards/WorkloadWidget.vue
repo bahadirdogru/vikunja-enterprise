@@ -2,6 +2,7 @@
 import {computed, ref, watch} from 'vue'
 import {useQuery} from '@tanstack/vue-query'
 import {useI18n} from 'vue-i18n'
+import {widgetErrorText} from '@/helpers/dashboards'
 
 import {workloadQuery} from '@/client/queries/reportWidgets'
 import {workloadGroups, WORKLOAD_METRICS, type WorkloadMetric} from '@/helpers/dashboardCharts'
@@ -22,7 +23,7 @@ const emit = defineEmits<{
 	error: [error: unknown]
 }>()
 
-const {t} = useI18n({useScope: 'global'})
+const {t, te} = useI18n({useScope: 'global'})
 const metric = ref<WorkloadMetric>('count')
 
 const query = useQuery(computed(() => workloadQuery(props.config, props.enabled)))
@@ -38,7 +39,7 @@ const groups = computed(() => report.value
 		buckets: Object.fromEntries(report.value.buckets.map(b => [b, t(`dashboards.workload.buckets.${b}`)])),
 	})
 	: [])
-const errorText = computed(() => (query.error.value as {detail?: string} | null)?.detail)
+const errorText = computed(() => widgetErrorText(query.error.value, t, te))
 const metricOptions = computed(() => WORKLOAD_METRICS.map(m => ({value: m, label: t(`dashboards.workload.metrics.${m}`)})))
 const hasData = computed(() => (report.value?.totals.total ?? 0) > 0)
 </script>

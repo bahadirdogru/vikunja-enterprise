@@ -2,6 +2,7 @@
 import {computed, watch} from 'vue'
 import {useQuery} from '@tanstack/vue-query'
 import {useI18n} from 'vue-i18n'
+import {widgetErrorText} from '@/helpers/dashboards'
 
 import {timeTrackingQuery} from '@/client/queries/reportWidgets'
 import {formatSeconds} from '@/helpers/charts'
@@ -22,7 +23,7 @@ const emit = defineEmits<{
 	error: [error: unknown]
 }>()
 
-const {t, locale} = useI18n({useScope: 'global'})
+const {t, te, locale} = useI18n({useScope: 'global'})
 
 const query = useQuery(computed(() => timeTrackingQuery(props.config, props.enabled)))
 watch(() => query.error.value, error => emit('error', error))
@@ -31,9 +32,9 @@ const report = computed(() => query.data.value)
 const groups = computed(() => report.value ? timeTrackingGroups(report.value) : [])
 const isDay = computed(() => report.value?.group_by === 'day')
 const errorText = computed(() => {
-	const error = query.error.value as {detail?: string, status?: number} | null
+	const error = query.error.value as {detail?: string, status?: number, code?: number} | null
 	// An unlicensed feature answers 404 on every route of it.
-	return error?.status === 404 ? t('dashboards.timeTracking.unavailable') : error?.detail
+	return error?.status === 404 ? t('dashboards.timeTracking.unavailable') : widgetErrorText(error, t, te)
 })
 const hasData = computed(() => (report.value?.seconds ?? 0) > 0)
 </script>

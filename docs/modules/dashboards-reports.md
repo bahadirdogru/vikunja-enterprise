@@ -121,7 +121,7 @@ All routes are on `/api/v2`; conventions are in [API.md](../../API.md). A `PATCH
 
 `GET /reports/tasks/options?project_id=` lists what a request may use in a scope (dimensions including the `cf_<id>` fields of that project, measures with their numeric fields, time fields, whether a workflow exists, the limits of this instance); the widget editor is generated from it. The dashboard document carries its widgets: a read includes them, and a `PUT` with `widgets: [...]` replaces them as a whole (an id of this dashboard keeps and updates the widget, no id creates, missing ones are deleted; `null` or no `widgets` keeps them; an id of another dashboard is `404` / `23007`). `PUT .../layout` with `{"items": [{"id", "x", "y", "w", "h"}]}` only moves and resizes (`x + w <= 12`).
 
-A worked report request and response are in [API.md](../../API.md#examples). Request problems are `400` / `23001` with `details.param`; enum and range violations of the schema are `422`. Error codes `23001` to `23010` are in [API.md](../../API.md#errors).
+A worked report request and response are in [API.md](../../API.md#examples). Request problems are `400` / `23001` with `details.param`; enum and range violations of the schema are `422`. Error codes `23001` to `23011` are in [API.md](../../API.md#errors).
 
 **CSV export.** `POST /reports/tasks/export`, `/reports/status-time/export`, `/reports/workload/export` and `/reports/time-tracking/export` return the same report as a CSV file; `POST /reports/tasks/export/rows` returns the tasks behind a report (what a drill-down lists) with the core columns and one column per custom field. Files are UTF-8 with a byte order mark so Excel reads them correctly, comma separated; cells that start with `=`, `+`, `-` or `@` are prefixed with a single quote so a spreadsheet does not run them.
 
@@ -133,6 +133,7 @@ A worked report request and response are in [API.md](../../API.md#examples). Req
 | `reports.maxgroups` | `200` | The maximum number of groups a report returns per level. Requests asking for more are rejected; groups beyond a request's limit are folded into one "other" group. |
 | `reports.maxbuckets` | `366` | The maximum number of time buckets (days, weeks or months) of a time series report. |
 | `reports.maxrows` | `50000` | The maximum number of rows a report that is computed in memory (time in status, time tracking) or a CSV export of tasks reads. Requests that would read more are rejected. |
+| `reports.maxcells` | `50000` | The maximum number of values one task report returns: groups, child groups and the time points of every leaf group. Reports above it are refused (`23011`) after the groups are known and before the time series are read. `0` disables the limit. |
 | `reports.timeout` | `20s` | The maximum duration of the database queries of one report. The queries are cancelled when it is exceeded. |
 
 ## UI
@@ -156,6 +157,7 @@ Details: [DESIGN.md](../../DESIGN.md#dashboards-and-reports).
 
 - At most two dimensions plus time.
 - `reports.maxbuckets` time buckets (`23002`), `reports.maxgroups` groups per level (`23003` for a request that asks for more; groups beyond a request's `limit`, default 20, fold into `other`).
+- `reports.maxcells` result cells (`23011`) for a task report. The default `50000` is about 4 MB of JSON; the widgets the editor offers stay far below it (a line chart of 20 groups over 366 daily buckets is about 7,300 cells, a grouped bar chart of two dimensions over 30 days with 5 x 5 groups is under 1,000). The two-dimension case with 20 x 20 groups over 366 buckets (about 160,000 cells, 13 MB) is what it exists to refuse.
 - `reports.maxrows` rows for reports computed in memory (time in status, time tracking) and CSV exports (`23010`). The rows read (history, current statuses, assignees or labels) are bounded by it.
 - `reports.timeout` for the database queries of one report; exceeded queries are cancelled (`503` / `23009`).
 - A cache per authenticated identity and normalized request for `reports.cachettl`, at most 256 entries, no invalidation; `0` disables it. In a multi-instance deployment each process has its own cache.
@@ -166,7 +168,6 @@ Details: [DESIGN.md](../../DESIGN.md#dashboards-and-reports).
 From the [roadmap](../enterprise/ROADMAP.md):
 
 - Default dashboards for new projects with a workflow are not created.
-- The response size is unbounded in groups x children x buckets (13 MB measured with two 20-option fields and 366 buckets).
 - The time tracking report builds `IN` lists from task ids (parameter-limit risk).
 - Bar and donut widgets with a time range ignore it in drill-down and export; only number widgets are fixed.
 - `created_vs_done` has no server-side running open count (the client combines two reports); a `text` widget stores the editor's HTML, sanitized on render; the `line` chart does not offer a second dimension.
@@ -184,7 +185,7 @@ From the [roadmap](../enterprise/ROADMAP.md):
 | Cache | `pkg/models/reports_cache.go` |
 | CSV export | `pkg/models/reports_export.go`, `pkg/models/csv_export.go` |
 | Dashboards and widgets | `pkg/models/dashboards.go`, `pkg/models/dashboards_widgets.go`, `pkg/models/dashboards_lifecycle.go`, `pkg/models/dashboards_permissions.go` |
-| Errors | `pkg/models/error_reports.go` (`23001` to `23010`) |
+| Errors | `pkg/models/error_reports.go` (`23001` to `23011`) |
 | Routes | `pkg/routes/api/v2/reports.go`, `pkg/routes/api/v2/dashboards.go` |
 | Task list scope | `pkg/models/task_collection.go` (`readableTasksQuery`) |
 | Migration | `pkg/migration/20261122160000.go` |

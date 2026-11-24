@@ -1885,6 +1885,7 @@
 		"23008": "Pano veya bileşenlerinden biri geçerli değil.",
 		"23009": "Rapor çok uzun sürdü. Filtreyi veya dönemi daralt.",
 		"23010": "Bu işlem çok fazla satır gerektirir. Filtreyi, projeyi veya dönemi daralt.",
+		"23011": "Bu rapor çok fazla değer döndürür. Daha az grup, daha geniş bir zaman aralığı birimi veya daha kısa bir dönem kullan.",
 		"4016": "Geçersiz görev alanı.",
 		"4017": "Geçersiz filtre karşılaştırıcısı.",
 		"4018": "Geçersiz filtre bağlayıcısı.",

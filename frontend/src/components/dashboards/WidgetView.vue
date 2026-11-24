@@ -2,6 +2,7 @@
 import {computed, watch} from 'vue'
 import {useQueries, useQuery} from '@tanstack/vue-query'
 import {useI18n} from 'vue-i18n'
+import {widgetErrorText} from '@/helpers/dashboards'
 
 import {reportOptionsQuery, taskReportQuery, type TaskReportResponse} from '@/client/queries/reports'
 import {drilldownFilter, drilldownInputFor, reportRangePoint, type DrilldownBlock} from '@/helpers/dashboardDrilldown'
@@ -49,7 +50,7 @@ const emit = defineEmits<{
 	error: [error: unknown]
 }>()
 
-const {t} = useI18n({useScope: 'global'})
+const {t, te} = useI18n({useScope: 'global'})
 
 const requests = computed(() => requestsForWidget(props.type, props.config))
 const queries = useQueries({
@@ -129,7 +130,7 @@ const lineSeries = computed<ChartSeries[]>(() => {
 
 const bucket = computed(() => report.value?.time?.bucket ?? 'day')
 const hasChartError = computed(() => firstError.value !== null && !isPending.value && !report.value)
-const errorText = computed(() => (firstError.value as {detail?: string} | null)?.detail)
+const errorText = computed(() => widgetErrorText(firstError.value, t, te))
 const loading = computed(() => isPending.value && props.enabled)
 </script>
 

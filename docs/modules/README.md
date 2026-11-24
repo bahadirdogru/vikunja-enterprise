@@ -78,6 +78,7 @@ The fork's keys, with their defaults (the meaning of each is on the module page)
 | `reports.maxgroups` | `200` | [Dashboards and reports](dashboards-reports.md) |
 | `reports.maxbuckets` | `366` | [Dashboards and reports](dashboards-reports.md) |
 | `reports.maxrows` | `50000` | [Dashboards and reports](dashboards-reports.md) |
+| `reports.maxcells` | `50000` | [Dashboards and reports](dashboards-reports.md) |
 | `reports.timeout` | `20s` | [Dashboards and reports](dashboards-reports.md) |
 
 The modules without keys of their own (custom fields, workflows, approvals) share the instance's database and file settings. Besides these keys, `service.publicurl`, `service.secret`, `service.timezone`, `service.ipextractionmethod`, `service.trustedproxies`, `outgoingrequests.allownonroutableips` and `outgoingrequests.proxyurl` come from upstream and are used by the fork as described on the module pages.

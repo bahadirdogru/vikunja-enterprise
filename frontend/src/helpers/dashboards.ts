@@ -342,4 +342,21 @@ export function serverFieldError(error: unknown): ServerFieldError | null {
 	return {param, control, message, code: e.code ?? 0}
 }
 
-export const DASHBOARD_ERROR_CODES = [23001, 23002, 23003, 23004, 23005, 23006, 23007, 23008, 23009, 23010] as const
+export const DASHBOARD_ERROR_CODES = [23001, 23002, 23003, 23004, 23005, 23006, 23007, 23008, 23009, 23010, 23011] as const
+
+// The text a widget shows for a failed request: the translation of a report error code, else what the server sent.
+export function widgetErrorText(
+	error: unknown,
+	t: (key: string) => string,
+	te: (key: string) => boolean,
+): string | undefined {
+	const e = error as {code?: number, detail?: string, message?: string} | null
+	if (!e) {
+		return undefined
+	}
+	const code = e.code ?? 0
+	if ((DASHBOARD_ERROR_CODES as readonly number[]).includes(code) && te(`error.${code}`)) {
+		return t(`error.${code}`)
+	}
+	return e.detail ?? e.message
+}
