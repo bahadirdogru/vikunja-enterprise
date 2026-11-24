@@ -217,11 +217,14 @@ func TestHumaAutomation_IncomingWebhookSignature(t *testing.T) {
 	futureTS, futureSig := sign(payload, time.Now().Add(time.Hour))
 	assert.Equal(t, http.StatusUnauthorized, post(payload, futureTS, futureSig).Code, "timestamp in the future")
 
-	assert.Equal(t, http.StatusAccepted, post(payload, ts, good).Code)
+	first := post(payload, ts, good)
+	assert.Equal(t, http.StatusAccepted, first.Code)
 	replay := post(payload, ts, good)
-	assert.Equal(t, http.StatusUnauthorized, replay.Code, "the same call again is a replay")
+	assert.Equal(t, http.StatusAccepted, replay.Code, "a retry of an accepted call gets the answer of the first call")
+	assert.JSONEq(t, first.Body.String(), replay.Body.String(), "same body as the first acceptance")
+	assert.Equal(t, first.Header().Get("Content-Type"), replay.Header().Get("Content-Type"))
 	wrong := post(payload, ts, "sha256="+strings.Repeat("0", 64))
-	assert.JSONEq(t, wrong.Body.String(), replay.Body.String(), "a replay answers like a wrong signature")
+	assert.Equal(t, http.StatusUnauthorized, wrong.Code, "a wrong signature is still refused")
 	ts2, good2 := sign(payload, time.Now().Add(time.Second))
 	assert.Equal(t, http.StatusAccepted, post(payload, ts2, good2).Code, "a new timestamp is a new call")
 }

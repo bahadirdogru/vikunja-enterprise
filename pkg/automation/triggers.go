@@ -193,6 +193,11 @@ const webhookRateWindow = time.Minute
 
 // ReceiveWebhook checks a call of an incoming webhook and queues the run. Anything that is not a webhook of an
 // enabled rule is "not found", so tokens cannot be told from absent ones.
+//
+// An exact replay of a call that was accepted (same hook, same timestamp, body and signature) is a success with a
+// nil event and a nil error: the sender is retrying because it did not see the answer, and it gets the answer of the
+// first call. Nothing is queued for it and it does not count against the rate limit. The caller must answer it like
+// an accepted call and must not use the event.
 func ReceiveWebhook(call *WebhookCall) (*models.AutomationEvent, error) {
 	if !config.AutomationEnabled.GetBool() {
 		return nil, models.ErrAutomationHookNotFound{}
@@ -224,8 +229,8 @@ func ReceiveWebhook(call *WebhookCall) (*models.AutomationEvent, error) {
 			return nil, err
 		}
 		if replayed {
-			log.Debugf("[automation] webhook of rule %d refused: the call was already accepted", rule.ID)
-			return nil, models.ErrAutomationHookSignatureInvalid{}
+			log.Debugf("[automation] webhook of rule %d: the call was already accepted, answering like the first time", rule.ID)
+			return nil, nil
 		}
 	}
 
@@ -252,9 +257,15 @@ func ReceiveWebhook(call *WebhookCall) (*models.AutomationEvent, error) {
 	// The signature is used up only now, in the transaction of the event: a call refused above (payload, rate
 	// limit) can be sent again unchanged.
 	if signed != nil {
-		if err := rememberWebhookSignature(s, rule, signed); err != nil {
+		replayed, err := rememberWebhookSignature(s, rule, signed)
+		if err != nil {
 			_ = s.Rollback()
 			return nil, err
+		}
+		if replayed {
+			// A concurrent identical call won the race and queued the run.
+			_ = s.Rollback()
+			return nil, nil
 		}
 	}
 

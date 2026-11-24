@@ -387,8 +387,9 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   checked: two real server processes against one PostgreSQL or MySQL
   (the cross-instance refusal is shown by the memory being a table, in one
   process), the editor text in a browser, a sender in another language.
-  A retry of an accepted call is refused like a replay (senders re-sign every
-  attempt). `automation.webhook.tolerance` needs a unit and at least 1s (a
+  A retry of an accepted call was refused like a replay at that time (changed
+  later: it now gets the `202` of the first call, see the entry on the retry
+  of an accepted call). `automation.webhook.tolerance` needs a unit and at least 1s (a
   bare `300` is nanoseconds and would refuse every call: it falls back to the
   default with a warning). Changing `automation.webhook.tolerance` upward does not bring back rows
   already deleted: calls captured earlier can be replayed until their new
@@ -446,6 +447,23 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   identical. Not verified: the editor in a browser; concurrent creates can
   overshoot the field limit by the requests in flight; field descriptions
   are still not length-checked.
+- Incoming webhook, retry of an accepted call (fixed). An exact replay of an
+  accepted signed call (same hook, timestamp, body and signature) now gets
+  the answer of the first call, `202` with `{"queued": true}`, and queues
+  nothing; two identical calls at once queue one run and both get the `202`.
+  The replay is still looked up before the rate limit, so it does not use
+  the budget, also when the budget is used up. A wrong or malformed
+  signature, a missing, stale or future timestamp and a signature made for
+  another hook are unchanged: the uniform `401` / 22011. What this tells an
+  attacker who holds a captured call: previously the `401` of a replay told
+  them the original had been accepted; now both answer `202`, so the answer
+  tells nothing, and a call that was blocked on the way is accepted once
+  when they send it first, as before. The timing is not the same (a replay
+  skips the insert), the answer is. Updated: the tests that asserted `401`
+  on a replay (`TestWebhook_ReplayProtection`, the `/api/v2` trigger test),
+  the editor text in both languages, the route description, API.md and the
+  automation module page. Verified: the changed tests failed before the
+  change and pass after it (`TestWebhook*`, `TestHumaAutomation*` on SQLite).
 
 ## Remaining
 

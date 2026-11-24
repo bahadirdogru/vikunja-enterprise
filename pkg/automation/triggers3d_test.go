@@ -444,7 +444,7 @@ func TestWebhook_ReplayProtection(t *testing.T) {
 	mustCommit(t, func(s *xorm.Session) error {
 		return (&models.AutomationSecret{ProjectID: projectOwned, Name: "HOOK_KEY", NewValue: "s3cret"}).Update(s, user1)
 	})
-	_, token := hookRule(t, map[string]any{"secret": "HOOK_KEY"}, createFromPayload())
+	rule1, token := hookRule(t, map[string]any{"secret": "HOOK_KEY"}, createFromPayload())
 	_, otherToken := hookRule(t, map[string]any{"secret": "HOOK_KEY"}, createFromPayload())
 	body := []byte(`{"id": 1}`)
 	invalid := models.IsErrAutomationHookSignatureInvalid
@@ -455,15 +455,18 @@ func TestWebhook_ReplayProtection(t *testing.T) {
 	advance := func(d time.Duration) { clock = clock.Add(d) }
 	at := func() time.Time { return now() }
 
-	t.Run("the same call twice is refused the second time, the same way as a wrong signature", func(t *testing.T) {
+	t.Run("the same call twice is answered like the first time and queues nothing the second time", func(t *testing.T) {
 		call := signedCall(token, body, at())
-		_, err := ReceiveWebhook(call)
+		first, err := ReceiveWebhook(call)
 		require.NoError(t, err)
-		_, err = ReceiveWebhook(call)
-		require.Error(t, err)
-		assert.True(t, invalid(err), "%v", err)
+		require.NotNil(t, first)
+		queued := webhookEventCount(t, rule1.ID)
+		again, err := ReceiveWebhook(call)
+		require.NoError(t, err, "a retry of an accepted call is a success, not a 401")
+		assert.Nil(t, again, "nothing is queued for the replay")
+		assert.Equal(t, queued, webhookEventCount(t, rule1.ID), "the run is not queued a second time")
 		_, wrong := ReceiveWebhook(&WebhookCall{Token: token, Body: body, Signature: "sha256=" + strings.Repeat("0", 64), Timestamp: call.Timestamp})
-		assert.Equal(t, wrong, err, "a replay and a wrong signature are indistinguishable")
+		assert.True(t, invalid(wrong), "a wrong signature is still the uniform refusal: %v", wrong)
 	})
 
 	t.Run("a call captured for one hook is refused by another hook with the same secret", func(t *testing.T) {
@@ -484,15 +487,18 @@ func TestWebhook_ReplayProtection(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("a replay over the rate limit is still the uniform refusal and does not use the budget", func(t *testing.T) {
+	t.Run("a replay over the rate limit is still a success and does not use the budget", func(t *testing.T) {
 		config.AutomationWebhookRateLimit.Set(1)
 		defer config.AutomationWebhookRateLimit.Set(60)
-		_, limitedToken := hookRule(t, map[string]any{"secret": "HOOK_KEY"}, createFromPayload())
+		limitedRule, limitedToken := hookRule(t, map[string]any{"secret": "HOOK_KEY"}, createFromPayload())
 		first := signedCall(limitedToken, []byte(`{"rl":1}`), at())
 		_, err := ReceiveWebhook(first)
 		require.NoError(t, err)
-		_, err = ReceiveWebhook(first)
-		assert.True(t, invalid(err), "a replay is a 401, not a 429: %v", err)
+		for i := 0; i < 3; i++ {
+			_, err = ReceiveWebhook(first)
+			assert.NoError(t, err, "a replay is not a 429 and not a 401: %v", err)
+		}
+		assert.EqualValues(t, 1, webhookEventCount(t, limitedRule.ID), "only the first call was queued")
 		_, err = ReceiveWebhook(signedCall(limitedToken, []byte(`{"rl":2}`), at()))
 		assert.True(t, models.IsErrAutomationHookRateLimited(err), "a new call is limited: %v", err)
 	})
@@ -539,36 +545,42 @@ func TestWebhook_ReplayProtection(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("a replay is refused when the memory is in the database only, as on another instance", func(t *testing.T) {
+	t.Run("a replay is recognised when the memory is in the database only, as on another instance", func(t *testing.T) {
 		// Nothing of the first accepted call is kept in this process: the memory is the table.
 		call := signedCall(otherToken, []byte(`{"x":1}`), at())
 		_, err := ReceiveWebhook(call)
 		require.NoError(t, err)
 		db.AssertExists(t, "automation_webhook_seen", map[string]interface{}{"signature": strings.TrimPrefix(call.Signature, "sha256=")}, false)
-		_, err = ReceiveWebhook(call)
-		assert.True(t, invalid(err), "%v", err)
+		again, err := ReceiveWebhook(call)
+		assert.NoError(t, err)
+		assert.Nil(t, again)
 	})
 
-	t.Run("two identical calls at once: one is accepted, the other refused", func(t *testing.T) {
-		call := signedCall(token, []byte(`{"race":1}`), at())
-		results := make(chan error, 6)
+	t.Run("two identical calls at once: all are answered with success, one run is queued", func(t *testing.T) {
+		raceRule, raceToken := hookRule(t, map[string]any{"secret": "HOOK_KEY"}, createFromPayload())
+		call := signedCall(raceToken, []byte(`{"race":1}`), at())
+		type result struct {
+			row *models.AutomationEvent
+			err error
+		}
+		results := make(chan result, 6)
 		for i := 0; i < 6; i++ {
 			go func() {
 				c := *call
-				_, err := ReceiveWebhook(&c)
-				results <- err
+				row, err := ReceiveWebhook(&c)
+				results <- result{row, err}
 			}()
 		}
-		accepted := 0
+		queuedByCall := 0
 		for i := 0; i < 6; i++ {
-			err := <-results
-			if err == nil {
-				accepted++
-			} else {
-				assert.True(t, invalid(err), "%v", err)
+			r := <-results
+			assert.NoError(t, r.err)
+			if r.row != nil {
+				queuedByCall++
 			}
 		}
-		assert.Equal(t, 1, accepted)
+		assert.Equal(t, 1, queuedByCall, "exactly one call queued the run")
+		assert.EqualValues(t, 1, webhookEventCount(t, raceRule.ID))
 	})
 
 	t.Run("the cleanup keeps a signature until its timestamp is the tolerance and a margin old", func(t *testing.T) {
@@ -613,12 +625,16 @@ func TestWebhook_ReplayProtection(t *testing.T) {
 		r := &models.AutomationRule{ID: 424242}
 		v := &verifiedWebhook{signature: strings.Repeat("ab", 32), signedAt: at()}
 		boom := assert.AnError
-		assert.Equal(t, boom, insertFailedAsReplay(r, v, boom), "nothing stored: the error is the database's")
+		replayed, err := insertFailedAsReplay(r, v, boom)
+		assert.False(t, replayed)
+		assert.Equal(t, boom, err, "nothing stored: the error is the database's")
 		mustCommit(t, func(s *xorm.Session) error {
 			_, err := s.Insert(&models.AutomationWebhookSeen{RuleID: r.ID, Signature: v.signature, SignedAt: v.signedAt})
 			return err
 		})
-		assert.True(t, invalid(insertFailedAsReplay(r, v, boom)))
+		replayed, err = insertFailedAsReplay(r, v, boom)
+		assert.True(t, replayed)
+		assert.NoError(t, err)
 	})
 
 	t.Run("the ticker runs the cleanup", func(t *testing.T) {
@@ -634,6 +650,16 @@ func TestWebhook_ReplayProtection(t *testing.T) {
 		require.NoError(t, err)
 		assert.Zero(t, countSeen(t))
 	})
+}
+
+// webhookEventCount is the number of webhook events queued for a rule.
+func webhookEventCount(t *testing.T, ruleID int64) int64 {
+	t.Helper()
+	s := db.NewReadSession()
+	defer s.Close()
+	n, err := s.Where("rule_id = ? AND name = ?", ruleID, spec.EventWebhook).Count(&models.AutomationEvent{})
+	require.NoError(t, err)
+	return n
 }
 
 func countSeen(t *testing.T) int64 {

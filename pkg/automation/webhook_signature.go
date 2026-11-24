@@ -43,7 +43,8 @@ import (
 //
 // A call is accepted when the signature is right and the timestamp is at most automation.webhook.tolerance old and
 // at most webhookFutureSkew ahead of this server's clock. An accepted signature is remembered (database, so every
-// instance knows it) until its timestamp is out of that window: sending the same call again is refused.
+// instance knows it) until its timestamp is out of that window. Sending the same call again is answered like the
+// first time (see ReceiveWebhook) and queues nothing.
 const (
 	signaturePrefix = "sha256="
 	// signatureLen is the exact length of a valid signature header; anything else is refused before it is decoded.
@@ -119,6 +120,7 @@ func webhookMAC(secret, timestamp, token string, body []byte) []byte {
 
 // checkWebhookSignature verifies a call of a rule that names a secret. Every failure is the same
 // ErrAutomationHookSignatureInvalid, so a caller learns nothing about which part was wrong; the reason is logged.
+// A replay of an accepted call is not an error here: the caller asks webhookReplayed after a valid signature.
 func checkWebhookSignature(s *xorm.Session, rule *models.AutomationRule, secretName string, call *WebhookCall, at time.Time) (*verifiedWebhook, error) {
 	refuse := func(reason string) (*verifiedWebhook, error) {
 		log.Debugf("[automation] webhook of rule %d refused: %s", rule.ID, reason)
@@ -163,37 +165,37 @@ func checkWebhookSignature(s *xorm.Session, rule *models.AutomationRule, secretN
 }
 
 // webhookReplayed reports whether the verified signature was accepted before. It is asked before the rate limit, so
-// a replay is the same 401 as a wrong signature and does not use up the budget of the real sender.
+// a replay does not use up the budget of the real sender.
 func webhookReplayed(s *xorm.Session, rule *models.AutomationRule, v *verifiedWebhook) (bool, error) {
 	return models.AutomationWebhookSignatureSeen(s, rule.ID, v.signature)
 }
 
-// rememberWebhookSignature stores the signature in the session of the call. A repeat is the same error as a wrong
-// signature. Two identical calls at once race on the unique index in the database: the loser's insert fails (or
-// finds the row), and it is told apart from a database fault by looking the signature up in a new session.
-func rememberWebhookSignature(s *xorm.Session, rule *models.AutomationRule, v *verifiedWebhook) error {
-	replayed, err := models.RememberAutomationWebhookSignature(s, rule.ID, v.signature, v.signedAt)
+// rememberWebhookSignature stores the signature in the session of the call and reports replayed=true when the call
+// was accepted before. Two identical calls at once race on the unique index in the database: the loser's insert
+// fails (or finds the row), and it is told apart from a database fault by looking the signature up in a new
+// session. The caller rolls the session back when it gets replayed or an error.
+func rememberWebhookSignature(s *xorm.Session, rule *models.AutomationRule, v *verifiedWebhook) (replayed bool, err error) {
+	replayed, err = models.RememberAutomationWebhookSignature(s, rule.ID, v.signature, v.signedAt)
 	if err != nil {
 		return insertFailedAsReplay(rule, v, err)
 	}
 	if replayed {
-		log.Debugf("[automation] webhook of rule %d refused: the call was already accepted", rule.ID)
-		return models.ErrAutomationHookSignatureInvalid{}
+		log.Debugf("[automation] webhook of rule %d: the call was already accepted", rule.ID)
 	}
-	return nil
+	return replayed, nil
 }
 
 // insertFailedAsReplay decides what a failed insert of a signature was: when another call stored the same signature
-// meanwhile it is a replay (the same answer as a wrong signature), otherwise it is the database error.
-func insertFailedAsReplay(rule *models.AutomationRule, v *verifiedWebhook, insertErr error) error {
+// meanwhile it is a replay, otherwise it is the database error.
+func insertFailedAsReplay(rule *models.AutomationRule, v *verifiedWebhook, insertErr error) (bool, error) {
 	check := db.NewReadSession()
 	defer check.Close()
 	seen, lookupErr := models.AutomationWebhookSignatureSeen(check, rule.ID, v.signature)
 	if lookupErr == nil && seen {
-		log.Debugf("[automation] webhook of rule %d refused: the call was accepted by a concurrent request", rule.ID)
-		return models.ErrAutomationHookSignatureInvalid{}
+		log.Debugf("[automation] webhook of rule %d: the call was accepted by a concurrent request", rule.ID)
+		return true, nil
 	}
-	return insertErr
+	return false, insertErr
 }
 
 // webhookCleanupMargin is kept on top of the tolerance when signatures are deleted: instances whose clocks differ by
