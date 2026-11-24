@@ -1126,6 +1126,17 @@
                     "comment": "The maximum size of one attached file. The smaller of this and files.maxsize applies."
                 },
                 {
+                    "key": "users",
+                    "comment": "Forms that need a signed-in user: the ones for project members and the ones for every signed-in user.",
+                    "children": [
+                        {
+                            "key": "ratelimit",
+                            "default_value": "60",
+                            "comment": "The maximum number of submissions per signed-in user, form and hour on forms for project members and signed-in users. Counted in the database from the stored submitter, so it holds across several replicas. Excess submissions are answered with 429 and a Retry-After header. 0 turns the limit off."
+                        }
+                    ]
+                },
+                {
                     "key": "public",
                     "comment": "Forms that anyone with the link can submit, without an account.",
                     "children": [

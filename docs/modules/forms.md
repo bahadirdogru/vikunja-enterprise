@@ -23,7 +23,7 @@ Audience: project admins build forms; requesters fill them; operators decide whe
 
 ### Behaviour of a submission
 
-One transaction: lock the form row; check availability and access; the honeypot; the rate limits; load the owner and check that they can still write to the project (otherwise the form is disabled, that change is committed, nothing else is created, and the answer is `410` `disabled`); validate every visible field; count the submission; create the task with `Task.Create` as the owner (workflow initial status, `task.created` and the automation outbox apply); write custom field values, labels, default assignees, the initial status override (a system transition without checks) and the attachments; record the submission; and dispatch `form.submitted` on commit.
+One transaction: lock the form row; check availability and access; the honeypot; the rate limits (per IP and per form for public forms, per signed-in user and form for the others); load the owner and check that they can still write to the project (otherwise the form is disabled, that change is committed, nothing else is created, and the answer is `410` `disabled`); validate every visible field; count the submission; create the task with `Task.Create` as the owner (workflow initial status, `task.created` and the automation outbox apply); write custom field values, labels, default assignees, the initial status override (a system transition without checks) and the attachments; record the submission; and dispatch `form.submitted` on commit.
 
 - Hidden targets cannot be supplied by the client. A shown field missing from `values` takes its default.
 - Values are validated with the field's own rules; errors are `422` / `25006` with one entry per field: `required`, `invalid`, `too_long`, `too_many`, `unknown_field` (also for hidden targets), `file_too_large`, `file_type_not_allowed`, `attachments_disabled`; submitter details are `submitter.name` and `submitter.email`.
@@ -121,6 +121,7 @@ Error codes: `25001` unknown token or form (404), `25002` invalid definition (40
 | `forms.public.attachments` | `false` | Whether public forms may ask for file attachments. Off by default: an anonymous upload is the riskiest thing a public form can offer. |
 | `forms.public.ratelimit` | `10` | The maximum number of submissions per client IP address and hour on public forms. Counted in the database from the stored salted IP hash, so it holds across several replicas. |
 | `forms.public.formratelimit` | `300` | The maximum number of submissions per public form and hour, whoever sends them. Excess submissions are answered with 429 and a Retry-After header. |
+| `forms.users.ratelimit` | `60` | The maximum number of submissions per signed-in user, form and hour on `members` and `users` forms, counted in the database from the stored submitter (so it holds across replicas). Excess submissions are answered with 429 and a Retry-After header. `0` turns the limit off. |
 | `forms.public.requestratelimit` | `60` | The maximum number of requests per client IP address and minute to the public form endpoints (definition and submissions together), counted by the same limiter store as ratelimit.store. A floor against floods; normal use never reaches it. |
 | `service.ipextractionmethod` | `direct` | Method for extracting client IP addresses. 'direct' (default) uses the TCP remote address and ignores forwarding headers — use this when Vikunja faces the internet directly. |
 | `service.trustedproxies` | `empty` | Comma-separated list of CIDR ranges for trusted reverse proxies. Only used when service.ipextractionmethod is 'xff' or 'realip'. |
@@ -144,6 +145,7 @@ Project settings, Forms (project admins): a list with link copy, an open and clo
 | Kill switch for public forms (cannot be saved, existing ones answer `410`) | `forms.public.enabled` |
 | Submissions per client IP and hour on public forms, counted in the database from the salted hash, so it holds across replicas | `forms.public.ratelimit` |
 | Submissions per public form and hour | `forms.public.formratelimit` |
+| Submissions per signed-in user, form and hour on `members` and `users` forms, same window and answer (`429`), counted from `form_submissions.submitter_id` with the index on `form_id` | `forms.users.ratelimit` |
 | Request floor per IP and minute on the public routes (router middleware) | `forms.public.requestratelimit` |
 | JSON body size, `413` above (also the `data` part of the multipart route) | `forms.maxbodysize` |
 | Attachments on public forms | `forms.public.attachments` (off) |
@@ -160,7 +162,6 @@ Rate limits answer `429` with `Retry-After`; the hourly window runs on the clock
 
 From the [roadmap](../enterprise/ROADMAP.md):
 
-- There is no hourly limit on `members` forms.
 - Per-IP limits count full IPv6 addresses; hourly limits are check-then-insert; honeypot hits and validation failures only count against the per-minute request limit.
 - Uploads are buffered before the token is looked up.
 - The branding UI (brand name, accent colour, footer, logo) was checked in a browser (see the roadmap); the builder's live preview does not use the accent colour; a server-side `422` was only shown with a mocked response; relative date defaults are not offered; no QR code.

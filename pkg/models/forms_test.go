@@ -58,6 +58,7 @@ func formsReset(t *testing.T) {
 	config.FormsPublicAttachments.Set(false)
 	config.FormsPublicRateLimit.Set(10)
 	config.FormsPublicFormRateLimit.Set(300)
+	config.FormsUsersRateLimit.Set(60)
 	config.FormsMaxAttachments.Set(5)
 	config.FormsMaxAttachmentSize.Set("10MB")
 	config.ServiceEnableTaskAttachments.Set(true)
@@ -1668,5 +1669,64 @@ func TestFormDefinition_ClosedFormTellsNothingToAnonymous(t *testing.T) {
 		f := mk(FormAccessPublic)
 		_, err := GetFormDefinition(f.Token, nil)
 		assert.True(t, IsErrFormUnavailable(err))
+	})
+}
+
+func TestFormSubmit_RateLimitPerSignedInUser(t *testing.T) {
+	formsReset(t)
+	config.FormsUsersRateLimit.Set(3)
+	defer config.FormsUsersRateLimit.Set(60)
+	now := time.Date(2031, 1, 1, 12, 0, 0, 0, time.UTC)
+	formClock = func() time.Time { return now }
+
+	for _, access := range []FormAccess{FormAccessMembers, FormAccessUsers} {
+		f := createForm(t, baseForm(access))
+		t.Run(string(access), func(t *testing.T) {
+			start := now
+			for i := 0; i < 3; i++ {
+				_, err := submit(t, f, map[string]any{"title": "x"}, asAuth(fU1))
+				require.NoError(t, err)
+				now = now.Add(time.Minute)
+			}
+			_, err := submit(t, f, map[string]any{"title": "x"}, asAuth(fU1))
+			var rl ErrFormRateLimited
+			require.ErrorAs(t, err, &rl)
+			assert.Equal(t, 429, rl.HTTPError().HTTPCode)
+			assert.InDelta(t, 57*60, rl.RetryAfterSeconds, 2)
+			assert.EqualValues(t, 3, reloadForm(t, f.ID).SubmissionCount, "the refused submission is not counted")
+
+			// Everybody else is counted on their own, whatever the address.
+			_, err = submit(t, f, map[string]any{"title": "x"}, asAuth(fU2), fromIP("203.0.113.7"))
+			if access == FormAccessMembers {
+				assert.True(t, IsErrFormNotAllowed(err), "user 2 is no member of project 1")
+			} else {
+				require.NoError(t, err)
+			}
+
+			now = start.Add(61 * time.Minute)
+			_, err = submit(t, f, map[string]any{"title": "x"}, asAuth(fU1))
+			require.NoError(t, err, "the window expires")
+		})
+	}
+
+	t.Run("0 turns the limit off", func(t *testing.T) {
+		config.FormsUsersRateLimit.Set(0)
+		f := createForm(t, baseForm(FormAccessMembers))
+		for i := 0; i < 5; i++ {
+			_, err := submit(t, f, map[string]any{"title": "x"}, asAuth(fU1))
+			require.NoError(t, err)
+		}
+	})
+
+	t.Run("the limit is per form", func(t *testing.T) {
+		config.FormsUsersRateLimit.Set(1)
+		a := createForm(t, baseForm(FormAccessMembers))
+		b := createForm(t, baseForm(FormAccessMembers))
+		_, err := submit(t, a, map[string]any{"title": "x"}, asAuth(fU1))
+		require.NoError(t, err)
+		_, err = submit(t, b, map[string]any{"title": "x"}, asAuth(fU1))
+		require.NoError(t, err)
+		_, err = submit(t, a, map[string]any{"title": "x"}, asAuth(fU1))
+		assert.True(t, IsErrFormRateLimited(err))
 	})
 }

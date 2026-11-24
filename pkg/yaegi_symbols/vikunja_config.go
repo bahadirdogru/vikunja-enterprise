@@ -130,6 +130,7 @@ func init() {
 		"FormsPublicFormRateLimit":                   reflect.ValueOf(config.FormsPublicFormRateLimit),
 		"FormsPublicRateLimit":                       reflect.ValueOf(config.FormsPublicRateLimit),
 		"FormsPublicRequestRateLimit":                reflect.ValueOf(config.FormsPublicRequestRateLimit),
+		"FormsUsersRateLimit":                        reflect.ValueOf(config.FormsUsersRateLimit),
 		"GetConfigValueFromFile":                     reflect.ValueOf(config.GetConfigValueFromFile),
 		"GetLegalLinks":                              reflect.ValueOf(config.GetLegalLinks),
 		"GetMaxFileSizeInMBytes":                     reflect.ValueOf(config.GetMaxFileSizeInMBytes),

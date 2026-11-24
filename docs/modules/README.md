@@ -40,6 +40,7 @@ The fork's keys, with their defaults (the meaning of each is on the module page)
 | `forms.public.ratelimit` | `10` | [Forms](forms.md) |
 | `forms.public.formratelimit` | `300` | [Forms](forms.md) |
 | `forms.public.requestratelimit` | `60` | [Forms](forms.md) |
+| `forms.users.ratelimit` | `60` | [Forms](forms.md) |
 | `automation.enabled` | `true` | [Automation](automation.md) |
 | `automation.maxdepth` | `3` | [Automation](automation.md) |
 | `automation.maxactions` | `25` | [Automation](automation.md) |

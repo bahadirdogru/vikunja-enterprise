@@ -274,6 +274,7 @@ const (
 	FormsPublicRateLimit        Key = `forms.public.ratelimit`
 	FormsPublicFormRateLimit    Key = `forms.public.formratelimit`
 	FormsPublicRequestRateLimit Key = `forms.public.requestratelimit`
+	FormsUsersRateLimit         Key = `forms.users.ratelimit`
 
 	ReportsCacheTTL                   Key = `reports.cachettl`
 	ReportsMaxGroups                  Key = `reports.maxgroups`
@@ -600,6 +601,7 @@ func initDefaultConfig() {
 	FormsPublicRateLimit.setDefault(10)
 	FormsPublicFormRateLimit.setDefault(300)
 	FormsPublicRequestRateLimit.setDefault(60)
+	FormsUsersRateLimit.setDefault(60)
 	// Automation
 	AutomationEnabled.setDefault(true)
 	AutomationMaxDepth.setDefault(defaultAutomationMaxDepth)

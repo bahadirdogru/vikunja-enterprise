@@ -530,6 +530,10 @@ func submitForm(s *xorm.Session, req *FormSubmitRequest) (*FormSubmitResult, err
 		if err = checkFormRateLimits(s, form, ipHash, now); err != nil {
 			return nil, err
 		}
+	} else if su := formSubmitterUser(req.Auth); su != nil {
+		if err = checkFormUserRateLimit(s, form, su.ID, now); err != nil {
+			return nil, err
+		}
 	}
 
 	owner, err := loadFormOwner(s, form)
@@ -677,35 +681,43 @@ func loadFormOwner(s *xorm.Session, form *Form) (*user.User, error) {
 // checkFormRateLimits counts the submissions of the window in the database, which is what makes the limits hold
 // for several replicas. The answer says when the oldest counted submission leaves the window.
 func checkFormRateLimits(s *xorm.Session, form *Form, ipHash string, now time.Time) error {
-	cutoff := now.Add(-formRateWindow).Format(dbTimeFormat)
-	check := func(cond builder.Cond, limit int64) error {
-		if limit <= 0 {
-			return nil
-		}
-		total, err := s.Where(builder.And(cond, builder.Gte{"created": cutoff})).Count(&FormSubmission{})
-		if err != nil {
-			return err
-		}
-		if total < limit {
-			return nil
-		}
-		// The submission that frees a slot is the one total-limit places from the oldest.
-		rows := []*FormSubmission{}
-		if err = s.Where(builder.And(cond, builder.Gte{"created": cutoff})).OrderBy("created ASC, id ASC").Limit(1, int(total-limit)).Find(&rows); err != nil {
-			return err
-		}
-		retry := int64(formRateWindow / time.Second)
-		if len(rows) == 1 {
-			retry = int64(rows[0].Created.UTC().Add(formRateWindow).Sub(now)/time.Second) + 1
-		}
-		return ErrFormRateLimited{RetryAfterSeconds: max(retry, 1)}
-	}
 	if ipHash != "" {
-		if err := check(builder.Eq{"ip_hash": ipHash}, config.FormsPublicRateLimit.GetInt64()); err != nil {
+		if err := checkFormRate(s, builder.Eq{"ip_hash": ipHash}, config.FormsPublicRateLimit.GetInt64(), now); err != nil {
 			return err
 		}
 	}
-	return check(builder.Eq{"form_id": form.ID}, config.FormsPublicFormRateLimit.GetInt64())
+	return checkFormRate(s, builder.Eq{"form_id": form.ID}, config.FormsPublicFormRateLimit.GetInt64(), now)
+}
+
+// checkFormUserRateLimit limits the submissions of one signed-in user to one form. It uses the same window and the
+// same answer as the limits of public forms, and the index on form_id, so it needs no table of its own.
+func checkFormUserRateLimit(s *xorm.Session, form *Form, userID int64, now time.Time) error {
+	return checkFormRate(s, builder.And(builder.Eq{"form_id": form.ID}, builder.Eq{"submitter_id": userID}), config.FormsUsersRateLimit.GetInt64(), now)
+}
+
+// checkFormRate fails when limit or more submissions that match cond were made in the window.
+func checkFormRate(s *xorm.Session, cond builder.Cond, limit int64, now time.Time) error {
+	if limit <= 0 {
+		return nil
+	}
+	cutoff := now.Add(-formRateWindow).Format(dbTimeFormat)
+	total, err := s.Where(builder.And(cond, builder.Gte{"created": cutoff})).Count(&FormSubmission{})
+	if err != nil {
+		return err
+	}
+	if total < limit {
+		return nil
+	}
+	// The submission that frees a slot is the one total-limit places from the oldest.
+	rows := []*FormSubmission{}
+	if err = s.Where(builder.And(cond, builder.Gte{"created": cutoff})).OrderBy("created ASC, id ASC").Limit(1, int(total-limit)).Find(&rows); err != nil {
+		return err
+	}
+	retry := int64(formRateWindow / time.Second)
+	if len(rows) == 1 {
+		retry = int64(rows[0].Created.UTC().Add(formRateWindow).Sub(now)/time.Second) + 1
+	}
+	return ErrFormRateLimited{RetryAfterSeconds: max(retry, 1)}
 }
 
 func validateSubmitter(st *FormSettings, name, email string) []FormFieldError {
