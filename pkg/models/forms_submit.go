@@ -260,6 +260,27 @@ func checkFormAccess(s *xorm.Session, f *Form, a web.Auth) error {
 	return nil
 }
 
+// checkFormReachable decides whether the caller may be told about the form at all, and whether it takes submissions.
+// A form that is not public tells its title and state (disabled, closed, full) only to somebody who may submit it:
+// the access check comes first. An anonymous caller to a form that takes no submissions gets the answer of an
+// unknown token, so a closed form cannot be told apart from one that does not exist; for a form that is open the
+// caller is asked to sign in, which is what the form page needs to show its login prompt.
+func checkFormReachable(s *xorm.Session, f *Form, a web.Auth) error {
+	reason := formUnavailableReason(f)
+	if f.Access != FormAccessPublic {
+		if err := checkFormAccess(s, f, a); err != nil {
+			if a == nil && reason != "" {
+				return ErrFormDoesNotExist{}
+			}
+			return err
+		}
+	}
+	if reason != "" {
+		return unavailable(f, reason)
+	}
+	return nil
+}
+
 // GetFormDefinition returns the public definition of the form with the token. a is the auth of the request, nil
 // when there is none.
 func GetFormDefinition(token string, a web.Auth) (*FormPublicDefinition, error) {
@@ -271,10 +292,7 @@ func GetFormDefinition(token string, a web.Auth) (*FormPublicDefinition, error) 
 		return nil, err
 	}
 	normalizeForm(f)
-	if reason := formUnavailableReason(f); reason != "" {
-		return nil, unavailable(f, reason)
-	}
-	if err = checkFormAccess(s, f, a); err != nil {
+	if err = checkFormReachable(s, f, a); err != nil {
 		return nil, err
 	}
 	return buildFormDefinition(s, f)
@@ -489,10 +507,7 @@ func submitForm(s *xorm.Session, req *FormSubmitRequest) (*FormSubmitResult, err
 	}
 	normalizeForm(form)
 	req.publicForm = form.Access == FormAccessPublic
-	if reason := formUnavailableReason(form); reason != "" {
-		return nil, unavailable(form, reason)
-	}
-	if err = checkFormAccess(s, form, req.Auth); err != nil {
+	if err = checkFormReachable(s, form, req.Auth); err != nil {
 		return nil, err
 	}
 

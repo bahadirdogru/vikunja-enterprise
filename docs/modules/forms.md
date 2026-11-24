@@ -107,7 +107,7 @@ All routes are on `/api/v2`; conventions are in [API.md](../../API.md). A `PATCH
 
 The public definition (`GET /forms/{token}`) exposes only what a submitter needs: title, description, the shown fields in order with label, help, requiredness, `kind`, `config`, options, a `max_length` where it applies and the prefill `default` (omitted when it contains a placeholder), the success behaviour, which details of the submitter are asked, the branding (`branding: {name, accent_color, has_logo, hide_footer}`) and, when attachments are asked, `attachments: {max_files, max_file_size}`. It names no project, owner, count, hidden field or default, and no user or label list (labels only on non-public forms). Definition errors on save are `400` / `25002` with `details.issues[] = {path, message}` (for example `fields[2].target`). Worked requests and responses are in [API.md](../../API.md#examples).
 
-Error codes: `25001` unknown token or form (404), `25002` invalid definition (400), `25003` form takes no submissions (410; `details.reason` is `disabled`, `closed` or `full`), `25004` login required (401), `25005` not allowed (403), `25006` invalid answers (422), `25007` rate limited (429 with `Retry-After`), `25008` forms disabled on the instance (403, on saving), `25009` invalid logo (400).
+Error codes: `25001` unknown token or form (404), `25002` invalid definition (400), `25003` form takes no submissions (410; `details.reason` is `disabled`, `closed` or `full`; the reason and the title go to callers who may submit the form, for `members` and `users` forms the access is checked first, so an anonymous caller gets the `25001` 404 of an unknown token and a signed-in caller who may not submit gets `25005`), `25004` login required (401), `25005` not allowed (403), `25006` invalid answers (422), `25007` rate limited (429 with `Retry-After`), `25008` forms disabled on the instance (403, on saving), `25009` invalid logo (400).
 
 ## Configuration keys
 
@@ -160,7 +160,7 @@ Rate limits answer `429` with `Retry-After`; the hourly window runs on the clock
 
 From the [roadmap](../enterprise/ROADMAP.md):
 
-- The title of a closed `members` form is shown to an anonymous holder of the link; there is no hourly limit on `members` forms.
+- There is no hourly limit on `members` forms.
 - Per-IP limits count full IPv6 addresses; hourly limits are check-then-insert; honeypot hits and validation failures only count against the per-minute request limit.
 - Uploads are buffered before the token is looked up.
 - The branding UI (brand name, accent colour, footer, logo) was checked in a browser (see the roadmap); the builder's live preview does not use the accent colour; a server-side `422` was only shown with a mocked response; relative date defaults are not offered; no QR code.

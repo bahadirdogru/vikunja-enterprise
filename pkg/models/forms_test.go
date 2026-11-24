@@ -1607,3 +1607,66 @@ func TestFormSubmit_AccountEmailOfSignedInSubmitter(t *testing.T) {
 		assert.Empty(t, submissionOf(t, lastTask(t)).SubmitterEmail)
 	})
 }
+
+// A form that is not public tells its title and its state only to somebody who may submit it.
+func TestFormDefinition_ClosedFormTellsNothingToAnonymous(t *testing.T) {
+	formsReset(t)
+	closed := time.Now().Add(-time.Minute)
+	mk := func(access FormAccess) *Form {
+		f := baseForm(access)
+		f.Settings = &FormSettings{CloseDate: &closed}
+		return createForm(t, f)
+	}
+	unknown := func() (error, error) {
+		_, defErr := GetFormDefinition("does-not-exist", nil)
+		_, subErr := submit(t, &Form{Token: "does-not-exist"}, map[string]any{"title": "x"})
+		return defErr, subErr
+	}
+	unkDef, unkSub := unknown()
+	require.True(t, IsErrFormDoesNotExist(unkDef))
+	require.True(t, IsErrFormDoesNotExist(unkSub))
+
+	for _, access := range []FormAccess{FormAccessMembers, FormAccessUsers} {
+		f := mk(access)
+		t.Run(string(access)+" anonymous gets the answer of an unknown token", func(t *testing.T) {
+			_, err := GetFormDefinition(f.Token, nil)
+			assert.Equal(t, unkDef, err)
+			assert.Equal(t, unkDef.(ErrFormDoesNotExist).HTTPError(), err.(ErrFormDoesNotExist).HTTPError())
+			_, err = submit(t, f, map[string]any{"title": "x"})
+			assert.Equal(t, unkSub, err)
+		})
+		t.Run(string(access)+" a link share learns nothing either", func(t *testing.T) {
+			_, err := GetFormDefinition(f.Token, &LinkSharing{ID: 1, ProjectID: 1})
+			assert.True(t, IsErrFormNotAllowed(err), "got %v", err)
+		})
+	}
+
+	t.Run("a signed-in user who may not submit gets the answer of an open form", func(t *testing.T) {
+		f := mk(FormAccessMembers)
+		_, err := GetFormDefinition(f.Token, fU2)
+		assert.True(t, IsErrFormNotAllowed(err), "got %v", err)
+		_, err = submit(t, f, map[string]any{"title": "x"}, asAuth(fU2))
+		assert.True(t, IsErrFormNotAllowed(err), "got %v", err)
+	})
+
+	t.Run("somebody who may submit is told why the form is closed", func(t *testing.T) {
+		f := mk(FormAccessMembers)
+		_, err := GetFormDefinition(f.Token, fU1)
+		var un ErrFormUnavailable
+		require.ErrorAs(t, err, &un)
+		assert.Equal(t, FormUnavailableClosed, un.Reason)
+		assert.Equal(t, "Request", un.Title)
+	})
+
+	t.Run("an open form still asks an anonymous caller to sign in", func(t *testing.T) {
+		f := createForm(t, baseForm(FormAccessMembers))
+		_, err := GetFormDefinition(f.Token, nil)
+		assert.True(t, IsErrFormLoginRequired(err), "got %v", err)
+	})
+
+	t.Run("a public closed form keeps telling its title", func(t *testing.T) {
+		f := mk(FormAccessPublic)
+		_, err := GetFormDefinition(f.Token, nil)
+		assert.True(t, IsErrFormUnavailable(err))
+	})
+}

@@ -201,7 +201,7 @@ Schema violations (an enum, a range, a missing required property) are `422`, and
 | 24006 | 422 | Nobody left to ask | approval requests |
 | 24007 | 409 | The change needs an approval; nothing was changed (`details`, see above) | plain done updates |
 | 25002 | 400 | Invalid form definition (`details.issues`) | forms |
-| 25003 | 410 | The form takes no submissions (`details.reason`: `disabled`, `closed`, `full`) | public forms |
+| 25003 | 410 | The form takes no submissions (`details.reason`: `disabled`, `closed`, `full`); only for callers who may submit it, an anonymous caller to a `members` or `users` form gets the 404 `25001` of an unknown token | public forms |
 | 25004 | 401 | Login required for this form | forms |
 | 25006 | 422 | Some answers are invalid (`details.errors[] = {field, code, message}`) | form submission |
 | 25007 | 429 | Too many submissions, with `Retry-After` | public forms |
