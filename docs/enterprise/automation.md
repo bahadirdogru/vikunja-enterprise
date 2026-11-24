@@ -488,22 +488,22 @@ protected from *display*, not from the script author: a project admin who can wr
 scripts can make a script send a secret to a server of their choice. That is why
 writing scripts needs project admin and why the kill switch exists.
 
-*What is not protected*: (1) **memory inside the interpreter**. goja has no memory
-cap, and the interrupt is only checked between JavaScript instructions, so a single
-native call such as `"x".repeat(2 ** 29)` runs to completion first. The mitigations
-are the timeout, the boundary caps (`find` is limited to `maxresults` tasks, strings
-and values handed to the host are size-capped, log arguments are cut), and the regexp
-engine has a 2 s match timeout - but pure in-VM allocation is only bounded by the
-timeout, and a malicious script can use gigabytes of memory in 5 seconds and get the
-whole Vikunja process killed. (2) **CPU**: up to `timeout` of one core per script,
-times the number of concurrent workers (`automation.workers`, 4): 20 CPU-seconds in
-a 5-second window with the defaults. (3) **Database locks**: a script runs inside the
+*What is not protected*: (1) **Memory and CPU up to the limits.** Every script runs
+in a child process (see "Script processes" below) that is killed half a second after
+its timeout and, on Linux, cannot map more than `automation.scripts.maxmemory`
+(256 MiB) beyond what it uses at start. So a malicious script costs at most one core
+for its timeout plus half a second and that much memory, times the number of
+concurrent workers (`automation.workers`, 4) plus concurrent test runs. On macOS and
+Windows the memory limit is only the soft limit of the Go runtime, so there a script
+can still allocate until the timeout kills it. (2) **Idle script processes**: up to
+`automation.workers` + 1 wait for the next script, about 13 MB of private memory each.
+(3) **Database locks**: a script runs inside the
 transaction of its step, so a script (or `http.request`) that waits for the network
 holds that transaction open, and on SQLite the write lock, for up to the step
 timeout (10 s). (4) **External effects are not rolled back** when the step fails
-afterwards, and are delivered at least once. (5) The 2 s regexp match timeout is a
-process-wide setting of the regexp engine the interpreter uses (it is used for
-nothing else in Vikunja).
+afterwards, and are delivered at least once. (5) The regexp match timeout is a
+process-wide setting of the regexp engine the interpreter uses; in the script process
+it is the timeout of the script.
 
 ## Safety limits
 
@@ -524,6 +524,7 @@ nothing else in Vikunja).
 | Script log output per step (then a truncation marker) | 16 KiB | `automation.scripts.maxlogsize` |
 | Script call stack depth | 512 | `automation.scripts.maxcallstack` |
 | Tasks returned by `vikunja.tasks.find` | 200 | `automation.scripts.maxresults` |
+| Memory of a script (hard limit on Linux) | 256 MiB | `automation.scripts.maxmemory` |
 | Runs per rule per minute (excess is skipped and recorded) | 60 | `automation.ratelimit` |
 | Concurrent workers | 4 | `automation.workers` |
 | Retries with exponential backoff, then `dead` | 5 | `automation.maxattempts` |
@@ -538,16 +539,38 @@ context); the run timeout cancels the whole run. Both count as temporary failure
 rule with more actions than `maxactions` (the limit was lowered after it was saved)
 fails its run without executing anything.
 
-The script timeout is enforced twice: a timer interrupts the interpreter
-(`vm.Interrupt`; an interrupt cannot be caught by the script, not even in a `finally`)
-and the same deadline is the context of every blocking host call (HTTP), which is
-cancelled. A script that runs into its own timeout fails its step for good ("the
-script ran longer than 5s and was stopped"); when the step or run timeout ends it
-first, it is the temporary failure those are. The interrupt is only seen between
-JavaScript instructions: a single long native call (a huge `repeat`, a very large
-`JSON.parse`) finishes first, and regular expressions are stopped by the regexp
-engine's own 2 s match timeout instead. There is **no memory cap** in the interpreter
-(see "Security model"); what is bounded is what crosses the boundary to Vikunja.
+The script timeout is enforced three times: a timer interrupts the interpreter
+(`vm.Interrupt`; an interrupt cannot be caught by the script, not even in a `finally`),
+the same deadline is the context of every blocking host call (HTTP), which is
+cancelled, and half a second after the deadline the server kills the script process.
+A script that runs into its own timeout fails its step for good ("the script ran
+longer than 5s and was stopped"); when the step or run timeout ends it first, it is
+the temporary failure those are. The interrupt alone is only seen between JavaScript
+instructions; the kill is what stops a single native call that never returns to the
+interpreter (an array built-in over a huge array-like such as
+`Array.prototype.indexOf.call({length: 2**53 - 1}, 1)`, a huge `sort`, `join`,
+`JSON.stringify` or `eval`, big integer arithmetic). A script that allocates more than
+`automation.scripts.maxmemory` fails with "the script used more than 256 MiB of memory
+and was stopped". Neither can hold a worker nor take the server down.
+
+**Script processes.** A script, and the compile check when a rule is saved, runs in a
+child process: the same Vikunja binary started again with
+`VIKUNJA_AUTOMATION_SCRIPT_PROCESS=1` and nothing else of the server's environment
+(no database password, no service secret; only `TZ` so dates are the same). The
+server sends the source, the event, the task and the limits as JSON over a pipe and
+answers every host call (`vikunja.*`, `http.fetch`, `secrets.get`) on the goroutine of
+the step, so database work stays in the step's transaction and under the owner's
+permissions; the arguments are checked again on the server side. A process serves one
+script at a time, each with a fresh interpreter. After a script that finished in time
+it waits in a pool (`automation.workers` + 1, ended after a minute idle or 1000
+scripts); a process whose script timed out, crashed or broke the protocol is killed and
+never reused. On Linux it is killed as well when the server exits, and the CPU-time
+limit of the operating system (timeout plus 2 s) ends it even if nobody is left to
+kill it. The overhead is about 0.8 ms per script with a pooled process and about
+25 ms when a process has to be started (measured with a static release-style build;
+a UPX-compressed binary starts more slowly). What crosses the pipe is JSON: a number
+that is not finite (`NaN`, `Infinity`) cannot be passed to a `vikunja.*` call ("the
+value cannot be passed to the host"), and one message is at most 32 MiB.
 
 A rule that fails 20 times in a row is disabled automatically with the reason
 `too_many_failures` (visible on the rule). The owner is not notified in 3a/3b: that

@@ -152,7 +152,7 @@ vikunja.fields.set(parentId, FIELD, sum);
 return {parent: parentId, sum: sum};
 ```
 
-**What a script can reach**: only what the owner could do by hand, plus public HTTP destinations through the SSRF guard, plus the secrets of its own project. Nothing handed to the interpreter is a wrapped Go value. **What is not protected**: memory inside the interpreter (there is no cap, and a single native call such as `"x".repeat(2 ** 29)` runs to completion before an interrupt is seen, so a hostile script can exhaust memory within its timeout), CPU (up to the script timeout of one core per script times `automation.workers`), database locks (a script runs inside the step's transaction, which on SQLite holds the write lock while waiting for the network), and external effects (not rolled back if the step fails afterwards, delivered at least once). Secrets are protected from display, not from the script author: a project admin who can write scripts can make a script send a secret to a server of their choice. That is why writing scripts needs project admin and why `automation.scripts.enabled` exists. When it is `false`, rules with scripts cannot be saved (`400` / `22005`) and existing ones fail their step without executing anything; `http.request` is not a script and is unaffected.
+**What a script can reach**: only what the owner could do by hand, plus public HTTP destinations through the SSRF guard, plus the secrets of its own project. Nothing handed to the interpreter is a wrapped Go value. **What is not protected**: CPU and memory up to the limits (one core for the script timeout plus half a second, and `automation.scripts.maxmemory`, per script, times `automation.workers` plus concurrent test runs), database locks (a script runs inside the step's transaction, which on SQLite holds the write lock while waiting for the network), and external effects (not rolled back if the step fails afterwards, delivered at least once). Secrets are protected from display, not from the script author: a project admin who can write scripts can make a script send a secret to a server of their choice. That is why writing scripts needs project admin and why `automation.scripts.enabled` exists. When it is `false`, rules with scripts cannot be saved (`400` / `22005`) and existing ones fail their step without executing anything; `http.request` is not a script and is unaffected.
 
 ## HTTP (`http.request` and `http.fetch`)
 
@@ -231,6 +231,7 @@ Every process runs the ticker every `automation.ticker.interval`. It reads only 
 | Script log output per step | 16384 bytes | `automation.scripts.maxlogsize` |
 | Script call stack depth | 512 | `automation.scripts.maxcallstack` |
 | Tasks returned by `vikunja.tasks.find` | 200 | `automation.scripts.maxresults` |
+| Memory of a script (hard limit on Linux) | 256 MiB | `automation.scripts.maxmemory` |
 | Runs per rule per minute (excess is skipped and recorded) | 60 | `automation.ratelimit` |
 | Concurrent workers | 4 | `automation.workers` |
 | Attempts before an event is `dead` | 5 | `automation.maxattempts` |
@@ -244,7 +245,11 @@ Every process runs the ticker every `automation.ticker.interval`. It reads only 
 
 Chain depth: events caused by the actions of a run (and by the `vikunja.*` calls of scripts) have depth + 1; an event deeper than `maxdepth` is recorded as a skipped run (`max_depth`), so with the default a person's change can start a chain of four rules (depths 0 to 3). The step timeout cancels the database work of the step; the run timeout cancels the whole run; both count as temporary failures. A rule with more actions than `maxactions` (the limit was lowered after it was saved) fails its run without executing anything. Limits that need a value above 0 (`automation.ticker.maxscan`, `automation.webhook.maxbody`, `automation.maxpendingwaits`) are replaced with their defaults at startup when set to 0 or less; a negative `automation.maxdepth` gets its default (`0` forbids chains); a negative `automation.ratelimit` or `automation.ticker.maxtasks` means `0`, which turns that limit off. Lowering `automation.waitmax` can reap runs that legitimately wait longer than the new maximum; `0` turns the maximum and the reaper off.
 
-The script timeout is enforced twice: a timer interrupts the interpreter (an interrupt cannot be caught by the script) and the same deadline is the context of every blocking host call. The interrupt is seen only between JavaScript instructions, and regular expressions are stopped by the engine's own 2 second match timeout (a process-wide setting of the regexp engine the interpreter uses).
+**Script processes.** Every script (and the compile check when a rule is saved) runs in a child process: the Vikunja binary started again with a marker in its environment and nothing else of the server's environment (no database password, no secrets; only `TZ`). The script's host calls (`vikunja.*`, `http.fetch`, `secrets.get`) are sent over a pipe and answered by the server in the step's transaction and with the owner's permissions, exactly as before. A process serves one script at a time with a fresh interpreter; after a script that finished in time it waits in a small pool (one per worker plus one, ended after a minute idle or 1000 scripts) for the next one. A process whose script ran out of time or failed in any other way is killed and never reused.
+
+The script timeout is enforced three times: a timer interrupts the interpreter (an interrupt cannot be caught by the script), the same deadline is the context of every blocking host call, and half a second after the deadline the server kills the process. The kill is what bounds a single native call that never returns to the interpreter (a built-in looping over a huge array-like such as `Array.prototype.indexOf.call({length: 2**53 - 1}, 1)`, a huge `sort`, `join` or `eval`, big integer arithmetic): it fails with "the script ran longer than 5s and was stopped". On Linux the process also has a hard address-space limit of `automation.scripts.maxmemory` beyond what it uses at start; a script that allocates more (`"x".repeat(2**30)`, `new Float64Array(2**28)`) fails with "the script used more than 256 MiB of memory and was stopped" instead of taking the server down. On macOS and Windows the memory limit is only the soft limit of the Go runtime. The CPU-time limit of the operating system (the timeout plus 2 seconds) ends the process even if the server is gone; on Linux it is also killed when the server exits. Regular expressions are additionally stopped by the regexp engine's match timeout, which in the script process is the script's timeout. The cost is about 0.8 ms per script with a pooled process and about 25 ms when a process has to be started.
+
+A value that crosses the pipe goes as JSON: a number that is not finite (`NaN`, `Infinity`) cannot be passed to a `vikunja.*` call (it throws "the value cannot be passed to the host"), and one message is at most 32 MiB.
 
 ### Loop guards
 
@@ -391,7 +396,7 @@ All routes are on `/api/v2`; conventions are in [API.md](../../API.md). A `PATCH
 | `automation.webhook.maxbody` | `65536` | The maximum size of the JSON body of an incoming webhook in bytes. Must be greater than 0: a value of 0 or less is replaced with the default. |
 | `automation.webhook.ratelimit` | `60` | The maximum number of incoming webhook calls per rule and minute. Calls above the limit are answered with 429. |
 | `automation.scripts.enabled` | `true` | Kill switch for scripts. When false, rules that contain a script cannot be saved and existing ones fail their step without executing anything. |
-| `automation.scripts.timeout` | `5s` | The maximum wall-clock time of one script action. The interpreter is interrupted when it is exceeded; blocking calls (HTTP) are cancelled. |
+| `automation.scripts.timeout` | `5s` | The maximum wall-clock time of one script action. The interpreter is interrupted when it is exceeded; blocking calls (HTTP) are cancelled; half a second later the script process is killed. Also the limit for compiling a script when a rule is saved. |
 | `automation.scripts.conditiontimeout` | `1s` | The maximum wall-clock time of one script condition. |
 | `automation.scripts.maxsource` | `65536` | The maximum size of one script in bytes. Larger scripts are rejected when the rule is saved. |
 | `automation.scripts.maxapicalls` | `100` | The maximum number of `vikunja.*` calls (reads and writes) one script run may make. Further calls throw an error. |
@@ -400,6 +405,7 @@ All routes are on `/api/v2`; conventions are in [API.md](../../API.md). A `PATCH
 | `automation.scripts.maxlogsize` | `16384` | The maximum total size in bytes of everything a script writes with `log()` in one step. The rest is dropped and a marker is added. |
 | `automation.scripts.maxcallstack` | `512` | The maximum call stack depth inside the interpreter. Deeper recursion fails the script. |
 | `automation.scripts.maxresults` | `200` | The maximum number of tasks `vikunja.tasks.find` returns. |
+| `automation.scripts.maxmemory` | `268435456` | The memory a script may allocate, in bytes. A hard limit of the address space of the script process on Linux; on macOS and Windows only the soft limit of the Go runtime. A script that exceeds it fails ("the script used more than 256 MiB of memory and was stopped"). `0` turns the limit off. |
 | `automation.scripts.httptimeout` | `10s` | The maximum duration of one outgoing HTTP request of the `http.request` action or `http.fetch`, whatever a script asks for. Outgoing requests use the same SSRF protection as webhooks (`outgoingrequests.allownonroutableips`, `outgoingrequests.proxyurl`). |
 | `service.timezone` | `GMT` | The time zone all timestamps are in. Please note that time zones have to use [the official tz database names](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones). |
 | `service.secret` | `<a-secret>` | This secret is used to sign JWT tokens and for other cryptographic operations. Default is a random secret which will be generated at each startup of Vikunja. |
@@ -424,7 +430,7 @@ Project settings, Automations (project admins): a rule list with enable switch, 
 
 From the [roadmap](../enterprise/ROADMAP.md):
 
-- A script can outlive its timeout inside array natives (`Array.prototype.indexOf.call({length: 2**53 - 1}, 1)`) and hold a worker for good; there is no hard memory cap. Scripts are enabled by default.
+- Scripts are enabled by default. A script can use one core and `automation.scripts.maxmemory` for its timeout plus half a second; the memory limit is hard on Linux only. The pool keeps up to `automation.workers` + 1 idle script processes (about 13 MB of private memory each, measured with a static release-style build).
 - A project admin who writes scripts can read that project's secrets.
 - The incoming webhook signature has no replay protection.
 - Code paths that commit their own sessions (cron, CalDAV, importers) only log a failed outbox insert, so those changes are lost to automation.

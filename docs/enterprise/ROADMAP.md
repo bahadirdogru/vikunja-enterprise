@@ -258,6 +258,27 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   signature header, notify to the doer or assignees, the workload estimate
   field (needs a numeric custom field), a server-side validation error shown
   in the builder, and the Turkish translations of these screens.
+- Automation scripts run in child processes. goja checks its interrupt only
+  between instructions, so one native call ran past the timeout. Of 70
+  surveyed calls (array built-ins on `{length: 2**53 - 1}`, also through
+  `Reflect.apply`, bound functions, a Proxy and iterators; typed arrays;
+  `repeat` / `padStart`; `JSON.stringify`; `eval` and `new Function` of huge
+  sources; BigInt) at a 200 ms timeout, 27 still ran after 10 s, 23 hit a
+  fatal out-of-memory error (under a 3 GiB cap; in the server that error ends
+  the process) and 8 overran by 0.5 to 7 s. Now every script, and the compile
+  check on save, runs in the same binary re-executed with an empty
+  environment; host calls come back over a pipe and are answered in the
+  step's transaction. The process is killed 0.5 s after the timeout, has an
+  address-space limit (`automation.scripts.maxmemory`, 256 MiB) and a CPU
+  limit on Linux, and dies with the server; one that finished in time is
+  pooled (workers + 1). All 70 now end within timeout + 0.5 s: as a timeout,
+  a memory error or the built-in's own exception (4 `find*` calls on an
+  array-like hit a nil-pointer panic in goja, reported as an internal error,
+  before and after). Overhead 0.8 ms per script pooled, 25 ms per process
+  start (0.2 ms in-process before). Wrapping the built-ins was rejected: the
+  class is open-ended. Not closed: the memory limit is only soft on macOS and
+  Windows; a script still costs up to one core for its timeout + 0.5 s; idle
+  pooled processes take about 13 MB each.
 - Review-pass operational notes: run code generators with `LC_ALL=C` on
   machines with a Turkish locale (the dotless `i` breaks generated
   identifiers). Vitest's on-disk module cache is disabled in
@@ -284,9 +305,6 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
 
 Open after the review pass, not fixed because they need a decision:
 
-- Automation: a script can outlive its timeout inside array natives
-  (`Array.prototype.indexOf.call({length: 2**53 - 1}, 1)`) and holds a
-  worker for good. Scripts are enabled by default.
 - Automation: retrying one failed run re-queues the whole event, so rules
   created after the event run for it too. No cap on rules per project.
 - Automation: the incoming webhook signature covers the body only, so a

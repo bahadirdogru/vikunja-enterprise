@@ -100,7 +100,7 @@ flowchart TB
     subgraph Engine["Automation engine"]
         Auto["pkg/automation: outbox hook, workers, runner, ticker, actions"]
         Spec["pkg/automation/spec: rule document, catalog, validation"]
-        Script["pkg/automation/script: JavaScript runtime"]
+        Script["pkg/automation/script: JavaScript runtime, script processes"]
         Outbound["pkg/automation/outbound: HTTP client path"]
     end
     Infra["pkg/db, pkg/migration, pkg/config, pkg/license, pkg/cron"]
@@ -341,7 +341,7 @@ sequenceDiagram
 2. *Task origins.* A task created by a run is remembered in `automation_task_origins`, so time-based events for it carry the run as origin and one more level of depth. The guard lasts as long as the run's history (`automation.retention`).
 3. *The outbound marker.* Every request the engine sends carries the header `X-Vikunja-Automation-Depth`; the server answers every `/api/v1` and `/api/v2` request that carries it with `508 Loop Detected`, so a rule cannot call the task API or the webhook endpoint of its own instance with any address or token. `http.request` and `http.fetch` also refuse URLs that look like this server's webhook endpoints. A reverse proxy that strips the header, or a second hop through an external service that calls back without it, is outside what the guard can see.
 
-**Limits and kill switches.** `automation.enabled` turns off recording and running for the instance; `automation.scripts.enabled` turns off scripts. The numeric limits (actions per run, step and run timeout, per-rule rate limit, retries, consecutive failures before a rule is disabled, wait caps, ticker caps, script limits) are tabulated in the [automation module page](docs/modules/automation.md#limits-and-safety). Scripts run in an embedded pure-Go JavaScript interpreter (goja), a fresh one per run, with no file system, process, timers or network except `http.fetch`; there is no memory cap inside the interpreter, which is a known open point.
+**Limits and kill switches.** `automation.enabled` turns off recording and running for the instance; `automation.scripts.enabled` turns off scripts. The numeric limits (actions per run, step and run timeout, per-rule rate limit, retries, consecutive failures before a rule is disabled, wait caps, ticker caps, script limits) are tabulated in the [automation module page](docs/modules/automation.md#limits-and-safety). Scripts run in an embedded pure-Go JavaScript interpreter (goja), a fresh one per run, with no file system, process, timers or network except `http.fetch`. The interpreter runs in a child process (the same binary, re-executed with `VIKUNJA_AUTOMATION_SCRIPT_PROCESS=1` and an empty environment) that the server kills half a second after the script timeout and that has a hard memory limit on Linux (`automation.scripts.maxmemory`); its host calls come back over a pipe and are answered in the step's transaction. Processes that finished a script in time are pooled for the next one.
 
 ```mermaid
 sequenceDiagram
@@ -437,7 +437,7 @@ Each decision states the context, what was decided, and the consequences includi
 
 - **Context.** Rules must run when events happen, and operators should not have to deploy a second component.
 - **Decision.** `automation.workers` goroutines and a ticker start with the server (`automation.Init`).
-- **Consequences.** Simple deployment and shutdown (a run interrupted by shutdown is resumed by another process when its lock expires). Automation shares CPU and memory with the API, so a malicious or heavy script competes with requests; the limits and the kill switches exist for that reason, and the interpreter has no memory cap.
+- **Consequences.** Simple deployment and shutdown (a run interrupted by shutdown is resumed by another process when its lock expires). Automation shares CPU and memory with the API, so a heavy rule competes with requests; the limits and the kill switches exist for that reason. Scripts are the exception: they run in short-lived child processes (decision 14), so a script cannot hold a worker past its timeout or exhaust the server's memory.
 
 ### 3. `/api/v1` is frozen; everything the fork adds is on `/api/v2`
 
@@ -508,8 +508,8 @@ Each decision states the context, what was decided, and the consequences includi
 ### 14. Scripts run in an embedded interpreter
 
 - **Context.** Some rules need logic that building blocks cannot express.
-- **Decision.** JavaScript through goja, a fresh interpreter per run, frozen read-only globals, an API that calls the same plans and permission checks as the actions, and hard limits (wall clock, API calls, HTTP requests, response and log sizes, call stack).
-- **Consequences.** No external runtime and no escape to Go objects. There is no memory cap, a long native call is only interrupted when it returns, and a script that waits holds its step's transaction open. Secrets are protected from display, not from the script author, which is why writing scripts needs project admin and why `automation.scripts.enabled` exists.
+- **Decision.** JavaScript through goja, a fresh interpreter per run, frozen read-only globals, an API that calls the same plans and permission checks as the actions, and hard limits (wall clock, API calls, HTTP requests, response and log sizes, call stack, memory). The interpreter runs in a child process of the server: the same binary re-executed with a marker variable (the `init` of `pkg/automation/script` turns any binary that imports it into the script process, so the scratch container image and the test binaries need nothing else), JSON over stdin/stdout, killed half a second after the script timeout, an address-space limit and a CPU-time limit on Linux. goja checks its interrupt only between JavaScript instructions, so a single native call (an array built-in over `{length: 2**53 - 1}`, a huge allocation, `eval` of a huge source) could otherwise hold a worker forever or end the server with a fatal out-of-memory error; wrapping the built-ins was rejected because the class is open-ended (every built-in that loops over a length, iterators, `apply`, the parser, big integers). Processes are pooled (one per worker plus one) and reused only after a script that finished in time.
+- **Consequences.** No external runtime and no escape to Go objects. About 0.8 ms of overhead per script with a pooled process, about 25 ms to start one. The hard memory limit exists on Linux only; on macOS and Windows a script is still killed at its deadline. A script that waits holds its step's transaction open. Secrets are protected from display, not from the script author, which is why writing scripts needs project admin and why `automation.scripts.enabled` exists.
 
 ### 15. Public forms are token-only and create tasks as the form owner
 
