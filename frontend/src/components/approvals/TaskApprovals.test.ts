@@ -129,7 +129,7 @@ describe('TaskApprovals', () => {
 		await wrapper.findAll('button').find(button => button.text() === 'Cancel request')!.trigger('click')
 		await settle()
 		const dialog = document.body.querySelector('dialog')!
-		expect(dialog.textContent).toContain('Cancel the request “To do → Print ready”?')
+		expect(dialog.textContent).toContain('Cancel the request "To do → Print ready"?')
 		expect(sdk.approvalsCancel).not.toHaveBeenCalled()
 
 		Array.from(dialog.querySelectorAll('button')).filter(button => button.textContent?.trim() === 'Cancel request').pop()!.click()

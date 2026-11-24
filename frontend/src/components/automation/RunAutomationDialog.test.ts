@@ -39,7 +39,7 @@ describe('RunAutomationDialog', () => {
 		buttons()[0].click()
 		await flushPromises()
 		expect(sdk.automationRunManually).toHaveBeenCalledWith({path: {project: 3, rule: 1}, body: {task_id: 42}})
-		expect(success).toHaveBeenCalledWith({message: 'The automation “Escalate” was started.'})
+		expect(success).toHaveBeenCalledWith({message: 'The automation "Escalate" was started.'})
 		expect(wrapper.emitted('close')).toHaveLength(1)
 	})
 

@@ -78,7 +78,7 @@ describe('WorkflowEditor', () => {
 		await flushPromises()
 
 		expect(wrapper.text()).toContain('This project has no workflow yet')
-		expect(wrapper.text()).toContain('independent of the kanban columns')
+		expect(wrapper.text()).toContain('independent of the Kanban columns')
 
 		await buttonByText(wrapper, 'Enable workflow').trigger('click')
 
