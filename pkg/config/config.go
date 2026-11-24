@@ -1058,9 +1058,9 @@ func ClampAutomationLimits() {
 			key.Set(fallback)
 		}
 	}
-	// A tolerance of 0 would refuse every signed call.
-	if AutomationWebhookTolerance.GetDuration() <= 0 {
-		log.Warningf("Configured %s is %s, which is not a tolerance: using %s", AutomationWebhookTolerance, AutomationWebhookTolerance.GetDuration(), defaultAutomationWebhookTolerance)
+	// A tolerance of 0 would refuse every signed call, and a bare number such as 300 is read as 300 nanoseconds.
+	if AutomationWebhookTolerance.GetDuration() < time.Second {
+		log.Warningf("Configured %s is %s, which is not a tolerance (at least 1s, with a unit such as 5m): using %s", AutomationWebhookTolerance, AutomationWebhookTolerance.GetDuration(), defaultAutomationWebhookTolerance)
 		AutomationWebhookTolerance.Set(defaultAutomationWebhookTolerance)
 	}
 	// A negative depth would skip every run, which is not what anyone means: 0 is the way to forbid chains.

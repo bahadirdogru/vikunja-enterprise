@@ -1275,7 +1275,7 @@
                         {
                             "key": "tolerance",
                             "default_value": "5m",
-                            "comment": "How far the timestamp (header X-Vikunja-Timestamp) of a signed incoming webhook call may be in the past. Older calls are refused like a wrong signature (401, code 22011); a timestamp up to one minute in the future is accepted (clock skew). Within the window an exact repeat of an accepted call is refused too: the signatures are remembered in the database until their timestamp is out of the window, so a larger tolerance means more rows. Webhooks without a secret are not signed and not covered. Must be greater than 0: a value of 0 or less is replaced with the default."
+                            "comment": "How far the timestamp (header X-Vikunja-Timestamp) of a signed incoming webhook call may be in the past. Older calls are refused like a wrong signature (401, code 22011); a timestamp up to one minute in the future is accepted (clock skew). Within the window an exact repeat of an accepted call is refused too: the signatures are remembered in the database until their timestamp is out of the window, so a larger tolerance means more rows (they are deleted after the tolerance plus two minutes). Webhooks without a secret are not signed and not covered. Write it with a unit (30s, 5m, 1h): a bare number counts as nanoseconds. It must be at least 1s: a smaller value is replaced with the default, with a warning in the log. All instances that share a database should use the same value."
                         }
                     ]
                 },
