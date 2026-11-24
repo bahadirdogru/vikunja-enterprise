@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"code.vikunja.io/api/pkg/config"
+	"code.vikunja.io/api/pkg/log"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -33,6 +34,7 @@ import (
 
 func TestMain(m *testing.M) {
 	config.InitDefaultConfig()
+	log.InitLogger()
 	m.Run()
 }
 
@@ -485,23 +487,23 @@ func TestRun_Errors(t *testing.T) {
 	})
 
 	t.Run("syntax errors have line and column", func(t *testing.T) {
-		synErr := Check("var a = 1;\nvar b = ;")
+		synErr := check(t, "var a = 1;\nvar b = ;")
 		require.NotNil(t, synErr)
 		assert.Equal(t, 2, synErr.Line)
 		assert.Equal(t, 9, synErr.Column)
 		assert.NotEmpty(t, synErr.Message)
 
-		synErr = Check("return 1 +")
+		synErr = check(t, "return 1 +")
 		require.NotNil(t, synErr)
 		assert.Equal(t, 1, synErr.Line)
 
-		assert.Nil(t, Check("return 1"), "return is fine in the implicit function")
-		assert.Nil(t, Check("// only a comment"))
+		assert.Nil(t, check(t, "return 1"), "return is fine in the implicit function")
+		assert.Nil(t, check(t, "// only a comment"))
 	})
 
 	t.Run("a source that tries to close the wrapper does not escape it", func(t *testing.T) {
-		assert.NotNil(t, Check("}); process.exit(); (function(){"))
-		assert.NotNil(t, Check("})()\n(function(){"))
+		assert.NotNil(t, check(t, "}); process.exit(); (function(){"))
+		assert.NotNil(t, check(t, "})()\n(function(){"))
 	})
 
 	t.Run("bad arguments are TypeErrors-like errors", func(t *testing.T) {
@@ -646,4 +648,12 @@ func TestRun_Async(t *testing.T) {
 	res, err := run(t, nil, `var out = []; Promise.resolve(1).then(function (v) { out.push(v) }); return typeof setTimeout`)
 	require.NoError(t, err)
 	assert.Equal(t, `"undefined"`, res.Value)
+}
+
+// check is Check that must not fail for want of a script process.
+func check(t *testing.T, source string) *SyntaxError {
+	t.Helper()
+	synErr, err := Check(context.Background(), source)
+	require.NoError(t, err)
+	return synErr
 }

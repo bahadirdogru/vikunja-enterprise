@@ -17,10 +17,23 @@
 
 package script
 
-import "os/exec"
+import (
+	"os"
+	"os/exec"
+	"syscall"
+)
+
+func childExecutable() (string, error) { return os.Executable() }
 
 func configureChild(*exec.Cmd) {}
 
-// limitMemory has no hard limit here: macOS does not enforce a limit of the address space. The soft limit of the
-// Go runtime (set by the caller) and the kill at the deadline remain.
-func limitMemory(int64) error { return nil }
+func preferOOMKill() {}
+
+// killedBySignal reports whether the process was ended by SIGKILL.
+func killedBySignal(state *os.ProcessState) bool {
+	if state == nil {
+		return false
+	}
+	ws, ok := state.Sys().(syscall.WaitStatus)
+	return ok && ws.Signaled() && ws.Signal() == syscall.SIGKILL
+}

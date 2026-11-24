@@ -45,7 +45,8 @@ func (e *Env) ctx() context.Context {
 }
 
 // mapScriptError turns a failed script into an error of the run: the script itself failed, so it will fail again
-// (permanent). A cancelled context is not the script's fault and stays what it is.
+// (permanent). A cancelled context and a failure of the script machinery (script.ErrUnavailable: no free script
+// process, one that could not start or broke) are not the script's fault and stay temporary.
 func mapScriptError(err error) error {
 	var scriptErr *script.Error
 	if errors.As(err, &scriptErr) {
@@ -64,6 +65,8 @@ func (e *Env) scriptInput(source string, host script.Host, limits script.Limits,
 		Host:      host,
 		Limits:    limits,
 		Condition: condition,
+		// Dry runs have no run; they share the script processes beyond the workers'.
+		Interactive: e.RunID == 0,
 	}
 	if e.Sub != nil {
 		snap, err := taskSnapshot(e.S, e.Sub)

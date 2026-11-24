@@ -20,16 +20,12 @@ package script
 import (
 	"os"
 	"os/exec"
-	"time"
 )
 
-// On Windows and the other systems the script process is killed at the deadline, but has no hard memory limit
-// beyond the soft limit of the Go runtime.
+func childExecutable() (string, error) { return os.Executable() }
 
 func configureChild(*exec.Cmd) {}
 
-func limitMemory(int64) error { return nil }
+func preferOOMKill() {}
 
-func limitCPU(time.Duration) {}
-
-func cpuLimitExceeded(*os.ProcessState) bool { return false }
+func killedBySignal(*os.ProcessState) bool { return false }

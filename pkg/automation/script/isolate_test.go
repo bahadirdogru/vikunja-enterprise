@@ -18,11 +18,14 @@ package script
 
 import (
 	"context"
+	"math"
 	goruntime "runtime"
 	"strings"
 	"sync"
 	"testing"
 	"time"
+
+	"code.vikunja.io/api/pkg/config"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -84,8 +87,9 @@ func TestRunaway_TheKnownReproducer(t *testing.T) {
 	}
 }
 
-// TestRunaway_NativeCallsAreStopped runs the whole survey: every one of them ends, as a timeout, as a memory error
-// or as an exception the built-in throws itself, within the bound.
+// TestRunaway_NativeCallsAreStopped runs the whole survey: every one of them ends the way it is expected to (a
+// timeout, a memory error, the built-in's own exception) within the bound. A failure of the machinery or an
+// unexpected internal error fails the test.
 func TestRunaway_NativeCallsAreStopped(t *testing.T) {
 	sem := make(chan struct{}, 4)
 	for _, c := range runawayCases {
@@ -94,13 +98,30 @@ func TestRunaway_NativeCallsAreStopped(t *testing.T) {
 			sem <- struct{}{}
 			defer func() { <-sem }()
 			o := runBounded(t, runawayBound, func() (*Result, error) { return Run(context.Background(), runawayInput(c.src)) })
-			if o.err == nil {
-				// Finishing in time is fine as well.
+			if c.want == wantFinish {
+				require.NoError(t, o.err)
 				return
 			}
 			var se *Error
 			require.ErrorAs(t, o.err, &se, "%v", o.err)
 			t.Logf("%s after %s: %s", se.Kind, o.elapsed.Round(time.Millisecond), firstLine(se.Message))
+			switch c.want {
+			case wantTimeout:
+				assert.Equal(t, ErrTimeout, se.Kind, se.Message)
+			case wantMemory:
+				assert.Equal(t, ErrMemory, se.Kind, se.Message)
+			case wantLimit:
+				assert.Contains(t, []ErrorKind{ErrTimeout, ErrMemory}, se.Kind, se.Message)
+			case wantThrown:
+				assert.Equal(t, ErrThrown, se.Kind, se.Message)
+			case wantThrownOrTimeout:
+				assert.Contains(t, []ErrorKind{ErrThrown, ErrTimeout}, se.Kind, se.Message)
+			case wantFinish:
+				// Checked above.
+			case wantGojaBug:
+				assert.Equal(t, ErrInternal, se.Kind, se.Message)
+				assert.Contains(t, se.Message, "nil pointer dereference")
+			}
 		})
 	}
 }
@@ -135,13 +156,78 @@ func TestRunaway_MemoryLimit(t *testing.T) {
 	})
 }
 
-func TestIsolation_AProcessIsReusedOnlyAfterASuccess(t *testing.T) {
-	_, err := Run(context.Background(), runawayInput(`Array.prototype.indexOf.call({length: 2**53 - 1}, 1)`))
-	require.Error(t, err)
-	for i := 0; i < 3; i++ {
-		res := mustRun(t, `globalThis.counter = (globalThis.counter || 0) + 1; return counter`)
-		assert.Equal(t, "1", res.Value, "every script gets a fresh interpreter, also in a reused process")
+// runPID runs a script with the default limits and returns the outcome and the process that ran it.
+func runPID(t *testing.T, src string) (*doneMessage, int) {
+	t.Helper()
+	in := &Input{Source: src, Host: &fakeHost{}, Limits: ActionLimits()}
+	done, err := runInProcess(context.Background(), in, false)
+	require.NoError(t, err)
+	return done, done.PID
+}
+
+func TestIsolation_AProcessIsReusedOnlyAfterASuccessOrAnException(t *testing.T) {
+	drainPool()
+	_, first := runPID(t, `return 1`)
+	_, again := runPID(t, `return 2`)
+	assert.Equal(t, first, again, "a process is reused after a success")
+
+	done, afterThrow := runPID(t, `throw new Error("x")`)
+	require.NotNil(t, done.Error)
+	assert.Equal(t, ErrThrown, done.Error.Kind)
+	assert.Equal(t, first, afterThrow)
+	_, next := runPID(t, `return 3`)
+	assert.Equal(t, first, next, "a process is reused after an ordinary exception")
+
+	short := func(in *Input) { in.Limits.Timeout = runawayTimeout }
+	for name, c := range map[string]struct {
+		src    string
+		kind   ErrorKind
+		mutate func(*Input)
+	}{
+		"the interpreter's timeout": {src: `for (;;) {}`, kind: ErrTimeout, mutate: short},
+		"the stack limit":           {src: `function f() { return f() } f()`, kind: ErrStackOverflow, mutate: func(*Input) {}},
+		"a kill at the deadline":    {src: `Array.prototype.indexOf.call({length: 2**53 - 1}, 1)`, kind: ErrTimeout, mutate: short},
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, before := runPID(t, `return 1`)
+			in := &Input{Source: c.src, Host: &fakeHost{}, Limits: ActionLimits()}
+			c.mutate(in)
+			done, err := runInProcess(context.Background(), in, false)
+			require.NoError(t, err)
+			require.NotNil(t, done.Error)
+			assert.Equal(t, c.kind, done.Error.Kind)
+			res, after := runPID(t, `globalThis.counter = (globalThis.counter || 0) + 1; return counter`)
+			assert.NotEqual(t, before, after, "the process is not reused")
+			assert.Equal(t, "1", res.Result.Value, "every script gets a fresh interpreter")
+		})
 	}
+}
+
+// TestIsolation_APooledProcessStartsClean: the memory of a script that finished cleanly is gone before the next
+// script runs in the same process, or the process is retired. Before, the second of two scripts that allocate
+// close to the limit failed with the memory error because the first one's heap stayed.
+func TestIsolation_APooledProcessStartsClean(t *testing.T) {
+	if goruntime.GOOS != "linux" {
+		t.Skip("the hard memory limit is only enforced on Linux")
+	}
+	const nearLimit = `var a = new Float64Array(20 * 2**20); a[a.length - 1] = 1; return a.length`
+	drainPool()
+	t.Run("a script that grew the heap retires its process", func(t *testing.T) {
+		done, first := runPID(t, nearLimit)
+		require.Nil(t, done.Error, "%v", done.Error)
+		assert.Less(t, done.Spare, ActionLimits().MaxMemory-poolMargin)
+		done, second := runPID(t, nearLimit)
+		require.Nil(t, done.Error, "%v", done.Error)
+		assert.NotEqual(t, first, second, "the process that grew was retired")
+	})
+	t.Run("a pooled process gives the next script the whole limit", func(t *testing.T) {
+		drainPool()
+		done, first := runPID(t, `var a = new Float64Array(2**20); return a.length`)
+		require.Nil(t, done.Error, "%v", done.Error)
+		done, second := runPID(t, nearLimit)
+		require.Nil(t, done.Error, "%v", done.Error)
+		assert.Equal(t, first, second, "a small script leaves its process in the pool")
+	})
 }
 
 func TestIsolation_ACancelledParentStopsARunawayScript(t *testing.T) {
@@ -202,12 +288,19 @@ func TestIsolation_ValuesCrossTheProcessBoundaryUnchanged(t *testing.T) {
 		"ids": []int64{1, 2}, "names": []string{"a"}, "list": []any{int64(1), "b", nil, map[string]any{"c": 2.5}},
 		"maps": []map[string]any{{"x": int64(1)}}, "empty_map": map[string]any{}, "nil_map": map[string]any(nil),
 		"nil_slice": []map[string]any(nil), "other": custom{A: 1}, "uint": uint8(7),
+		"nan": math.NaN(), "inf": math.Inf(1), "ninf": math.Inf(-1), "negzero": math.Copysign(0, -1),
+		"specials": []any{math.NaN(), map[string]any{"inf": math.Inf(1)}},
 	}
 	h := &fakeHost{tasks: map[int64]map[string]any{1: task}}
 	src := `var t = vikunja.tasks.get(1);
 		var types = {};
 		Object.keys(t).sort().forEach(function(k){ types[k] = typeof t[k] + (Number.isInteger(t[k]) ? ":int" : "") });
-		return {task: task, fetched: t, types: types, same: JSON.stringify(t) === JSON.stringify(task)}`
+		var specials = function(v) {
+			return [Number.isNaN(v.nan), v.inf === Infinity, v.ninf === -Infinity, Object.is(v.negzero, -0),
+				Number.isNaN(v.specials[0]), v.specials[1].inf === Infinity].join()
+		};
+		return {task: task, fetched: t, types: types, same: JSON.stringify(t) === JSON.stringify(task),
+			specials: specials(t), taskSpecials: specials(task)}`
 	mk := func() *Input {
 		return &Input{Source: src, Task: task, Event: map[string]any{"n": int64(1)}, Project: map[string]any{"id": int64(1)}, Host: h, Limits: ActionLimits()}
 	}
@@ -217,6 +310,7 @@ func TestIsolation_ValuesCrossTheProcessBoundaryUnchanged(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, local.Value, isolated.Value)
 	assert.Contains(t, isolated.Value, `"same":true`)
+	assert.Contains(t, isolated.Value, `"specials":"true,true,true,true,true,true","taskSpecials":"true,true,true,true,true,true"`)
 }
 
 func TestIsolation_ValuesFromTheScriptReachTheHostUnchanged(t *testing.T) {
@@ -240,21 +334,58 @@ func TestIsolation_ANumberThatIsNotFiniteCannotReachTheHost(t *testing.T) {
 }
 
 func TestCheck_CompilesInTheScriptProcess(t *testing.T) {
-	assert.Nil(t, Check(`return 1`))
-	synErr := Check("var a = 1;\nreturn a +")
+	assert.Nil(t, check(t, `return 1`))
+	synErr := check(t, "var a = 1;\nreturn a +")
 	require.NotNil(t, synErr)
 	assert.Equal(t, 2, synErr.Line)
 
 	// Compiling some sources takes more than linear time; it happens in a script process with a timeout.
-	for name, src := range map[string]string{
-		"nesting":    strings.Repeat("[", 65000),
-		"expression": strings.Repeat("1+", 32000) + "1",
-		"calls":      strings.Repeat("f(", 32000) + strings.Repeat(")", 32000),
-		"regexp":     "/" + strings.Repeat("(a+)+", 13000) + "/",
+	old := config.AutomationScriptsTimeout.GetDuration()
+	config.AutomationScriptsTimeout.Set(time.Second)
+	t.Cleanup(func() { config.AutomationScriptsTimeout.Set(old) })
+	for name, c := range map[string]struct {
+		src  string
+		want string
+	}{
+		"nesting": {src: strings.Repeat("[", 65000), want: "Maximum nesting depth exceeded"},
+		"calls":   {src: strings.Repeat("f(", 32000) + strings.Repeat(")", 32000), want: "Maximum nesting depth exceeded"},
+		"regexp":  {src: "/" + strings.Repeat("(a+)+", 13000) + "/"},
+		// Takes far longer than the timeout to compile (32000 terms took 6 s).
+		"expression": {src: strings.Repeat("1+", 200000) + "1", want: "compiling the script took longer than 1s; simplify it"},
 	} {
 		t.Run(name, func(t *testing.T) {
-			o := runBounded(t, ActionLimits().Timeout+killGrace+3*time.Second, func() (*Result, error) { _ = Check(src); return nil, nil })
-			assert.Less(t, o.elapsed, ActionLimits().Timeout+killGrace+2*time.Second)
+			var synErr *SyntaxError
+			var err error
+			o := runBounded(t, time.Second+killGrace+3*time.Second, func() (*Result, error) {
+				synErr, err = Check(context.Background(), c.src)
+				return nil, nil
+			})
+			require.NoError(t, err)
+			if c.want == "" {
+				assert.Nil(t, synErr)
+				return
+			}
+			require.NotNil(t, synErr)
+			assert.Contains(t, synErr.Message, c.want)
+			assert.Less(t, o.elapsed, time.Second+killGrace+2*time.Second)
 		})
 	}
+}
+
+func TestCheck_EndsWithTheRequest(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() { time.Sleep(200 * time.Millisecond); cancel() }()
+	started := time.Now()
+	_, err := Check(ctx, strings.Repeat("1+", 200000)+"1")
+	require.ErrorIs(t, err, context.Canceled)
+	assert.Less(t, time.Since(started), 3*time.Second)
+}
+
+func firstLine(s string) string {
+	for _, line := range strings.Split(s, "\n") {
+		if line = strings.TrimSpace(line); line != "" {
+			return line
+		}
+	}
+	return ""
 }

@@ -40,8 +40,8 @@ type Limits struct {
 	MaxExportNodes int
 	// MaxValueBytes bounds a single string crossing from the script to the host.
 	MaxValueBytes int
-	// MaxMemory is the memory limit of the script process in bytes (0: none). Only enforced where the operating
-	// system has a limit for the address space of a process (Linux and the BSDs).
+	// MaxMemory is the memory limit of the script process in bytes (0: none). A hard limit (of the address space)
+	// on Linux only; elsewhere the soft limit of the Go runtime.
 	MaxMemory int64
 }
 

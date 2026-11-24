@@ -16,8 +16,8 @@
 
 // Package script runs the JavaScript of automation rules in an embedded, pure Go interpreter (goja).
 //
-// Every run gets a fresh interpreter in a short-lived child process of its own (isolate.go), which is killed at the
-// deadline and runs under a memory limit; the host calls of the script are answered by the parent over a pipe.
+// Every run gets a fresh interpreter in a child process (isolate.go), which is killed at the deadline and runs
+// under a memory limit; the host calls of the script are answered by the parent over a pipe.
 // The only globals are the standard ECMAScript built-ins plus event, task, project, vikunja, http, secrets, log and
 // console.log. Everything handed to the script is built as plain JavaScript objects; no Go value with methods or pointers is ever exposed. Everything
 // the script can do beyond computing goes through the Host interface, which the caller implements.
@@ -175,6 +175,12 @@ type Input struct {
 	Limits  Limits
 	// Condition requires the script to return a value and reports it as a boolean.
 	Condition bool
+	// Interactive is a dry run or a check: it shares the few script processes beyond the workers' and never
+	// takes one of theirs.
+	Interactive bool
+
+	// deadline replaces the timeout in the script process, where part of the timeout may be gone.
+	deadline time.Time
 }
 
 // Result is what a finished script produced.
@@ -215,7 +221,13 @@ func runLocal(ctx context.Context, in *Input) (res *Result, err error) {
 		return nil, &Error{Kind: ErrThrown, Message: "syntax error: " + synErr.Error()}
 	}
 
-	runCtx, cancel := context.WithTimeout(ctx, in.Limits.Timeout)
+	var runCtx context.Context
+	var cancel context.CancelFunc
+	if in.deadline.IsZero() {
+		runCtx, cancel = context.WithTimeout(ctx, in.Limits.Timeout)
+	} else {
+		runCtx, cancel = context.WithDeadline(ctx, in.deadline)
+	}
 	defer cancel()
 
 	vm := goja.New()

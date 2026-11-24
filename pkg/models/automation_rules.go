@@ -17,7 +17,9 @@
 package models
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -108,6 +110,14 @@ type AutomationRule struct {
 
 	web.CRUDable    `xorm:"-" json:"-"`
 	web.Permissions `xorm:"-" json:"-"`
+
+	// requestCtx bounds the compile check of the scripts when the rule is saved.
+	requestCtx context.Context
+}
+
+// SetRequestContext makes the compile check of a save end with the request.
+func (r *AutomationRule) SetRequestContext(ctx context.Context) {
+	r.requestCtx = ctx
 }
 
 // TableName returns the table name of automation rules.
@@ -207,7 +217,11 @@ func (r *AutomationRule) Validate(s *xorm.Session, a web.Auth) error {
 	if len(issues) > 0 {
 		return ErrAutomationRuleInvalid{AutomationRuleInvalidDetails{Issues: issues}}
 	}
-	if issues, err := validateAutomationScripts(s, r.ProjectID, r.Doc()); err != nil {
+	ctx := r.requestCtx
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if issues, err := validateAutomationScripts(ctx, s, r.ProjectID, r.Doc()); err != nil {
 		return err
 	} else if len(issues) > 0 {
 		return ErrAutomationRuleInvalid{AutomationRuleInvalidDetails{Issues: issues}}
@@ -229,7 +243,7 @@ func (r *AutomationRule) Validate(s *xorm.Session, a web.Auth) error {
 
 // validateAutomationScripts checks the scripts (kill switch, size, syntax) and that the secrets the rule names
 // exist. A syntax error is reported with the path of the script and the line and column of the error.
-func validateAutomationScripts(s *xorm.Session, projectID int64, doc *spec.Doc) ([]spec.Issue, error) {
+func validateAutomationScripts(ctx context.Context, s *xorm.Session, projectID int64, doc *spec.Doc) ([]spec.Issue, error) {
 	scripts := spec.Scripts(doc)
 	issues := []spec.Issue{}
 	if len(scripts) > 0 {
@@ -242,7 +256,16 @@ func validateAutomationScripts(s *xorm.Session, projectID int64, doc *spec.Doc) 
 				issues = append(issues, spec.Issue{Path: sc.Path, Message: fmt.Sprintf("the script is %d bytes long, at most %d are allowed", len(sc.Source), maxSource)})
 				continue
 			}
-			if synErr := script.Check(sc.Source); synErr != nil {
+			synErr, err := script.Check(ctx, sc.Source)
+			if errors.Is(err, script.ErrUnavailable) {
+				// Not the script's fault (every script process busy, or it broke): the save is refused, not blamed.
+				issues = append(issues, spec.Issue{Path: sc.Path, Message: "the script could not be checked: " + err.Error()})
+				continue
+			}
+			if err != nil {
+				return nil, err
+			}
+			if synErr != nil {
 				issues = append(issues, spec.Issue{Path: sc.Path, Message: "syntax error: " + synErr.Message, Line: synErr.Line, Column: synErr.Column})
 			}
 		}

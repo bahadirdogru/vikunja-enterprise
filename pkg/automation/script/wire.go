@@ -27,33 +27,63 @@ import (
 	"time"
 )
 
-// The parent and the script process talk in JSON, one message per line: the parent sends start, the child sends a
-// call for every host call and waits for the reply, and finally sends done.
+// The parent and the script process talk in JSON, one message per line: the child sends hello, the parent sends
+// start, the child sends a call for every host call and waits for the reply, and finally sends done. Every call
+// and the done carry the sequence number of their start.
 
-// maxMessageBytes bounds one message of the script process. A larger one is the script's fault (it passed a huge
-// value to the host or returned one) and ends the run; the parent never holds more than this of a script's output.
-const maxMessageBytes = 32 << 20
+// protocolVersion changes with every change of the messages. A child of another build is refused (see hello).
+const protocolVersion = 2
+
+const (
+	// maxMessageBytes bounds one message of the script process, checked before it is buffered. The child keeps its
+	// messages below it (results, errors and logs are cut off, a host call that would be larger throws), so a
+	// larger one means the child is not ours to trust and it is killed.
+	maxMessageBytes = 4 << 20
+	// maxReplyBytes bounds what the child reads; the parent is trusted, this only keeps a broken parent from
+	// growing the child without end.
+	maxReplyBytes = 64 << 20
+	// maxResultBytes is how much of the return value, the error message and the stack is kept. The runner keeps
+	// 16 KiB of the output of a step anyway.
+	maxResultBytes = 16 << 10
+	// maxDoneLogBytes caps the log in the done message, so the message stays below maxMessageBytes even when
+	// every byte has to be escaped (six bytes in JSON).
+	maxDoneLogBytes = 256 << 10
+)
 
 type message struct {
+	Hello *helloMessage `json:"hello,omitempty"`
 	Start *startMessage `json:"start,omitempty"`
 	Call  *callMessage  `json:"call,omitempty"`
 	Reply *replyMessage `json:"reply,omitempty"`
 	Done  *doneMessage  `json:"done,omitempty"`
 }
 
+// helloMessage is the first line of a script process: a binary of another build (an upgrade replaced the file)
+// or one without the script process (it would start a server) never gets a script.
+type helloMessage struct {
+	Protocol int    `json:"protocol"`
+	Build    string `json:"build"`
+	PID      int    `json:"pid"`
+}
+
 type startMessage struct {
-	Source    string         `json:"source"`
-	Event     map[string]any `json:"event"`
-	Task      map[string]any `json:"task"`
-	Project   map[string]any `json:"project"`
-	Limits    Limits         `json:"limits"`
-	Condition bool           `json:"condition"`
+	Seq      uint64         `json:"seq"`
+	Source   string         `json:"source"`
+	Event    map[string]any `json:"event"`
+	Task     map[string]any `json:"task"`
+	Project  map[string]any `json:"project"`
+	Specials []special      `json:"specials,omitempty"`
+	Limits   Limits         `json:"limits"`
+	// Budget is what is left of the timeout when the script starts: waiting for the process counted against it.
+	Budget    time.Duration `json:"budget"`
+	Condition bool          `json:"condition"`
 	// Check only compiles the source and reports a syntax error.
 	Check bool `json:"check,omitempty"`
 }
 
 // callMessage is one call of Host. Which fields are set depends on the method.
 type callMessage struct {
+	Seq    uint64         `json:"seq"`
 	Method string         `json:"method"`
 	ID     int64          `json:"id,omitempty"`
 	ID2    int64          `json:"id2,omitempty"`
@@ -65,29 +95,46 @@ type callMessage struct {
 }
 
 type replyMessage struct {
-	Value any            `json:"value,omitempty"`
-	Text  string         `json:"text,omitempty"`
-	Fetch *FetchResponse `json:"fetch,omitempty"`
+	Value    any            `json:"value,omitempty"`
+	Specials []special      `json:"specials,omitempty"`
+	Text     string         `json:"text,omitempty"`
+	Fetch    *FetchResponse `json:"fetch,omitempty"`
 	// Error is the message of the error of the host, which the script sees as a thrown Error.
 	Error  string `json:"error,omitempty"`
 	Failed bool   `json:"failed,omitempty"`
 }
 
 type doneMessage struct {
+	Seq    uint64       `json:"seq"`
 	Result *Result      `json:"result,omitempty"`
 	Error  *Error       `json:"error,omitempty"`
 	Syntax *SyntaxError `json:"syntax,omitempty"`
+	// Spare is what the next script in this process could allocate before it hits the memory limit, measured
+	// after the interpreter was dropped and the memory returned; -1 when unknown. The parent pools the process
+	// only when it is close to the limit itself.
+	Spare int64 `json:"spare"`
+	// PID is the process, for the tests of the pool.
+	PID int `json:"pid"`
 }
 
-var errMessageTooLarge = errors.New("message too large")
+var (
+	errMessageTooLarge = errors.New("message too large")
+	errInvalidMessage  = errors.New("invalid message")
+)
 
-// readMessage reads one line of at most limit bytes and decodes it.
+// readMessage reads one line of at most limit bytes and decodes it. A longer line is refused before more than
+// limit bytes of it are held.
 func readMessage(r *bufio.Reader, limit int, useNumber bool) (*message, error) {
 	var line []byte
 	for {
 		chunk, err := r.ReadSlice('\n')
 		if len(line)+len(chunk) > limit {
 			return nil, errMessageTooLarge
+		}
+		if err == nil && line == nil {
+			// The whole line is in the buffer of the reader: decode it from there, without a copy.
+			line = chunk
+			break
 		}
 		line = append(line, chunk...)
 		if err == nil {
@@ -100,13 +147,17 @@ func readMessage(r *bufio.Reader, limit int, useNumber bool) (*message, error) {
 			return nil, err
 		}
 	}
-	dec := json.NewDecoder(bytes.NewReader(line))
-	if useNumber {
-		dec.UseNumber()
-	}
 	m := &message{}
-	if err := dec.Decode(m); err != nil {
-		return nil, fmt.Errorf("invalid message: %w", err)
+	var err error
+	if useNumber {
+		dec := json.NewDecoder(bytes.NewReader(line))
+		dec.UseNumber()
+		err = dec.Decode(m)
+	} else {
+		err = json.Unmarshal(line, m)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", errInvalidMessage, err)
 	}
 	return m, nil
 }
@@ -120,10 +171,34 @@ func writeMessage(w io.Writer, m *message) error {
 	return err
 }
 
+// special is a number JSON cannot hold (NaN, Infinity, -Infinity) at a path of a value: the value has null there
+// and the receiver puts the number back. Path elements are map keys (strings) and list indices (numbers).
+type special struct {
+	Path  []any  `json:"path"`
+	Value string `json:"value"`
+}
+
 // wireValue turns a value of the host into a tree that survives JSON and gives the script exactly what toJS
-// would have built from the original: it mirrors the cases of toJS. Numbers that are not finite have no JSON form
-// and become null.
-func wireValue(v any) any {
+// would have built from the original: it mirrors the cases of toJS. Numbers that are not finite become null in
+// the tree and are listed in specials.
+func wireValue(v any) (any, []special) {
+	w := &wireWalker{}
+	return w.walk(v), w.specials
+}
+
+type wireWalker struct {
+	path     []any
+	specials []special
+}
+
+func (w *wireWalker) at(key any, v any) any {
+	w.path = append(w.path, key)
+	out := w.walk(v)
+	w.path = w.path[:len(w.path)-1]
+	return out
+}
+
+func (w *wireWalker) walk(v any) any {
 	switch val := v.(type) {
 	case nil:
 		return nil
@@ -133,6 +208,7 @@ func wireValue(v any) any {
 		return int64(val)
 	case float64:
 		if math.IsNaN(val) || math.IsInf(val, 0) {
+			w.specials = append(w.specials, special{Path: append([]any{}, w.path...), Value: fmt.Sprint(val)})
 			return nil
 		}
 		return val
@@ -144,7 +220,7 @@ func wireValue(v any) any {
 	case []any:
 		out := make([]any, len(val))
 		for i, item := range val {
-			out[i] = wireValue(item)
+			out[i] = w.at(i, item)
 		}
 		return out
 	case []int64:
@@ -162,32 +238,51 @@ func wireValue(v any) any {
 	case []map[string]any:
 		out := make([]any, len(val))
 		for i, item := range val {
-			out[i] = wireValue(item)
+			out[i] = w.at(i, item)
 		}
 		return out
 	case map[string]any:
 		out := make(map[string]any, len(val))
 		for k, item := range val {
-			out[k] = wireValue(item)
+			out[k] = w.at(k, item)
 		}
 		return out
 	}
 	return fmt.Sprint(v)
 }
 
-func wireMap(m map[string]any) map[string]any {
-	if m == nil {
-		return nil
+// wireInput is wireValue of the three maps of a start message; the specials are rooted at "event", "task" and
+// "project".
+func wireInput(in *Input, start *startMessage) {
+	for _, part := range []struct {
+		name string
+		src  map[string]any
+		dst  *map[string]any
+	}{
+		{"event", in.Event, &start.Event},
+		{"task", in.Task, &start.Task},
+		{"project", in.Project, &start.Project},
+	} {
+		if part.src == nil {
+			continue
+		}
+		v, specials := wireValue(part.src)
+		*part.dst, _ = v.(map[string]any)
+		for _, s := range specials {
+			s.Path = append([]any{part.name}, s.Path...)
+			start.Specials = append(start.Specials, s)
+		}
 	}
-	out, _ := wireValue(m).(map[string]any)
-	return out
 }
 
 // fromWire turns a tree decoded with UseNumber back into what toJS expects: integers become int64 (as the host
-// sent them), other numbers float64.
+// sent them), other numbers float64, and -0 stays -0.
 func fromWire(v any) any {
 	switch val := v.(type) {
 	case json.Number:
+		if val == "-0" {
+			return math.Copysign(0, -1)
+		}
 		if i, err := val.Int64(); err == nil {
 			return i
 		}
@@ -212,4 +307,60 @@ func fromWireMap(m map[string]any) map[string]any {
 		return nil
 	}
 	return fromWire(m).(map[string]any)
+}
+
+// applySpecials puts the numbers of specials back into the tree root (decoded with UseNumber). A path that does
+// not lead anywhere is ignored.
+func applySpecials(root any, specials []special) any {
+	for _, s := range specials {
+		var f float64
+		switch s.Value {
+		case "NaN":
+			f = math.NaN()
+		case "+Inf":
+			f = math.Inf(1)
+		case "-Inf":
+			f = math.Inf(-1)
+		default:
+			continue
+		}
+		if len(s.Path) == 0 {
+			root = f
+			continue
+		}
+		setAt(root, s.Path, f)
+	}
+	return root
+}
+
+func setAt(node any, path []any, f float64) {
+	last := len(path) == 1
+	switch n := node.(type) {
+	case map[string]any:
+		k, ok := path[0].(string)
+		if !ok {
+			return
+		}
+		if last {
+			if _, has := n[k]; has {
+				n[k] = f
+			}
+			return
+		}
+		setAt(n[k], path[1:], f)
+	case []any:
+		num, ok := path[0].(json.Number)
+		if !ok {
+			return
+		}
+		i, err := num.Int64()
+		if err != nil || i < 0 || i >= int64(len(n)) {
+			return
+		}
+		if last {
+			n[i] = f
+			return
+		}
+		setAt(n[i], path[1:], f)
+	}
 }

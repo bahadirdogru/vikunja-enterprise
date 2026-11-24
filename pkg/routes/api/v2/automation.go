@@ -309,6 +309,7 @@ func automationsCreate(ctx context.Context, in *struct {
 		return nil, err
 	}
 	in.Body.ProjectID = in.ProjectID // URL wins over body
+	in.Body.SetRequestContext(ctx)
 	if err := handler.DoCreate(ctx, &in.Body, a); err != nil {
 		return nil, translateDomainError(err)
 	}
@@ -328,6 +329,7 @@ func automationsUpdate(ctx context.Context, in *struct {
 	rule := &in.Body.AutomationRule
 	rule.ID = in.ID // URL wins over body
 	rule.ProjectID = in.ProjectID
+	rule.SetRequestContext(ctx)
 	if err := handler.DoUpdate(ctx, rule, a); err != nil {
 		return nil, translateDomainError(err)
 	}
