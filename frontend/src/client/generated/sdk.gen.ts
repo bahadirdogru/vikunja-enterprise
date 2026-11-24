@@ -840,7 +840,7 @@ export const filtersUpdate = <ThrowOnError extends boolean = true>(options: Opti
 /**
  * Get the public definition of a form
  *
- * Returns what a submitter needs: the title, the description, the shown fields in order with their label, help, requiredness, kind, config and options, what to do after a submission, which details of the submitter are asked and the file limits when attachments are asked. It names no project, owner, count, hidden field or user. Public forms need no authentication; forms for signed-in users answer 401 (code 25004) without a valid Authorization header, 403 (25005) for link shares or non-members. An unknown token is 404; a form that takes no submissions answers 410 (25003) with the reason disabled, closed or full and its title. Never cached.
+ * Returns what a submitter needs: the title, the description, the shown fields in order with their label, help, requiredness, kind, config and options, what to do after a submission, which details of the submitter are asked and the file limits when attachments are asked. It names no project, owner, count, hidden field or user. Public forms need no authentication; forms for signed-in users answer 401 (code 25004) without a valid Authorization header, 403 (25005) for link shares or non-members. An unknown token is 404; a form that takes no submissions answers 410 (25003) with the reason disabled, closed or full and its title, to a caller who may submit it (public forms: to everyone). For forms for signed-in users the access is checked first: an anonymous caller gets the 404 of an unknown token when the form takes no submissions, a signed-in caller who may not submit gets 403. Never cached.
  */
 export const formPublicRead = <ThrowOnError extends boolean = true>(options: Options<FormPublicReadData, ThrowOnError>): RequestResult<FormPublicReadResponses, FormPublicReadErrors, ThrowOnError> => (options.client ?? client).get<FormPublicReadResponses, FormPublicReadErrors, ThrowOnError>({ url: '/forms/{token}', ...options });
 
@@ -854,7 +854,7 @@ export const formPublicLogo = <ThrowOnError extends boolean = true>(options: Opt
 /**
  * Submit a form
  *
- * Validates the answers and creates a task in the project of the form, as the form owner, in one transaction. Answers are rejected with 422 (code 25006) and one entry per field: {field, code, message}. The response never contains the task id or project data on public forms. Public forms are limited per client address and per form (429 with Retry-After, code 25007). A non-empty honeypot is answered like a success and creates nothing. Use the multipart variant to send files.
+ * Validates the answers and creates a task in the project of the form, as the form owner, in one transaction. Answers are rejected with 422 (code 25006) and one entry per field: {field, code, message}. The response never contains the task id or project data on public forms. Public forms are limited per client address and per form (429 with Retry-After, code 25007). A non-empty honeypot is answered like a success and creates nothing. The form is looked up and the caller checked before the request body is read. Use the multipart variant to send files.
  */
 export const formPublicSubmit = <ThrowOnError extends boolean = true>(options: Options<FormPublicSubmitData, ThrowOnError>): RequestResult<FormPublicSubmitResponses, FormPublicSubmitErrors, ThrowOnError> => (options.client ?? client).post<FormPublicSubmitResponses, FormPublicSubmitErrors, ThrowOnError>({
     url: '/forms/{token}/submissions',
@@ -2193,7 +2193,7 @@ export const automationRunsRead = <ThrowOnError extends boolean = true>(options:
 /**
  * Retry a failed automation run
  *
- * Puts a failed run back in the queue. Steps that succeeded are not executed again; the run resumes at the first step that did not. Only runs with the status failed can be retried (409 otherwise). Needs admin access to the project.
+ * Puts a failed run back in the queue, as an event for this run alone: no other rule of the original event runs again. Steps that succeeded are not executed again; the run resumes at the first step that did not. Only runs with the status failed can be retried (409 otherwise). Needs admin access to the project.
  */
 export const automationRunsRetry = <ThrowOnError extends boolean = true>(options: Options<AutomationRunsRetryData, ThrowOnError>): RequestResult<AutomationRunsRetryResponses, AutomationRunsRetryErrors, ThrowOnError> => (options.client ?? client).post<AutomationRunsRetryResponses, AutomationRunsRetryErrors, ThrowOnError>({
     security: [{
