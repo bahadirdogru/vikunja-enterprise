@@ -33,7 +33,7 @@ import (
 
 // The route of this file is public: it opts out of the global auth (publicSecurity) and is listed in
 // unauthenticatedAPIPaths of the router. The secret in the URL is the credential; an optional HMAC signature of the
-// timestamp and body proves the sender knows a project secret as well. The route sets no cookies and honours no CSRF token.
+// timestamp, hook token and body proves the sender knows a project secret as well, for this very hook. The route sets no cookies and honours no CSRF token.
 
 type automationHookResult struct {
 	Queued bool `json:"queued" doc:"Always true: the run starts as soon as a worker picks the event up."`
@@ -44,7 +44,7 @@ func RegisterAutomationHookRoutes(api huma.API) {
 	op := huma.Operation{
 		OperationID:     "automation-hook-incoming",
 		Summary:         "Call an incoming webhook of an automation rule",
-		Description:     "Starts the rule that owns the secret token in the URL (trigger webhook.incoming) with the JSON body as event.payload. Needs no authentication: the token is the credential. When the rule names a project secret, the call must carry the headers X-Vikunja-Timestamp: <Unix time in seconds, digits only> and X-Vikunja-Signature: sha256=<64 hex digits: HMAC-SHA256 of the timestamp, a dot and the raw body, keyed with the secret>. The timestamp must be at most automation.webhook.tolerance (default 5 minutes) in the past and at most one minute in the future, and a call that was already accepted is refused when it is sent again. A wrong or malformed signature, a missing, stale or future timestamp and a replay are all the same answer: 401, code 22011. A rule without a secret takes unsigned calls and is not protected against replays. The body is required (send {} for no payload) and is a JSON object of at most automation.webhook.maxbody bytes (400, code 22013 when it is not an object; 413 when too large). The rule runs asynchronously: the answer is 202. Unknown tokens, disabled rules and rules with another trigger are all 404 (code 22010). Calls are limited per rule (429 with Retry-After, code 22012).",
+		Description:     "Starts the rule that owns the secret token in the URL (trigger webhook.incoming) with the JSON body as event.payload. Needs no authentication: the token is the credential. When the rule names a project secret, the call must carry the headers X-Vikunja-Timestamp: <Unix time in seconds, digits only> and X-Vikunja-Signature: sha256=<64 hex digits: HMAC-SHA256 of the timestamp, a dot, the token of this URL, a dot and the raw body, keyed with the secret>. The timestamp must be at most automation.webhook.tolerance (default 5 minutes) in the past and at most one minute in the future, and a call that was already accepted is refused when it is sent again. A wrong or malformed signature, a missing, stale or future timestamp and a replay are all the same answer: 401, code 22011. A rule without a secret takes unsigned calls and is not protected against replays. The body is required (send {} for no payload) and is a JSON object of at most automation.webhook.maxbody bytes (400, code 22013 when it is not an object; 413 when too large). The rule runs asynchronously: the answer is 202. Unknown tokens, disabled rules and rules with another trigger are all 404 (code 22010). Calls are limited per rule (429 with Retry-After, code 22012).",
 		Method:          http.MethodPost,
 		Path:            "/automation/hooks/{token}",
 		Tags:            []string{"automations"},
@@ -60,7 +60,7 @@ func init() { AddRouteRegistrar(RegisterAutomationHookRoutes) }
 
 func automationHookIncoming(ctx context.Context, in *struct {
 	Token     string `path:"token" doc:"The secret token of the webhook."`
-	Signature string `header:"X-Vikunja-Signature" doc:"sha256=<hex HMAC-SHA256 of timestamp + \".\" + body>; required when the rule names a secret."`
+	Signature string `header:"X-Vikunja-Signature" doc:"sha256=<hex HMAC-SHA256 of timestamp + \".\" + token + \".\" + body>; required when the rule names a secret."`
 	Timestamp string `header:"X-Vikunja-Timestamp" doc:"The Unix time in seconds the call was signed at; required when the rule names a secret."`
 	RawBody   []byte
 }) (*singleBody[automationHookResult], error) {

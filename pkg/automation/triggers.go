@@ -219,6 +219,14 @@ func ReceiveWebhook(call *WebhookCall) (*models.AutomationEvent, error) {
 			return nil, err
 		}
 		signed = v
+		replayed, err := webhookReplayed(s, rule, v)
+		if err != nil {
+			return nil, err
+		}
+		if replayed {
+			log.Debugf("[automation] webhook of rule %d refused: the call was already accepted", rule.ID)
+			return nil, models.ErrAutomationHookSignatureInvalid{}
+		}
 	}
 
 	if limit := int64(config.AutomationWebhookRateLimit.GetInt()); limit > 0 {
@@ -262,7 +270,8 @@ func ReceiveWebhook(call *WebhookCall) (*models.AutomationEvent, error) {
 	return row, nil
 }
 
-// SignatureHeader is the header incoming webhooks are signed in; the same one http.request sends.
+// SignatureHeader is the header incoming webhooks are signed in. http.request sends the same header name, but its
+// value is the HMAC of the body alone: it differs from the incoming scheme (timestamp and hook token are signed too).
 const SignatureHeader = outbound.SignatureHeader
 
 // ---- the ticker: schedule, overdue and due soon ----

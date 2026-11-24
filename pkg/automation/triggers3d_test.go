@@ -367,7 +367,7 @@ func TestWebhook_RateLimitPerRule(t *testing.T) {
 }
 
 func signedCall(token string, body []byte, at time.Time) *WebhookCall {
-	ts, sig := WebhookSignature("s3cret", at, body)
+	ts, sig := WebhookSignature("s3cret", token, at, body)
 	return &WebhookCall{Token: token, Body: body, Signature: sig, Timestamp: ts}
 }
 
@@ -405,28 +405,31 @@ func TestWebhook_SignatureWithAProjectSecret(t *testing.T) {
 		mac.Write(b)
 		return "sha256=" + hex.EncodeToString(mac.Sum(nil))
 	}
-	_, other := WebhookSignature("other", time.Now(), body)
-	_, otherBody := WebhookSignature("s3cret", time.Now(), []byte(`{}`))
-	_, good := WebhookSignature("s3cret", time.Now(), body)
+	_, siblingToken := hookRule(t, map[string]any{"secret": "HOOK_KEY"}, createFromPayload())
+	_, other := WebhookSignature("other", token, time.Now(), body)
+	_, otherBody := WebhookSignature("s3cret", token, time.Now(), []byte(`{}`))
+	_, otherHook := WebhookSignature("s3cret", siblingToken, time.Now(), body)
+	_, good := WebhookSignature("s3cret", token, time.Now(), body)
 
 	for name, call := range map[string]*WebhookCall{
-		"missing":                   {Token: token, Body: body, Timestamp: tsNow},
-		"wrong key":                 {Token: token, Body: body, Signature: other, Timestamp: tsNow},
-		"other body":                {Token: token, Body: body, Signature: otherBody, Timestamp: tsNow},
-		"no prefix":                 {Token: token, Body: body, Signature: "abcd", Timestamp: tsNow},
-		"not hex":                   {Token: token, Body: body, Signature: "sha256=" + strings.Repeat("z", 64), Timestamp: tsNow},
-		"upper case prefix":         {Token: token, Body: body, Signature: "SHA256=" + good[7:], Timestamp: tsNow},
-		"padded":                    {Token: token, Body: body, Signature: " " + good, Timestamp: tsNow},
-		"too long":                  {Token: token, Body: body, Signature: good + "00", Timestamp: tsNow},
-		"old scheme, body only":     {Token: token, Body: body, Signature: oldScheme("s3cret", body), Timestamp: tsNow},
-		"old scheme, no timestamp":  {Token: token, Body: body, Signature: oldScheme("s3cret", body)},
-		"no timestamp":              {Token: token, Body: body, Signature: good},
-		"timestamp with a sign":     {Token: token, Body: body, Signature: good, Timestamp: "+" + tsNow},
-		"timestamp with a space":    {Token: token, Body: body, Signature: good, Timestamp: tsNow + " "},
-		"timestamp with a fraction": {Token: token, Body: body, Signature: good, Timestamp: tsNow + ".0"},
-		"timestamp in hex":          {Token: token, Body: body, Signature: good, Timestamp: "0x" + tsNow},
-		"timestamp too long":        {Token: token, Body: body, Signature: good, Timestamp: strings.Repeat("1", 40)},
-		"timestamp of another time": {Token: token, Body: body, Signature: good, Timestamp: strconv.FormatInt(time.Now().Unix()-1, 10)},
+		"missing":           {Token: token, Body: body, Timestamp: tsNow},
+		"wrong key":         {Token: token, Body: body, Signature: other, Timestamp: tsNow},
+		"other body":        {Token: token, Body: body, Signature: otherBody, Timestamp: tsNow},
+		"no prefix":         {Token: token, Body: body, Signature: "abcd", Timestamp: tsNow},
+		"not hex":           {Token: token, Body: body, Signature: "sha256=" + strings.Repeat("z", 64), Timestamp: tsNow},
+		"upper case prefix": {Token: token, Body: body, Signature: "SHA256=" + good[7:], Timestamp: tsNow},
+		"padded":            {Token: token, Body: body, Signature: " " + good, Timestamp: tsNow},
+		"too long":          {Token: token, Body: body, Signature: good + "00", Timestamp: tsNow},
+		"signed for another hook with the same secret": {Token: token, Body: body, Signature: otherHook, Timestamp: tsNow},
+		"old scheme, body only":                        {Token: token, Body: body, Signature: oldScheme("s3cret", body), Timestamp: tsNow},
+		"old scheme, no timestamp":                     {Token: token, Body: body, Signature: oldScheme("s3cret", body)},
+		"no timestamp":                                 {Token: token, Body: body, Signature: good},
+		"timestamp with a sign":                        {Token: token, Body: body, Signature: good, Timestamp: "+" + tsNow},
+		"timestamp with a space":                       {Token: token, Body: body, Signature: good, Timestamp: tsNow + " "},
+		"timestamp with a fraction":                    {Token: token, Body: body, Signature: good, Timestamp: tsNow + ".0"},
+		"timestamp in hex":                             {Token: token, Body: body, Signature: good, Timestamp: "0x" + tsNow},
+		"timestamp too long":                           {Token: token, Body: body, Signature: good, Timestamp: strings.Repeat("1", 40)},
+		"timestamp of another time":                    {Token: token, Body: body, Signature: good, Timestamp: strconv.FormatInt(time.Now().Unix()-1, 10)},
 	} {
 		_, err := ReceiveWebhook(call)
 		assert.True(t, models.IsErrAutomationHookSignatureInvalid(err), "%s: %v", name, err)
@@ -445,7 +448,11 @@ func TestWebhook_ReplayProtection(t *testing.T) {
 	_, otherToken := hookRule(t, map[string]any{"secret": "HOOK_KEY"}, createFromPayload())
 	body := []byte(`{"id": 1}`)
 	invalid := models.IsErrAutomationHookSignatureInvalid
-	advance := fakeClock(t)
+	// A clock in whole seconds that only moves when the test says so, so the edges of the windows are exact.
+	clock := time.Now().Truncate(time.Second)
+	now = func() time.Time { return clock }
+	t.Cleanup(func() { now = time.Now })
+	advance := func(d time.Duration) { clock = clock.Add(d) }
 	at := func() time.Time { return now() }
 
 	t.Run("the same call twice is refused the second time, the same way as a wrong signature", func(t *testing.T) {
@@ -459,9 +466,35 @@ func TestWebhook_ReplayProtection(t *testing.T) {
 		assert.Equal(t, wrong, err, "a replay and a wrong signature are indistinguishable")
 	})
 
-	t.Run("the same call to another rule is not a replay", func(t *testing.T) {
-		_, err := ReceiveWebhook(signedCall(otherToken, body, at()))
+	t.Run("a call captured for one hook is refused by another hook with the same secret", func(t *testing.T) {
+		captured := signedCall(token, []byte(`{"cap":1}`), at())
+		_, err := ReceiveWebhook(captured)
+		require.NoError(t, err)
+		moved := *captured
+		moved.Token = otherToken
+		_, err = ReceiveWebhook(&moved)
+		assert.True(t, invalid(err), "%v", err)
+	})
+
+	t.Run("one body sent to two hooks in the same second is two calls", func(t *testing.T) {
+		fan := []byte(`{"fan":1}`)
+		_, err := ReceiveWebhook(signedCall(token, fan, at()))
+		require.NoError(t, err)
+		_, err = ReceiveWebhook(signedCall(otherToken, fan, at()))
 		assert.NoError(t, err)
+	})
+
+	t.Run("a replay over the rate limit is still the uniform refusal and does not use the budget", func(t *testing.T) {
+		config.AutomationWebhookRateLimit.Set(1)
+		defer config.AutomationWebhookRateLimit.Set(60)
+		_, limitedToken := hookRule(t, map[string]any{"secret": "HOOK_KEY"}, createFromPayload())
+		first := signedCall(limitedToken, []byte(`{"rl":1}`), at())
+		_, err := ReceiveWebhook(first)
+		require.NoError(t, err)
+		_, err = ReceiveWebhook(first)
+		assert.True(t, invalid(err), "a replay is a 401, not a 429: %v", err)
+		_, err = ReceiveWebhook(signedCall(limitedToken, []byte(`{"rl":2}`), at()))
+		assert.True(t, models.IsErrAutomationHookRateLimited(err), "a new call is limited: %v", err)
 	})
 
 	t.Run("a new timestamp is a new call", func(t *testing.T) {
@@ -481,12 +514,12 @@ func TestWebhook_ReplayProtection(t *testing.T) {
 		assert.True(t, models.IsErrAutomationHookPayloadInvalid(err), "still a payload error, not a replay: %v", err)
 	})
 
-	t.Run("a call older than the tolerance is refused, one at the edge is accepted", func(t *testing.T) {
+	t.Run("a call exactly as old as the tolerance is accepted, one second older is refused", func(t *testing.T) {
 		tol := config.AutomationWebhookTolerance.GetDuration()
 		require.Equal(t, 5*time.Minute, tol)
-		_, err := ReceiveWebhook(signedCall(token, []byte(`{"a":1}`), at().Add(-tol-2*time.Second)))
+		_, err := ReceiveWebhook(signedCall(token, []byte(`{"a":1}`), at().Add(-tol-time.Second)))
 		assert.True(t, invalid(err), "stale: %v", err)
-		_, err = ReceiveWebhook(signedCall(token, []byte(`{"a":2}`), at().Add(-tol+2*time.Second)))
+		_, err = ReceiveWebhook(signedCall(token, []byte(`{"a":2}`), at().Add(-tol)))
 		assert.NoError(t, err)
 	})
 
@@ -538,24 +571,65 @@ func TestWebhook_ReplayProtection(t *testing.T) {
 		assert.Equal(t, 1, accepted)
 	})
 
-	t.Run("expired signatures are deleted by the cleanup, current ones stay", func(t *testing.T) {
-		before := countSeen(t)
-		require.Positive(t, before)
+	t.Run("the cleanup keeps a signature until its timestamp is the tolerance and a margin old", func(t *testing.T) {
+		_, err := CleanupWebhookSignatures(at().Add(-24 * time.Hour))
+		require.NoError(t, err)
+		mustCommit(t, func(s *xorm.Session) error {
+			_, err := s.Exec("DELETE FROM automation_webhook_seen")
+			return err
+		})
+		signedAt := at()
+		_, err = ReceiveWebhook(signedCall(token, []byte(`{"edge":1}`), signedAt))
+		require.NoError(t, err)
+		require.EqualValues(t, 1, countSeen(t))
+		keep := webhookTolerance() + webhookCleanupMargin
+		advance(keep)
 		n, err := CleanupWebhookSignatures(at())
 		require.NoError(t, err)
-		assert.Zero(t, n, "everything is still inside its window")
-		advance(webhookTolerance() + 2*time.Minute)
+		assert.Zero(t, n, "exactly at the end of the margin it is still kept")
+		advance(time.Second)
 		n, err = CleanupWebhookSignatures(at())
 		require.NoError(t, err)
-		assert.Equal(t, before, n)
+		assert.EqualValues(t, 1, n)
 		assert.Zero(t, countSeen(t))
 	})
 
+	t.Run("the cleanup uses the tolerance of this instance, plus the margin", func(t *testing.T) {
+		_, err := ReceiveWebhook(signedCall(token, []byte(`{"tol":1}`), at()))
+		require.NoError(t, err)
+		config.AutomationWebhookTolerance.Set(time.Hour)
+		defer config.AutomationWebhookTolerance.Set(5 * time.Minute)
+		advance(30 * time.Minute)
+		n, err := CleanupWebhookSignatures(at())
+		require.NoError(t, err)
+		assert.Zero(t, n, "with an hour of tolerance a signature of 30 minutes ago can still be replayed")
+		advance(time.Hour)
+		n, err = CleanupWebhookSignatures(at())
+		require.NoError(t, err)
+		assert.EqualValues(t, 1, n)
+	})
+
+	t.Run("a failed insert is a replay when the signature is stored, else the database error", func(t *testing.T) {
+		r := &models.AutomationRule{ID: 424242}
+		v := &verifiedWebhook{signature: strings.Repeat("ab", 32), signedAt: at()}
+		boom := assert.AnError
+		assert.Equal(t, boom, insertFailedAsReplay(r, v, boom), "nothing stored: the error is the database's")
+		mustCommit(t, func(s *xorm.Session) error {
+			_, err := s.Insert(&models.AutomationWebhookSeen{RuleID: r.ID, Signature: v.signature, SignedAt: v.signedAt})
+			return err
+		})
+		assert.True(t, invalid(insertFailedAsReplay(r, v, boom)))
+	})
+
 	t.Run("the ticker runs the cleanup", func(t *testing.T) {
+		mustCommit(t, func(s *xorm.Session) error {
+			_, err := s.Exec("DELETE FROM automation_webhook_seen")
+			return err
+		})
 		_, err := ReceiveWebhook(signedCall(token, []byte(`{"tick":1}`), at()))
 		require.NoError(t, err)
 		require.EqualValues(t, 1, countSeen(t))
-		advance(webhookTolerance() + 2*time.Minute)
+		advance(webhookTolerance() + webhookCleanupMargin + time.Second)
 		_, err = Tick(context.Background())
 		require.NoError(t, err)
 		assert.Zero(t, countSeen(t))

@@ -35,7 +35,11 @@ import (
 // The signature of an incoming webhook call covers the timestamp and the body:
 //
 //	X-Vikunja-Timestamp: <Unix time in seconds, digits only>
-//	X-Vikunja-Signature: sha256=<64 hex digits: HMAC-SHA256(secret, timestamp + "." + body)>
+//	X-Vikunja-Signature: sha256=<64 hex digits: HMAC-SHA256(secret, timestamp + "." + token + "." + body)>
+//
+// The token is the one in the URL of the hook (base64url: letters, digits, "-" and "_", never "."), so the signed
+// string is unambiguous and a call signed for one hook is not valid for another hook that uses the same secret.
+// The outgoing signature of the http.request action covers the body only and differs from this one on purpose.
 //
 // A call is accepted when the signature is right and the timestamp is at most automation.webhook.tolerance old and
 // at most webhookFutureSkew ahead of this server's clock. An accepted signature is remembered (database, so every
@@ -54,8 +58,8 @@ const (
 type verifiedWebhook struct {
 	// signature is the hex of the MAC, lower case: what is remembered.
 	signature string
-	// expires is when a call with this timestamp would be refused as stale anyway.
-	expires time.Time
+	// signedAt is the timestamp the sender signed; the cleanup works from it.
+	signedAt time.Time
 }
 
 // webhookTolerance is the window of the timestamp into the past.
@@ -96,16 +100,18 @@ func parseWebhookSignature(v string) ([]byte, bool) {
 	return b, true
 }
 
-// WebhookSignature returns the two header values a sender sends for a body at a time: the timestamp and the
-// signature. It is the one definition of the scheme the tests and the documentation use.
-func WebhookSignature(secret string, at time.Time, body []byte) (timestamp, signature string) {
+// WebhookSignature returns the two header values a sender sends for a body to the hook with the token at a time:
+// the timestamp and the signature. It is the one definition of the scheme the tests and the documentation use.
+func WebhookSignature(secret, token string, at time.Time, body []byte) (timestamp, signature string) {
 	timestamp = strconv.FormatInt(at.Unix(), 10)
-	return timestamp, signaturePrefix + hex.EncodeToString(webhookMAC(secret, timestamp, body))
+	return timestamp, signaturePrefix + hex.EncodeToString(webhookMAC(secret, timestamp, token, body))
 }
 
-func webhookMAC(secret, timestamp string, body []byte) []byte {
+func webhookMAC(secret, timestamp, token string, body []byte) []byte {
 	mac := hmac.New(sha256.New, []byte(secret))
 	mac.Write([]byte(timestamp))
+	mac.Write([]byte{'.'})
+	mac.Write([]byte(token))
 	mac.Write([]byte{'.'})
 	mac.Write(body)
 	return mac.Sum(nil)
@@ -136,7 +142,7 @@ func checkWebhookSignature(s *xorm.Session, rule *models.AutomationRule, secretN
 		return refuse("the timestamp header is missing or malformed")
 	}
 	// The MAC is checked first: whether the timestamp is stale is not worth a different cost or answer.
-	want := webhookMAC(sec.Value, call.Timestamp, call.Body)
+	want := webhookMAC(sec.Value, call.Timestamp, call.Token, call.Body)
 	macOK := hmac.Equal(got, want)
 	tol := webhookTolerance()
 	skew := min(webhookFutureSkew, tol)
@@ -152,24 +158,23 @@ func checkWebhookSignature(s *xorm.Session, rule *models.AutomationRule, secretN
 	}
 	return &verifiedWebhook{
 		signature: hex.EncodeToString(want),
-		expires:   sent.Add(tol),
+		signedAt:  sent,
 	}, nil
+}
+
+// webhookReplayed reports whether the verified signature was accepted before. It is asked before the rate limit, so
+// a replay is the same 401 as a wrong signature and does not use up the budget of the real sender.
+func webhookReplayed(s *xorm.Session, rule *models.AutomationRule, v *verifiedWebhook) (bool, error) {
+	return models.AutomationWebhookSignatureSeen(s, rule.ID, v.signature)
 }
 
 // rememberWebhookSignature stores the signature in the session of the call. A repeat is the same error as a wrong
 // signature. Two identical calls at once race on the unique index in the database: the loser's insert fails (or
 // finds the row), and it is told apart from a database fault by looking the signature up in a new session.
 func rememberWebhookSignature(s *xorm.Session, rule *models.AutomationRule, v *verifiedWebhook) error {
-	replayed, err := models.RememberAutomationWebhookSignature(s, rule.ID, v.signature, v.expires)
+	replayed, err := models.RememberAutomationWebhookSignature(s, rule.ID, v.signature, v.signedAt)
 	if err != nil {
-		check := db.NewReadSession()
-		seen, lookupErr := models.AutomationWebhookSignatureSeen(check, rule.ID, v.signature)
-		check.Close()
-		if lookupErr == nil && seen {
-			replayed = true
-		} else {
-			return err
-		}
+		return insertFailedAsReplay(rule, v, err)
 	}
 	if replayed {
 		log.Debugf("[automation] webhook of rule %d refused: the call was already accepted", rule.ID)
@@ -178,11 +183,30 @@ func rememberWebhookSignature(s *xorm.Session, rule *models.AutomationRule, v *v
 	return nil
 }
 
-// CleanupWebhookSignatures deletes the remembered signatures that cannot be replayed any more. The ticker runs it.
+// insertFailedAsReplay decides what a failed insert of a signature was: when another call stored the same signature
+// meanwhile it is a replay (the same answer as a wrong signature), otherwise it is the database error.
+func insertFailedAsReplay(rule *models.AutomationRule, v *verifiedWebhook, insertErr error) error {
+	check := db.NewReadSession()
+	defer check.Close()
+	seen, lookupErr := models.AutomationWebhookSignatureSeen(check, rule.ID, v.signature)
+	if lookupErr == nil && seen {
+		log.Debugf("[automation] webhook of rule %d refused: the call was accepted by a concurrent request", rule.ID)
+		return models.ErrAutomationHookSignatureInvalid{}
+	}
+	return insertErr
+}
+
+// webhookCleanupMargin is kept on top of the tolerance when signatures are deleted: instances whose clocks differ by
+// less than this (and a clock that is stepped back) cannot reopen a replay while another instance still accepts it.
+const webhookCleanupMargin = webhookFutureSkew + time.Minute
+
+// CleanupWebhookSignatures deletes the remembered signatures that cannot be replayed any more: the ones signed
+// before the tolerance of this instance and a margin ago. The ticker runs it. Every instance should have the same
+// tolerance: one with a shorter tolerance deletes rows another still needs.
 func CleanupWebhookSignatures(at time.Time) (int64, error) {
 	s := db.NewSession()
 	defer s.Close()
-	n, err := models.CleanupAutomationWebhookSeen(s, at)
+	n, err := models.CleanupAutomationWebhookSeen(s, at.Add(-webhookTolerance()-webhookCleanupMargin))
 	if err != nil {
 		_ = s.Rollback()
 		return 0, err

@@ -200,7 +200,7 @@ func TestHumaAutomation_IncomingWebhookSignature(t *testing.T) {
 		return rec
 	}
 	sign := func(body string, at time.Time) (string, string) {
-		return automation.WebhookSignature("s3cret", at, []byte(body))
+		return automation.WebhookSignature("s3cret", created.Token, at, []byte(body))
 	}
 
 	ts, good := sign(payload, time.Now())
