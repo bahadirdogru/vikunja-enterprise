@@ -1,0 +1,18 @@
+# Justified exceptions to check_turkish.py: <check> <dir>:<key>  # why
+# Keep each entry short and say why; the check reports entries that no longer match.
+
+# Upstream keys: style-only issues are tolerated (turkish-style.md, section 15).
+rejected-term frontend:sharing.serverError  # upstream wording, not an error
+rejected-term pkg:notifications.totp.account_locked.message  # upstream wording, not an error
+rejected-term frontend:migrate.planka.passwordHelp  # "tek oturum açma (SSO)" is the term for single sign-on
+
+# Capitals that are names: field, option and status names in examples, a table corner label.
+title-case frontend:filters.query.help.customFields  # example field and option names
+title-case frontend:workflow.approval.noOptions.custom_field  # name of the field type "Kullanıcı"
+title-case frontend:workflow.empty.text  # example status names
+title-case frontend:workflow.validation.noDone  # name of the status category "Tamamlandı"
+title-case frontend:workflow.matrix.corner  # "Nereden \ Nereye", two labels of one table corner
+title-case frontend:automation.templates.fieldOnDone.title  # name of the status category "Tamamlandı"
+
+# Not words.
+untranslated pkg:notifications.email_confirm.subject_new  # "%[1]s + Vikunja = <3" has nothing to translate

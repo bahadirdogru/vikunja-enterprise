@@ -22,7 +22,11 @@ Same keys, same nesting, same placeholders (`{name}`, `%s`, `%[1]s`, pluralisati
 python3 .agents/skills/fork-i18n/check_parity.py
 ```
 
-It exits non-zero and lists the keys when the two files of a directory differ in keys or in placeholders. Run it before every commit that touches strings and before merging.
+It exits non-zero and lists the keys when the two files of a directory differ in keys or in placeholders, or when a Turkish string fails a style check of `check_turkish.py` (section 16 of the standard: markup, suffix on a placeholder, plural after a number, `%` after a number, `...`, *ve/veya*, stray spaces, ASCII substitutes, *I* for *İ*, rejected terms and TDK misspellings, *siz* in the app or *sen* on the public form, Title Case, *başarıyla* and *tıkla* in fork keys). Run it before every commit that touches strings and before merging. The fork-only checks need `upstream/main` fetched.
+
+A justified exception goes into `tr_allow.txt` with a reason; do not weaken a check to silence one string.
+
+`python3 .agents/skills/fork-i18n/check_turkish.py --upstream` lists the upstream keys whose Turkish the fork changed, and the upstream keys the fork translated because upstream had no Turkish. Those are the lines a Crowdin sync can conflict with (see the `fork-merge-upstream` skill).
 
 When a key is renamed or removed, search the code for the old key (`grep -rn "old.key" frontend/src pkg`); a stale reference shows the raw key in the interface and no test catches it.
 

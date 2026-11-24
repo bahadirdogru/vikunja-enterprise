@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
-"""Check that en.json and tr-TR.json have the same keys and placeholders.
+"""Check that en.json and tr-TR.json have the same keys and placeholders,
+then run the Turkish style checks of check_turkish.py.
 
-Run from the repository root. Exits 1 when a pair differs.
+Run from the repository root. Exits 1 when a pair differs or a style check
+fails.
 """
 import json
+import os
 import re
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import check_turkish  # noqa: E402
 
 DIRS = ("frontend/src/i18n/lang", "pkg/i18n/lang")
 PLACEHOLDER = re.compile(r"\{[A-Za-z0-9_.]+\}|%(?:\[\d+\])?[sdvqf]")
@@ -51,6 +57,8 @@ def main():
                 print(f"  {title} ({len(keys)}):")
                 for key in keys:
                     print(f"    {key}")
+    if check_turkish.main([]) != 0:
+        failed = True
     return 1 if failed else 0
 
 
