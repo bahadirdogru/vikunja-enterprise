@@ -17,6 +17,7 @@
 package models
 
 import (
+	"fmt"
 	"regexp"
 	"sort"
 	"strconv"
@@ -521,7 +522,7 @@ func (wf *Workflow) Update(s *xorm.Session, a web.Auth) (err error) {
 	if err != nil {
 		return err
 	}
-	if err = wf.removeStatuses(s, plan, idMap); err != nil {
+	if err = wf.removeStatuses(s, a, plan, idMap); err != nil {
 		return err
 	}
 	if err = wf.saveTransitions(s, idMap); err != nil {
@@ -604,7 +605,7 @@ func (wf *Workflow) saveStatuses(s *xorm.Session, plan *workflowDocPlan) (map[in
 }
 
 // removeStatuses moves the tasks of removed statuses and then deletes or archives the statuses.
-func (wf *Workflow) removeStatuses(s *xorm.Session, plan *workflowDocPlan, idMap map[int64]int64) error {
+func (wf *Workflow) removeStatuses(s *xorm.Session, a web.Auth, plan *workflowDocPlan, idMap map[int64]int64) error {
 	if len(plan.removed) == 0 {
 		return nil
 	}
@@ -631,7 +632,7 @@ func (wf *Workflow) removeStatuses(s *xorm.Session, plan *workflowDocPlan, idMap
 
 	for _, st := range plan.removed {
 		if target != nil {
-			if err := moveTasksBetweenStatuses(s, st, target); err != nil {
+			if err := moveTasksBetweenStatuses(s, a, st, target); err != nil {
 				return err
 			}
 		}
@@ -658,27 +659,74 @@ func (wf *Workflow) removeStatuses(s *xorm.Session, plan *workflowDocPlan, idMap
 	return nil
 }
 
-// moveTasksBetweenStatuses moves all tasks of one status to another and fixes the done flag when the categories disagree.
-func moveTasksBetweenStatuses(s *xorm.Session, from, to *WorkflowStatus) error {
+// workflowStatusRemovedComment is the comment of the history row and of the event of a task that was moved
+// because its status was removed from the workflow, so the change can be told from one a person made.
+func workflowStatusRemovedComment(title string) string {
+	return fmt.Sprintf("Moved because the status %q was removed from the workflow.", title)
+}
+
+// moveTasksBetweenStatuses moves all tasks of a removed status to another one, as the status changes they are: a
+// history row and a task.status.changed event for every task (the comment names the removal, the doer is the
+// person who saved the workflow), and the done flag follows the category with a task.updated event like a normal
+// status change. The work is done in chunks of workflowBulkChunkSize tasks, in the transaction of the removal:
+// per chunk one read of the tasks, one update of the status rows, one insert of the history rows and, when the
+// categories disagree, one update of the done flags. That is about 4 * ceil(N/200) statements for N tasks, plus
+// the 2N events the session keeps until the commit (task.status.changed, and task.updated when done changed).
+func moveTasksBetweenStatuses(s *xorm.Session, a web.Auth, from, to *WorkflowStatus) error {
 	taskIDs := []int64{}
-	if err := s.Table("task_statuses").Where("status_id = ?", from.ID).Cols("task_id").Find(&taskIDs); err != nil {
+	if err := s.Table("task_statuses").Where("status_id = ?", from.ID).OrderBy("task_id ASC").Cols("task_id").Find(&taskIDs); err != nil {
 		return err
 	}
 	if len(taskIDs) == 0 {
 		return nil
 	}
 
-	_, err := s.Where("status_id = ?", from.ID).
-		Cols("status_id", "entered").
-		Update(&TaskStatus{StatusID: to.ID, Entered: time.Now()})
-	if err != nil {
-		return err
-	}
+	doneChanges := from.Category.isFinal() != to.Category.isFinal()
+	comment := workflowStatusRemovedComment(from.Title)
+	doer := doerFromAuth(s, a)
+	for _, chunk := range chunkInt64s(taskIDs) {
+		// Soft-deleted tasks are moved and get their history too, but have no event: they are not in the project.
+		tasks := []*Task{}
+		if err := s.Where(builder.In("id", chunk)).Find(&tasks); err != nil {
+			return err
+		}
 
-	if from.Category.isFinal() == to.Category.isFinal() {
-		return nil
+		now := time.Now()
+		if _, err := s.Where(builder.And(builder.In("task_id", chunk), builder.Eq{"status_id": from.ID})).
+			Cols("status_id", "entered").
+			Update(&TaskStatus{StatusID: to.ID, Entered: now}); err != nil {
+			return err
+		}
+
+		history := make([]*TaskStatusHistory, 0, len(chunk))
+		for _, id := range chunk {
+			history = append(history, newHistoryEntry(id, from, to, a, comment))
+		}
+		if err := insertInChunks(s, history); err != nil {
+			return err
+		}
+
+		if doneChanges {
+			if err := setDoneOfTasks(s, chunk, to.Category.isFinal()); err != nil {
+				return err
+			}
+		}
+
+		for _, task := range tasks {
+			events.DispatchOnCommit(s, &TaskStatusChangedEvent{Task: task, FromStatus: from, ToStatus: to, Comment: comment, Doer: doer})
+			if doneChanges && task.Done != to.Category.isFinal() {
+				old := *task
+				updated := *task
+				updated.Done = to.Category.isFinal()
+				updated.DoneAt = time.Time{}
+				if updated.Done {
+					updated.DoneAt = now
+				}
+				events.DispatchOnCommit(s, &TaskUpdatedEvent{Task: &updated, Doer: doer, OldTask: &old})
+			}
+		}
 	}
-	return setDoneOfTasks(s, taskIDs, to.Category.isFinal())
+	return nil
 }
 
 // setDoneOfTasks writes the done flag of tasks whose status, or the category of it, changed in bulk. Trashed

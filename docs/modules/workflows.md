@@ -27,6 +27,7 @@ One function performs every status change. It checks, in order: the target statu
 - Entering a `done` or `cancelled` status sets `task.done`; leaving it clears it.
 - Marking a task done through the checkbox performs the transition to the first `done` status under the same checks; un-doing moves it back to the initial status.
 - A task created already done starts in the first `done` status and counts as the transition from the initial status: its creator has to pass the checks, otherwise nothing is created. This also applies through CalDAV and to a done task moved in from another project.
+- Removing a status with `move_tasks_to` moves its tasks as status changes: every task gets a history row (from the removed status to the target, the doer is the person who saved the workflow, the comment is `Moved because the status "<title>" was removed from the workflow.`, which is also the comment of the event) and a `task.status.changed` event, and a `task.updated` event when the done flag changes with the category. The events are normal ones: they carry no automation origin, so the loop guards treat them like a person's change (rules that name the removed status are disabled before the move). It runs in the transaction of the removal, in chunks of 200 tasks: about 4 statements per chunk (read the tasks, update the status rows, insert the history, update the done flags when the categories disagree), so 4 * ceil(N/200) statements for N tasks, and the session keeps N (2N when done changes) events in memory until the commit. Tasks in the trash are moved and get history but no event.
 - Changing the category of a status in the document sets the done flag of the tasks in it when the new category counts differently (no history entry).
 - Enabling a workflow on an existing project assigns the initial status to open tasks and the first `done` status to done tasks, without history rows.
 - Moving a task to another project resets its status to that project's initial status (or none) and keeps the history.
@@ -158,7 +159,6 @@ More in [DESIGN.md](../../DESIGN.md#workflows).
 
 From the [roadmap](../enterprise/ROADMAP.md):
 
-- Removing a status with `move_tasks_to` writes no history and fires no event.
 - A transition that requires a comment cannot be done through the done checkbox.
 - Enabling a workflow on an existing project assigns statuses in bulk without history rows.
 - Not exercised in a browser: forbidden (403) and team-restricted transitions, inline server validation errors, forbidden moves, create-in-column that needs input, and a status board after its workflow is deleted.

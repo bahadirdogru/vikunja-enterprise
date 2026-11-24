@@ -419,6 +419,16 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   `approvals_disabled_test.go` failed before the change and pass after it;
   `TestApprovals*`, `TestAdmin*` and `TestUser*` pass on SQLite; the frontend
   cancel-reason test passes.
+- Workflow, removing a status with `move_tasks_to` (fixed). Each moved task
+  now gets a status history row (comment `Moved because the status "<title>"
+  was removed from the workflow.`, doer is the person who saved the
+  workflow) and a `task.status.changed` event, plus `task.updated` when the
+  category change flips the done flag. Chunks of 200 tasks in the
+  transaction of the removal: 4 statements per chunk, 4 * ceil(N/200) for N
+  tasks, N to 2N events held until the commit. Verified: the new tests in
+  `workflow_status_move_test.go` failed before the change and pass after
+  it; `TestWorkflow*` and `TestApprovals*` pass on SQLite. Not measured with
+  a large N.
 
 ## Remaining
 
@@ -444,8 +454,6 @@ Open after the review pass, not fixed because they need a decision:
   created after the event run for it too.
 - Automation: goja's `find`, `findIndex`, `findLast` and `findLastIndex` on
   an array-like hit a nil-pointer panic (reported as an internal error).
-- Workflow: removing a status with `move_tasks_to` writes no history and
-  fires no event.
 - Reports: the response size is unbounded in groups x children x buckets
   (13 MB measured with two 20-option fields and 366 buckets).
 - Custom fields: no cap on fields per project or options per field;
