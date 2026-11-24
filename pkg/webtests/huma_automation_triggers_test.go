@@ -27,6 +27,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"code.vikunja.io/api/pkg/automation"
 	"code.vikunja.io/api/pkg/automation/outbound"
@@ -181,23 +182,48 @@ func TestHumaAutomation_IncomingWebhookSignature(t *testing.T) {
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &created))
 
 	payload := `{"id": 1}`
-	mac := hmac.New(sha256.New, []byte("s3cret"))
-	mac.Write([]byte(payload))
-	good := "sha256=" + hex.EncodeToString(mac.Sum(nil))
+	bodyOnly := hmac.New(sha256.New, []byte("s3cret"))
+	bodyOnly.Write([]byte(payload))
+	oldScheme := "sha256=" + hex.EncodeToString(bodyOnly.Sum(nil))
 
-	post := func(sig string) int {
-		req := httptest.NewRequest(http.MethodPost, "/api/v2/automation/hooks/"+created.Token, strings.NewReader(payload))
+	post := func(body, ts, sig string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(http.MethodPost, "/api/v2/automation/hooks/"+created.Token, strings.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
 		if sig != "" {
 			req.Header.Set("X-Vikunja-Signature", sig)
 		}
+		if ts != "" {
+			req.Header.Set("X-Vikunja-Timestamp", ts)
+		}
 		rec := httptest.NewRecorder()
 		e.ServeHTTP(rec, req)
-		return rec.Code
+		return rec
 	}
-	assert.Equal(t, http.StatusUnauthorized, post(""))
-	assert.Equal(t, http.StatusUnauthorized, post("sha256=00"))
-	assert.Equal(t, http.StatusAccepted, post(good))
+	sign := func(body string, at time.Time) (string, string) {
+		return automation.WebhookSignature("s3cret", at, []byte(body))
+	}
+
+	ts, good := sign(payload, time.Now())
+	assert.Equal(t, http.StatusUnauthorized, post(payload, "", "").Code)
+	assert.Equal(t, http.StatusUnauthorized, post(payload, ts, "sha256=00").Code)
+	assert.Equal(t, http.StatusUnauthorized, post(payload, ts, oldScheme).Code, "the signature of the body alone is not accepted any more")
+	assert.Equal(t, http.StatusUnauthorized, post(payload, "", good).Code, "no timestamp")
+	assert.Equal(t, http.StatusUnauthorized, post(`{"id": 2}`, ts, good).Code, "tampered body")
+
+	oldTS, oldSig := sign(payload, time.Now().Add(-time.Hour))
+	stale := post(payload, oldTS, oldSig)
+	assert.Equal(t, http.StatusUnauthorized, stale.Code, "stale timestamp")
+	assert.Equal(t, models.ErrCodeAutomationHookSignatureInvalid, decodeProblem(t, stale.Body.Bytes()).Code)
+	futureTS, futureSig := sign(payload, time.Now().Add(time.Hour))
+	assert.Equal(t, http.StatusUnauthorized, post(payload, futureTS, futureSig).Code, "timestamp in the future")
+
+	assert.Equal(t, http.StatusAccepted, post(payload, ts, good).Code)
+	replay := post(payload, ts, good)
+	assert.Equal(t, http.StatusUnauthorized, replay.Code, "the same call again is a replay")
+	wrong := post(payload, ts, "sha256="+strings.Repeat("0", 64))
+	assert.JSONEq(t, wrong.Body.String(), replay.Body.String(), "a replay answers like a wrong signature")
+	ts2, good2 := sign(payload, time.Now().Add(time.Second))
+	assert.Equal(t, http.StatusAccepted, post(payload, ts2, good2).Code, "a new timestamp is a new call")
 }
 
 func TestHumaAutomation_ManualTrigger(t *testing.T) {

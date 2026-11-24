@@ -10723,9 +10723,13 @@ export type AutomationHookIncomingData = {
     body: Blob | File;
     headers?: {
         /**
-         * sha256=<hex HMAC-SHA256 of the body>; required when the rule names a secret.
+         * sha256=<hex HMAC-SHA256 of timestamp + "." + body>; required when the rule names a secret.
          */
         'X-Vikunja-Signature'?: string;
+        /**
+         * The Unix time in seconds the call was signed at; required when the rule names a secret.
+         */
+        'X-Vikunja-Timestamp'?: string;
     };
     path: {
         /**

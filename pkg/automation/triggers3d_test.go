@@ -22,6 +22,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -364,6 +366,11 @@ func TestWebhook_RateLimitPerRule(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func signedCall(token string, body []byte, at time.Time) *WebhookCall {
+	ts, sig := WebhookSignature("s3cret", at, body)
+	return &WebhookCall{Token: token, Body: body, Signature: sig, Timestamp: ts}
+}
+
 func TestWebhook_UnsignedCallsAreRefusedBeforeTheRateLimit(t *testing.T) {
 	reset(t)
 	config.AutomationWebhookRateLimit.Set(1)
@@ -373,14 +380,11 @@ func TestWebhook_UnsignedCallsAreRefusedBeforeTheRateLimit(t *testing.T) {
 	})
 	_, token := hookRule(t, map[string]any{"secret": "HOOK_KEY"}, createFromPayload())
 	body := []byte(`{}`)
-	mac := hmac.New(sha256.New, []byte("s3cret"))
-	mac.Write(body)
-	good := "sha256=" + hex.EncodeToString(mac.Sum(nil))
 
-	_, err := ReceiveWebhook(&WebhookCall{Token: token, Body: body, Signature: good})
+	_, err := ReceiveWebhook(signedCall(token, body, time.Now()))
 	require.NoError(t, err)
 	// The budget is used up: the sender is limited, anyone else is just refused.
-	_, err = ReceiveWebhook(&WebhookCall{Token: token, Body: body, Signature: good})
+	_, err = ReceiveWebhook(signedCall(token, body, time.Now().Add(time.Second)))
 	assert.True(t, models.IsErrAutomationHookRateLimited(err), "%v", err)
 	_, err = ReceiveWebhook(&WebhookCall{Token: token, Body: body, Signature: "sha256=00"})
 	assert.True(t, models.IsErrAutomationHookSignatureInvalid(err), "%v", err)
@@ -395,18 +399,191 @@ func TestWebhook_SignatureWithAProjectSecret(t *testing.T) {
 	})
 	_, token := hookRule(t, map[string]any{"secret": "HOOK_KEY"}, createFromPayload())
 	body := []byte(`{"id": 7}`)
-	sign := func(key string, b []byte) string {
+	tsNow := strconv.FormatInt(time.Now().Unix(), 10)
+	oldScheme := func(key string, b []byte) string {
 		mac := hmac.New(sha256.New, []byte(key))
 		mac.Write(b)
 		return "sha256=" + hex.EncodeToString(mac.Sum(nil))
 	}
+	_, other := WebhookSignature("other", time.Now(), body)
+	_, otherBody := WebhookSignature("s3cret", time.Now(), []byte(`{}`))
+	_, good := WebhookSignature("s3cret", time.Now(), body)
 
-	for name, sig := range map[string]string{"missing": "", "wrong key": sign("other", body), "other body": sign("s3cret", []byte(`{}`)), "no prefix": "abcd", "not hex": "sha256=zz"} {
-		_, err := ReceiveWebhook(&WebhookCall{Token: token, Body: body, Signature: sig})
+	for name, call := range map[string]*WebhookCall{
+		"missing":                   {Token: token, Body: body, Timestamp: tsNow},
+		"wrong key":                 {Token: token, Body: body, Signature: other, Timestamp: tsNow},
+		"other body":                {Token: token, Body: body, Signature: otherBody, Timestamp: tsNow},
+		"no prefix":                 {Token: token, Body: body, Signature: "abcd", Timestamp: tsNow},
+		"not hex":                   {Token: token, Body: body, Signature: "sha256=" + strings.Repeat("z", 64), Timestamp: tsNow},
+		"upper case prefix":         {Token: token, Body: body, Signature: "SHA256=" + good[7:], Timestamp: tsNow},
+		"padded":                    {Token: token, Body: body, Signature: " " + good, Timestamp: tsNow},
+		"too long":                  {Token: token, Body: body, Signature: good + "00", Timestamp: tsNow},
+		"old scheme, body only":     {Token: token, Body: body, Signature: oldScheme("s3cret", body), Timestamp: tsNow},
+		"old scheme, no timestamp":  {Token: token, Body: body, Signature: oldScheme("s3cret", body)},
+		"no timestamp":              {Token: token, Body: body, Signature: good},
+		"timestamp with a sign":     {Token: token, Body: body, Signature: good, Timestamp: "+" + tsNow},
+		"timestamp with a space":    {Token: token, Body: body, Signature: good, Timestamp: tsNow + " "},
+		"timestamp with a fraction": {Token: token, Body: body, Signature: good, Timestamp: tsNow + ".0"},
+		"timestamp in hex":          {Token: token, Body: body, Signature: good, Timestamp: "0x" + tsNow},
+		"timestamp too long":        {Token: token, Body: body, Signature: good, Timestamp: strings.Repeat("1", 40)},
+		"timestamp of another time": {Token: token, Body: body, Signature: good, Timestamp: strconv.FormatInt(time.Now().Unix()-1, 10)},
+	} {
+		_, err := ReceiveWebhook(call)
 		assert.True(t, models.IsErrAutomationHookSignatureInvalid(err), "%s: %v", name, err)
 	}
-	_, err := ReceiveWebhook(&WebhookCall{Token: token, Body: body, Signature: sign("s3cret", body)})
+	// None of the refusals used the signature up.
+	_, err := ReceiveWebhook(&WebhookCall{Token: token, Body: body, Signature: good, Timestamp: tsNow})
 	assert.NoError(t, err)
+}
+
+func TestWebhook_ReplayProtection(t *testing.T) {
+	reset(t)
+	mustCommit(t, func(s *xorm.Session) error {
+		return (&models.AutomationSecret{ProjectID: projectOwned, Name: "HOOK_KEY", NewValue: "s3cret"}).Update(s, user1)
+	})
+	_, token := hookRule(t, map[string]any{"secret": "HOOK_KEY"}, createFromPayload())
+	_, otherToken := hookRule(t, map[string]any{"secret": "HOOK_KEY"}, createFromPayload())
+	body := []byte(`{"id": 1}`)
+	invalid := models.IsErrAutomationHookSignatureInvalid
+	advance := fakeClock(t)
+	at := func() time.Time { return now() }
+
+	t.Run("the same call twice is refused the second time, the same way as a wrong signature", func(t *testing.T) {
+		call := signedCall(token, body, at())
+		_, err := ReceiveWebhook(call)
+		require.NoError(t, err)
+		_, err = ReceiveWebhook(call)
+		require.Error(t, err)
+		assert.True(t, invalid(err), "%v", err)
+		_, wrong := ReceiveWebhook(&WebhookCall{Token: token, Body: body, Signature: "sha256=" + strings.Repeat("0", 64), Timestamp: call.Timestamp})
+		assert.Equal(t, wrong, err, "a replay and a wrong signature are indistinguishable")
+	})
+
+	t.Run("the same call to another rule is not a replay", func(t *testing.T) {
+		_, err := ReceiveWebhook(signedCall(otherToken, body, at()))
+		assert.NoError(t, err)
+	})
+
+	t.Run("a new timestamp is a new call", func(t *testing.T) {
+		advance(2 * time.Second)
+		_, err := ReceiveWebhook(signedCall(token, body, at()))
+		assert.NoError(t, err)
+	})
+
+	t.Run("a call refused after the signature was checked can be sent again", func(t *testing.T) {
+		call := signedCall(token, []byte(`[1]`), at())
+		_, err := ReceiveWebhook(call)
+		assert.True(t, models.IsErrAutomationHookPayloadInvalid(err), "%v", err)
+		fine := signedCall(token, []byte(`{"ok":true}`), at())
+		_, err = ReceiveWebhook(fine)
+		require.NoError(t, err)
+		_, err = ReceiveWebhook(call)
+		assert.True(t, models.IsErrAutomationHookPayloadInvalid(err), "still a payload error, not a replay: %v", err)
+	})
+
+	t.Run("a call older than the tolerance is refused, one at the edge is accepted", func(t *testing.T) {
+		tol := config.AutomationWebhookTolerance.GetDuration()
+		require.Equal(t, 5*time.Minute, tol)
+		_, err := ReceiveWebhook(signedCall(token, []byte(`{"a":1}`), at().Add(-tol-2*time.Second)))
+		assert.True(t, invalid(err), "stale: %v", err)
+		_, err = ReceiveWebhook(signedCall(token, []byte(`{"a":2}`), at().Add(-tol+2*time.Second)))
+		assert.NoError(t, err)
+	})
+
+	t.Run("a timestamp in the future is accepted within the skew and refused beyond it", func(t *testing.T) {
+		_, err := ReceiveWebhook(signedCall(token, []byte(`{"f":1}`), at().Add(30*time.Second)))
+		require.NoError(t, err)
+		_, err = ReceiveWebhook(signedCall(token, []byte(`{"f":2}`), at().Add(webhookFutureSkew+5*time.Second)))
+		assert.True(t, invalid(err), "future: %v", err)
+	})
+
+	t.Run("the tolerance is configurable", func(t *testing.T) {
+		config.AutomationWebhookTolerance.Set(10 * time.Second)
+		defer config.AutomationWebhookTolerance.Set(5 * time.Minute)
+		_, err := ReceiveWebhook(signedCall(token, []byte(`{"t":1}`), at().Add(-20*time.Second)))
+		assert.True(t, invalid(err), "%v", err)
+		_, err = ReceiveWebhook(signedCall(token, []byte(`{"t":2}`), at().Add(-5*time.Second)))
+		assert.NoError(t, err)
+	})
+
+	t.Run("a replay is refused when the memory is in the database only, as on another instance", func(t *testing.T) {
+		// Nothing of the first accepted call is kept in this process: the memory is the table.
+		call := signedCall(otherToken, []byte(`{"x":1}`), at())
+		_, err := ReceiveWebhook(call)
+		require.NoError(t, err)
+		db.AssertExists(t, "automation_webhook_seen", map[string]interface{}{"signature": strings.TrimPrefix(call.Signature, "sha256=")}, false)
+		_, err = ReceiveWebhook(call)
+		assert.True(t, invalid(err), "%v", err)
+	})
+
+	t.Run("two identical calls at once: one is accepted, the other refused", func(t *testing.T) {
+		call := signedCall(token, []byte(`{"race":1}`), at())
+		results := make(chan error, 6)
+		for i := 0; i < 6; i++ {
+			go func() {
+				c := *call
+				_, err := ReceiveWebhook(&c)
+				results <- err
+			}()
+		}
+		accepted := 0
+		for i := 0; i < 6; i++ {
+			err := <-results
+			if err == nil {
+				accepted++
+			} else {
+				assert.True(t, invalid(err), "%v", err)
+			}
+		}
+		assert.Equal(t, 1, accepted)
+	})
+
+	t.Run("expired signatures are deleted by the cleanup, current ones stay", func(t *testing.T) {
+		before := countSeen(t)
+		require.Positive(t, before)
+		n, err := CleanupWebhookSignatures(at())
+		require.NoError(t, err)
+		assert.Zero(t, n, "everything is still inside its window")
+		advance(webhookTolerance() + 2*time.Minute)
+		n, err = CleanupWebhookSignatures(at())
+		require.NoError(t, err)
+		assert.Equal(t, before, n)
+		assert.Zero(t, countSeen(t))
+	})
+
+	t.Run("the ticker runs the cleanup", func(t *testing.T) {
+		_, err := ReceiveWebhook(signedCall(token, []byte(`{"tick":1}`), at()))
+		require.NoError(t, err)
+		require.EqualValues(t, 1, countSeen(t))
+		advance(webhookTolerance() + 2*time.Minute)
+		_, err = Tick(context.Background())
+		require.NoError(t, err)
+		assert.Zero(t, countSeen(t))
+	})
+}
+
+func countSeen(t *testing.T) int64 {
+	t.Helper()
+	s := db.NewSession()
+	defer s.Close()
+	n, err := s.Count(&models.AutomationWebhookSeen{})
+	require.NoError(t, err)
+	return n
+}
+
+func TestWebhook_UnsignedHooksAreUnchanged(t *testing.T) {
+	reset(t)
+	_, token := hookRule(t, nil, createFromPayload())
+	body := []byte(`{"id": 3}`)
+	// No headers: accepted, and as often as the rate limit allows, with nothing remembered.
+	for i := 0; i < 3; i++ {
+		_, err := ReceiveWebhook(&WebhookCall{Token: token, Body: body})
+		require.NoError(t, err)
+	}
+	// Headers a sender adds anyway are not checked: that call cannot be told from an unsigned one.
+	_, err := ReceiveWebhook(&WebhookCall{Token: token, Body: body, Signature: "sha256=00", Timestamp: "1"})
+	require.NoError(t, err)
+	assert.Zero(t, countSeen(t))
 }
 
 func TestWebhook_ValidationRejectsActionsThatNeedATask(t *testing.T) {

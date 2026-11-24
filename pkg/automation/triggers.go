@@ -18,9 +18,6 @@ package automation
 
 import (
 	"context"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -188,6 +185,8 @@ type WebhookCall struct {
 	Body []byte
 	// Signature is the X-Vikunja-Signature header.
 	Signature string
+	// Timestamp is the X-Vikunja-Timestamp header: the Unix time in seconds the sender signed the call at.
+	Timestamp string
 }
 
 const webhookRateWindow = time.Minute
@@ -211,10 +210,15 @@ func ReceiveWebhook(call *WebhookCall) (*models.AutomationEvent, error) {
 
 	// The signature first: a call that is not from the sender costs a hash and nothing else, and it neither is
 	// counted against the sender's budget nor learns whether the budget is used up.
+	// A rule without a secret takes unsigned calls (the address is its only credential): nothing is checked and
+	// nothing is remembered for it, so it has no replay protection.
+	var signed *verifiedWebhook
 	if name, _ := rule.Trigger.Options["secret"].(string); name != "" {
-		if err := checkWebhookSignature(s, rule, name, call); err != nil {
+		v, err := checkWebhookSignature(s, rule, name, call, now())
+		if err != nil {
 			return nil, err
 		}
+		signed = v
 	}
 
 	if limit := int64(config.AutomationWebhookRateLimit.GetInt()); limit > 0 {
@@ -237,6 +241,15 @@ func ReceiveWebhook(call *WebhookCall) (*models.AutomationEvent, error) {
 		}
 	}
 
+	// The signature is used up only now, in the transaction of the event: a call refused above (payload, rate
+	// limit) can be sent again unchanged.
+	if signed != nil {
+		if err := rememberWebhookSignature(s, rule, signed); err != nil {
+			_ = s.Rollback()
+			return nil, err
+		}
+	}
+
 	row, err := insertTargetedEvent(s, rule, spec.EventWebhook, 0, &Payload{Hook: hook}, nil)
 	if err != nil {
 		_ = s.Rollback()
@@ -249,32 +262,6 @@ func ReceiveWebhook(call *WebhookCall) (*models.AutomationEvent, error) {
 	return row, nil
 }
 
-func checkWebhookSignature(s *xorm.Session, rule *models.AutomationRule, secretName string, call *WebhookCall) error {
-	secrets, err := models.LoadAutomationSecrets(s, rule.ProjectID)
-	if err != nil {
-		return err
-	}
-	sec := secrets[secretName]
-	if sec == nil || sec.Err != nil {
-		// The rule cannot be verified; refuse instead of accepting unsigned calls.
-		return models.ErrAutomationHookSignatureInvalid{}
-	}
-	got, ok := strings.CutPrefix(strings.TrimSpace(call.Signature), "sha256=")
-	if !ok {
-		return models.ErrAutomationHookSignatureInvalid{}
-	}
-	gotBytes, err := hex.DecodeString(got)
-	if err != nil {
-		return models.ErrAutomationHookSignatureInvalid{}
-	}
-	mac := hmac.New(sha256.New, []byte(sec.Value))
-	mac.Write(call.Body)
-	if !hmac.Equal(gotBytes, mac.Sum(nil)) {
-		return models.ErrAutomationHookSignatureInvalid{}
-	}
-	return nil
-}
-
 // SignatureHeader is the header incoming webhooks are signed in; the same one http.request sends.
 const SignatureHeader = outbound.SignatureHeader
 
@@ -285,6 +272,11 @@ const SignatureHeader = outbound.SignatureHeader
 func Tick(ctx context.Context) (queued int, err error) {
 	if !config.AutomationEnabled.GetBool() {
 		return 0, nil
+	}
+	if n, err := CleanupWebhookSignatures(now()); err != nil {
+		log.Errorf("[automation] ticker: could not delete expired webhook signatures: %v", err)
+	} else if n > 0 {
+		log.Debugf("[automation] ticker: deleted %d expired webhook signatures", n)
 	}
 	s := db.NewReadSession()
 	candidates := []*models.AutomationRule{}
