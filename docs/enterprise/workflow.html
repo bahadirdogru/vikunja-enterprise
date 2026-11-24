@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Workflow design - vikunja-enterprise</title>
+<meta name="description" content="Design document of the workflow module.">
+<link rel="canonical" href="https://vikunja.bahadirdogru.com/enterprise/workflow.html">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1020" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+<link rel="manifest" href="../site.webmanifest">
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="../assets/docs.css">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="vikunja-enterprise">
+<meta property="og:title" content="Workflow design - vikunja-enterprise">
+<meta property="og:description" content="Design document of the workflow module.">
+<meta property="og:url" content="https://vikunja.bahadirdogru.com/enterprise/workflow.html">
+<meta property="og:image" content="https://vikunja.bahadirdogru.com/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="vikunja-enterprise, an independent community fork of Vikunja">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Workflow design - vikunja-enterprise">
+<meta name="twitter:description" content="Design document of the workflow module.">
+<meta name="twitter:image" content="https://vikunja.bahadirdogru.com/assets/og.png">
+</head>
+<body class="docs">
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="../index.html" aria-label="vikunja-enterprise home"><img src="../assets/favicon.svg" alt="" width="30" height="30">vikunja-enterprise</a>
+    <nav class="top-nav" aria-label="Main">
+      <ul>
+<li><a href="../modules/index.html">Modules</a></li>
+<li><a href="../getting-started.html">Get started</a></li>
+<li><a href="../api.html">API</a></li>
+<li><a href="../architecture.html">Architecture</a></li>
+<li><a href="../roadmap.html">Roadmap</a></li>
+<li><a href="../upstream.html">Upstream</a></li>
+        <li><a class="gh" href="https://github.com/bahadirdogru/vikunja-enterprise">GitHub</a></li>
+      </ul>
+    </nav>
+    <details class="menu">
+      <summary><span class="menu-icon" aria-hidden="true"></span>Menu</summary>
+      <nav class="menu-panel" aria-label="Site">
+        <div class="menu-group"><p class="menu-title">Site</p><ul>
+<li><a href="../index.html">Home</a></li>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise">GitHub repository</a></li>
+        </ul></div>
+<div class="menu-group"><p class="menu-title">Start</p><ul>
+<li><a href="../getting-started.html">Getting started</a></li>
+<li><a href="../configuration.html">Configuration</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Modules</p><ul>
+<li><a href="../modules/index.html">Overview</a></li>
+<li><a href="../modules/custom-fields.html">Custom fields</a></li>
+<li><a href="../modules/workflows.html">Workflows</a></li>
+<li><a href="../modules/approvals.html">Approvals</a></li>
+<li><a href="../modules/automation.html">Automation</a></li>
+<li><a href="../modules/dashboards-reports.html">Dashboards and reports</a></li>
+<li><a href="../modules/forms.html">Forms</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Reference</p><ul>
+<li><a href="../api.html">API reference</a></li>
+<li><a href="../architecture.html">Architecture</a></li>
+<li><a href="../design.html">Design</a></li>
+<li><a href="../roadmap.html">Roadmap and status</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Project</p><ul>
+<li><a href="../upstream.html">Relationship to upstream</a></li>
+<li><a href="../security.html">Security</a></li>
+<li><a href="../contributing.html">Contributing</a></li>
+<li><a href="../license.html">License</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Design history</p><ul>
+<li><a href="index.html">Overview</a></li>
+<li><a href="custom-fields.html">Custom fields design</a></li>
+<li><a href="workflow.html" aria-current="page">Workflow design</a></li>
+<li><a href="forms-approvals.html">Forms and approvals design</a></li>
+<li><a href="automation.html">Automation design</a></li>
+<li><a href="dashboards.html">Dashboards design</a></li>
+</ul></div>
+      </nav>
+    </details>
+  </div>
+</header>
+<div class="docs-layout">
+<nav class="sidebar" aria-label="Documentation">
+<p class="side-title">Start</p><ul>
+<li><a href="../getting-started.html">Getting started</a></li>
+<li><a href="../configuration.html">Configuration</a></li>
+</ul>
+<p class="side-title">Modules</p><ul>
+<li><a href="../modules/index.html">Overview</a></li>
+<li><a href="../modules/custom-fields.html">Custom fields</a></li>
+<li><a href="../modules/workflows.html">Workflows</a></li>
+<li><a href="../modules/approvals.html">Approvals</a></li>
+<li><a href="../modules/automation.html">Automation</a></li>
+<li><a href="../modules/dashboards-reports.html">Dashboards and reports</a></li>
+<li><a href="../modules/forms.html">Forms</a></li>
+</ul>
+<p class="side-title">Reference</p><ul>
+<li><a href="../api.html">API reference</a></li>
+<li><a href="../architecture.html">Architecture</a></li>
+<li><a href="../design.html">Design</a></li>
+<li><a href="../roadmap.html">Roadmap and status</a></li>
+</ul>
+<p class="side-title">Project</p><ul>
+<li><a href="../upstream.html">Relationship to upstream</a></li>
+<li><a href="../security.html">Security</a></li>
+<li><a href="../contributing.html">Contributing</a></li>
+<li><a href="../license.html">License</a></li>
+</ul>
+<p class="side-title">Design history</p><ul>
+<li><a href="index.html">Overview</a></li>
+<li><a href="custom-fields.html">Custom fields design</a></li>
+<li><a href="workflow.html" aria-current="page">Workflow design</a></li>
+<li><a href="forms-approvals.html">Forms and approvals design</a></li>
+<li><a href="automation.html">Automation design</a></li>
+<li><a href="dashboards.html">Dashboards design</a></li>
+</ul>
+</nav>
+<main id="main" class="doc">
+<nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="../index.html">Home</a></li><li>Design history</li><li aria-current="page">Workflow design</li></ol></nav>
+<h1>Workflow — design</h1>
+<details class="toc-inline"><summary>On this page</summary>
+<nav aria-label="On this page"><ul>
+<li class="toc-2"><a href="#why">Why</a></li>
+<li class="toc-2"><a href="#model">Model</a></li>
+<li class="toc-3"><a href="#workflows">workflows</a></li>
+<li class="toc-3"><a href="#workflow_statuses">workflow_statuses</a></li>
+<li class="toc-3"><a href="#workflow_transitions">workflow_transitions</a></li>
+<li class="toc-3"><a href="#workflow_transition_required_fields">workflow_transition_required_fields</a></li>
+<li class="toc-3"><a href="#workflow_transition_teams">workflow_transition_teams</a></li>
+<li class="toc-3"><a href="#task_statuses">task_statuses</a></li>
+<li class="toc-3"><a href="#task_status_history">task_status_history</a></li>
+<li class="toc-2"><a href="#behaviour">Behaviour</a></li>
+<li class="toc-2"><a href="#api-apiv2">API (/api/v2)</a></li>
+<li class="toc-2"><a href="#filtering-and-sorting">Filtering and sorting</a></li>
+<li class="toc-2"><a href="#task-lists">Task lists</a></li>
+<li class="toc-2"><a href="#kanban">Kanban</a></li>
+<li class="toc-2"><a href="#ui">UI</a></li>
+<li class="toc-3"><a href="#board-table-and-list">Board, table and list</a></li>
+<li class="toc-2"><a href="#steps">Steps</a></li>
+</ul></nav></details>
+<div class="prose">
+<p>Status: implemented (see <a href="../roadmap.html">Roadmap and status</a> for status). Depends on custom fields (required fields on transitions).</p>
+<h2 id="why">Why <a class="anchor" href="#why" aria-label="Link to this section: Why">#</a></h2>
+<p>Upstream Vikunja only knows <code>done</code> / not done, plus kanban buckets that are a
+property of one view. A workflow gives a project real statuses and rules for
+moving between them. <strong>A status is not a kanban bucket</strong>: the status is a
+property of the task and is the same in every view; a bucket is how one
+kanban view groups tasks.</p>
+<h2 id="model">Model <a class="anchor" href="#model" aria-label="Link to this section: Model">#</a></h2>
+<p>One workflow per project (v1). A project without a workflow behaves exactly
+like upstream.</p>
+<h3 id="workflows"><code>workflows</code> <a class="anchor" href="#workflows" aria-label="Link to this section: workflows">#</a></h3>
+<p>id, project_id (unique), restrict_transitions (bool, default false),
+created / updated.</p>
+<p>When <code>restrict_transitions</code> is false every status change is allowed and the
+transition table only carries extra rules for the listed pairs. When true,
+only listed transitions are allowed.</p>
+<h3 id="workflow_statuses"><code>workflow_statuses</code> <a class="anchor" href="#workflow_statuses" aria-label="Link to this section: workflow_statuses">#</a></h3>
+<p>id, workflow_id (index), title, color, category, position, is_initial (bool),
+archived (bool).</p>
+<p><code>category</code> is one of <code>open</code>, <code>in_progress</code>, <code>done</code>, <code>cancelled</code>. Exactly one
+status is the initial one. A status that still has tasks or history cannot be
+deleted: it is archived (hidden from pickers, history stays readable) or the
+caller names a status to move its tasks to.</p>
+<h3 id="workflow_transitions"><code>workflow_transitions</code> <a class="anchor" href="#workflow_transitions" aria-label="Link to this section: workflow_transitions">#</a></h3>
+<p>id, workflow_id (index), from_status_id, to_status_id (unique pair), title
+(optional button label, e.g. &quot;Send to design&quot;), min_permission (<code>write</code> |
+<code>admin</code>), require_comment (bool), requires_approval (bool), approval (json,
+null unless <code>requires_approval</code>: <code>mode</code> <code>any</code>|<code>all</code>, <code>approvers</code> as a list of
+<code>{type: user|team|assignees|custom_field, id}</code>, <code>rejected_status_id</code>,
+<code>allow_self</code>, <code>due_in</code>; see <a href="forms-approvals.html#approvals">forms-approvals.md</a>).</p>
+<h3 id="workflow_transition_required_fields"><code>workflow_transition_required_fields</code> <a class="anchor" href="#workflow_transition_required_fields" aria-label="Link to this section: workflow_transition_required_fields">#</a></h3>
+<p>id, transition_id (index), field (varchar). <code>field</code> is a built-in name
+(<code>assignees</code>, <code>due_date</code>, <code>start_date</code>, <code>end_date</code>, <code>description</code>,
+<code>attachments</code>, <code>labels</code>) or <code>cf_&lt;id&gt;</code> for a custom field. All listed fields
+must be set on the task before the transition is allowed.</p>
+<h3 id="workflow_transition_teams"><code>workflow_transition_teams</code> <a class="anchor" href="#workflow_transition_teams" aria-label="Link to this section: workflow_transition_teams">#</a></h3>
+<p>transition_id, team_id. Optional: when present, only members of one of these
+teams (or project admins) may perform the transition.</p>
+<h3 id="task_statuses"><code>task_statuses</code> <a class="anchor" href="#task_statuses" aria-label="Link to this section: task_statuses">#</a></h3>
+<p>task_id (unique), workflow_id, status_id (index), entered (timestamp).
+Kept out of the <code>tasks</code> table to keep the upstream diff small.</p>
+<h3 id="task_status_history"><code>task_status_history</code> <a class="anchor" href="#task_status_history" aria-label="Link to this section: task_status_history">#</a></h3>
+<p>id, task_id (index), from_status_id (null for the first), to_status_id,
+doer_id, comment (text null), approval_request_id (null; set for an approved
+transition and for the move after a rejection), created.</p>
+<h2 id="behaviour">Behaviour <a class="anchor" href="#behaviour" aria-label="Link to this section: Behaviour">#</a></h2>
+<ul>
+<li>A new task in a project with a workflow gets the initial status. A task that
+is created done (<code>done: true</code>, or the done bucket of a manual kanban view)
+starts in the first <code>done</code> status, which counts as the transition from the
+initial status: the creator has to pass its checks (allowed pair,
+permission and team, required fields and comment), otherwise nothing is
+created and the request answers with the error of the check; when the
+transition needs an approval it answers <code>409</code> / <code>24007</code>.</li>
+<li>Changing status goes through <strong>one</strong> function that checks, in order: target
+status exists and is not archived → transition allowed
+(<code>restrict_transitions</code>) → permission (<code>min_permission</code>, teams) → required
+fields → required comment. A failed check returns a typed 4xx error that
+names the unmet requirement (which fields are missing) so the UI can ask
+for exactly those. Every successful change writes history and dispatches
+<code>task.status.changed</code>.</li>
+<li>Transitions with <code>requires_approval</code>: after all of the checks above passed,
+the function does not move the task but creates (or returns) the pending
+approval request, and its result says so (<code>Approval</code> set, <code>Changed</code> false).
+<code>POST /tasks/{task}/status</code> answers <code>202</code> then. Callers that change the
+status as a side effect (the done checkbox) are refused with <code>409</code> / <code>24007</code>
+(with the target status and an already pending request in <code>details</code>, the UI
+turns it into a &quot;Request approval&quot; action) and create nothing; automation and scripts create the request as the rule
+owner; system transitions (re-opening a repeating task, the move after a
+rejection, removing a status) never ask. When the request is approved the
+same function runs again as the requester with only the approval requirement
+bypassed. Details, cancel reasons and the API: <a href="forms-approvals.html#approvals">forms-approvals.md</a>.</li>
+<li><code>done</code> sync: entering a status of category <code>done</code> or <code>cancelled</code> sets
+<code>task.done = true</code>; leaving it clears it. Marking a task done through the
+existing checkbox performs the transition to the first <code>done</code> status and is
+subject to the same checks; un-doing moves it back to the initial status.</li>
+<li>Moving a task to another project: status resets to that project's initial
+status (or none if it has no workflow); history is kept. A task that is done
+when it arrives starts in the first <code>done</code> status under the same checks as a
+task that is created done; a move that fails them is refused as a whole, so
+taking a task out of the project and back in does not get around the rules.</li>
+<li>Changing the category of a status in the workflow document sets the done
+flag of the tasks in it when the new category counts differently (no
+history entry, the status did not change).</li>
+<li>Enabling a workflow on an existing project assigns the initial status to
+open tasks and the first <code>done</code> status to done tasks.</li>
+<li>Deleting the workflow removes statuses/transitions and current task
+statuses; history rows keep the status titles denormalised
+(<code>from_title</code>, <code>to_title</code>) so they stay readable.</li>
+</ul>
+<h2 id="api-apiv2">API (<code>/api/v2</code>) <a class="anchor" href="#api-apiv2" aria-label="Link to this section: API (/api/v2)">#</a></h2>
+<ul>
+<li><code>GET|PUT|DELETE /projects/{project}/workflow</code> — the whole definition as one
+document (statuses, transitions with required fields and teams). PUT
+creates or replaces it; ids are matched, missing statuses are archived or
+moved according to <code>move_tasks_to</code> in the request.</li>
+<li><code>GET /tasks/{task}/status</code> — current status plus the transitions the
+current user may perform right now, each with its unmet requirements,
+<code>requires_approval</code> and the approvers that would be asked, and the pending
+approval requests of the task (<code>pending_approvals</code>).</li>
+<li><code>POST /tasks/{task}/status</code> — <code>{to_status_id, comment}</code>; <code>200</code> with the new
+status, or <code>202</code> with <code>approval</code> when the transition needs an approval.</li>
+<li><code>GET /tasks/{task}/status/history</code>.</li>
+<li>Task lists accept <code>status</code> and <code>status_category</code> in the filter syntax,
+<code>sort_by=status</code> and <code>expand=status</code>; see &quot;Filtering and sorting&quot; and
+&quot;Task lists&quot;.</li>
+</ul>
+<p>Permissions: reading follows project/task read access; changing the
+definition needs project admin; changing a task's status needs task write
+access plus the transition's own rules.</p>
+<h2 id="filtering-and-sorting">Filtering and sorting <a class="anchor" href="#filtering-and-sorting" aria-label="Link to this section: Filtering and sorting">#</a></h2>
+<p><code>status</code> and <code>status_category</code> work in the normal task <code>filter</code> and <code>sort_by</code>
+parameters, everywhere the filter syntax does (task lists, views, kanban
+buckets, saved filters), and combine freely with built-in fields, <code>cf_&lt;id&gt;</code>
+fields, <code>&amp;&amp;</code>, <code>||</code> and groups.</p>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Field</th><th scope="col">Comparators</th><th scope="col">Value</th></tr></thead><tbody>
+<tr><td><code>status</code></td><td><code>=</code> <code>!=</code> <code>in</code> <code>not in</code></td><td>status ids, e.g. <code>status in 1,2</code></td></tr>
+<tr><td><code>status_category</code></td><td><code>=</code> <code>!=</code> <code>in</code> <code>not in</code></td><td><code>open</code>, <code>in_progress</code>, <code>done</code>, <code>cancelled</code>, e.g. <code>status_category not in done,cancelled</code></td></tr>
+</tbody></table></div>
+<ul>
+<li>Statuses are matched by id, the ids come from the workflow document. Any
+other comparator (<code>&gt;</code>, <code>like</code>, ...) returns the usual invalid comparator
+<code>400</code> (4017); a value that is not an id, or not a category name, returns the
+invalid value <code>400</code> (4019). Both are checked when the filter is parsed, so
+they need no database access and a saved filter with an invalid one is
+rejected on save.</li>
+<li>A task without a status row (its project has no workflow) never matches a
+positive comparison (<code>=</code>, <code>in</code>) and always matches a negative one (<code>!=</code>,
+<code>not in</code>). With <code>filter_include_nulls</code>, positive comparators match it too.
+A status id of another project's workflow simply matches nothing.</li>
+<li>Archived statuses can still be filtered by; tasks keep the status they
+have.</li>
+<li>No project lookup or permission check is needed: the filter only narrows
+tasks the user can read anyway.</li>
+</ul>
+<p>Sorting: <code>sort_by=status</code> orders by the position of the status in its
+workflow (the order of the pickers and of the kanban columns), <code>order_by</code>
+reverses it. Tasks without a status sort last in both directions, like the
+built-in nullable columns. Tasks of several projects (a saved filter) are
+ordered by position within their own workflow, so mixed lists are only
+meaningful per project.</p>
+<h2 id="task-lists">Task lists <a class="anchor" href="#task-lists" aria-label="Link to this section: Task lists">#</a></h2>
+<p><code>expand=status</code> (task lists, views, single task read, kanban buckets with
+tasks) embeds the current status in every task that has one:</p>
+<pre class="code"><code class="language-json">{&quot;id&quot;: 7, &quot;title&quot;: &quot;...&quot;, &quot;status&quot;: {&quot;id&quot;: 3, &quot;title&quot;: &quot;In review&quot;, &quot;color&quot;: &quot;#d97706&quot;, &quot;category&quot;: &quot;in_progress&quot;}}</code></pre>
+<p>Tasks without a status have no <code>status</code> property. The statuses are loaded in
+two queries per response (status rows, then the definitions), regardless of
+the number of tasks. API tokens need the <code>status</code> permission of the <code>tasks</code>
+group (the one of <code>GET /tasks/{task}/status</code>) to use the expand, like the
+other expands that read other resources.</p>
+<h2 id="kanban">Kanban <a class="anchor" href="#kanban" aria-label="Link to this section: Kanban">#</a></h2>
+<p>A kanban view gets a third bucket mode next to manual and filter buckets:
+<code>bucket_configuration_mode: &quot;status&quot;</code>. In that mode the columns are the
+non-archived statuses of the project workflow (in position order) and moving
+a card performs the transition with the same checks; a rejected drop snaps
+back and shows what is missing. Manual buckets keep working unchanged.</p>
+<ul>
+<li><strong>No stored buckets.</strong> A status view has no rows in <code>buckets</code>; the bucket
+list (<code>GET .../views/{view}/buckets</code>, <code>.../buckets/tasks</code>) is derived from
+the workflow on every read. Changing the workflow changes the board.</li>
+<li><strong>Bucket id = negated status id.</strong> The column of status 7 is bucket <code>-7</code>.
+Real bucket ids are positive and filter-mode buckets use small indexes
+starting at 0, so a column can never be mistaken for a bucket of another
+view, and a bucket id on its own (task creation has no view in the request)
+says unambiguously what it means. Every bucket of a status view also carries
+<code>status: {id, title, color, category}</code>. The existing endpoints just work
+with these ids:
+<ul>
+<li><code>PUT .../views/{view}/buckets/{bucket}/tasks</code> with <code>bucket = -&lt;status&gt;</code> is
+the move. It runs the transition as the current user, without a comment,
+through the same function as <code>POST /tasks/{task}/status</code> (done sync,
+history, <code>task.status.changed</code>). Rejections return the same typed errors
+with the same details (400 <code>21005</code>, 403 <code>21006</code>, 422 <code>21007</code> with
+<code>task_id</code>, <code>from_status_id</code>, <code>to_status_id</code>, <code>missing_fields</code>,
+<code>comment_required</code>; 404 <code>21003</code> / 400 <code>21004</code> for an unknown or archived
+status) and nothing moves. Moving into the column the task is already in
+is a no-op, so dropping within a column only changes the position
+(<code>POST /tasks/{task}/position</code>, stored per view as everywhere else).</li>
+<li><code>filter=bucket_id = -7</code> on the view's task list loads one column (the
+frontend pages through a column this way); it is rewritten to
+<code>status = 7</code>.</li>
+<li>Columns are paginated like buckets of the other modes (<code>page</code> and
+<code>per_page</code> apply per column, <code>count</code> is the total of the column).</li>
+</ul></li>
+<li><strong>Creating a task in a column</strong>: <code>POST /projects/{project}/tasks</code> with
+<code>bucket_id: -&lt;status&gt;</code>. A new task always starts in the initial status. When
+the column is the initial status that is all; otherwise the transition is
+attempted right after the task was stored. If it is rejected the task stays
+created in the initial status and the request answers with the workflow
+error (the <code>task_id</code> of the task is in the <code>21007</code> details). A column that
+does not exist or is archived creates nothing (404 <code>21003</code> / 400 <code>21004</code>).
+Only the single create on <code>/api/v2</code> reports the rejection; bulk creates
+ignore the column and v1 creates the task in the initial status silently.</li>
+<li><strong>Setting the mode</strong> needs a workflow: creating a status view or switching
+a view to it on a project without one returns 400 <code>21009</code>. Only kanban views
+can have the mode. Switching back to manual keeps the buckets the view had
+before and puts the tasks created meanwhile in its default bucket.</li>
+<li><strong>Bucket management is rejected</strong> in a status view with 400 <code>21010</code>:
+creating, renaming, limiting and deleting buckets, and setting a default or
+done bucket on the view. The columns are edited in the workflow editor. (A
+view update that merely echoes the stored ids is fine.)</li>
+<li><strong>The workflow is deleted later</strong>: the view keeps its mode and degrades to
+an empty bucket list (no error); moves answer 404 <code>21001</code>. It can be renamed
+and switched back to manual; the UI explains that the board has no columns.</li>
+<li>Saved filters and favorites cannot use the mode (they have no workflow).</li>
+</ul>
+<h2 id="ui">UI <a class="anchor" href="#ui" aria-label="Link to this section: UI">#</a></h2>
+<p>Workflow editor: project settings, &quot;Workflow&quot; (project admins only, route
+<code>project.settings.workflow</code>). A project without a workflow shows what a
+workflow is and an &quot;Enable workflow&quot; button that pre-fills To do (initial) →
+In progress → Done in the user's language. Everything is edited as one draft
+and saved with one PUT; leaving with unsaved changes asks first.</p>
+<ul>
+<li>Statuses: colour, title, category (own icon and colour), initial radio,
+up/down, remove. New statuses carry negative temporary ids. Removing a status
+that still has tasks gets a 409 (21008); the editor asks where the tasks go
+and retries with <code>move_tasks_to</code>. Statuses with history show up as archived.</li>
+<li>Transitions: &quot;Only allow listed transitions&quot;, then a list or a matrix (rows =
+from, columns = to; a ticked cell opens that transition's rules). Each
+transition has an optional button label, minimum permission, comment
+requirement, required fields (built-in names plus the project's custom
+fields) and allowed teams.</li>
+<li>Client-side checks mirror the server (one initial status, a done status,
+unique titles, no self or duplicate transitions); a 400 (21002) is shown
+inline.</li>
+</ul>
+<p>Task detail: when the project has a workflow, a Status row sits at the top of
+the property list. Its menu lists the transitions from <code>GET /tasks/{task}/status</code>
+with their button label or target status; ones with unmet requirements say
+what is missing. A transition that needs fields or a comment opens a dialog
+with editors for the missing fields and a comment box; &quot;Change status&quot; saves
+the fields first and then posts the change. A 422 (21007) re-lists what is
+still missing, 400 (21005) and 403 (21006) become plain messages. The done
+button of a task in a workflow project moves it to the first done status (or
+back to the initial one) through the same path, so its rules and dialog apply.
+A collapsible status history (who, from → to, when, comment) sits under the
+Status row. A project without a workflow answers 404 (21001) once; the UI
+treats it as &quot;no workflow&quot; and renders nothing extra.</p>
+<h3 id="board-table-and-list">Board, table and list <a class="anchor" href="#board-table-and-list" aria-label="Link to this section: Board, table and list">#</a></h3>
+<ul>
+<li><strong>View settings</strong>: a kanban view offers &quot;Workflow statuses&quot; next to
+manual and filter columns when the project has a workflow, with a one-line
+explanation. The column management of the board (add, rename, delete,
+limit, done and default column, reordering) is not shown in that mode.</li>
+<li><strong>Status board</strong>: the column header is the <code>WorkflowStatusBadge</code> of the
+status (colour, category icon) with the task count. A drop into another
+column calls the move; the card snaps back if it is rejected. A <code>21007</code>
+opens the status dialog of the task detail for that task and target status
+(missing fields and comment, then &quot;Change status&quot;); <code>21005</code>, <code>21006</code> and a
+vanished status show their plain message. Which columns a card may enter
+is not computed in advance, the response decides. &quot;Add a task&quot; in a column
+creates the task there, with the same dialog when the transition needs
+input (the task exists in the initial column meanwhile).</li>
+<li><strong>Table</strong>: a &quot;Status&quot; column with the badge, sortable (<code>sort_by=status</code>).
+It is on by default in projects with a workflow (the Columns menu switches
+it off, the choice is remembered with the other columns) and not offered
+in projects without one. <code>expand=status</code> is only requested while it is
+shown.</li>
+<li><strong>List and manual kanban cards</strong>: a small status badge next to the task
+title (card: below it) in projects with a workflow, via <code>expand=status</code>.
+Status columns do not repeat it on the cards.</li>
+<li><strong>Filter input</strong>: <code>status</code> and <code>statusCategory</code> are known filter fields
+(the filter popup, the view filter editor and saved filters accept and
+round-trip them; they show as <code>status_category</code> in the API and in URLs).
+The editor suggests status titles of the project's workflow (and the four
+category names) like it does for labels, shows status ids as titles and
+sends titles as ids. Suggestions need a project; in a saved filter, where
+there is none, ids and categories are typed by hand.</li>
+</ul>
+<h2 id="steps">Steps <a class="anchor" href="#steps" aria-label="Link to this section: Steps">#</a></h2>
+<ul>
+<li>2a: tables, the transition function, API, events, done sync, tests.</li>
+<li>2b (done): workflow editor in project settings; status picker and history
+in the task detail view; missing-requirements dialog. See &quot;UI&quot;.</li>
+<li>2c (done): kanban status mode, table column, status badges in list and
+cards, filter/sort/expand by status. See &quot;Filtering and sorting&quot;, &quot;Task
+lists&quot; and &quot;Kanban&quot;.</li>
+<li>Approvals as a transition requirement (done in 5a, see
+<a href="forms-approvals.html">Forms and approvals design</a>).</li>
+<li>Later: WIP limits, SLA timers, workflow templates shared between projects.</li>
+</ul>
+</div>
+<p class="edit"><a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/docs/enterprise/workflow.md">Source of this page on GitHub</a></p>
+<nav class="pager" aria-label="Pages"><a class="prev" href="custom-fields.html" rel="prev"><span>Previous</span>Custom fields design</a><a class="next" href="forms-approvals.html" rel="next"><span>Next</span>Forms and approvals design</a></nav>
+</main>
+<nav class="toc-aside" aria-label="On this page"><p class="side-title">On this page</p><ul>
+<li class="toc-2"><a href="#why">Why</a></li>
+<li class="toc-2"><a href="#model">Model</a></li>
+<li class="toc-3"><a href="#workflows">workflows</a></li>
+<li class="toc-3"><a href="#workflow_statuses">workflow_statuses</a></li>
+<li class="toc-3"><a href="#workflow_transitions">workflow_transitions</a></li>
+<li class="toc-3"><a href="#workflow_transition_required_fields">workflow_transition_required_fields</a></li>
+<li class="toc-3"><a href="#workflow_transition_teams">workflow_transition_teams</a></li>
+<li class="toc-3"><a href="#task_statuses">task_statuses</a></li>
+<li class="toc-3"><a href="#task_status_history">task_status_history</a></li>
+<li class="toc-2"><a href="#behaviour">Behaviour</a></li>
+<li class="toc-2"><a href="#api-apiv2">API (/api/v2)</a></li>
+<li class="toc-2"><a href="#filtering-and-sorting">Filtering and sorting</a></li>
+<li class="toc-2"><a href="#task-lists">Task lists</a></li>
+<li class="toc-2"><a href="#kanban">Kanban</a></li>
+<li class="toc-2"><a href="#ui">UI</a></li>
+<li class="toc-3"><a href="#board-table-and-list">Board, table and list</a></li>
+<li class="toc-2"><a href="#steps">Steps</a></li>
+</ul></nav>
+</div>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-about">
+      <p><strong>vikunja-enterprise</strong> is an independent community fork of Vikunja. It is not affiliated with, endorsed by or supported by the Vikunja project. Almost all of the software is their work.</p>
+      <p>Licensed under AGPL-3.0-or-later, as upstream. This site has no scripts, cookies or trackers.</p>
+    </div>
+    <nav class="footer-nav" aria-label="Footer">
+      <div><p class="footer-title">Project</p><ul>
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="../getting-started.html">Get started</a></li>
+        <li><a href="../roadmap.html">Roadmap and status</a></li>
+        <li><a href="../upstream.html">Relationship to upstream</a></li>
+      </ul></div>
+      <div><p class="footer-title">Reference</p><ul>
+        <li><a href="../modules/index.html">Modules</a></li>
+        <li><a href="../api.html">API</a></li>
+        <li><a href="../architecture.html">Architecture</a></li>
+        <li><a href="../configuration.html">Configuration</a></li>
+      </ul></div>
+      <div><p class="footer-title">Community</p><ul>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise">Repository</a></li>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise/issues">Issues</a></li>
+        <li><a href="../security.html">Security</a></li>
+        <li><a href="../contributing.html">Contributing</a></li>
+        <li><a href="../license.html">License</a></li>
+      </ul></div>
+      <div><p class="footer-title">Upstream Vikunja</p><ul>
+        <li><a href="https://github.com/go-vikunja/vikunja">Source code</a></li>
+        <li><a href="https://vikunja.io/docs/">Documentation</a></li>
+        <li><a href="https://vikunja.io/support/">Support upstream</a></li>
+      </ul></div>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>

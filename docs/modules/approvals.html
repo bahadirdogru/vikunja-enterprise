@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Approvals - vikunja-enterprise</title>
+<meta name="description" content="Approvals on workflow transitions and ad-hoc approvals by people, teams or fields.">
+<link rel="canonical" href="https://vikunja.bahadirdogru.com/modules/approvals.html">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1020" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+<link rel="manifest" href="../site.webmanifest">
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="../assets/docs.css">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="vikunja-enterprise">
+<meta property="og:title" content="Approvals - vikunja-enterprise">
+<meta property="og:description" content="Approvals on workflow transitions and ad-hoc approvals by people, teams or fields.">
+<meta property="og:url" content="https://vikunja.bahadirdogru.com/modules/approvals.html">
+<meta property="og:image" content="https://vikunja.bahadirdogru.com/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="vikunja-enterprise, an independent community fork of Vikunja">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Approvals - vikunja-enterprise">
+<meta name="twitter:description" content="Approvals on workflow transitions and ad-hoc approvals by people, teams or fields.">
+<meta name="twitter:image" content="https://vikunja.bahadirdogru.com/assets/og.png">
+</head>
+<body class="docs">
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="../index.html" aria-label="vikunja-enterprise home"><img src="../assets/favicon.svg" alt="" width="30" height="30">vikunja-enterprise</a>
+    <nav class="top-nav" aria-label="Main">
+      <ul>
+<li><a href="index.html">Modules</a></li>
+<li><a href="../getting-started.html">Get started</a></li>
+<li><a href="../api.html">API</a></li>
+<li><a href="../architecture.html">Architecture</a></li>
+<li><a href="../roadmap.html">Roadmap</a></li>
+<li><a href="../upstream.html">Upstream</a></li>
+        <li><a class="gh" href="https://github.com/bahadirdogru/vikunja-enterprise">GitHub</a></li>
+      </ul>
+    </nav>
+    <details class="menu">
+      <summary><span class="menu-icon" aria-hidden="true"></span>Menu</summary>
+      <nav class="menu-panel" aria-label="Site">
+        <div class="menu-group"><p class="menu-title">Site</p><ul>
+<li><a href="../index.html">Home</a></li>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise">GitHub repository</a></li>
+        </ul></div>
+<div class="menu-group"><p class="menu-title">Start</p><ul>
+<li><a href="../getting-started.html">Getting started</a></li>
+<li><a href="../configuration.html">Configuration</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Modules</p><ul>
+<li><a href="index.html">Overview</a></li>
+<li><a href="custom-fields.html">Custom fields</a></li>
+<li><a href="workflows.html">Workflows</a></li>
+<li><a href="approvals.html" aria-current="page">Approvals</a></li>
+<li><a href="automation.html">Automation</a></li>
+<li><a href="dashboards-reports.html">Dashboards and reports</a></li>
+<li><a href="forms.html">Forms</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Reference</p><ul>
+<li><a href="../api.html">API reference</a></li>
+<li><a href="../architecture.html">Architecture</a></li>
+<li><a href="../design.html">Design</a></li>
+<li><a href="../roadmap.html">Roadmap and status</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Project</p><ul>
+<li><a href="../upstream.html">Relationship to upstream</a></li>
+<li><a href="../security.html">Security</a></li>
+<li><a href="../contributing.html">Contributing</a></li>
+<li><a href="../license.html">License</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Design history</p><ul>
+<li><a href="../enterprise/index.html">Overview</a></li>
+<li><a href="../enterprise/custom-fields.html">Custom fields design</a></li>
+<li><a href="../enterprise/workflow.html">Workflow design</a></li>
+<li><a href="../enterprise/forms-approvals.html">Forms and approvals design</a></li>
+<li><a href="../enterprise/automation.html">Automation design</a></li>
+<li><a href="../enterprise/dashboards.html">Dashboards design</a></li>
+</ul></div>
+      </nav>
+    </details>
+  </div>
+</header>
+<div class="docs-layout">
+<nav class="sidebar" aria-label="Documentation">
+<p class="side-title">Start</p><ul>
+<li><a href="../getting-started.html">Getting started</a></li>
+<li><a href="../configuration.html">Configuration</a></li>
+</ul>
+<p class="side-title">Modules</p><ul>
+<li><a href="index.html">Overview</a></li>
+<li><a href="custom-fields.html">Custom fields</a></li>
+<li><a href="workflows.html">Workflows</a></li>
+<li><a href="approvals.html" aria-current="page">Approvals</a></li>
+<li><a href="automation.html">Automation</a></li>
+<li><a href="dashboards-reports.html">Dashboards and reports</a></li>
+<li><a href="forms.html">Forms</a></li>
+</ul>
+<p class="side-title">Reference</p><ul>
+<li><a href="../api.html">API reference</a></li>
+<li><a href="../architecture.html">Architecture</a></li>
+<li><a href="../design.html">Design</a></li>
+<li><a href="../roadmap.html">Roadmap and status</a></li>
+</ul>
+<p class="side-title">Project</p><ul>
+<li><a href="../upstream.html">Relationship to upstream</a></li>
+<li><a href="../security.html">Security</a></li>
+<li><a href="../contributing.html">Contributing</a></li>
+<li><a href="../license.html">License</a></li>
+</ul>
+<p class="side-title">Design history</p><ul>
+<li><a href="../enterprise/index.html">Overview</a></li>
+<li><a href="../enterprise/custom-fields.html">Custom fields design</a></li>
+<li><a href="../enterprise/workflow.html">Workflow design</a></li>
+<li><a href="../enterprise/forms-approvals.html">Forms and approvals design</a></li>
+<li><a href="../enterprise/automation.html">Automation design</a></li>
+<li><a href="../enterprise/dashboards.html">Dashboards design</a></li>
+</ul>
+</nav>
+<main id="main" class="doc">
+<nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="../index.html">Home</a></li><li>Modules</li><li aria-current="page">Approvals</li></ol></nav>
+<h1>Approvals</h1>
+<details class="toc-inline"><summary>On this page</summary>
+<nav aria-label="On this page"><ul>
+<li class="toc-2"><a href="#overview">Overview</a></li>
+<li class="toc-2"><a href="#concepts">Concepts</a></li>
+<li class="toc-3"><a href="#behaviour">Behaviour</a></li>
+<li class="toc-3"><a href="#what-each-caller-of-the-status-change-does">What each caller of the status change does</a></li>
+<li class="toc-2"><a href="#data-model">Data model</a></li>
+<li class="toc-2"><a href="#permissions">Permissions</a></li>
+<li class="toc-2"><a href="#api">API</a></li>
+<li class="toc-2"><a href="#configuration-keys">Configuration keys</a></li>
+<li class="toc-2"><a href="#ui">UI</a></li>
+<li class="toc-2"><a href="#events-and-interaction-with-other-modules">Events and interaction with other modules</a></li>
+<li class="toc-2"><a href="#limits-and-safety">Limits and safety</a></li>
+<li class="toc-2"><a href="#known-gaps-and-open-decisions">Known gaps and open decisions</a></li>
+<li class="toc-2"><a href="#where-the-code-lives">Where the code lives</a></li>
+</ul></nav></details>
+<div class="prose">
+<p>Explicit, recorded decisions by named people: a workflow transition can require approval, and any task can get an ad-hoc approval request.</p>
+<p>Design document and history: the &quot;Approvals&quot; part of <a href="../enterprise/forms-approvals.html">Forms and approvals design</a>. Workflows, which approvals plug into: <a href="workflows.html">workflows</a>. API conventions: <a href="../api.html">API reference</a>. Module index: <a href="index.html">Modules</a>.</p>
+<h2 id="overview">Overview <a class="anchor" href="#overview" aria-label="Link to this section: Overview">#</a></h2>
+<p>&quot;This cannot go to print until the editor in chief approves&quot; is a rule about people, not about a status anyone with write access can set. Approvals add that rule to workflows: a transition marked <code>requires_approval</code> does not move the task; it creates a request, asks the configured approvers, and performs the transition on behalf of the requester only when the approvers have decided. The decision, who made it and the comment are recorded. Ad-hoc approvals record a decision on a task without any status change.</p>
+<p>Audience: project admins configure which transitions need approval and who approves; members request and decide; operators should know that approvals are tied to workflows and that link shares have no access.</p>
+<h2 id="concepts">Concepts <a class="anchor" href="#concepts" aria-label="Link to this section: Concepts">#</a></h2>
+<ul>
+<li><strong>Request</strong> (<code>approval_requests</code>): a task, an optional transition with its <code>from</code>, <code>to</code> and <code>rejected</code> statuses (all empty for ad-hoc requests), a title, description, the comment sent with the status change, a <code>mode</code>, a <code>status</code> (<code>pending</code>, <code>approved</code>, <code>rejected</code>, <code>cancelled</code>), <code>allow_self</code>, the requester, an optional <code>due</code>, <code>reminded_at</code>, who resolved it (0 when the system did), and a machine-readable <code>cancel_reason</code> with a human <code>cancel_message</code>.</li>
+<li><strong>Approver</strong> (<code>approval_approvers</code>): a user with a <code>decision</code> (empty, <code>approved</code>, <code>rejected</code>), a comment and a time. Unique per (request, user).</li>
+<li><strong>Mode.</strong> <code>any</code>: the first decision resolves the request. <code>all</code>: every approver has to approve, and one rejection rejects at once.</li>
+<li><strong>Approver sources</strong> on a transition: <code>user</code> (an active user who can read the project), <code>team</code> (a team the project is shared with, expanded to its members when the request is created), <code>assignees</code> (the task's assignees) and <code>custom_field</code> (a <code>user</code> field of the project, &quot;the editor named on the task&quot;). They are resolved to concrete users when the request is created, in order of the sources, de-duplicated, only active users who can read the task, and without the requester unless <code>allow_self</code> is set. Nobody left: no request is created and the caller gets <code>422</code> / <code>24006</code>.</li>
+<li><strong>Transition configuration</strong>: <code>requires_approval</code> plus an <code>approval</code> object <code>{mode, approvers, rejected_status_id, allow_self, due_in}</code>. Validation (<code>400</code> / <code>21002</code>): <code>approval</code> is required when <code>requires_approval</code> is set and dropped when it is not; at least one and at most 50 sources; <code>rejected_status_id</code> belongs to the document, is not archived and is not the target; <code>due_in</code> is a positive duration such as <code>12h</code>, <code>3d</code> or <code>2w</code>.</li>
+</ul>
+<h3 id="behaviour">Behaviour <a class="anchor" href="#behaviour" aria-label="Link to this section: Behaviour">#</a></h3>
+<ul>
+<li><strong>Requesting.</strong> A transition with <code>requires_approval</code> runs every other check first (target exists, pair allowed, permission and team, required fields, required comment). It then creates the pending request and returns it. Asking again for the same task and target returns the existing request (no duplicate, no new notification); a pending request for a different target on the same task is allowed. Even a project admin asks. Link shares cannot (<code>403</code> / <code>24010</code>).</li>
+<li><strong>Deciding.</strong> <code>POST /approvals/{request}/decision</code>. Only an approver who has not decided can; a rejection needs a comment (<code>24005</code>). Approvers who lost read access to the project are dropped first and no longer count.</li>
+<li><strong>Approved.</strong> The system performs the transition on behalf of the requester; every check except the approval requirement runs again at that moment. History shows the requester as doer with the request's comment and id. If something no longer holds, the request becomes <code>cancelled</code> (decisions stay, the status does not change) with a <code>cancel_reason</code>, and the decision still answers <code>200</code> with the request saying what happened.</li>
+<li><strong>Rejected.</strong> The task stays, or moves to <code>rejected_status_id</code> as a system transition (rules bypassed; the history names the rejecting approver; skipped when the task left the <code>from</code> status or the status is gone). The comment is added to the task as a comment authored by the approver.</li>
+<li><strong>Cancelling.</strong> <code>POST /approvals/{request}/cancel</code> by the requester or a project admin (<code>cancelled_by_requester</code>).</li>
+<li><strong>Cancel reasons.</strong> <code>cancelled_by_requester</code>, <code>task_deleted</code>, <code>task_moved</code>, <code>workflow_removed</code>, <code>status_removed</code>, <code>transition_removed</code>, <code>approval_disabled</code>, <code>status_changed</code> (the task left the <code>from</code> status by another route; ad-hoc requests are not tied to a status), <code>target_archived</code>, <code>requirements_not_met</code>, <code>requester_lost_access</code>, <code>requester_not_in_team</code>, <code>requester_deleted</code>, <code>no_approvers</code>.</li>
+<li><strong>Ad-hoc approvals.</strong> <code>POST /tasks/{task}/approvals</code> needs a title and <code>approver_ids</code> (users who can read the task; the requester cannot be one); <code>mode</code> defaults to <code>any</code>; <code>due</code> is optional.</li>
+<li><strong>Concurrency.</strong> Every decision and cancellation first takes the write lock of the request (a no-op <code>UPDATE</code> of its row) and then uses locking reads; resolving, cancelling and approving are conditional updates on <code>status = pending</code> inside the transaction of the transition. Two approvers deciding at once, or a decision racing a cancel, are serialized and the loser gets <code>409</code> / <code>24002</code>. Creating a request takes the lock of the task row.</li>
+</ul>
+<h3 id="what-each-caller-of-the-status-change-does">What each caller of the status change does <a class="anchor" href="#what-each-caller-of-the-status-change-does" aria-label="Link to this section: What each caller of the status change does">#</a></h3>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Caller</th><th scope="col">When the transition needs approval</th></tr></thead><tbody>
+<tr><td><code>POST /tasks/{task}/status</code></td><td><code>202</code> with the pending request in <code>approval</code>; <code>200</code> when the status changed</td></tr>
+<tr><td>Done checkbox (<code>PUT /tasks/{task}</code> with <code>done</code>), kanban moves into a done bucket of a manual view, bulk updates</td><td>Refused with <code>409</code> / <code>24007</code>; the whole update is rolled back and <strong>no request is created</strong>. <code>details</code> carry <code>task_id</code>, the from and to statuses (id and title), <code>to_status_category</code>, <code>pending_approval_id</code>, <code>approval_pending</code> and <code>requestable</code> (true: the client may ask with <code>POST /tasks/{task}/status</code>)</td></tr>
+<tr><td>A task created done, or a done task moved in from another project</td><td>Refused like the checkbox with <code>requestable: false</code> (the creation or move is rolled back as a whole), nothing is created or moved</td></tr>
+<tr><td>Kanban status-mode move</td><td>The request is created, the card does not move, <code>202</code> with <code>approval</code></td></tr>
+<tr><td>Task created in a status column</td><td>Created in the initial status; the request for the column is created</td></tr>
+<tr><td>Automation <code>task.set_status</code>, script <code>vikunja.status.set</code></td><td>Creates the request as the rule owner; the step succeeds with the output <code>approval requested (#id)</code>; nobody to ask fails the step (<code>24006</code>)</td></tr>
+<tr><td>Automation <code>task.set_done</code>, <code>vikunja.tasks.update({done})</code></td><td>Like the checkbox: the step fails with <code>24007</code></td></tr>
+<tr><td>Re-opening a repeating task, the move after a rejection, assigning the first status, moving the tasks of a removed status</td><td>System transitions: never create approvals</td></tr>
+</tbody></table></div>
+<h2 id="data-model">Data model <a class="anchor" href="#data-model" aria-label="Link to this section: Data model">#</a></h2>
+<figure class="diagram"><figcaption>Diagram, shown as its Mermaid source. This site has no scripts, so it cannot draw it. <a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/docs/modules/approvals.md#L47">View the rendered diagram on GitHub</a>.</figcaption><pre><code class="language-mermaid">erDiagram
+    tasks ||--o{ approval_requests : &quot;asks&quot;
+    workflow_transitions ||--o{ approval_requests : &quot;gates&quot;
+    approval_requests ||--o{ approval_approvers : &quot;decided by&quot;
+    users ||--o{ approval_approvers : &quot;is&quot;
+    approval_requests {
+        bigint id PK
+        bigint task_id
+        bigint project_id
+        bigint transition_id
+        bigint from_status_id
+        bigint to_status_id
+        bigint rejected_status_id
+        string title
+        string mode
+        string status
+        bool allow_self
+        bigint requested_by_id
+        datetime due
+        datetime reminded_at
+        bigint resolved_by_id
+        string cancel_reason
+        datetime resolved
+    }
+    approval_approvers {
+        bigint id PK
+        bigint request_id
+        bigint user_id
+        string decision
+        text comment
+        datetime decided
+    }</code></pre></figure>
+<p>Tables and the extra columns on <code>workflow_transitions</code> (<code>requires_approval</code>, <code>approval</code>) and <code>task_status_history</code> (<code>approval_request_id</code>) are created by <code>pkg/migration/20261124100000.go</code>. <code>approval_requests.task_id</code>, <code>project_id</code>, <code>status</code> and <code>requested_by_id</code> are indexed; <code>approval_approvers</code> has a unique (request, user) pair. <code>transition_id</code> and the status ids are null for ad-hoc requests.</p>
+<h2 id="permissions">Permissions <a class="anchor" href="#permissions" aria-label="Link to this section: Permissions">#</a></h2>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Action</th><th scope="col">Needs</th></tr></thead><tbody>
+<tr><td>List &quot;my approvals&quot;</td><td>a signed-in user; only requests where the caller is approver or requester and can still read the task (in the project the task is in now)</td></tr>
+<tr><td>Read a request</td><td>read on the task</td></tr>
+<tr><td>Decide</td><td>read on the task, and being an approver of the request who has not decided (<code>24003</code> otherwise; <code>24004</code> when already decided; <code>24008</code> when the requester may not decide)</td></tr>
+<tr><td>Cancel</td><td>the requester or a project admin</td></tr>
+<tr><td>Request an ad-hoc approval</td><td>write on the task</td></tr>
+<tr><td>Request through a transition</td><td>whatever the transition needs; even admins ask</td></tr>
+</tbody></table></div>
+<p><strong>Link shares have no access to approvals at all</strong>: <code>403</code> on every route, no <code>approvals</code> expand, no approval data in the task status. A request of a task the caller cannot read answers <code>404</code> (<code>24001</code>) on decision and cancel and <code>403</code> on read. Permission methods are in <code>pkg/models/approvals_permissions.go</code>. API token groups: <code>approvals</code> and <code>tasks_approvals</code>; <code>expand=approvals</code> needs <code>tasks_approvals</code> <code>read_all</code>.</p>
+<h2 id="api">API <a class="anchor" href="#api" aria-label="Link to this section: API">#</a></h2>
+<p>All routes are on <code>/api/v2</code>; conventions are in <a href="../api.html">API reference</a>.</p>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Method</th><th scope="col">Path</th><th scope="col">Operation ID</th><th scope="col">Permission</th><th scope="col">Description</th></tr></thead><tbody>
+<tr><td>GET</td><td><code>/approvals</code></td><td><code>approvals-list</code></td><td>signed-in user (own requests only)</td><td>List my approvals</td></tr>
+<tr><td>GET</td><td><code>/approvals/{request}</code></td><td><code>approvals-read</code></td><td>read on task (no link shares)</td><td>Get an approval request</td></tr>
+<tr><td>POST</td><td><code>/approvals/{request}/decision</code></td><td><code>approvals-decide</code></td><td>an approver who has not decided</td><td>Decide on an approval request</td></tr>
+<tr><td>POST</td><td><code>/approvals/{request}/cancel</code></td><td><code>approvals-cancel</code></td><td>the requester or project admin</td><td>Cancel an approval request</td></tr>
+<tr><td>GET</td><td><code>/tasks/{task}/approvals</code></td><td><code>task-approvals-list</code></td><td>read on task (no link shares)</td><td>List the approval requests of a task</td></tr>
+<tr><td>POST</td><td><code>/tasks/{task}/approvals</code></td><td><code>task-approvals-create</code></td><td>write on task (no link shares)</td><td>Request an approval for a task</td></tr>
+</tbody></table></div>
+<p><code>GET /approvals</code> takes <code>status</code>, <code>role</code> (<code>approver</code> or <code>requester</code>), <code>project_id</code>, <code>page</code> and <code>per_page</code>; each item carries the approvers, the statuses and a compact <code>task</code>. <code>GET /tasks/{task}/status</code> additionally returns <code>pending_approvals</code> and, per offered transition, <code>requires_approval</code>, <code>approval_mode</code> and <code>approvers</code>. Task lists accept <code>expand=approvals</code>: every task gets <code>approvals: {has_pending, pending_count}</code> (one query per page). Worked requests and responses are in <a href="../api.html#examples">API.md</a>.</p>
+<p>Error codes: <code>24001</code> request not found (404), <code>24002</code> not pending (409), <code>24003</code> not an approver (403), <code>24004</code> already decided (409), <code>24005</code> rejection without comment (422), <code>24006</code> no approvers (422), <code>24007</code> approval required for a done change (409), <code>24008</code> requester may not decide (403), <code>24009</code> invalid ad-hoc request (400), <code>24010</code> link share cannot request (403).</p>
+<h2 id="configuration-keys">Configuration keys <a class="anchor" href="#configuration-keys" aria-label="Link to this section: Configuration keys">#</a></h2>
+<p>None. The reminder job runs every five minutes (<code>*/5 * * * *</code>, registered by <code>RegisterApprovalReminderCron</code>) and is not configurable.</p>
+<h2 id="ui">UI <a class="anchor" href="#ui" aria-label="Link to this section: UI">#</a></h2>
+<ul>
+<li><strong>Workflow editor</strong>: an &quot;Approval&quot; section on a transition (mode, approver sources, status after rejection, duration, self-approval); transitions with approval carry a tag in the list and an icon in the matrix.</li>
+<li><strong>Task detail</strong>: an approval banner (who is asked, who decided what, due) with approve and reject for approvers and cancel for the requester and admins; resolved requests in a collapsible section; the status menu labels such transitions &quot;Request approval&quot;; &quot;Request approval&quot; in the actions menu opens the ad-hoc dialog.</li>
+<li><strong>Markers</strong> on kanban cards, list rows and the table status cell (&quot;Waiting for approval&quot;).</li>
+<li><strong>Approvals page</strong> (<code>/approvals</code>, sidebar entry with a count badge): waiting for me, requested by me, history.</li>
+<li><strong>Refused done</strong>: the checkbox is rolled back and a message names the status with the action &quot;Request approval&quot; (or offers to open the task when a request is pending).</li>
+</ul>
+<p>More in <a href="../design.html#approvals">DESIGN.md</a>.</p>
+<h2 id="events-and-interaction-with-other-modules">Events and interaction with other modules <a class="anchor" href="#events-and-interaction-with-other-modules" aria-label="Link to this section: Events and interaction with other modules">#</a></h2>
+<ul>
+<li><strong>Events</strong> (dispatched on commit): <code>approval.requested</code>, <code>approval.decided</code> (per decision), <code>approval.resolved</code> (outcome <code>approved</code>, <code>rejected</code> or <code>cancelled</code>; the doer is empty when the system ended it). Requests that were only returned again announce nothing.</li>
+<li><strong>Notifications</strong> (in-app, plus e-mail when the mailer is on): <code>approval.requested</code> to every approver; <code>approval.resolved</code> to the requester and to the approvers who did not decide; <code>approval.reminder</code> once to undecided approvers after <code>due</code>.</li>
+<li><strong>Automation</strong>: triggers <code>approval.requested</code> and <code>approval.resolved</code> (option <code>outcome</code>: <code>any</code>, <code>approved</code>, <code>rejected</code>, <code>cancelled</code>), condition fields <code>event.new.approval_id</code>, <code>approval_title</code>, <code>approval_mode</code>, <code>ad_hoc</code>, <code>requested_by</code>, <code>approvers</code>, <code>outcome</code>, <code>cancel_reason</code>, <code>event.old.status</code> and <code>event.new.status</code>, placeholders <code>{{event.approval.id}}</code>, <code>{{event.approval.title}}</code>, <code>{{event.approval.outcome}}</code>, and the ad-hoc action <code>approval.request</code> (the owner of the rule asks and is never an approver) (<a href="automation.html">automation</a>).</li>
+<li><strong>Workflows</strong>: see <a href="workflows.html">workflows</a>. <strong>Custom fields</strong>: a <code>user</code> field can be an approver source (<a href="custom-fields.html">custom fields</a>).</li>
+</ul>
+<h2 id="limits-and-safety">Limits and safety <a class="anchor" href="#limits-and-safety" aria-label="Link to this section: Limits and safety">#</a></h2>
+<ul>
+<li>At most 50 approver sources per transition.</li>
+<li>A request is created for at most the approvers who can read the task; a request cannot be created with nobody to decide.</li>
+<li>Concurrency is serialized by the lock on the request row; the loser of a race gets <code>409</code>.</li>
+<li>Locks are always taken in the same order: the task row, then the request row. A direct status change of the task locks the task first, so a decision or a cancellation of one of its requests does the same; the opposite order deadlocked on PostgreSQL (<code>40P01</code>) and MySQL (<code>1213</code>). <code>TestApprovals_DecisionAndStatusChangeDoNotDeadlock</code> covers it on PostgreSQL 18 and MySQL 8 (it is skipped on SQLite).</li>
+<li>Approved transitions are re-checked at approval time, so a stale request cannot bypass a rule that changed meanwhile.</li>
+</ul>
+<h2 id="known-gaps-and-open-decisions">Known gaps and open decisions <a class="anchor" href="#known-gaps-and-open-decisions" aria-label="Link to this section: Known gaps and open decisions">#</a></h2>
+<p>From the <a href="../roadmap.html">roadmap</a>:</p>
+<ul>
+<li>An approved transition is performed for a requester whose account was disabled; a request whose only approver was disabled stays pending.</li>
+<li>Approvers' Turkish backend strings are not added; other languages come from Crowdin.</li>
+<li>Not exercised in a browser: an overdue request, the reminder notification and the table marker.</li>
+<li>Not exposed over MCP.</li>
+<li>Plain <code>done: true</code> updates from a list checkbox still answer <code>409</code>; the client handles it by rolling back and offering &quot;Request approval&quot;.</li>
+<li>Which databases the approvals tests have been run on is recorded in the roadmap.</li>
+</ul>
+<h2 id="where-the-code-lives">Where the code lives <a class="anchor" href="#where-the-code-lives" aria-label="Link to this section: Where the code lives">#</a></h2>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">What</th><th scope="col">Where</th></tr></thead><tbody>
+<tr><td>Requests, modes, approvers, document types</td><td><code>pkg/models/approvals.go</code></td></tr>
+<tr><td>Decisions and cancellation</td><td><code>pkg/models/approvals_decisions.go</code>, <code>pkg/models/approvals_lifecycle.go</code></td></tr>
+<tr><td>Workflow integration</td><td><code>pkg/models/approvals_workflow.go</code></td></tr>
+<tr><td>Expand</td><td><code>pkg/models/approvals_expand.go</code></td></tr>
+<tr><td>Notifications and reminders</td><td><code>pkg/models/approvals_notifications.go</code></td></tr>
+<tr><td>Permissions, events</td><td><code>pkg/models/approvals_permissions.go</code>, <code>pkg/models/approval_events.go</code></td></tr>
+<tr><td>Errors</td><td><code>pkg/models/error_approvals.go</code> (<code>24001</code> to <code>24010</code>)</td></tr>
+<tr><td>Routes</td><td><code>pkg/routes/api/v2/approvals.go</code></td></tr>
+<tr><td>Migration</td><td><code>pkg/migration/20261124100000.go</code></td></tr>
+<tr><td>Tests</td><td><code>pkg/models/approvals_test.go</code>, <code>pkg/models/approvals_decisions_test.go</code>, <code>pkg/models/approvals_flows_test.go</code>, <code>pkg/models/approvals_notifications_test.go</code>, <code>pkg/automation/approvals_test.go</code>, <code>pkg/automation/approvals_concurrency_test.go</code>, <code>pkg/webtests/huma_approvals_test.go</code></td></tr>
+<tr><td>Frontend</td><td><code>frontend/src/components/approvals/</code>, <code>frontend/src/views/approvals/</code>, <code>frontend/src/client/queries/approvals.ts</code>, <code>frontend/src/helpers/approvals.ts</code></td></tr>
+</tbody></table></div>
+</div>
+<p class="edit"><a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/docs/modules/approvals.md">Source of this page on GitHub</a></p>
+<nav class="pager" aria-label="Pages"><a class="prev" href="workflows.html" rel="prev"><span>Previous</span>Workflows</a><a class="next" href="automation.html" rel="next"><span>Next</span>Automation</a></nav>
+</main>
+<nav class="toc-aside" aria-label="On this page"><p class="side-title">On this page</p><ul>
+<li class="toc-2"><a href="#overview">Overview</a></li>
+<li class="toc-2"><a href="#concepts">Concepts</a></li>
+<li class="toc-3"><a href="#behaviour">Behaviour</a></li>
+<li class="toc-3"><a href="#what-each-caller-of-the-status-change-does">What each caller of the status change does</a></li>
+<li class="toc-2"><a href="#data-model">Data model</a></li>
+<li class="toc-2"><a href="#permissions">Permissions</a></li>
+<li class="toc-2"><a href="#api">API</a></li>
+<li class="toc-2"><a href="#configuration-keys">Configuration keys</a></li>
+<li class="toc-2"><a href="#ui">UI</a></li>
+<li class="toc-2"><a href="#events-and-interaction-with-other-modules">Events and interaction with other modules</a></li>
+<li class="toc-2"><a href="#limits-and-safety">Limits and safety</a></li>
+<li class="toc-2"><a href="#known-gaps-and-open-decisions">Known gaps and open decisions</a></li>
+<li class="toc-2"><a href="#where-the-code-lives">Where the code lives</a></li>
+</ul></nav>
+</div>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-about">
+      <p><strong>vikunja-enterprise</strong> is an independent community fork of Vikunja. It is not affiliated with, endorsed by or supported by the Vikunja project. Almost all of the software is their work.</p>
+      <p>Licensed under AGPL-3.0-or-later, as upstream. This site has no scripts, cookies or trackers.</p>
+    </div>
+    <nav class="footer-nav" aria-label="Footer">
+      <div><p class="footer-title">Project</p><ul>
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="../getting-started.html">Get started</a></li>
+        <li><a href="../roadmap.html">Roadmap and status</a></li>
+        <li><a href="../upstream.html">Relationship to upstream</a></li>
+      </ul></div>
+      <div><p class="footer-title">Reference</p><ul>
+        <li><a href="index.html">Modules</a></li>
+        <li><a href="../api.html">API</a></li>
+        <li><a href="../architecture.html">Architecture</a></li>
+        <li><a href="../configuration.html">Configuration</a></li>
+      </ul></div>
+      <div><p class="footer-title">Community</p><ul>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise">Repository</a></li>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise/issues">Issues</a></li>
+        <li><a href="../security.html">Security</a></li>
+        <li><a href="../contributing.html">Contributing</a></li>
+        <li><a href="../license.html">License</a></li>
+      </ul></div>
+      <div><p class="footer-title">Upstream Vikunja</p><ul>
+        <li><a href="https://github.com/go-vikunja/vikunja">Source code</a></li>
+        <li><a href="https://vikunja.io/docs/">Documentation</a></li>
+        <li><a href="https://vikunja.io/support/">Support upstream</a></li>
+      </ul></div>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>

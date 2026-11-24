@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Architecture - vikunja-enterprise</title>
+<meta name="description" content="How vikunja-enterprise is built: deployment, packages, request lifecycle, data model, permissions and decisions.">
+<link rel="canonical" href="https://vikunja.bahadirdogru.com/architecture.html">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1020" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="assets/docs.css">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="vikunja-enterprise">
+<meta property="og:title" content="Architecture - vikunja-enterprise">
+<meta property="og:description" content="How vikunja-enterprise is built: deployment, packages, request lifecycle, data model, permissions and decisions.">
+<meta property="og:url" content="https://vikunja.bahadirdogru.com/architecture.html">
+<meta property="og:image" content="https://vikunja.bahadirdogru.com/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="vikunja-enterprise, an independent community fork of Vikunja">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Architecture - vikunja-enterprise">
+<meta name="twitter:description" content="How vikunja-enterprise is built: deployment, packages, request lifecycle, data model, permissions and decisions.">
+<meta name="twitter:image" content="https://vikunja.bahadirdogru.com/assets/og.png">
+</head>
+<body class="docs">
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="index.html" aria-label="vikunja-enterprise home"><img src="assets/favicon.svg" alt="" width="30" height="30">vikunja-enterprise</a>
+    <nav class="top-nav" aria-label="Main">
+      <ul>
+<li><a href="modules/index.html">Modules</a></li>
+<li><a href="getting-started.html">Get started</a></li>
+<li><a href="api.html">API</a></li>
+<li><a href="architecture.html" aria-current="page">Architecture</a></li>
+<li><a href="roadmap.html">Roadmap</a></li>
+<li><a href="upstream.html">Upstream</a></li>
+        <li><a class="gh" href="https://github.com/bahadirdogru/vikunja-enterprise">GitHub</a></li>
+      </ul>
+    </nav>
+    <details class="menu">
+      <summary><span class="menu-icon" aria-hidden="true"></span>Menu</summary>
+      <nav class="menu-panel" aria-label="Site">
+        <div class="menu-group"><p class="menu-title">Site</p><ul>
+<li><a href="index.html">Home</a></li>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise">GitHub repository</a></li>
+        </ul></div>
+<div class="menu-group"><p class="menu-title">Start</p><ul>
+<li><a href="getting-started.html">Getting started</a></li>
+<li><a href="configuration.html">Configuration</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Modules</p><ul>
+<li><a href="modules/index.html">Overview</a></li>
+<li><a href="modules/custom-fields.html">Custom fields</a></li>
+<li><a href="modules/workflows.html">Workflows</a></li>
+<li><a href="modules/approvals.html">Approvals</a></li>
+<li><a href="modules/automation.html">Automation</a></li>
+<li><a href="modules/dashboards-reports.html">Dashboards and reports</a></li>
+<li><a href="modules/forms.html">Forms</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Reference</p><ul>
+<li><a href="api.html">API reference</a></li>
+<li><a href="architecture.html" aria-current="page">Architecture</a></li>
+<li><a href="design.html">Design</a></li>
+<li><a href="roadmap.html">Roadmap and status</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Project</p><ul>
+<li><a href="upstream.html">Relationship to upstream</a></li>
+<li><a href="security.html">Security</a></li>
+<li><a href="contributing.html">Contributing</a></li>
+<li><a href="license.html">License</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Design history</p><ul>
+<li><a href="enterprise/index.html">Overview</a></li>
+<li><a href="enterprise/custom-fields.html">Custom fields design</a></li>
+<li><a href="enterprise/workflow.html">Workflow design</a></li>
+<li><a href="enterprise/forms-approvals.html">Forms and approvals design</a></li>
+<li><a href="enterprise/automation.html">Automation design</a></li>
+<li><a href="enterprise/dashboards.html">Dashboards design</a></li>
+</ul></div>
+      </nav>
+    </details>
+  </div>
+</header>
+<div class="docs-layout">
+<nav class="sidebar" aria-label="Documentation">
+<p class="side-title">Start</p><ul>
+<li><a href="getting-started.html">Getting started</a></li>
+<li><a href="configuration.html">Configuration</a></li>
+</ul>
+<p class="side-title">Modules</p><ul>
+<li><a href="modules/index.html">Overview</a></li>
+<li><a href="modules/custom-fields.html">Custom fields</a></li>
+<li><a href="modules/workflows.html">Workflows</a></li>
+<li><a href="modules/approvals.html">Approvals</a></li>
+<li><a href="modules/automation.html">Automation</a></li>
+<li><a href="modules/dashboards-reports.html">Dashboards and reports</a></li>
+<li><a href="modules/forms.html">Forms</a></li>
+</ul>
+<p class="side-title">Reference</p><ul>
+<li><a href="api.html">API reference</a></li>
+<li><a href="architecture.html" aria-current="page">Architecture</a></li>
+<li><a href="design.html">Design</a></li>
+<li><a href="roadmap.html">Roadmap and status</a></li>
+</ul>
+<p class="side-title">Project</p><ul>
+<li><a href="upstream.html">Relationship to upstream</a></li>
+<li><a href="security.html">Security</a></li>
+<li><a href="contributing.html">Contributing</a></li>
+<li><a href="license.html">License</a></li>
+</ul>
+<p class="side-title">Design history</p><ul>
+<li><a href="enterprise/index.html">Overview</a></li>
+<li><a href="enterprise/custom-fields.html">Custom fields design</a></li>
+<li><a href="enterprise/workflow.html">Workflow design</a></li>
+<li><a href="enterprise/forms-approvals.html">Forms and approvals design</a></li>
+<li><a href="enterprise/automation.html">Automation design</a></li>
+<li><a href="enterprise/dashboards.html">Dashboards design</a></li>
+</ul>
+</nav>
+<main id="main" class="doc">
+<nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="index.html">Home</a></li><li>Reference</li><li aria-current="page">Architecture</li></ol></nav>
+<h1>Architecture</h1>
+<details class="toc-inline"><summary>On this page</summary>
+<nav aria-label="On this page"><ul>
+<li class="toc-2"><a href="#system-context-and-deployment">System context and deployment</a></li>
+<li class="toc-3"><a href="#several-instances">Several instances</a></li>
+<li class="toc-2"><a href="#repository-and-package-map">Repository and package map</a></li>
+<li class="toc-2"><a href="#request-lifecycle-on-apiv2">Request lifecycle on /api/v2</a></li>
+<li class="toc-2"><a href="#data-model">Data model</a></li>
+<li class="toc-2"><a href="#permission-model">Permission model</a></li>
+<li class="toc-2"><a href="#events-and-the-automation-engine">Events and the automation engine</a></li>
+<li class="toc-2"><a href="#workflow-and-status-model">Workflow and status model</a></li>
+<li class="toc-2"><a href="#reports">Reports</a></li>
+<li class="toc-2"><a href="#public-surface">Public surface</a></li>
+<li class="toc-2"><a href="#database-portability-and-migrations">Database portability and migrations</a></li>
+<li class="toc-2"><a href="#frontend-architecture">Frontend architecture</a></li>
+<li class="toc-2"><a href="#architecture-decisions">Architecture decisions</a></li>
+<li class="toc-3"><a href="#1-the-automation-outbox-is-a-table-in-the-main-database-not-a-queue">1. The automation outbox is a table in the main database, not a queue</a></li>
+<li class="toc-3"><a href="#2-workers-run-in-the-server-process">2. Workers run in the server process</a></li>
+<li class="toc-3"><a href="#3-apiv1-is-frozen-everything-the-fork-adds-is-on-apiv2">3. /api/v1 is frozen; everything the fork adds is on /api/v2</a></li>
+<li class="toc-3"><a href="#4-statuses-are-separate-from-kanban-buckets">4. Statuses are separate from kanban buckets</a></li>
+<li class="toc-3"><a href="#5-dashboards-are-widgets-over-task-filters-with-no-snapshot-tables">5. Dashboards are widgets over task filters, with no snapshot tables</a></li>
+<li class="toc-3"><a href="#6-charts-are-hand-written-svg">6. Charts are hand-written SVG</a></li>
+<li class="toc-3"><a href="#7-rules-run-with-their-owners-permissions">7. Rules run with their owner&#x27;s permissions</a></li>
+<li class="toc-3"><a href="#8-the-frontend-uses-only-the-generated-client-and-the-query-modules">8. The frontend uses only the generated client and the query modules</a></li>
+<li class="toc-3"><a href="#9-delivery-is-at-least-once-and-steps-are-idempotent">9. Delivery is at least once, and steps are idempotent</a></li>
+<li class="toc-3"><a href="#10-claiming-uses-a-conditional-update-not-skip-locked">10. Claiming uses a conditional UPDATE, not SKIP LOCKED</a></li>
+<li class="toc-3"><a href="#11-time-buckets-are-computed-in-go">11. Time buckets are computed in Go</a></li>
+<li class="toc-3"><a href="#12-new-features-get-their-own-tables-and-upstream-tables-are-not-altered">12. New features get their own tables, and upstream tables are not altered</a></li>
+<li class="toc-3"><a href="#13-time-based-triggers-use-a-ticker-with-claims-in-the-database">13. Time-based triggers use a ticker with claims in the database</a></li>
+<li class="toc-3"><a href="#14-scripts-run-in-an-embedded-interpreter">14. Scripts run in an embedded interpreter</a></li>
+<li class="toc-3"><a href="#15-public-forms-are-token-only-and-create-tasks-as-the-form-owner">15. Public forms are token-only and create tasks as the form owner</a></li>
+<li class="toc-3"><a href="#16-project-secrets-are-encrypted-with-a-key-derived-from-servicesecret">16. Project secrets are encrypted with a key derived from service.secret</a></li>
+</ul></nav></details>
+<div class="prose">
+<p>This document describes how vikunja-enterprise is built and why. It covers the whole system, but the focus is on what the fork adds to upstream Vikunja: custom fields, workflows, approvals, automation, dashboards and reports, and forms.</p>
+<p>Where a diagram appears, the text next to it carries the same information. Where this document and the code disagree, the code is right; please report the difference.</p>
+<p>Related documents: <a href="index.html">Home</a> (overview), <a href="api.html">API reference</a> (HTTP surface), <a href="design.html">Design</a> (screens), <a href="modules/index.html">Modules</a> (one reference page per module) and <a href="roadmap.html">Roadmap and status</a> (design history and status).</p>
+<h2 id="system-context-and-deployment">System context and deployment <a class="anchor" href="#system-context-and-deployment" aria-label="Link to this section: System context and deployment">#</a></h2>
+<p>Vikunja is one Go binary. The same process serves the JSON API, the single-page web app (embedded into the binary from <code>frontend/dist</code>), WebSocket notifications, the optional MCP endpoint, and the automation workers. The image built by this repository's <code>Dockerfile</code> contains that one binary on a <code>scratch</code> base and listens on port <code>3456</code>.</p>
+<figure class="diagram"><figcaption>Diagram, shown as its Mermaid source. This site has no scripts, so it cannot draw it. <a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/ARCHITECTURE.md#L28">View the rendered diagram on GitHub</a>.</figcaption><pre><code class="language-mermaid">flowchart LR
+    Browser[&quot;Browser: Vue 3 single-page app&quot;]
+    Clients[&quot;API clients: JWT, API tokens, CalDAV&quot;]
+    Anon[&quot;Anonymous callers: public forms, incoming webhooks&quot;]
+
+    subgraph Proc[&quot;One Vikunja process, port 3456&quot;]
+        Router[&quot;Echo router and middleware&quot;]
+        V1[&quot;/api/v1 (frozen)&quot;]
+        V2[&quot;/api/v2 (Huma)&quot;]
+        Spa[&quot;Embedded web app&quot;]
+        Workers[&quot;Automation workers and ticker&quot;]
+        Cron[&quot;Cron jobs&quot;]
+    end
+
+    DB[(&quot;SQLite, MySQL / MariaDB or PostgreSQL&quot;)]
+    Files[(&quot;File storage: local or S3&quot;)]
+    Out[&quot;Outbound HTTP: user webhooks, http.request action&quot;]
+    Mail[&quot;SMTP (optional)&quot;]
+    KV[&quot;keyvalue: memory or Redis (optional)&quot;]
+
+    Browser --&gt; Router
+    Clients --&gt; Router
+    Anon --&gt; Router
+    Router --&gt; V1
+    Router --&gt; V2
+    Router --&gt; Spa
+    V1 --&gt; DB
+    V2 --&gt; DB
+    Workers --&gt; DB
+    Cron --&gt; DB
+    V2 --&gt; Files
+    Workers --&gt; Out
+    Workers --&gt; Mail
+    Router --&gt; KV</code></pre></figure>
+<p>What the picture says:</p>
+<ul>
+<li><strong>One process.</strong> There is no separate worker container and no queue server. Durable background work is a table in the main database (the automation outbox), and the workers are goroutines in the same process.</li>
+<li><strong>Database.</strong> SQLite (the image default, a file under <code>/db</code>), MySQL or MariaDB, or PostgreSQL, chosen with <code>database.type</code>. All three are supported by every query and migration of the fork. See <a href="#database-portability-and-migrations">Database portability and migrations</a>.</li>
+<li><strong>Files.</strong> Attachments, avatars and form logos go to the configured file backend (<code>files.type</code>: <code>local</code> or <code>s3</code>). A form logo is stored as a normal file and referenced by <code>forms.brand_logo_file_id</code>.</li>
+<li><strong>Optional pieces.</strong> SMTP (<code>mailer.*</code>) for e-mail notifications, Redis (<code>keyvalue.type</code>, <code>redis.*</code>) for the key-value store and rate-limit counters, Prometheus metrics (<code>metrics.*</code>), and Sentry. None is required. The automation metrics <code>vikunja_automation_runs_total</code> and <code>vikunja_automation_events</code> exist only with <code>metrics.enabled</code>.</li>
+<li><strong>Outbound traffic</strong> from automation (<code>http.request</code>, <code>http.fetch</code>) and from upstream's user webhooks goes through the same SSRF-protected HTTP client (<code>outgoingrequests.*</code>).</li>
+<li><strong>TLS</strong> is not terminated by the image. Put a reverse proxy in front and set <code>service.ipextractionmethod</code> and <code>service.trustedproxies</code>, because the per-IP limits of public forms and webhooks use the address the router determines.</li>
+</ul>
+<h3 id="several-instances">Several instances <a class="anchor" href="#several-instances" aria-label="Link to this section: Several instances">#</a></h3>
+<p>Running several replicas against one database is possible, and the fork's engine is written for it:</p>
+<ul>
+<li>Events are claimed by a conditional <code>UPDATE</code>, so a row is processed by exactly one worker, in this process or another.</li>
+<li>The ticker (schedules, overdue, due soon) claims each firing in the database, so replicas never fire twice.</li>
+<li>Workers of a replica find events written by other replicas by polling (<code>automation.pollinterval</code>).</li>
+</ul>
+<p>What is per process and therefore only eventually consistent: the cache of which events a project's rules listen to (<code>automation.cachettl</code>, 30 s: a rule enabled on replica A can miss events written by replica B for up to that long), and the in-memory report cache (<code>reports.cachettl</code>, 30 s). Rate-limit counters follow <code>ratelimit.store</code> and <code>keyvalue.type</code>. Which replica count has actually been tested is recorded in the <a href="roadmap.html">roadmap</a>, not here.</p>
+<h2 id="repository-and-package-map">Repository and package map <a class="anchor" href="#repository-and-package-map" aria-label="Link to this section: Repository and package map">#</a></h2>
+<p>The rule for the fork is: <strong>new features live in their own packages, files and tables, and upstream files are touched as little as possible</strong>, so that upstream can be merged. Measured with <code>git diff --name-status</code> against the commit the fork was created from, the changes in <code>pkg/</code> and <code>frontend/src/</code> are mostly added files; about 40 upstream Go files and about 40 upstream frontend files are modified, and most of those modifications are small hooks (an extra expand, a filter field, a cleanup call, a route).</p>
+<figure class="diagram"><figcaption>Diagram, shown as its Mermaid source. This site has no scripts, so it cannot draw it. <a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/ARCHITECTURE.md#L88">View the rendered diagram on GitHub</a>.</figcaption><pre><code class="language-mermaid">flowchart TB
+    subgraph HTTP[&quot;HTTP layer&quot;]
+        Routes[&quot;pkg/routes: Echo setup, middleware, public paths&quot;]
+        V2[&quot;pkg/routes/api/v2: Huma operations&quot;]
+        Bridge[&quot;pkg/modules/humabridge&quot;]
+        Handler[&quot;pkg/web/handler: Do* pipeline&quot;]
+    end
+    subgraph Domain[&quot;Domain layer&quot;]
+        Models[&quot;pkg/models: models, Can* methods, errors, events&quot;]
+        Events[&quot;pkg/events: dispatcher, transactional hooks&quot;]
+    end
+    subgraph Engine[&quot;Automation engine&quot;]
+        Auto[&quot;pkg/automation: outbox hook, workers, runner, ticker, actions&quot;]
+        Spec[&quot;pkg/automation/spec: rule document, catalog, validation&quot;]
+        Script[&quot;pkg/automation/script: JavaScript runtime, script processes&quot;]
+        Outbound[&quot;pkg/automation/outbound: HTTP client path&quot;]
+    end
+    Infra[&quot;pkg/db, pkg/migration, pkg/config, pkg/license, pkg/cron&quot;]
+
+    Routes --&gt; V2
+    V2 --&gt; Bridge
+    V2 --&gt; Handler
+    Handler --&gt; Models
+    V2 --&gt; Auto
+    Auto --&gt; Models
+    Auto --&gt; Spec
+    Auto --&gt; Script
+    Auto --&gt; Outbound
+    Models --&gt; Spec
+    Models --&gt; Events
+    Auto --&gt; Events
+    Models --&gt; Infra</code></pre></figure>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Area</th><th scope="col">Upstream</th><th scope="col">Added by the fork</th></tr></thead><tbody>
+<tr><td>Models and permissions</td><td><code>pkg/models</code> (tasks, projects, kanban, labels, ...)</td><td><code>custom_field*.go</code>, <code>workflow*.go</code>, <code>approvals*.go</code>, <code>automation_*.go</code>, <code>dashboards*.go</code>, <code>reports*.go</code>, <code>forms*.go</code>, <code>csv_export.go</code>, and the matching <code>error_*.go</code> files</td></tr>
+<tr><td>Engine</td><td>-</td><td><code>pkg/automation/**</code> (outbox hook, workers, runner, ticker, actions, dry run, secrets, script host, <code>spec</code>, <code>script</code>, <code>outbound</code>)</td></tr>
+<tr><td>API v2</td><td><code>pkg/routes/api/v2</code> (tasks, projects, auth, ...)</td><td><code>custom_fields.go</code>, <code>workflow.go</code>, <code>approvals.go</code>, <code>automation.go</code>, <code>automation_hooks.go</code>, <code>automation_secrets.go</code>, <code>dashboards.go</code>, <code>reports.go</code>, <code>forms.go</code>, <code>forms_public.go</code></td></tr>
+<tr><td>Router</td><td><code>pkg/routes/routes.go</code></td><td><code>pkg/routes/automation_guard.go</code>, public path lists in <code>routes.go</code>, API token scope entries in <code>pkg/models/api_routes.go</code></td></tr>
+<tr><td>Events</td><td><code>pkg/events</code></td><td><code>RegisterTransactionalHook</code>, <code>PendingHookError</code> (small additions to <code>events.go</code>; <code>handler/core.go</code> checks the hook error before committing)</td></tr>
+<tr><td>Migrations</td><td><code>pkg/migration</code></td><td>ten files dated <code>20261122120000</code> to <code>20261128100000</code></td></tr>
+<tr><td>Config</td><td><code>pkg/config</code>, <code>config-raw.json</code></td><td>the <code>automation.*</code>, <code>reports.*</code> and <code>forms.*</code> keys</td></tr>
+<tr><td>License</td><td><code>pkg/license</code></td><td><code>Init</code> no longer reads a key; every feature is enabled</td></tr>
+<tr><td>Frontend</td><td><code>frontend/src/**</code></td><td><code>components/{custom-fields,workflow,approvals,automation,dashboards,charts,forms}</code>, <code>views/{approvals,dashboards,forms}</code>, project settings pages, <code>client/queries/*</code> for each module, <code>helpers/*</code> for each module</td></tr>
+<tr><td>Tests</td><td><code>pkg/**/*_test.go</code>, <code>pkg/webtests</code></td><td>tests next to every added file, fixtures in <code>pkg/db/fixtures</code></td></tr>
+</tbody></table></div>
+<p><code>veans/</code> is a separate Go module and <code>desktop/</code> is GPL-licensed; neither is touched by the fork.</p>
+<h2 id="request-lifecycle-on-apiv2">Request lifecycle on /api/v2 <a class="anchor" href="#request-lifecycle-on-apiv2" aria-label="Link to this section: Request lifecycle on /api/v2">#</a></h2>
+<p><code>/api/v2</code> is built with <a href="https://huma.rocks">Huma</a> on top of Echo. Every operation is registered with <code>huma.Operation</code> in <code>pkg/routes/api/v2/</code>, and the OpenAPI document is generated from the Go types.</p>
+<figure class="diagram"><figcaption>Diagram, shown as its Mermaid source. This site has no scripts, so it cannot draw it. <a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/ARCHITECTURE.md#L142">View the rendered diagram on GitHub</a>.</figcaption><pre><code class="language-mermaid">sequenceDiagram
+    participant C as Client
+    participant E as Echo middleware
+    participant H as Huma operation
+    participant D as handler.Do*
+    participant M as Model
+    participant DB as Database
+    participant EV as Events
+
+    C-&gt;&gt;E: HTTP request with bearer token
+    E-&gt;&gt;E: reject automation-marked requests, reject form bodies, authenticate, rate limit
+    E-&gt;&gt;H: routed request
+    H-&gt;&gt;H: bind path, query, body and validate
+    H-&gt;&gt;H: authFromCtx
+    H-&gt;&gt;D: DoCreate, DoUpdate, DoReadOne, ...
+    D-&gt;&gt;DB: open session
+    D-&gt;&gt;M: Can* permission check
+    M--&gt;&gt;D: allowed or forbidden
+    D-&gt;&gt;M: Create, Update or Delete
+    M-&gt;&gt;EV: DispatchOnCommit and transactional hooks
+    D-&gt;&gt;EV: PendingHookError
+    D-&gt;&gt;DB: commit
+    D-&gt;&gt;EV: DispatchPending
+    D--&gt;&gt;H: result or typed error
+    H--&gt;&gt;C: JSON, or application/problem+json with a numeric code</code></pre></figure>
+<p>Step by step:</p>
+<ol>
+<li><strong>Middleware</strong> (<code>registerAPIRoutesV2</code> in <code>pkg/routes/routes.go</code>): <code>rejectAutomationRequests</code> answers <code>508</code> to any request carrying the automation marker header, <code>rejectFormBodies</code> refuses <code>application/x-www-form-urlencoded</code> bodies (except the OAuth token endpoint), <code>Cache-Control: no-store</code> is set, <code>SetupTokenMiddleware</code> authenticates the request (a user JWT, an API token with the <code>tk_</code> prefix, or a link-share JWT), rate limits are applied to credential, refresh, public form and hook paths and, when <code>ratelimit.enabled</code> is on, to the rest, and <code>/api/v2/admin/*</code> is gated to instance admins.</li>
+<li><strong>Binding and validation.</strong> <code>Register</code> wraps <code>huma.Register</code>: after Huma has bound and schema-validated the input, <code>govalidator</code> tags on the model are checked (<code>validateInputBody</code>) before the handler runs, so v2 validates first and authorizes second, like v1. A validation failure is <code>422</code>.</li>
+<li><strong>Authentication in the handler.</strong> <code>authFromCtx</code> returns the <code>web.Auth</code> (a user or a link share) or a generic <code>401</code>.</li>
+<li><strong>The <code>handler.Do*</code> pipeline</strong> (<code>pkg/web/handler/core.go</code>) opens a database session, calls the model's <code>Can*</code> method, performs the operation, checks <code>events.PendingHookError</code>, commits, and only then dispatches the collected events. A rollback discards them (<code>events.CleanupPending</code>). The fork models most actions as small structs whose <code>CanCreate</code> carries the check (<code>ApprovalDecision</code>, <code>ApprovalCancel</code>, <code>TaskStatusChange</code>, <code>AutomationRunRetry</code>), so they still run through <code>DoCreate</code>. Handlers that have no <code>Do*</code> equivalent, such as the automation dry run, load the entity and call <code>Can*</code> themselves.</li>
+<li><strong>Permissions live in the model</strong>, never in the handler: <code>CanRead</code>, <code>CanCreate</code>, <code>CanUpdate</code>, <code>CanDelete</code>. See <a href="#permission-model">Permission model</a>.</li>
+<li><strong>Errors.</strong> Domain errors implement <code>HTTPError()</code> and are translated by <code>translateDomainError</code> into an RFC 9457 <code>application/problem+json</code> body with Vikunja's numeric <code>code</code>, optional <code>i18n_params</code> and optional <code>details</code>. See <a href="api.html#errors">API.md</a>.</li>
+<li><strong>Reads</strong> send an <code>ETag</code> and honour <code>If-None-Match</code> where the operation says so; PATCH operations are synthesised by Huma's AutoPatch from a GET and a PUT on the same path.</li>
+</ol>
+<p>Routes are registered by <code>init()</code> functions through <code>AddRouteRegistrar</code>, so a new resource file is picked up without editing a central list.</p>
+<h2 id="data-model">Data model <a class="anchor" href="#data-model" aria-label="Link to this section: Data model">#</a></h2>
+<p>The fork adds 24 tables and changes no upstream table: where it needs per-task data it uses a table keyed by <code>task_id</code> instead of a new column on <code>tasks</code> (see decision 12). Five of the fork's own tables (<code>workflow_transitions</code>, <code>task_status_history</code>, <code>forms</code>, <code>automation_events</code>, <code>automation_rules</code>) were extended by later fork migrations with <code>partialSync</code>.</p>
+<p>First diagram: custom fields, workflows and approvals.</p>
+<figure class="diagram"><figcaption>Diagram, shown as its Mermaid source. This site has no scripts, so it cannot draw it. <a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/ARCHITECTURE.md#L188">View the rendered diagram on GitHub</a>.</figcaption><pre><code class="language-mermaid">erDiagram
+    projects ||--o{ custom_fields : &quot;has&quot;
+    custom_fields ||--o{ custom_field_options : &quot;has&quot;
+    tasks ||--o{ task_custom_field_values : &quot;has&quot;
+    custom_fields ||--o{ task_custom_field_values : &quot;values of&quot;
+    projects ||--o| workflows : &quot;has one&quot;
+    workflows ||--o{ workflow_statuses : &quot;has&quot;
+    workflows ||--o{ workflow_transitions : &quot;has&quot;
+    workflow_transitions ||--o{ workflow_transition_required_fields : &quot;requires&quot;
+    workflow_transitions ||--o{ workflow_transition_teams : &quot;limited to&quot;
+    tasks ||--o| task_statuses : &quot;current status&quot;
+    workflow_statuses ||--o{ task_statuses : &quot;held by&quot;
+    tasks ||--o{ task_status_history : &quot;history&quot;
+    tasks ||--o{ approval_requests : &quot;asks&quot;
+    workflow_transitions ||--o{ approval_requests : &quot;gates&quot;
+    approval_requests ||--o{ approval_approvers : &quot;decided by&quot;
+    users ||--o{ approval_approvers : &quot;is&quot;</code></pre></figure>
+<p>Second diagram: automation, forms and dashboards.</p>
+<figure class="diagram"><figcaption>Diagram, shown as its Mermaid source. This site has no scripts, so it cannot draw it. <a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/ARCHITECTURE.md#L210">View the rendered diagram on GitHub</a>.</figcaption><pre><code class="language-mermaid">erDiagram
+    projects ||--o{ automation_rules : &quot;has&quot;
+    projects ||--o{ automation_secrets : &quot;has&quot;
+    projects ||--o{ automation_events : &quot;outbox&quot;
+    automation_rules ||--o{ automation_runs : &quot;runs&quot;
+    automation_events ||--o{ automation_runs : &quot;handled by&quot;
+    automation_runs ||--o{ automation_run_steps : &quot;steps&quot;
+    automation_rules ||--o{ automation_due_markers : &quot;fired for&quot;
+    tasks ||--o{ automation_due_markers : &quot;marked&quot;
+    tasks ||--o| automation_task_origins : &quot;created by run&quot;
+    projects ||--o{ forms : &quot;has&quot;
+    forms ||--o{ form_submissions : &quot;receives&quot;
+    tasks ||--o{ form_submissions : &quot;created&quot;
+    users ||--o{ dashboards : &quot;owns&quot;
+    projects ||--o{ dashboards : &quot;has&quot;
+    dashboards ||--o{ dashboard_widgets : &quot;has&quot;</code></pre></figure>
+<p>Notes on the tables (columns are in the <a href="modules/index.html">module pages</a>):</p>
+<ul>
+<li>Ids are <code>bigint</code> primary keys; relations are plain id columns with indexes, not foreign-key constraints, like upstream.</li>
+<li><strong>JSON columns</strong> keep documents that are only read and written as a whole and never filtered in SQL: <code>automation_rules.trigger</code>, <code>conditions</code> and <code>actions</code>, <code>forms.fields</code> and <code>settings</code>, <code>dashboard_widgets.config</code>, <code>custom_fields.config</code>, <code>workflow_transitions.approval</code>. Everything that is filtered or sorted by SQL is a typed column: custom field values live in <code>value_text</code>, <code>value_number</code>, <code>value_date</code>, <code>value_bool</code>, <code>option_id</code> and <code>user_id</code>, so <code>cf_&lt;id&gt;</code> filters and sorts run in SQL.</li>
+<li><strong>Unique constraints carry the invariants</strong>: one workflow per project (<code>workflows.project_id</code>), one status per task (<code>task_statuses.task_id</code>), one run per (event, rule) (<code>automation_runs</code>), one step per (run, position), one marker per (rule, task) (<code>automation_due_markers</code>), one origin per task, one secret name per project, one form token (<code>forms.token</code>), one decision slot per (request, user) (<code>approval_approvers</code>).</li>
+<li><code>dashboards.project_id</code> is <code>0</code> for a personal dashboard (the column is <code>not null default 0</code>), so the project relation in the diagram applies to project dashboards only.</li>
+<li><code>automation_events.task_id</code>, <code>rule_id</code>, <code>origin_run_id</code>, and <code>approval_requests.transition_id</code>, <code>from_status_id</code>, <code>to_status_id</code> are nullable or zero where the concept does not apply (an event without a task, an ad-hoc approval).</li>
+<li>Status history keeps the status titles (<code>from_title</code>, <code>to_title</code>) so it stays readable after a status or a whole workflow is deleted.</li>
+</ul>
+<h2 id="permission-model">Permission model <a class="anchor" href="#permission-model" aria-label="Link to this section: Permission model">#</a></h2>
+<p>Nothing the fork adds has its own permission logic. Everything goes through the model's <code>Can*</code> methods, which are built on the project rights upstream already has: <strong>read</strong>, <strong>write</strong> and <strong>admin</strong> on a project, derived from direct shares, team shares, parent projects, ownership and link shares.</p>
+<figure class="diagram"><figcaption>Diagram, shown as its Mermaid source. This site has no scripts, so it cannot draw it. <a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/ARCHITECTURE.md#L242">View the rendered diagram on GitHub</a>.</figcaption><pre><code class="language-mermaid">flowchart TB
+    Req[&quot;Request with an identity&quot;] --&gt; Kind{&quot;Which identity&quot;}
+    Kind --&gt;|&quot;User JWT&quot;| User[&quot;User: project rights from owner, user shares, team shares, parents&quot;]
+    Kind --&gt;|&quot;API token&quot;| Tok[&quot;User rights, narrowed to the token scopes&quot;]
+    Kind --&gt;|&quot;Link share JWT&quot;| Share[&quot;The share&#x27;s one project and its permission&quot;]
+    User --&gt; Can[&quot;Model Can* method&quot;]
+    Tok --&gt; Scope[&quot;Scope check on the route group, then Can*&quot;]
+    Scope --&gt; Can
+    Share --&gt; Can
+    Can --&gt;|&quot;allowed&quot;| Op[&quot;Operation&quot;]
+    Can --&gt;|&quot;denied&quot;| Err[&quot;403, or 404 where existence must not leak&quot;]</code></pre></figure>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">What</th><th scope="col">Needed</th></tr></thead><tbody>
+<tr><td>Custom field definitions: read; create, update, delete</td><td>read on the project; admin on the project</td></tr>
+<tr><td>Custom field values: read; set, clear</td><td>read on the task; write on the task</td></tr>
+<tr><td>Workflow: read; replace, delete</td><td>read on the project; admin</td></tr>
+<tr><td>Change a task's status</td><td>write on the task, plus the transition's own minimum permission (<code>write</code> or <code>admin</code>) and optional allowed teams</td></tr>
+<tr><td>Automation rules, runs, secrets, webhook address</td><td>admin on the project (reading too, because conditions and errors can reveal other users' data)</td></tr>
+<tr><td>Run a manual rule on a task</td><td>write on the task</td></tr>
+<tr><td>Dashboards</td><td>personal: its owner only; project: read for everyone who can read the project, change for project admins</td></tr>
+<tr><td>Reports</td><td>whatever the viewer can read (below)</td></tr>
+<tr><td>Forms: builder, submissions</td><td>admin on the project, never for link shares</td></tr>
+<tr><td>Approvals</td><td>read on the task to see a request; an approver decides; the requester or a project admin cancels; link shares have nothing</td></tr>
+</tbody></table></div>
+<p>Principles that cut across modules:</p>
+<ul>
+<li><strong>A dashboard never shows more than its viewer may read.</strong> Every report is computed over the tasks returned by the same query the task list uses (<code>TaskCollection.readableTasksQuery</code>: project access, shares, teams, favorites, link shares pinned to their project). There is no second permission implementation to drift. A test matrix asserts that report totals equal task list totals across viewers, filters and scopes. Group labels (users, labels, statuses) are looked up only for keys that occur on those tasks.</li>
+<li><strong>A rule runs as its owner.</strong> The user who saves a rule becomes its owner, so nobody can borrow another admin's rights by editing their rule. Every action and every <code>vikunja.*</code> call of a script goes through the same model functions and permission checks as a hand-made change, as the owner, in the transaction of the step. The owner is checked again when a run starts and when the ticker is about to fire: an owner who is gone, or who no longer administers the project, disables the rule instead (<code>owner_unavailable</code>, <code>owner_not_admin</code>). A task the owner can no longer read is treated as gone. A rule therefore can never do more than its owner could do by hand.</li>
+<li><strong>A form creates tasks as its owner</strong>, through the normal task create path, so workflows, custom field validation and automation apply. If the owner loses write access the form disables itself.</li>
+<li><strong>API token scopes.</strong> Token permissions are groups of routes derived from the route paths (<code>projects_custom_fields</code>, <code>tasks_custom_field_values</code>, <code>projects_automations</code>, <code>projects_automations_runs</code>, <code>dashboards</code>, <code>approvals</code>, <code>projects_forms</code>, <code>projects_forms_submissions</code>, <code>tasks_approvals</code> are registered as standard CRUD groups in <code>pkg/models/api_routes.go</code>; other routes fall into groups derived from their path). Reading expanded data needs the scope of what is embedded: <code>expand=custom_fields</code> needs <code>tasks_custom_field_values</code> <code>read_all</code>, <code>expand=status</code> needs <code>tasks</code> <code>status</code>, <code>expand=approvals</code> needs <code>tasks_approvals</code> <code>read_all</code>. <code>GET /api/v2/routes</code> lists the available groups. Public paths need no scope.</li>
+<li><strong>Link shares</strong> are not users. They can read what the share allows, never see approvals, never change dashboards, never administer forms, and cannot use the time tracking report.</li>
+<li><strong>Existence does not leak.</strong> Unknown form tokens, webhook tokens that are disabled or have another trigger, and a custom field id of an unreadable project all answer the same error as an unknown id.</li>
+</ul>
+<h2 id="events-and-the-automation-engine">Events and the automation engine <a class="anchor" href="#events-and-the-automation-engine" aria-label="Link to this section: Events and the automation engine">#</a></h2>
+<p>Upstream already dispatches domain events (<code>TaskCreatedEvent</code>, <code>TaskUpdatedEvent</code>, ...) in process after a transaction commits, through <code>events.DispatchOnCommit</code> and <code>DispatchPending</code>. The fork adds new events (<code>task.status.changed</code>, <code>task.custom-field-value.updated</code>, <code>custom-field.created|updated|deleted</code>, <code>approval.requested|decided|resolved</code>, <code>form.submitted</code>) and one new mechanism, the <strong>transactional hook</strong>.</p>
+<figure class="diagram"><figcaption>Diagram, shown as its Mermaid source. This site has no scripts, so it cannot draw it. <a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/ARCHITECTURE.md#L282">View the rendered diagram on GitHub</a>.</figcaption><pre><code class="language-mermaid">flowchart LR
+    Change[&quot;Model change in a transaction&quot;] --&gt; Disp[&quot;events.DispatchOnCommit(session, event)&quot;]
+    Disp --&gt; Hook[&quot;Transactional hook: outboxHook&quot;]
+    Hook --&gt; Row[&quot;INSERT automation_events row, same transaction&quot;]
+    Row --&gt; Commit[&quot;Commit&quot;]
+    Commit --&gt; Wake[&quot;Wake workers of this process&quot;]
+    Poll[&quot;Workers poll every automation.pollinterval&quot;] --&gt; Claim
+    Wake --&gt; Claim[&quot;Claim: conditional UPDATE to processing&quot;]
+    Claim --&gt; Run[&quot;For each enabled rule that listens: runner&quot;]
+    Run --&gt; Steps[&quot;Steps, one transaction each&quot;]</code></pre></figure>
+<p><strong>Transactional outbox.</strong> <code>events.RegisterTransactionalHook</code> registers a function that <code>DispatchOnCommit</code> calls synchronously with the session of the surrounding transaction, before it commits. The automation hook inserts an <code>automation_events</code> row there, so the event commits or rolls back together with the change that caused it: it is never lost and never exists for a rolled back change. The <code>handler.Do*</code> functions check <code>events.PendingHookError</code> before committing, so a hook that could not write fails the request instead of silently losing the event. The one known gap: code that commits sessions itself (cron jobs, CalDAV, importers) does not run that check, so there a failed outbox insert is only logged. The hook writes a row only when <code>automation.enabled</code> is true and at least one enabled rule of the project listens to the event; that set is cached per project for <code>automation.cachettl</code>.</p>
+<p><strong>Workers.</strong> <code>automation.Init</code> (called from <code>initialize.FullInit</code>) starts <code>automation.workers</code> goroutines and one ticker goroutine in the same process, and registers a daily cleanup cron. A worker loop calls <code>ProcessPending</code> when woken (an event written by this process calls <code>Wake</code>) or when <code>automation.pollinterval</code> elapses.</p>
+<p><strong>Claiming and locking.</strong> A row is claimed with <code>UPDATE ... SET status = &#x27;processing&#x27;, locked_until = ?, attempts = attempts + 1 WHERE id = ? AND status = &#x27;pending&#x27;</code> and used only when exactly one row changed. There is no <code>SKIP LOCKED</code>, so the same SQL runs on SQLite, MySQL and PostgreSQL, and two workers (in this process or another replica) never get the same row. Rows left in <code>processing</code> past <code>locked_until</code> go back to <code>pending</code>, or become <code>dead</code> when their attempts are used up; the lock is renewed before every rule of the event because each run has its own timeout. A worker that has nothing to recover does not write at all, because an idle write would take SQLite's write lock on every poll.</p>
+<p><strong>At least once, idempotent.</strong> Delivery is at least once. A run row is inserted first under a unique index on (event, rule), which makes a redelivery find the existing run. The row of a successful step is written in the same transaction as the step's work, so a step recorded as successful was applied exactly once, and a resumed run starts at the first step not recorded as successful. A failure that will repeat (a permission or workflow rejection, an invalid value, a vanished task) fails the run at once; anything else (a database error, a timeout) leaves the run <code>running</code> and puts the event back with exponential backoff (10 s, 20 s, 40 s, ...) until <code>automation.maxattempts</code>, after which the event is <code>dead</code> and the run <code>failed</code>. A run that is resumed checks that the steps it recorded still are the actions at their positions; if the rule was edited so that they are not, the run is aborted with <code>rule_changed</code>.</p>
+<p><strong>The runner.</strong> For one event and one rule the runner: matches the trigger; creates the run; checks the depth, the self-trigger guard, the per-rule rate limit and the owner; evaluates the conditions once, before the first action (a resumed run does not evaluate them again); then executes the actions as steps. Each step runs in its own session with its own timeout (<code>automation.steptimeout</code>), under the run timeout (<code>automation.runtimeout</code>). Every action exists as a <em>plan</em> (reads, checks, resolves templates; used by the dry run) and an <em>apply</em> (writes); a real step is plan followed by apply in one transaction. On SQLite a step begins with a no-op write to its run row, so concurrent steps wait for each other instead of failing on the first write after a read.</p>
+<figure class="diagram"><figcaption>Diagram, shown as its Mermaid source. This site has no scripts, so it cannot draw it. <a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/ARCHITECTURE.md#L305">View the rendered diagram on GitHub</a>.</figcaption><pre><code class="language-mermaid">sequenceDiagram
+    participant U as Person or system
+    participant M as Model and handler
+    participant OB as automation_events
+    participant W as Worker
+    participant R as Runner
+    participant DB as Task data
+
+    U-&gt;&gt;M: change a task
+    M-&gt;&gt;OB: outbox hook inserts event (same transaction)
+    M--&gt;&gt;U: response after commit
+    M-&gt;&gt;W: Wake
+    W-&gt;&gt;OB: claim event (conditional UPDATE)
+    W-&gt;&gt;R: handle event for each enabled rule that listens
+    R-&gt;&gt;R: insert run, check depth, self-trigger, rate limit, owner
+    R-&gt;&gt;R: evaluate conditions once
+    loop each action
+        R-&gt;&gt;DB: step: plan, apply, store step row (one transaction)
+        DB-&gt;&gt;OB: events caused by the step carry origin run and depth plus one
+    end
+    R-&gt;&gt;OB: run finished, event marked done</code></pre></figure>
+<p><strong>Wait and resume.</strong> The <code>wait</code> action does not sleep. It records the step and writes a <code>rule.resume</code> event due after the delay; the run stays <code>running</code>. When the event is due the runner continues with the actions after the wait, without evaluating the conditions again. A rule that was disabled or deleted meanwhile aborts the run. A project can have at most <code>automation.maxpendingwaits</code> runs waiting, <code>automation.waitmax</code> caps one wait, and a daily job fails runs that have been running longer than their waits plus a day (the resume event was lost).</p>
+<p><strong>The ticker.</strong> Time-based triggers do not come from model events. Every process runs <code>Tick</code> every <code>automation.ticker.interval</code>:</p>
+<ul>
+<li>A <strong>schedule</strong> rule stores <code>last_fired_at</code>; the ticker claims an occurrence with a conditional <code>UPDATE</code> of that column in the same transaction that writes the events, so only one replica fires it. Cron expressions are evaluated in the server's time zone (<code>service.timezone</code>); nothing fires for the time before the rule was last saved; a server that was down fires once for all missed occurrences.</li>
+<li><strong>Overdue</strong> and <strong>due soon</strong> rules use <em>markers</em>: one row per (rule, task) in <code>automation_due_markers</code>, holding the due date it fired for. The unique index is the claim. A task fires once per due date, and a changed due date arms it again.</li>
+<li><strong>Arming.</strong> When a rule is created, enabled again, or gets another trigger, it is <em>armed</em>: a marker is written for every task that already is overdue (or inside the due-soon window), at most 20000 in the transaction of the save, so tasks that were already late do not all fire at once. Editing the title, conditions or actions does not re-arm.</li>
+<li>The per-minute run limit does not apply to time-based triggers; the cap per tick (<code>automation.ticker.maxtasks</code>) and the scan cap (<code>automation.ticker.maxscan</code>) do.</li>
+</ul>
+<p><strong>Loop guards.</strong> Three independent layers keep a rule from feeding itself:</p>
+<ol>
+<li><em>Origin and depth.</em> Events written by an action of a run carry <code>origin_run_id</code> and <code>depth + 1</code> (the step's session is registered under the run, and the hook looks it up). An event deeper than <code>automation.maxdepth</code> is recorded as a skipped run (<code>max_depth</code>), and a rule never reacts to an event whose chain of origin runs contains a run of the same rule (<code>self_trigger</code>).</li>
+<li><em>Task origins.</em> A task created by a run is remembered in <code>automation_task_origins</code>, so time-based events for it carry the run as origin and one more level of depth. The guard lasts as long as the run's history (<code>automation.retention</code>).</li>
+<li><em>The outbound marker.</em> Every request the engine sends carries the header <code>X-Vikunja-Automation-Depth</code>; the server answers every <code>/api/v1</code> and <code>/api/v2</code> request that carries it with <code>508 Loop Detected</code>, so a rule cannot call the task API or the webhook endpoint of its own instance with any address or token. <code>http.request</code> and <code>http.fetch</code> also refuse URLs that look like this server's webhook endpoints. A reverse proxy that strips the header, or a second hop through an external service that calls back without it, is outside what the guard can see.</li>
+</ol>
+<p><strong>Limits and kill switches.</strong> <code>automation.enabled</code> turns off recording and running for the instance; <code>automation.scripts.enabled</code> turns off scripts. The numeric limits (actions per run, step and run timeout, per-rule rate limit, retries, consecutive failures before a rule is disabled, wait caps, ticker caps, script limits) are tabulated in the <a href="modules/automation.html#limits-and-safety">automation module page</a>. Scripts run in an embedded pure-Go JavaScript interpreter (goja), a fresh one per run, with no file system, process, timers or network except <code>http.fetch</code>. The interpreter runs in a child process (the same binary, on Linux <code>/proc/self/exe</code>, re-executed with <code>VIKUNJA_AUTOMATION_SCRIPT_PROCESS=1</code> and an otherwise empty environment) that has to identify itself with the server's build, that the server kills half a second after the script timeout, that ends itself a second later or when the server is gone, and that has a hard memory limit on Linux (<code>automation.scripts.maxmemory</code>); its host calls come back over a pipe, are checked against the run's limits again and are answered in the step's transaction. At most <code>automation.workers</code> + 2 script processes live at a time (dry runs and checks share two, one per project). Messages are bounded both ways (4 MiB from the child, 8 MiB to it, estimated before encoding). Processes are pooled after a success or an ordinary exception when their memory is back to what a new process has. Blame is default-deny once a process got the script; failures before that are temporary and do not count against the rule, nor does a SIGKILL the server did not send. The child is not a sandbox: it runs as the server's user and is reused across projects; the checks against it are about protocol robustness and resource bounds.</p>
+<figure class="diagram"><figcaption>Diagram, shown as its Mermaid source. This site has no scripts, so it cannot draw it. <a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/ARCHITECTURE.md#L346">View the rendered diagram on GitHub</a>.</figcaption><pre><code class="language-mermaid">sequenceDiagram
+    participant S as External sender
+    participant RT as Router and Huma
+    participant A as ReceiveWebhook
+    participant DB as Database
+    participant W as Worker
+
+    S-&gt;&gt;RT: POST /api/v2/automation/hooks/token with JSON body
+    RT-&gt;&gt;RT: per-IP floor per minute, body size limit
+    RT-&gt;&gt;A: token, raw body, X-Vikunja-Signature
+    A-&gt;&gt;DB: look up rule by SHA-256 of the token
+    A-&gt;&gt;A: unknown token, disabled rule or other trigger gives the same 404
+    A-&gt;&gt;DB: if the rule names a secret, verify HMAC over the raw body
+    A-&gt;&gt;DB: per-rule rate limit counted from the outbox
+    A-&gt;&gt;A: body must be a JSON object
+    A-&gt;&gt;DB: insert targeted event for this rule only
+    A--&gt;&gt;S: 202 queued
+    W-&gt;&gt;DB: claim event, run the rule with event.payload</code></pre></figure>
+<h2 id="workflow-and-status-model">Workflow and status model <a class="anchor" href="#workflow-and-status-model" aria-label="Link to this section: Workflow and status model">#</a></h2>
+<p>A status is <strong>not</strong> a kanban bucket. The status is a property of the task and the same in every view; a bucket is how one kanban view groups tasks. A project without a workflow behaves exactly like upstream.</p>
+<ul>
+<li>A project has at most one workflow (<code>workflows.project_id</code> is unique) with statuses (<code>open</code>, <code>in_progress</code>, <code>done</code>, <code>cancelled</code> categories, exactly one initial), and transitions between pairs of statuses. With <code>restrict_transitions</code> off every change is allowed and the transition rows only carry extra rules; with it on only listed transitions are allowed.</li>
+<li>A task's current status is a row in <code>task_statuses</code>, kept out of <code>tasks</code> to keep the upstream diff small. <code>task_status_history</code> records every change.</li>
+<li><strong>One function performs every status change.</strong> It checks in order: the target status exists and is not archived; the transition is allowed; the permission and teams; the required fields (built-in names or <code>cf_&lt;id&gt;</code>); the required comment. A failure is a typed 4xx error that names what is missing so the UI can ask for exactly that. A success writes history, syncs <code>done</code>, and dispatches <code>task.status.changed</code>.</li>
+<li><strong><code>done</code> stays in sync.</strong> Entering a status of category <code>done</code> or <code>cancelled</code> sets <code>task.done</code>; leaving it clears it. Marking a task done through the checkbox performs the transition to the first <code>done</code> status under the same checks; un-doing returns it to the initial status. Changing a status's category in the workflow document re-syncs the tasks in it, without a history entry. A task created already done starts in the first <code>done</code> status under the checks of that transition, and is refused when they fail, also through CalDAV.</li>
+<li><strong>Kanban status mode.</strong> A kanban view can use the statuses as columns. There are no stored buckets: the bucket list is derived from the workflow on every read, a column's bucket id is the <strong>negated status id</strong> (status 7 is bucket <code>-7</code>), and a drop is the same transition with the same checks. Bucket management on such a view is rejected.</li>
+<li><strong>Approvals as gated transitions.</strong> A transition with <code>requires_approval</code> runs all other checks first. It then does not move the task: it creates, or returns, a pending approval request (<code>POST /tasks/{task}/status</code> answers <code>202</code>). When the request is approved, the same function runs again as the requester with only the approval requirement bypassed; if something no longer holds, the request is <code>cancelled</code> with a machine-readable reason and the status does not change. Callers that change the status as a side effect (the done checkbox, bulk updates, a task created done) are refused with <code>409</code> and code <code>24007</code>, create nothing, and the response says whether a request can be made. System transitions (re-opening a repeating task, the move after a rejection, removing a status) never ask. Concurrency is handled by taking the write lock of the request first and using conditional updates on <code>status = pending</code>, so two approvers deciding at once, or a decision racing a cancel, serialize and the loser gets <code>409</code> / <code>24002</code>.</li>
+<li><strong>Moving a task to another project</strong> resets its status to that project's initial status (or none), keeps history, and applies the same checks to a task that is done when it arrives.</li>
+</ul>
+<h2 id="reports">Reports <a class="anchor" href="#reports" aria-label="Link to this section: Reports">#</a></h2>
+<p><code>POST /api/v2/reports/tasks</code> and its siblings aggregate tasks; dashboards are widgets whose configs hold report requests.</p>
+<ul>
+<li><strong>Scope and permissions.</strong> The set of tasks is the one the task list would show the viewer (<code>readableTasksQuery</code> with the shared filter conversion), so the filter syntax, including <code>status</code>, <code>status_category</code> and <code>cf_&lt;id&gt;</code>, is the one people know from views.</li>
+<li><strong>Statements.</strong> Without <code>group_by</code> a report is one statement for the totals and one more for a time series; each dimension level is one grouped statement. The count never depends on the number of groups or tasks.</li>
+<li><strong>Time buckets are computed in Go</strong>, in the requested IANA time zone, so daylight saving is exact (a day can be 23 or 25 hours long). The database is never asked to truncate dates: the boundaries are passed to the query as a balanced tree of <code>CASE WHEN column &lt; &#x27;boundary&#x27;</code> expressions, which is plain SQL on all three engines.</li>
+<li><strong>Bounds.</strong> At most two dimensions plus time; <code>reports.maxbuckets</code> (366) buckets, <code>reports.maxgroups</code> (200) groups per level (the rest folds into an &quot;other&quot; group), <code>reports.maxrows</code> (50000) rows for reports computed in memory (time in status, time tracking) and CSV exports, and <code>reports.timeout</code> (20 s) for the queries, which are cancelled when it is exceeded (<code>503</code>, code <code>23009</code>).</li>
+<li><strong>Cache.</strong> Results are cached in memory per authenticated identity and normalized request for <code>reports.cachettl</code> (30 s), at most 256 entries, with no invalidation. <code>reports.cachettl: 0</code> disables it.</li>
+<li><strong>Known gaps</strong> (the response size is unbounded in groups x children x buckets; the time tracking report builds <code>IN</code> lists from task ids) are listed in the <a href="roadmap.html">roadmap</a>.</li>
+</ul>
+<h2 id="public-surface">Public surface <a class="anchor" href="#public-surface" aria-label="Link to this section: Public surface">#</a></h2>
+<p>Almost everything in <code>/api/v2</code> needs authentication. The unauthenticated additions of the fork are small and each is bounded:</p>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Endpoint</th><th scope="col">Credential</th><th scope="col">How it is bounded</th></tr></thead><tbody>
+<tr><td><code>GET /forms/{token}</code>, <code>GET /forms/{token}/logo</code>, <code>POST /forms/{token}/submissions</code>, <code>POST /forms/{token}/submissions/multipart</code></td><td>The unguessable form token. A request that sends an <code>Authorization</code> header is authenticated like any other (optional auth), which is how forms for signed-in users share the route.</td><td>A per-IP request floor per minute (<code>forms.public.requestratelimit</code>, router middleware); per-IP and per-form submission limits per hour, counted in the database from a salted IP hash so they hold across replicas; a honeypot; JSON body size (<code>forms.maxbodysize</code>); attachments off for public forms unless <code>forms.public.attachments</code>; file count and size limits; a maximum number of submissions enforced with one conditional <code>UPDATE</code> inside the submission transaction; a close date; <code>forms.enabled</code> and <code>forms.public.enabled</code> kill switches.</td></tr>
+<tr><td><code>POST /automation/hooks/{token}</code></td><td>The secret token in the URL (32 random bytes, shown once; only its SHA-256 is stored), plus an optional HMAC signature (<code>X-Vikunja-Signature</code>) over the timestamp (<code>X-Vikunja-Timestamp</code>), the hook token and the body.</td><td>The same per-IP floor; a body size limit (<code>automation.webhook.maxbody</code>); a per-rule rate limit (<code>automation.webhook.ratelimit</code> per minute); the signature is checked before the rate limit counts; the same <code>404</code> for unknown tokens, disabled rules and other triggers. A signed call must be inside <code>automation.webhook.tolerance</code> and is accepted once: the accepted signatures live in <code>automation_webhook_seen</code>, a unique index in the shared database, so every replica refuses a replay; hooks without a secret are not signed and not protected.</td></tr>
+</tbody></table></div>
+<p>What an anonymous form submitter can do: read one form's definition (title, description, shown fields with their options, success behaviour, file limits; never the project, owner, count, hidden fields or defaults) and create one task per accepted submission, as the form owner, in the form's project, with the fields the form asks for and the presets the admin chose. They cannot choose where the task goes, set hidden fields, see the task or its id, or learn how many submissions exist. Every text they send is escaped, sanitized by an allow-list or stored as plain text. The routes set no cookies and use no CSRF token because nothing depends on ambient credentials; <code>application/json</code> is required, so a cross-site HTML form cannot post to the JSON endpoint.</p>
+<p>The other public paths (<code>/info</code>, <code>/health</code>, the OpenAPI document, the docs page, login and registration) are upstream's.</p>
+<h2 id="database-portability-and-migrations">Database portability and migrations <a class="anchor" href="#database-portability-and-migrations" aria-label="Link to this section: Database portability and migrations">#</a></h2>
+<p>All three engines are supported by every query and migration of the fork. The documented minimum versions (from <a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/.agents/docs/databases.md">.agents/docs/databases.md</a>) are MySQL 8.0, MariaDB 10.2, PostgreSQL 9.5 and SQLite 3.25. They come from hand-written SQL in the code, not from a startup check, and CI tests only the newest versions. Which databases the fork's own suites have been run on is recorded in the <a href="roadmap.html">roadmap</a>.</p>
+<p>Rules the fork follows:</p>
+<ul>
+<li>Use xorm builder code and plain SQL that works on all three: conditional <code>UPDATE</code> for claiming instead of <code>SKIP LOCKED</code>; <code>CASE WHEN</code> for time buckets instead of dialect date functions; times used in comparisons are formatted as UTC text, as the existing reminder code does. The one dialect-specific expression is the length of a time entry in seconds.</li>
+<li>Branch on <code>db.Type()</code> when a feature is missing on a minimum; check raw SQL against all four minimums before using it. Raising a minimum means updating the databases document and flagging it as breaking.</li>
+<li>SQLite is a file in WAL mode. A transaction that reads and then writes fails at once when another connection holds the write lock, and <code>busy_timeout</code> cannot fix that, so every automation step begins with a write; a genuinely busy database is a temporary failure and is retried. The roadmap lists the broader SQLite locking behaviour as an open decision.</li>
+<li><strong>Migrations.</strong> The fork's migrations are <code>pkg/migration/20261122120000.go</code> to <code>20261128100000.go</code>. Each declares only what it adds. A plain <code>tx.Sync</code> is used only for brand-new tables, because xorm's <code>Sync</code> drops every index and constraint the struct does not declare; changes to existing tables use <code>partialSync</code>, which preserves them, and a new unique index on an existing table is created explicitly. Time columns are <code>time.Time</code>. Each brand-new-table migration has a <code>Rollback</code> that drops its tables. See the <code>migration</code> skill in <code>.agents/skills/migration/SKILL.md</code>.</li>
+</ul>
+<h2 id="frontend-architecture">Frontend architecture <a class="anchor" href="#frontend-architecture" aria-label="Link to this section: Frontend architecture">#</a></h2>
+<p>The web client is Vue 3 and TypeScript, built with Vite, in <code>frontend/</code>. State is Pinia for session and configuration and TanStack Query for server data; routing is vue-router; internationalization is vue-i18n. The styling base is Bulma (via <code>bulma-css-variables</code>) with CSS custom properties; Tailwind utilities exist with a <code>tw</code> prefix.</p>
+<ul>
+<li><strong>API access goes only through the generated client</strong> in <code>frontend/src/client/generated</code> and the query modules in <code>frontend/src/client/queries</code>. The client is generated from the OpenAPI document of the Go code (<code>mage generate:frontend-client</code>), so the frontend and backend share types. Importing <code>axios</code> or the legacy <code>models</code>, <code>modelTypes</code> or <code>services</code> paths is a lint error. Each feature has a query module (<code>customFields.ts</code>, <code>workflow.ts</code>, <code>approvals.ts</code>, <code>automation.ts</code>, <code>automationSecrets.ts</code>, <code>dashboards.ts</code>, <code>reports.ts</code>, <code>reportWidgets.ts</code>, <code>forms.ts</code>) with a key factory, query options, mutation options and thin hooks. See <a href="api.html#the-generated-frontend-client">API.md</a>.</li>
+<li><strong>State.</strong> Server data lives in the query cache and is written only in mutation callbacks. A mutation whose input or result holds a secret (an automation secret, a webhook address) uses <code>useSecretMutation</code> (<code>client/queries/secretMutation.ts</code>), which keeps nothing in the mutation cache. The rule list cache never receives the webhook address.</li>
+<li><strong>Routing.</strong> Feature pages are routes: <code>project.settings.custom-fields</code>, <code>project.settings.workflow</code>, <code>project.settings.automations</code>, <code>project.settings.forms</code>, <code>/dashboards</code>, <code>/dashboards/:id</code>, <code>/projects/:id/dashboards</code>, <code>/approvals</code>. The public form page, <code>/forms/:token</code>, has <code>meta.standalone</code>: <code>App.vue</code> renders it without header, sidebar or login layout, and the router guard lets visitors through without a session. It loads the definition through the <code>publicClient</code>, which sends no <code>Authorization</code> header.</li>
+<li><strong>Components per feature</strong> live in <code>components/{custom-fields,workflow,approvals,automation,dashboards,charts,forms}</code> with their helpers in <code>helpers/</code>. Charts are hand-written SVG components, not a charting library.</li>
+<li><strong>The automation editor is generated from the server catalog.</strong> <code>GET /api/v2/automations/catalog</code> returns triggers with options, condition fields with operators, actions with typed parameters, and the script API reference; the editor renders one generic parameter control per parameter <code>kind</code>. A new action therefore needs no frontend change.</li>
+<li><strong>i18n.</strong> The English source is <code>frontend/src/i18n/lang/en.json</code> (and <code>pkg/i18n/lang/en.json</code> for the API). The fork's strings are also translated into Turkish in <code>tr-TR.json</code>, kept in the repository. Other languages are synced from Crowdin, so the fork's new strings appear in English there until translated. A unit test checks the translation keys of the automation catalog against <code>en.json</code> and <code>tr-TR.json</code>.</li>
+<li><strong>Styling and layout decisions</strong> are in <a href="design.html">Design</a>.</li>
+</ul>
+<h2 id="architecture-decisions">Architecture decisions <a class="anchor" href="#architecture-decisions" aria-label="Link to this section: Architecture decisions">#</a></h2>
+<p>Each decision states the context, what was decided, and the consequences including the trade-offs. They are drawn from the design documents in <code>docs/enterprise/</code> and from the code.</p>
+<h3 id="1-the-automation-outbox-is-a-table-in-the-main-database-not-a-queue">1. The automation outbox is a table in the main database, not a queue <a class="anchor" href="#1-the-automation-outbox-is-a-table-in-the-main-database-not-a-queue" aria-label="Link to this section: 1. The automation outbox is a table in the main database, not a queue">#</a></h3>
+<ul>
+<li><strong>Context.</strong> Automation needs durable, at-least-once delivery of events that must not exist for a rolled back change and must not be lost when a change commits. The project's principle is one image and one process, with no Redis requirement.</li>
+<li><strong>Decision.</strong> Events are rows in <code>automation_events</code>, inserted by a transactional hook in the same transaction as the change that caused them.</li>
+<li><strong>Consequences.</strong> No new infrastructure, and atomicity with the change comes for free. The cost is database load (polling, an extra insert per relevant change), a polling delay for events written by other replicas (<code>automation.pollinterval</code>), and a gap for code paths that commit their own sessions (cron jobs, CalDAV, importers), where a failed outbox insert is only logged.</li>
+</ul>
+<h3 id="2-workers-run-in-the-server-process">2. Workers run in the server process <a class="anchor" href="#2-workers-run-in-the-server-process" aria-label="Link to this section: 2. Workers run in the server process">#</a></h3>
+<ul>
+<li><strong>Context.</strong> Rules must run when events happen, and operators should not have to deploy a second component.</li>
+<li><strong>Decision.</strong> <code>automation.workers</code> goroutines and a ticker start with the server (<code>automation.Init</code>).</li>
+<li><strong>Consequences.</strong> Simple deployment and shutdown (a run interrupted by shutdown is resumed by another process when its lock expires). Automation shares CPU and memory with the API, so a heavy rule competes with requests; the limits and the kill switches exist for that reason. Scripts are the exception: they run in child processes (decision 14) with a cap on their number, so a script cannot hold a worker much past its timeout (plus the host call in flight) or, on Linux, exhaust the server's memory.</li>
+</ul>
+<h3 id="3-apiv1-is-frozen-everything-the-fork-adds-is-on-apiv2">3. <code>/api/v1</code> is frozen; everything the fork adds is on <code>/api/v2</code> <a class="anchor" href="#3-apiv1-is-frozen-everything-the-fork-adds-is-on-apiv2" aria-label="Link to this section: 3. /api/v1 is frozen; everything the fork adds is on /api/v2">#</a></h3>
+<ul>
+<li><strong>Context.</strong> Upstream is moving to a Huma-based <code>/api/v2</code> with a generated OpenAPI document and a generated client; <code>/api/v1</code> is supported but does not grow.</li>
+<li><strong>Decision.</strong> Every new route of the fork is a v2 operation. v1 is touched only for bug fixes and ports.</li>
+<li><strong>Consequences.</strong> The fork's routes are typed, documented in OpenAPI, and available to the generated client. They are not available on v1, and v1 clients (including anything built against the old frontend services) cannot use them. The fork's v2 operations are not exposed over MCP unless added to the allow-list, and none is.</li>
+</ul>
+<h3 id="4-statuses-are-separate-from-kanban-buckets">4. Statuses are separate from kanban buckets <a class="anchor" href="#4-statuses-are-separate-from-kanban-buckets" aria-label="Link to this section: 4. Statuses are separate from kanban buckets">#</a></h3>
+<ul>
+<li><strong>Context.</strong> Upstream knows <code>done</code> and a kanban bucket, which belongs to one view. A project needs real statuses that are the same in every view and have rules.</li>
+<li><strong>Decision.</strong> A status is a property of the task (<code>task_statuses</code>), with its own workflow, transitions and history. A kanban view can opt into a status mode in which columns are statuses; there are no stored buckets and a column's bucket id is the negated status id.</li>
+<li><strong>Consequences.</strong> Statuses work in lists, tables, filters, reports and automation, not only on boards, and manual kanban views keep working unchanged. The cost is a second concept next to buckets, a derived bucket list, negative bucket ids that some code must understand, and extra rejection codes for bucket management in status views.</li>
+</ul>
+<h3 id="5-dashboards-are-widgets-over-task-filters-with-no-snapshot-tables">5. Dashboards are widgets over task filters, with no snapshot tables <a class="anchor" href="#5-dashboards-are-widgets-over-task-filters-with-no-snapshot-tables" aria-label="Link to this section: 5. Dashboards are widgets over task filters, with no snapshot tables">#</a></h3>
+<ul>
+<li><strong>Context.</strong> A dashboard must never show more than its viewer may read, and should use the vocabulary people already know.</li>
+<li><strong>Decision.</strong> A widget stores a filter and display options. Every number is computed at request time over the tasks the viewer can read, using the task list's own query builder. There are no stored aggregates.</li>
+<li><strong>Consequences.</strong> There is one permission implementation, and numbers are always current. The cost is query load at request time (mitigated by a short in-memory cache with no invalidation), no history of past values, and the need for hard bounds on groups, buckets and rows. Status-time and &quot;created vs done&quot; are computed from existing history and dates.</li>
+</ul>
+<h3 id="6-charts-are-hand-written-svg">6. Charts are hand-written SVG <a class="anchor" href="#6-charts-are-hand-written-svg" aria-label="Link to this section: 6. Charts are hand-written SVG">#</a></h3>
+<ul>
+<li><strong>Context.</strong> A charting library adds a dependency, a bundle size and its own theming and accessibility story.</li>
+<li><strong>Decision.</strong> Bar, stacked and grouped bar, donut, line and number tile are small Vue components over plain SVG, themed with the existing CSS variables, with a tooltip on hover and focus, an <code>aria-label</code> per mark and a hidden data table.</li>
+<li><strong>Consequences.</strong> No dependency, consistent theming and dark mode, and control over accessibility. The cost is that every chart feature is code to maintain and there are only the chart types that were written.</li>
+</ul>
+<h3 id="7-rules-run-with-their-owners-permissions">7. Rules run with their owner's permissions <a class="anchor" href="#7-rules-run-with-their-owners-permissions" aria-label="Link to this section: 7. Rules run with their owner&#x27;s permissions">#</a></h3>
+<ul>
+<li><strong>Context.</strong> A rule acts without a person in the loop; it must not become a way to exceed one's rights.</li>
+<li><strong>Decision.</strong> The saving admin becomes the owner; every action runs through the normal model functions as the owner; the owner is re-checked at run time and the rule is disabled when the owner is gone or no longer an admin.</li>
+<li><strong>Consequences.</strong> Actions can never do more than the owner could by hand, and there is no special automation permission to audit. The trade-offs: a rule silently stops working (it is disabled with a reason) when its owner's rights change, and a project admin who writes scripts can read that project's secrets.</li>
+</ul>
+<h3 id="8-the-frontend-uses-only-the-generated-client-and-the-query-modules">8. The frontend uses only the generated client and the query modules <a class="anchor" href="#8-the-frontend-uses-only-the-generated-client-and-the-query-modules" aria-label="Link to this section: 8. The frontend uses only the generated client and the query modules">#</a></h3>
+<ul>
+<li><strong>Context.</strong> Hand-written service classes and models drift from the API.</li>
+<li><strong>Decision.</strong> The client is generated from the OpenAPI document; feature code goes through typed query modules; legacy imports are lint errors; <code>mage check:frontend-client</code> verifies the generated output is current and reproducible.</li>
+<li><strong>Consequences.</strong> Types follow the backend, and the cache rules are uniform. The cost is that every API change requires regenerating and committing the client, and that bootstrap calls are the documented exceptions.</li>
+</ul>
+<h3 id="9-delivery-is-at-least-once-and-steps-are-idempotent">9. Delivery is at least once, and steps are idempotent <a class="anchor" href="#9-delivery-is-at-least-once-and-steps-are-idempotent" aria-label="Link to this section: 9. Delivery is at least once, and steps are idempotent">#</a></h3>
+<ul>
+<li><strong>Context.</strong> Exactly-once is not available across a database transaction and an external side effect.</li>
+<li><strong>Decision.</strong> A unique (event, rule) run row and a unique (run, position) step row, written in the step's transaction, make a redelivery or a retry skip what already succeeded.</li>
+<li><strong>Consequences.</strong> Internal effects happen once. External effects (an HTTP request) are not rolled back if the step fails afterwards, and are sent again when the commit fails after the request went out, so receivers must tolerate duplicates.</li>
+</ul>
+<h3 id="10-claiming-uses-a-conditional-update-not-skip-locked">10. Claiming uses a conditional UPDATE, not <code>SKIP LOCKED</code> <a class="anchor" href="#10-claiming-uses-a-conditional-update-not-skip-locked" aria-label="Link to this section: 10. Claiming uses a conditional UPDATE, not SKIP LOCKED">#</a></h3>
+<ul>
+<li><strong>Context.</strong> Several workers and replicas must never process the same event, on three databases whose minimum versions differ.</li>
+<li><strong>Decision.</strong> <code>UPDATE ... WHERE id = ? AND status = &#x27;pending&#x27;</code>, used only when one row changed.</li>
+<li><strong>Consequences.</strong> The same SQL on every engine and no dependency on newer syntax. Contention costs wasted attempts rather than blocking, and the claim batch is one event so that a lock covers one run timeout.</li>
+</ul>
+<h3 id="11-time-buckets-are-computed-in-go">11. Time buckets are computed in Go <a class="anchor" href="#11-time-buckets-are-computed-in-go" aria-label="Link to this section: 11. Time buckets are computed in Go">#</a></h3>
+<ul>
+<li><strong>Context.</strong> Date truncation differs per database and time zone support tables are not available everywhere.</li>
+<li><strong>Decision.</strong> Bucket boundaries are computed in the requested time zone in Go and passed to the query as <code>CASE WHEN</code> expressions.</li>
+<li><strong>Consequences.</strong> Daylight saving is exact and no dialect function is needed. Boundaries are formatted at second precision, there is one time zone per request, the week starts on Monday and is not configurable.</li>
+</ul>
+<h3 id="12-new-features-get-their-own-tables-and-upstream-tables-are-not-altered">12. New features get their own tables, and upstream tables are not altered <a class="anchor" href="#12-new-features-get-their-own-tables-and-upstream-tables-are-not-altered" aria-label="Link to this section: 12. New features get their own tables, and upstream tables are not altered">#</a></h3>
+<ul>
+<li><strong>Context.</strong> Upstream should stay mergeable.</li>
+<li><strong>Decision.</strong> Per-task fork data lives in separate tables keyed by task id (<code>task_statuses</code>, <code>task_custom_field_values</code>, <code>automation_task_origins</code>), and new columns appear only on the fork's own tables, added with <code>partialSync</code>.</li>
+<li><strong>Consequences.</strong> Upstream migrations and models rarely conflict with the fork. The cost is joins, extra queries to load embedded data (done in a fixed number of queries per page), and lifecycle code in a few upstream paths (project duplicate, purge, task move) to keep the fork's rows consistent.</li>
+</ul>
+<h3 id="13-time-based-triggers-use-a-ticker-with-claims-in-the-database">13. Time-based triggers use a ticker with claims in the database <a class="anchor" href="#13-time-based-triggers-use-a-ticker-with-claims-in-the-database" aria-label="Link to this section: 13. Time-based triggers use a ticker with claims in the database">#</a></h3>
+<ul>
+<li><strong>Context.</strong> Schedule, overdue and due-soon cannot be driven by model events, and several replicas must not fire twice.</li>
+<li><strong>Decision.</strong> Every process ticks; a firing is claimed in the same transaction that writes the events, by a conditional update of <code>last_fired_at</code> or by the unique (rule, task) marker.</li>
+<li><strong>Consequences.</strong> Replicas coordinate through the database only. The cost is a tick resolution (30 s by default, cron has one-minute resolution), arming logic so that existing late tasks do not fire, caps per tick, and a separate loop-guard story for tasks created by rules.</li>
+</ul>
+<h3 id="14-scripts-run-in-an-embedded-interpreter">14. Scripts run in an embedded interpreter <a class="anchor" href="#14-scripts-run-in-an-embedded-interpreter" aria-label="Link to this section: 14. Scripts run in an embedded interpreter">#</a></h3>
+<ul>
+<li><strong>Context.</strong> Some rules need logic that building blocks cannot express.</li>
+<li><strong>Decision.</strong> JavaScript through goja, a fresh interpreter per run, frozen read-only globals, an API that calls the same plans and permission checks as the actions, and hard limits (wall clock, API calls, HTTP requests, response and log sizes, call stack, memory). The interpreter runs in a child process of the server: the same binary re-executed with a marker variable (the <code>init</code> of <code>pkg/automation/script</code> turns any binary that imports it into the script process, so the scratch container image and the test binaries need nothing else), JSON over stdin/stdout, killed half a second after the script timeout, an address-space limit on Linux, a watchdog in the child (it exits after the deadline or when its parent is gone; the scheduler preempts the native call, so it runs with <code>GOMAXPROCS=1</code> too; a CPU-time rlimit was rejected because the Go runtime ignores <code>SIGXCPU</code>), a hello with the build, sequence numbers and a line limit checked before buffering. goja checks its interrupt only between JavaScript instructions, so a single native call (an array built-in over <code>{length: 2**53 - 1}</code>, a huge allocation, <code>eval</code> of a huge source) could otherwise hold a worker forever or end the server with a fatal out-of-memory error; wrapping the built-ins was rejected because the class is open-ended (every built-in that loops over a length, iterators, <code>apply</code>, the parser, big integers). Processes are pooled (one per worker plus one) and reused only after a success or an ordinary exception and only when the next script gets the memory of a new process (the Go runtime keeps its address space, so a process that grew is retired). Live processes are capped at workers + 2, so dry runs cannot take a worker's process. Sandboxing the child (another user, seccomp, namespaces) was not done: an interpreter escape is a compromise of the server.</li>
+<li><strong>Consequences.</strong> No external runtime and no escape to Go objects. About 0.7 ms of overhead per script with a pooled process, about 25 ms to start one. The hard memory limit exists on Linux only; on macOS, the BSDs and Windows a script is still killed at its deadline. The Go runtime takes part of the limit: at 256 MiB a script gets about 190 MiB in one typed array. A worker is held at most for the timeout plus half a second plus the host call in flight. A script that waits holds its step's transaction open. Secrets are protected from display, not from the script author, which is why writing scripts needs project admin and why <code>automation.scripts.enabled</code> exists.</li>
+</ul>
+<h3 id="15-public-forms-are-token-only-and-create-tasks-as-the-form-owner">15. Public forms are token-only and create tasks as the form owner <a class="anchor" href="#15-public-forms-are-token-only-and-create-tasks-as-the-form-owner" aria-label="Link to this section: 15. Public forms are token-only and create tasks as the form owner">#</a></h3>
+<ul>
+<li><strong>Context.</strong> Anyone with a link must be able to submit without an account, and the result must obey workflows and validation.</li>
+<li><strong>Decision.</strong> The form token is the credential; submissions go through the normal task create path as the owner, in one transaction; the public response never contains project data.</li>
+<li><strong>Consequences.</strong> Workflows, field validation and automation apply to submissions. Abuse is bounded by limits rather than prevented by identity, and a form disables itself when its owner loses write access. Several open points (per-IP limits count full IPv6 addresses, hourly limits are check-then-insert) are listed in the roadmap.</li>
+</ul>
+<h3 id="16-project-secrets-are-encrypted-with-a-key-derived-from-servicesecret">16. Project secrets are encrypted with a key derived from <code>service.secret</code> <a class="anchor" href="#16-project-secrets-are-encrypted-with-a-key-derived-from-servicesecret" aria-label="Link to this section: 16. Project secrets are encrypted with a key derived from service.secret">#</a></h3>
+<ul>
+<li><strong>Context.</strong> Rules need credentials (signing keys, tokens) that must not be shown anywhere.</li>
+<li><strong>Decision.</strong> AES-256-GCM per value, key derived with HKDF-SHA256 from <code>service.secret</code>, with the project id and name authenticated; values are write-only in the API and masked in everything a run stores.</li>
+<li><strong>Consequences.</strong> No extra key to manage. Changing <code>service.secret</code> makes every secret unreadable until it is set again (the API lists them as <code>unreadable</code>), and there is no rotation or versioning beyond the <code>v1:</code> prefix.</li>
+</ul>
+</div>
+<p class="edit"><a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/ARCHITECTURE.md">Source of this page on GitHub</a></p>
+<nav class="pager" aria-label="Pages"><a class="prev" href="api.html" rel="prev"><span>Previous</span>API reference</a><a class="next" href="design.html" rel="next"><span>Next</span>Design</a></nav>
+</main>
+<nav class="toc-aside" aria-label="On this page"><p class="side-title">On this page</p><ul>
+<li class="toc-2"><a href="#system-context-and-deployment">System context and deployment</a></li>
+<li class="toc-3"><a href="#several-instances">Several instances</a></li>
+<li class="toc-2"><a href="#repository-and-package-map">Repository and package map</a></li>
+<li class="toc-2"><a href="#request-lifecycle-on-apiv2">Request lifecycle on /api/v2</a></li>
+<li class="toc-2"><a href="#data-model">Data model</a></li>
+<li class="toc-2"><a href="#permission-model">Permission model</a></li>
+<li class="toc-2"><a href="#events-and-the-automation-engine">Events and the automation engine</a></li>
+<li class="toc-2"><a href="#workflow-and-status-model">Workflow and status model</a></li>
+<li class="toc-2"><a href="#reports">Reports</a></li>
+<li class="toc-2"><a href="#public-surface">Public surface</a></li>
+<li class="toc-2"><a href="#database-portability-and-migrations">Database portability and migrations</a></li>
+<li class="toc-2"><a href="#frontend-architecture">Frontend architecture</a></li>
+<li class="toc-2"><a href="#architecture-decisions">Architecture decisions</a></li>
+<li class="toc-3"><a href="#1-the-automation-outbox-is-a-table-in-the-main-database-not-a-queue">1. The automation outbox is a table in the main database, not a queue</a></li>
+<li class="toc-3"><a href="#2-workers-run-in-the-server-process">2. Workers run in the server process</a></li>
+<li class="toc-3"><a href="#3-apiv1-is-frozen-everything-the-fork-adds-is-on-apiv2">3. /api/v1 is frozen; everything the fork adds is on /api/v2</a></li>
+<li class="toc-3"><a href="#4-statuses-are-separate-from-kanban-buckets">4. Statuses are separate from kanban buckets</a></li>
+<li class="toc-3"><a href="#5-dashboards-are-widgets-over-task-filters-with-no-snapshot-tables">5. Dashboards are widgets over task filters, with no snapshot tables</a></li>
+<li class="toc-3"><a href="#6-charts-are-hand-written-svg">6. Charts are hand-written SVG</a></li>
+<li class="toc-3"><a href="#7-rules-run-with-their-owners-permissions">7. Rules run with their owner&#x27;s permissions</a></li>
+<li class="toc-3"><a href="#8-the-frontend-uses-only-the-generated-client-and-the-query-modules">8. The frontend uses only the generated client and the query modules</a></li>
+<li class="toc-3"><a href="#9-delivery-is-at-least-once-and-steps-are-idempotent">9. Delivery is at least once, and steps are idempotent</a></li>
+<li class="toc-3"><a href="#10-claiming-uses-a-conditional-update-not-skip-locked">10. Claiming uses a conditional UPDATE, not SKIP LOCKED</a></li>
+<li class="toc-3"><a href="#11-time-buckets-are-computed-in-go">11. Time buckets are computed in Go</a></li>
+<li class="toc-3"><a href="#12-new-features-get-their-own-tables-and-upstream-tables-are-not-altered">12. New features get their own tables, and upstream tables are not altered</a></li>
+<li class="toc-3"><a href="#13-time-based-triggers-use-a-ticker-with-claims-in-the-database">13. Time-based triggers use a ticker with claims in the database</a></li>
+<li class="toc-3"><a href="#14-scripts-run-in-an-embedded-interpreter">14. Scripts run in an embedded interpreter</a></li>
+<li class="toc-3"><a href="#15-public-forms-are-token-only-and-create-tasks-as-the-form-owner">15. Public forms are token-only and create tasks as the form owner</a></li>
+<li class="toc-3"><a href="#16-project-secrets-are-encrypted-with-a-key-derived-from-servicesecret">16. Project secrets are encrypted with a key derived from service.secret</a></li>
+</ul></nav>
+</div>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-about">
+      <p><strong>vikunja-enterprise</strong> is an independent community fork of Vikunja. It is not affiliated with, endorsed by or supported by the Vikunja project. Almost all of the software is their work.</p>
+      <p>Licensed under AGPL-3.0-or-later, as upstream. This site has no scripts, cookies or trackers.</p>
+    </div>
+    <nav class="footer-nav" aria-label="Footer">
+      <div><p class="footer-title">Project</p><ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="getting-started.html">Get started</a></li>
+        <li><a href="roadmap.html">Roadmap and status</a></li>
+        <li><a href="upstream.html">Relationship to upstream</a></li>
+      </ul></div>
+      <div><p class="footer-title">Reference</p><ul>
+        <li><a href="modules/index.html">Modules</a></li>
+        <li><a href="api.html">API</a></li>
+        <li><a href="architecture.html">Architecture</a></li>
+        <li><a href="configuration.html">Configuration</a></li>
+      </ul></div>
+      <div><p class="footer-title">Community</p><ul>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise">Repository</a></li>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise/issues">Issues</a></li>
+        <li><a href="security.html">Security</a></li>
+        <li><a href="contributing.html">Contributing</a></li>
+        <li><a href="license.html">License</a></li>
+      </ul></div>
+      <div><p class="footer-title">Upstream Vikunja</p><ul>
+        <li><a href="https://github.com/go-vikunja/vikunja">Source code</a></li>
+        <li><a href="https://vikunja.io/docs/">Documentation</a></li>
+        <li><a href="https://vikunja.io/support/">Support upstream</a></li>
+      </ul></div>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>

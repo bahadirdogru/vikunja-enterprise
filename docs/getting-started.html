@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Getting started - vikunja-enterprise</title>
+<meta name="description" content="Install vikunja-enterprise with Docker: configuration, database choice, reverse proxy, upgrading and backups.">
+<link rel="canonical" href="https://vikunja.bahadirdogru.com/getting-started.html">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1020" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="assets/docs.css">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="vikunja-enterprise">
+<meta property="og:title" content="Getting started - vikunja-enterprise">
+<meta property="og:description" content="Install vikunja-enterprise with Docker: configuration, database choice, reverse proxy, upgrading and backups.">
+<meta property="og:url" content="https://vikunja.bahadirdogru.com/getting-started.html">
+<meta property="og:image" content="https://vikunja.bahadirdogru.com/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="vikunja-enterprise, an independent community fork of Vikunja">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Getting started - vikunja-enterprise">
+<meta name="twitter:description" content="Install vikunja-enterprise with Docker: configuration, database choice, reverse proxy, upgrading and backups.">
+<meta name="twitter:image" content="https://vikunja.bahadirdogru.com/assets/og.png">
+</head>
+<body class="docs">
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="index.html" aria-label="vikunja-enterprise home"><img src="assets/favicon.svg" alt="" width="30" height="30">vikunja-enterprise</a>
+    <nav class="top-nav" aria-label="Main">
+      <ul>
+<li><a href="modules/index.html">Modules</a></li>
+<li><a href="getting-started.html" aria-current="page">Get started</a></li>
+<li><a href="api.html">API</a></li>
+<li><a href="architecture.html">Architecture</a></li>
+<li><a href="roadmap.html">Roadmap</a></li>
+<li><a href="upstream.html">Upstream</a></li>
+        <li><a class="gh" href="https://github.com/bahadirdogru/vikunja-enterprise">GitHub</a></li>
+      </ul>
+    </nav>
+    <details class="menu">
+      <summary><span class="menu-icon" aria-hidden="true"></span>Menu</summary>
+      <nav class="menu-panel" aria-label="Site">
+        <div class="menu-group"><p class="menu-title">Site</p><ul>
+<li><a href="index.html">Home</a></li>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise">GitHub repository</a></li>
+        </ul></div>
+<div class="menu-group"><p class="menu-title">Start</p><ul>
+<li><a href="getting-started.html" aria-current="page">Getting started</a></li>
+<li><a href="configuration.html">Configuration</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Modules</p><ul>
+<li><a href="modules/index.html">Overview</a></li>
+<li><a href="modules/custom-fields.html">Custom fields</a></li>
+<li><a href="modules/workflows.html">Workflows</a></li>
+<li><a href="modules/approvals.html">Approvals</a></li>
+<li><a href="modules/automation.html">Automation</a></li>
+<li><a href="modules/dashboards-reports.html">Dashboards and reports</a></li>
+<li><a href="modules/forms.html">Forms</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Reference</p><ul>
+<li><a href="api.html">API reference</a></li>
+<li><a href="architecture.html">Architecture</a></li>
+<li><a href="design.html">Design</a></li>
+<li><a href="roadmap.html">Roadmap and status</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Project</p><ul>
+<li><a href="upstream.html">Relationship to upstream</a></li>
+<li><a href="security.html">Security</a></li>
+<li><a href="contributing.html">Contributing</a></li>
+<li><a href="license.html">License</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Design history</p><ul>
+<li><a href="enterprise/index.html">Overview</a></li>
+<li><a href="enterprise/custom-fields.html">Custom fields design</a></li>
+<li><a href="enterprise/workflow.html">Workflow design</a></li>
+<li><a href="enterprise/forms-approvals.html">Forms and approvals design</a></li>
+<li><a href="enterprise/automation.html">Automation design</a></li>
+<li><a href="enterprise/dashboards.html">Dashboards design</a></li>
+</ul></div>
+      </nav>
+    </details>
+  </div>
+</header>
+<div class="docs-layout">
+<nav class="sidebar" aria-label="Documentation">
+<p class="side-title">Start</p><ul>
+<li><a href="getting-started.html" aria-current="page">Getting started</a></li>
+<li><a href="configuration.html">Configuration</a></li>
+</ul>
+<p class="side-title">Modules</p><ul>
+<li><a href="modules/index.html">Overview</a></li>
+<li><a href="modules/custom-fields.html">Custom fields</a></li>
+<li><a href="modules/workflows.html">Workflows</a></li>
+<li><a href="modules/approvals.html">Approvals</a></li>
+<li><a href="modules/automation.html">Automation</a></li>
+<li><a href="modules/dashboards-reports.html">Dashboards and reports</a></li>
+<li><a href="modules/forms.html">Forms</a></li>
+</ul>
+<p class="side-title">Reference</p><ul>
+<li><a href="api.html">API reference</a></li>
+<li><a href="architecture.html">Architecture</a></li>
+<li><a href="design.html">Design</a></li>
+<li><a href="roadmap.html">Roadmap and status</a></li>
+</ul>
+<p class="side-title">Project</p><ul>
+<li><a href="upstream.html">Relationship to upstream</a></li>
+<li><a href="security.html">Security</a></li>
+<li><a href="contributing.html">Contributing</a></li>
+<li><a href="license.html">License</a></li>
+</ul>
+<p class="side-title">Design history</p><ul>
+<li><a href="enterprise/index.html">Overview</a></li>
+<li><a href="enterprise/custom-fields.html">Custom fields design</a></li>
+<li><a href="enterprise/workflow.html">Workflow design</a></li>
+<li><a href="enterprise/forms-approvals.html">Forms and approvals design</a></li>
+<li><a href="enterprise/automation.html">Automation design</a></li>
+<li><a href="enterprise/dashboards.html">Dashboards design</a></li>
+</ul>
+</nav>
+<main id="main" class="doc">
+<nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="index.html">Home</a></li><li>Start</li><li aria-current="page">Getting started</li></ol></nav>
+<h1>Getting started</h1>
+<details class="toc-inline"><summary>On this page</summary>
+<nav aria-label="On this page"><ul>
+<li class="toc-2"><a href="#quick-start-with-docker">Quick start with Docker</a></li>
+<li class="toc-2"><a href="#docker-compose">Docker Compose</a></li>
+<li class="toc-2"><a href="#choosing-a-database">Choosing a database</a></li>
+<li class="toc-2"><a href="#behind-a-reverse-proxy">Behind a reverse proxy</a></li>
+<li class="toc-2"><a href="#upgrading">Upgrading</a></li>
+<li class="toc-2"><a href="#backups">Backups</a></li>
+<li class="toc-2"><a href="#where-to-go-next">Where to go next</a></li>
+</ul></nav></details>
+<div class="prose">
+<p>vikunja-enterprise is one container image: the API, the web app and the background workers run in one process on port <code>3456</code>. You need Docker (or any OCI runtime), a place to keep two directories, and, if you do not want SQLite, a database server.</p>
+<aside class="admonition admonition-important" role="note"><p class="admonition-title">Important</p>
+<p>This is a development fork. Read the <a href="roadmap.html">roadmap and status</a> before you rely on it for anything that matters, and take a backup before every upgrade. It is not an official Vikunja product; see <a href="upstream.html">the relationship to upstream</a>.</p>
+</aside>
+<h2 id="quick-start-with-docker">Quick start with Docker <a class="anchor" href="#quick-start-with-docker" aria-label="Link to this section: Quick start with Docker">#</a></h2>
+<p>The image is built from the repository's <code>Dockerfile</code> as one binary on a <code>scratch</code> base. The API and the web frontend are served by the same process on port <code>3456</code>, and the container runs as user <code>1000</code>.</p>
+<pre class="code"><code class="language-bash">mkdir -p vikunja/db vikunja/files
+sudo chown -R 1000:1000 vikunja
+
+docker run -d --name vikunja \
+  -p 3456:3456 \
+  -e VIKUNJA_SERVICE_PUBLICURL=https://tasks.example.com/ \
+  -e VIKUNJA_SERVICE_SECRET=change-me-to-a-long-random-string \
+  -v &quot;$PWD/vikunja/db:/db&quot; \
+  -v &quot;$PWD/vikunja/files:/app/vikunja/files&quot; \
+  ghcr.io/bahadirdogru/vikunja-enterprise:main</code></pre>
+<p>CI publishes the image with <code>.github/workflows/enterprise-docker.yml</code>: the tags <code>main</code> and <code>sha-&lt;short&gt;</code> on pushes to <code>main</code>, and <code>&lt;tag&gt;</code> plus <code>latest</code> for tags that start with <code>e</code>.</p>
+<ul>
+<li><strong>Database.</strong> Without further settings the image uses SQLite at <code>/db/vikunja.db</code> (<code>VIKUNJA_DATABASE_PATH</code>), so mount <code>/db</code> and make it writable for user <code>1000</code>. For MySQL or PostgreSQL set <code>VIKUNJA_DATABASE_TYPE</code> and the connection settings. The fork is tested on PostgreSQL 18 and 19 and on MySQL 8; for PostgreSQL, 18 or newer is recommended. Upstream's documented minimum versions still apply to the code but are not tested here.</li>
+<li><strong>Files.</strong> Attachments go to <code>files</code> (<code>files.basepath</code>) relative to the root path, which the image sets to <code>/app/vikunja/</code>.</li>
+<li><strong>Secret.</strong> Set <code>service.secret</code>. It signs tokens, and if it is unset a random one is generated at every start, which invalidates all issued tokens on each restart. Project secrets of automation rules are encrypted with it as well, so changing it makes them unreadable until they are set again.</li>
+<li><strong>Public URL.</strong> Set <code>service.publicurl</code> to the address people really use. Incoming webhook addresses and e-mail links are built from it. Public forms are served from <code>/forms/&lt;token&gt;</code> on the same origin.</li>
+<li><strong>Reverse proxy.</strong> Put TLS in front, and check <code>service.ipextractionmethod</code> and <code>service.trustedproxies</code>: the per-IP limits of public forms and webhooks use the address the router determines.</li>
+<li><strong>arm64.</strong> The arm64 image is built in CI but has not been started on real ARM hardware yet.</li>
+</ul>
+<p>Settings come from <code>config.yml</code> or <code>VIKUNJA_*</code> environment variables. The fork's own keys, their defaults and their meaning are listed per module in <a href="modules/index.html#configuration-keys-at-a-glance">docs/modules/</a>; the full list is <a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/config-raw.json"><code>config-raw.json</code></a>. For everything generic (mail, authentication, reverse proxy examples, upgrades, backups) the <a href="https://vikunja.io/docs/installing/">upstream installation docs</a> apply.</p>
+<h2 id="docker-compose">Docker Compose <a class="anchor" href="#docker-compose" aria-label="Link to this section: Docker Compose">#</a></h2>
+<p>The same setup as a Compose file, with PostgreSQL. It is an example assembled from the settings above, not a file the project ships or tests: change the host name, the passwords and the secret, and check the image tag.</p>
+<pre class="code"><code class="language-yaml">services:
+  vikunja:
+    image: ghcr.io/bahadirdogru/vikunja-enterprise:main
+    ports:
+      - &quot;3456:3456&quot;
+    environment:
+      VIKUNJA_SERVICE_PUBLICURL: https://tasks.example.com/
+      VIKUNJA_SERVICE_SECRET: change-me-to-a-long-random-string
+      VIKUNJA_DATABASE_TYPE: postgres
+      VIKUNJA_DATABASE_HOST: db
+      VIKUNJA_DATABASE_USER: vikunja
+      VIKUNJA_DATABASE_PASSWORD: change-me
+      VIKUNJA_DATABASE_DATABASE: vikunja
+    volumes:
+      - ./files:/app/vikunja/files
+    depends_on:
+      - db
+    restart: unless-stopped
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: vikunja
+      POSTGRES_PASSWORD: change-me
+      POSTGRES_DB: vikunja
+    volumes:
+      - ./db:/var/lib/postgresql
+    restart: unless-stopped</code></pre>
+<p>The <code>files</code> directory must be writable for user <code>1000</code>, as in the <code>docker run</code> example. Create it first and change its owner.</p>
+<h2 id="choosing-a-database">Choosing a database <a class="anchor" href="#choosing-a-database" aria-label="Link to this section: Choosing a database">#</a></h2>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Database</th><th scope="col">Status in this fork</th></tr></thead><tbody>
+<tr><td>SQLite</td><td>The default and the simplest choice for a small group. The backend test suites pass on it.</td></tr>
+<tr><td>PostgreSQL</td><td>Tested on 18 and 19; 18 or newer is recommended.</td></tr>
+<tr><td>MySQL</td><td>Tested on 8.</td></tr>
+<tr><td>MariaDB</td><td>Supported by upstream; not tested in this fork.</td></tr>
+<tr><td>Older versions</td><td>Upstream documents lower minimum versions. The code is written for them, but they are not tested here.</td></tr>
+</tbody></table></div>
+<p>Which suites were run on which database, and when, is recorded in the <a href="roadmap.html">roadmap</a>; that page is the source of truth, not this table. Raw SQL and migrations in the fork follow upstream's <a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/.agents/docs/databases.md">supported databases</a>.</p>
+<p>Pick the database once. Moving an existing instance between engines is not something the fork provides or has tested.</p>
+<h2 id="behind-a-reverse-proxy">Behind a reverse proxy <a class="anchor" href="#behind-a-reverse-proxy" aria-label="Link to this section: Behind a reverse proxy">#</a></h2>
+<p>Put TLS in front of the container with any reverse proxy and forward everything to port <code>3456</code>. Three settings matter:</p>
+<ul>
+<li><code>service.publicurl</code> must be the address people really use, with the scheme. Links in e-mails and the addresses of incoming webhooks are built from it.</li>
+<li><code>service.ipextractionmethod</code> and <code>service.trustedproxies</code> decide which client address the server sees. Public forms and incoming webhooks have per-IP rate limits, so a wrong value either blocks everybody behind one address or lets a caller choose their own.</li>
+<li>Forward the <code>Host</code> header and, for <code>xff</code>, <code>X-Forwarded-For</code>.</li>
+</ul>
+<p>A minimal nginx location, as an example for you to adapt:</p>
+<pre class="code"><code class="language-nginx">location / {
+    proxy_pass http://127.0.0.1:3456;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    client_max_body_size 20m;
+}</code></pre>
+<p>Run the container with <code>VIKUNJA_SERVICE_IPEXTRACTIONMETHOD=xff</code> and <code>VIKUNJA_SERVICE_TRUSTEDPROXIES</code> set to the address range of your proxy. Upstream has more reverse proxy examples in its <a href="https://vikunja.io/docs/installing/">installation documentation</a> (upstream's page, not this fork's).</p>
+<h2 id="upgrading">Upgrading <a class="anchor" href="#upgrading" aria-label="Link to this section: Upgrading">#</a></h2>
+<ol>
+<li>Take a backup (below).</li>
+<li>Pull the image tag you run. The tag <code>main</code> moves with every push to <code>main</code>; to stay on a known build, use the <code>sha-&lt;short&gt;</code> tag of a commit instead.</li>
+<li>Recreate the container. The database schema is migrated when the process starts, as in upstream, so the first start after an upgrade can take longer.</li>
+<li>Check the log and open the app.</li>
+</ol>
+<p>There is no downgrade path. If an upgrade goes wrong, restore the backup and start the old image. The fork merges upstream's <code>main</code> from time to time with no promised schedule; see the <a href="roadmap.html">roadmap</a> for what has been verified.</p>
+<h2 id="backups">Backups <a class="anchor" href="#backups" aria-label="Link to this section: Backups">#</a></h2>
+<p>Back up three things together, and keep the secret with them:</p>
+<ul>
+<li><strong>The database.</strong> For SQLite, stop the container and copy the file (or use <code>sqlite3 vikunja.db &quot;.backup backup.db&quot;</code> on a running instance). For PostgreSQL use <code>pg_dump</code>, for MySQL <code>mysqldump</code>.</li>
+<li><strong>The files directory</strong> (<code>/app/vikunja/files</code>), which holds attachments.</li>
+<li><strong>Your settings</strong>, in particular <code>service.secret</code>. It signs login tokens, and the encrypted project secrets of <a href="modules/automation.html">automation</a> rules are encrypted with a key derived from it. A restored database with a different secret cannot read them.</li>
+</ul>
+<p>Test the restore at least once on a spare machine.</p>
+<h2 id="where-to-go-next">Where to go next <a class="anchor" href="#where-to-go-next" aria-label="Link to this section: Where to go next">#</a></h2>
+<ul>
+<li><a href="configuration.html">Configuration</a>: the fork's own keys and their defaults.</li>
+<li><a href="modules/index.html">Modules</a>: what each module does and how to set it up.</li>
+<li><a href="api.html">API reference</a> and <a href="architecture.html">architecture</a>.</li>
+<li>For anything generic (mail, authentication providers, CalDAV, the user guide) upstream's <a href="https://vikunja.io/docs/">documentation</a> applies. It is upstream's, written for upstream's releases.</li>
+</ul>
+</div>
+<p class="edit"><a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/site/pages/getting-started.md">Source of this page on GitHub</a></p>
+<nav class="pager" aria-label="Pages"><a class="next" href="configuration.html" rel="next"><span>Next</span>Configuration</a></nav>
+</main>
+<nav class="toc-aside" aria-label="On this page"><p class="side-title">On this page</p><ul>
+<li class="toc-2"><a href="#quick-start-with-docker">Quick start with Docker</a></li>
+<li class="toc-2"><a href="#docker-compose">Docker Compose</a></li>
+<li class="toc-2"><a href="#choosing-a-database">Choosing a database</a></li>
+<li class="toc-2"><a href="#behind-a-reverse-proxy">Behind a reverse proxy</a></li>
+<li class="toc-2"><a href="#upgrading">Upgrading</a></li>
+<li class="toc-2"><a href="#backups">Backups</a></li>
+<li class="toc-2"><a href="#where-to-go-next">Where to go next</a></li>
+</ul></nav>
+</div>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-about">
+      <p><strong>vikunja-enterprise</strong> is an independent community fork of Vikunja. It is not affiliated with, endorsed by or supported by the Vikunja project. Almost all of the software is their work.</p>
+      <p>Licensed under AGPL-3.0-or-later, as upstream. This site has no scripts, cookies or trackers.</p>
+    </div>
+    <nav class="footer-nav" aria-label="Footer">
+      <div><p class="footer-title">Project</p><ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="getting-started.html">Get started</a></li>
+        <li><a href="roadmap.html">Roadmap and status</a></li>
+        <li><a href="upstream.html">Relationship to upstream</a></li>
+      </ul></div>
+      <div><p class="footer-title">Reference</p><ul>
+        <li><a href="modules/index.html">Modules</a></li>
+        <li><a href="api.html">API</a></li>
+        <li><a href="architecture.html">Architecture</a></li>
+        <li><a href="configuration.html">Configuration</a></li>
+      </ul></div>
+      <div><p class="footer-title">Community</p><ul>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise">Repository</a></li>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise/issues">Issues</a></li>
+        <li><a href="security.html">Security</a></li>
+        <li><a href="contributing.html">Contributing</a></li>
+        <li><a href="license.html">License</a></li>
+      </ul></div>
+      <div><p class="footer-title">Upstream Vikunja</p><ul>
+        <li><a href="https://github.com/go-vikunja/vikunja">Source code</a></li>
+        <li><a href="https://vikunja.io/docs/">Documentation</a></li>
+        <li><a href="https://vikunja.io/support/">Support upstream</a></li>
+      </ul></div>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>

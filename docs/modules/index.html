@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Modules - vikunja-enterprise</title>
+<meta name="description" content="The six modules the fork adds to Vikunja and how they fit together.">
+<link rel="canonical" href="https://vikunja.bahadirdogru.com/modules/index.html">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1020" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+<link rel="manifest" href="../site.webmanifest">
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="../assets/docs.css">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="vikunja-enterprise">
+<meta property="og:title" content="Modules - vikunja-enterprise">
+<meta property="og:description" content="The six modules the fork adds to Vikunja and how they fit together.">
+<meta property="og:url" content="https://vikunja.bahadirdogru.com/modules/index.html">
+<meta property="og:image" content="https://vikunja.bahadirdogru.com/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="vikunja-enterprise, an independent community fork of Vikunja">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Modules - vikunja-enterprise">
+<meta name="twitter:description" content="The six modules the fork adds to Vikunja and how they fit together.">
+<meta name="twitter:image" content="https://vikunja.bahadirdogru.com/assets/og.png">
+</head>
+<body class="docs">
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="../index.html" aria-label="vikunja-enterprise home"><img src="../assets/favicon.svg" alt="" width="30" height="30">vikunja-enterprise</a>
+    <nav class="top-nav" aria-label="Main">
+      <ul>
+<li><a href="index.html" aria-current="page">Modules</a></li>
+<li><a href="../getting-started.html">Get started</a></li>
+<li><a href="../api.html">API</a></li>
+<li><a href="../architecture.html">Architecture</a></li>
+<li><a href="../roadmap.html">Roadmap</a></li>
+<li><a href="../upstream.html">Upstream</a></li>
+        <li><a class="gh" href="https://github.com/bahadirdogru/vikunja-enterprise">GitHub</a></li>
+      </ul>
+    </nav>
+    <details class="menu">
+      <summary><span class="menu-icon" aria-hidden="true"></span>Menu</summary>
+      <nav class="menu-panel" aria-label="Site">
+        <div class="menu-group"><p class="menu-title">Site</p><ul>
+<li><a href="../index.html">Home</a></li>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise">GitHub repository</a></li>
+        </ul></div>
+<div class="menu-group"><p class="menu-title">Start</p><ul>
+<li><a href="../getting-started.html">Getting started</a></li>
+<li><a href="../configuration.html">Configuration</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Modules</p><ul>
+<li><a href="index.html" aria-current="page">Overview</a></li>
+<li><a href="custom-fields.html">Custom fields</a></li>
+<li><a href="workflows.html">Workflows</a></li>
+<li><a href="approvals.html">Approvals</a></li>
+<li><a href="automation.html">Automation</a></li>
+<li><a href="dashboards-reports.html">Dashboards and reports</a></li>
+<li><a href="forms.html">Forms</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Reference</p><ul>
+<li><a href="../api.html">API reference</a></li>
+<li><a href="../architecture.html">Architecture</a></li>
+<li><a href="../design.html">Design</a></li>
+<li><a href="../roadmap.html">Roadmap and status</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Project</p><ul>
+<li><a href="../upstream.html">Relationship to upstream</a></li>
+<li><a href="../security.html">Security</a></li>
+<li><a href="../contributing.html">Contributing</a></li>
+<li><a href="../license.html">License</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Design history</p><ul>
+<li><a href="../enterprise/index.html">Overview</a></li>
+<li><a href="../enterprise/custom-fields.html">Custom fields design</a></li>
+<li><a href="../enterprise/workflow.html">Workflow design</a></li>
+<li><a href="../enterprise/forms-approvals.html">Forms and approvals design</a></li>
+<li><a href="../enterprise/automation.html">Automation design</a></li>
+<li><a href="../enterprise/dashboards.html">Dashboards design</a></li>
+</ul></div>
+      </nav>
+    </details>
+  </div>
+</header>
+<div class="docs-layout">
+<nav class="sidebar" aria-label="Documentation">
+<p class="side-title">Start</p><ul>
+<li><a href="../getting-started.html">Getting started</a></li>
+<li><a href="../configuration.html">Configuration</a></li>
+</ul>
+<p class="side-title">Modules</p><ul>
+<li><a href="index.html" aria-current="page">Overview</a></li>
+<li><a href="custom-fields.html">Custom fields</a></li>
+<li><a href="workflows.html">Workflows</a></li>
+<li><a href="approvals.html">Approvals</a></li>
+<li><a href="automation.html">Automation</a></li>
+<li><a href="dashboards-reports.html">Dashboards and reports</a></li>
+<li><a href="forms.html">Forms</a></li>
+</ul>
+<p class="side-title">Reference</p><ul>
+<li><a href="../api.html">API reference</a></li>
+<li><a href="../architecture.html">Architecture</a></li>
+<li><a href="../design.html">Design</a></li>
+<li><a href="../roadmap.html">Roadmap and status</a></li>
+</ul>
+<p class="side-title">Project</p><ul>
+<li><a href="../upstream.html">Relationship to upstream</a></li>
+<li><a href="../security.html">Security</a></li>
+<li><a href="../contributing.html">Contributing</a></li>
+<li><a href="../license.html">License</a></li>
+</ul>
+<p class="side-title">Design history</p><ul>
+<li><a href="../enterprise/index.html">Overview</a></li>
+<li><a href="../enterprise/custom-fields.html">Custom fields design</a></li>
+<li><a href="../enterprise/workflow.html">Workflow design</a></li>
+<li><a href="../enterprise/forms-approvals.html">Forms and approvals design</a></li>
+<li><a href="../enterprise/automation.html">Automation design</a></li>
+<li><a href="../enterprise/dashboards.html">Dashboards design</a></li>
+</ul>
+</nav>
+<main id="main" class="doc">
+<nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="../index.html">Home</a></li><li>Modules</li><li aria-current="page">Modules</li></ol></nav>
+<h1>Module reference</h1>
+<details class="toc-inline"><summary>On this page</summary>
+<nav aria-label="On this page"><ul>
+<li class="toc-2"><a href="#how-the-modules-fit-together">How the modules fit together</a></li>
+<li class="toc-2"><a href="#configuration-keys-at-a-glance">Configuration keys at a glance</a></li>
+</ul></nav></details>
+<div class="prose">
+<p>One reference page per module the fork adds. They are written for operators and contributors: what the module is for, its concepts and data model, who may do what, the API, the configuration keys, the UI, how it interacts with the other modules, its limits, what is still open, and where the code lives.</p>
+<p>For the big picture see <a href="../architecture.html">Architecture</a>; for HTTP conventions, authentication, errors and the endpoint tables see <a href="../api.html">API reference</a>; for screens see <a href="../design.html">Design</a>. Status and open points are tracked in <a href="../roadmap.html">Roadmap and status</a>, which is the single source of truth.</p>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Module</th><th scope="col">Page</th><th scope="col">Design document (history and rationale)</th></tr></thead><tbody>
+<tr><td>Custom fields</td><td><a href="custom-fields.html">Custom fields</a></td><td><a href="../enterprise/custom-fields.html">Custom fields design</a></td></tr>
+<tr><td>Workflows</td><td><a href="workflows.html">Workflows</a></td><td><a href="../enterprise/workflow.html">Workflow design</a></td></tr>
+<tr><td>Approvals</td><td><a href="approvals.html">Approvals</a></td><td><a href="../enterprise/forms-approvals.html">Forms and approvals design</a> (Approvals)</td></tr>
+<tr><td>Automation</td><td><a href="automation.html">Automation</a></td><td><a href="../enterprise/automation.html">Automation design</a></td></tr>
+<tr><td>Dashboards and reports</td><td><a href="dashboards-reports.html">Dashboards and reports</a></td><td><a href="../enterprise/dashboards.html">Dashboards design</a></td></tr>
+<tr><td>Forms</td><td><a href="forms.html">Forms</a></td><td><a href="../enterprise/forms-approvals.html">Forms and approvals design</a> (Forms)</td></tr>
+</tbody></table></div>
+<h2 id="how-the-modules-fit-together">How the modules fit together <a class="anchor" href="#how-the-modules-fit-together" aria-label="Link to this section: How the modules fit together">#</a></h2>
+<ul>
+<li><strong>Custom fields</strong> add typed data to tasks. Workflows, automation, forms and reports all refer to a field as <code>cf_&lt;id&gt;</code>.</li>
+<li><strong>Workflows</strong> add statuses and transitions to a project. <strong>Approvals</strong> make a transition wait for named people.</li>
+<li><strong>Automation</strong> reacts to events from all of the others (task changes, status changes, field changes, approvals, form submissions, time) and acts through the normal model functions as the rule's owner.</li>
+<li><strong>Forms</strong> turn submissions into tasks through the normal create path, so workflows, custom fields and automation apply.</li>
+<li><strong>Dashboards and reports</strong> count tasks, statuses and history, always limited to what the viewer can read.</li>
+</ul>
+<p>Every page follows the same outline: Overview, Concepts, Data model, Permissions, API, Configuration keys, UI, Events and interaction with other modules, Limits and safety, Known gaps and open decisions, Where the code lives.</p>
+<h2 id="configuration-keys-at-a-glance">Configuration keys at a glance <a class="anchor" href="#configuration-keys-at-a-glance" aria-label="Link to this section: Configuration keys at a glance">#</a></h2>
+<p>Settings come from <code>config.yml</code> or from environment variables; environment variables override the file. The variable name is <code>VIKUNJA_</code> plus the key in upper case with dots as underscores, so <code>automation.ticker.interval</code> is <code>VIKUNJA_AUTOMATION_TICKER_INTERVAL</code>. The full list with comments is <a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/config-raw.json"><code>config-raw.json</code></a>. <code>config.yml.sample</code> is generated from it with <code>mage generate:config-yaml</code>; edit the JSON, not the sample.</p>
+<p>The fork's keys, with their defaults (the meaning of each is on the module page):</p>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Key</th><th scope="col">Default</th><th scope="col">Module</th></tr></thead><tbody>
+<tr><td><code>forms.enabled</code></td><td><code>true</code></td><td><a href="forms.html">Forms</a></td></tr>
+<tr><td><code>forms.maxbodysize</code></td><td><code>262144</code></td><td><a href="forms.html">Forms</a></td></tr>
+<tr><td><code>forms.maxattachments</code></td><td><code>5</code></td><td><a href="forms.html">Forms</a></td></tr>
+<tr><td><code>forms.maxattachmentsize</code></td><td><code>10MB</code></td><td><a href="forms.html">Forms</a></td></tr>
+<tr><td><code>forms.public.enabled</code></td><td><code>true</code></td><td><a href="forms.html">Forms</a></td></tr>
+<tr><td><code>forms.public.attachments</code></td><td><code>false</code></td><td><a href="forms.html">Forms</a></td></tr>
+<tr><td><code>forms.public.ratelimit</code></td><td><code>10</code></td><td><a href="forms.html">Forms</a></td></tr>
+<tr><td><code>forms.public.formratelimit</code></td><td><code>300</code></td><td><a href="forms.html">Forms</a></td></tr>
+<tr><td><code>forms.public.requestratelimit</code></td><td><code>60</code></td><td><a href="forms.html">Forms</a></td></tr>
+<tr><td><code>automation.enabled</code></td><td><code>true</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>automation.maxdepth</code></td><td><code>3</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>automation.maxactions</code></td><td><code>25</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>automation.steptimeout</code></td><td><code>10s</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>automation.runtimeout</code></td><td><code>60s</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>automation.ratelimit</code></td><td><code>60</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>automation.workers</code></td><td><code>4</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>automation.maxattempts</code></td><td><code>5</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>automation.maxconsecutivefailures</code></td><td><code>20</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>automation.pollinterval</code></td><td><code>1s</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>automation.cachettl</code></td><td><code>30s</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>automation.retention</code></td><td><code>30</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>automation.ticker.interval</code></td><td><code>30s</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>automation.ticker.maxtasks</code></td><td><code>100</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>automation.ticker.maxscan</code></td><td><code>5000</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>automation.waitmax</code></td><td><code>720h</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>automation.maxpendingwaits</code></td><td><code>1000</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>automation.maxrulesperproject</code></td><td><code>100</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>automation.webhook.maxbody</code></td><td><code>65536</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>automation.webhook.tolerance</code></td><td><code>5m</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>automation.webhook.ratelimit</code></td><td><code>60</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>automation.scripts.enabled</code></td><td><code>true</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>automation.scripts.timeout</code></td><td><code>5s</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>automation.scripts.conditiontimeout</code></td><td><code>1s</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>automation.scripts.maxsource</code></td><td><code>65536</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>automation.scripts.maxapicalls</code></td><td><code>100</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>automation.scripts.maxhttprequests</code></td><td><code>5</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>automation.scripts.maxresponsesize</code></td><td><code>1048576</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>automation.scripts.maxlogsize</code></td><td><code>16384</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>automation.scripts.maxcallstack</code></td><td><code>512</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>automation.scripts.maxresults</code></td><td><code>200</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>automation.scripts.httptimeout</code></td><td><code>10s</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>reports.cachettl</code></td><td><code>30s</code></td><td><a href="dashboards-reports.html">Dashboards and reports</a></td></tr>
+<tr><td><code>reports.maxgroups</code></td><td><code>200</code></td><td><a href="dashboards-reports.html">Dashboards and reports</a></td></tr>
+<tr><td><code>reports.maxbuckets</code></td><td><code>366</code></td><td><a href="dashboards-reports.html">Dashboards and reports</a></td></tr>
+<tr><td><code>reports.maxrows</code></td><td><code>50000</code></td><td><a href="dashboards-reports.html">Dashboards and reports</a></td></tr>
+<tr><td><code>reports.timeout</code></td><td><code>20s</code></td><td><a href="dashboards-reports.html">Dashboards and reports</a></td></tr>
+</tbody></table></div>
+<p>The modules without keys of their own (custom fields, workflows, approvals) share the instance's database and file settings. Besides these keys, <code>service.publicurl</code>, <code>service.secret</code>, <code>service.timezone</code>, <code>service.ipextractionmethod</code>, <code>service.trustedproxies</code>, <code>outgoingrequests.allownonroutableips</code> and <code>outgoingrequests.proxyurl</code> come from upstream and are used by the fork as described on the module pages.</p>
+</div>
+<p class="edit"><a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/docs/modules/README.md">Source of this page on GitHub</a></p>
+<nav class="pager" aria-label="Pages"><a class="prev" href="../configuration.html" rel="prev"><span>Previous</span>Configuration</a><a class="next" href="custom-fields.html" rel="next"><span>Next</span>Custom fields</a></nav>
+</main>
+<nav class="toc-aside" aria-label="On this page"><p class="side-title">On this page</p><ul>
+<li class="toc-2"><a href="#how-the-modules-fit-together">How the modules fit together</a></li>
+<li class="toc-2"><a href="#configuration-keys-at-a-glance">Configuration keys at a glance</a></li>
+</ul></nav>
+</div>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-about">
+      <p><strong>vikunja-enterprise</strong> is an independent community fork of Vikunja. It is not affiliated with, endorsed by or supported by the Vikunja project. Almost all of the software is their work.</p>
+      <p>Licensed under AGPL-3.0-or-later, as upstream. This site has no scripts, cookies or trackers.</p>
+    </div>
+    <nav class="footer-nav" aria-label="Footer">
+      <div><p class="footer-title">Project</p><ul>
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="../getting-started.html">Get started</a></li>
+        <li><a href="../roadmap.html">Roadmap and status</a></li>
+        <li><a href="../upstream.html">Relationship to upstream</a></li>
+      </ul></div>
+      <div><p class="footer-title">Reference</p><ul>
+        <li><a href="index.html">Modules</a></li>
+        <li><a href="../api.html">API</a></li>
+        <li><a href="../architecture.html">Architecture</a></li>
+        <li><a href="../configuration.html">Configuration</a></li>
+      </ul></div>
+      <div><p class="footer-title">Community</p><ul>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise">Repository</a></li>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise/issues">Issues</a></li>
+        <li><a href="../security.html">Security</a></li>
+        <li><a href="../contributing.html">Contributing</a></li>
+        <li><a href="../license.html">License</a></li>
+      </ul></div>
+      <div><p class="footer-title">Upstream Vikunja</p><ul>
+        <li><a href="https://github.com/go-vikunja/vikunja">Source code</a></li>
+        <li><a href="https://vikunja.io/docs/">Documentation</a></li>
+        <li><a href="https://vikunja.io/support/">Support upstream</a></li>
+      </ul></div>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>

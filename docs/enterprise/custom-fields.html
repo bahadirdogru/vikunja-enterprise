@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Custom fields design - vikunja-enterprise</title>
+<meta name="description" content="Design document of the custom fields module.">
+<link rel="canonical" href="https://vikunja.bahadirdogru.com/enterprise/custom-fields.html">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1020" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+<link rel="manifest" href="../site.webmanifest">
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="../assets/docs.css">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="vikunja-enterprise">
+<meta property="og:title" content="Custom fields design - vikunja-enterprise">
+<meta property="og:description" content="Design document of the custom fields module.">
+<meta property="og:url" content="https://vikunja.bahadirdogru.com/enterprise/custom-fields.html">
+<meta property="og:image" content="https://vikunja.bahadirdogru.com/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="vikunja-enterprise, an independent community fork of Vikunja">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Custom fields design - vikunja-enterprise">
+<meta name="twitter:description" content="Design document of the custom fields module.">
+<meta name="twitter:image" content="https://vikunja.bahadirdogru.com/assets/og.png">
+</head>
+<body class="docs">
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="../index.html" aria-label="vikunja-enterprise home"><img src="../assets/favicon.svg" alt="" width="30" height="30">vikunja-enterprise</a>
+    <nav class="top-nav" aria-label="Main">
+      <ul>
+<li><a href="../modules/index.html">Modules</a></li>
+<li><a href="../getting-started.html">Get started</a></li>
+<li><a href="../api.html">API</a></li>
+<li><a href="../architecture.html">Architecture</a></li>
+<li><a href="../roadmap.html">Roadmap</a></li>
+<li><a href="../upstream.html">Upstream</a></li>
+        <li><a class="gh" href="https://github.com/bahadirdogru/vikunja-enterprise">GitHub</a></li>
+      </ul>
+    </nav>
+    <details class="menu">
+      <summary><span class="menu-icon" aria-hidden="true"></span>Menu</summary>
+      <nav class="menu-panel" aria-label="Site">
+        <div class="menu-group"><p class="menu-title">Site</p><ul>
+<li><a href="../index.html">Home</a></li>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise">GitHub repository</a></li>
+        </ul></div>
+<div class="menu-group"><p class="menu-title">Start</p><ul>
+<li><a href="../getting-started.html">Getting started</a></li>
+<li><a href="../configuration.html">Configuration</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Modules</p><ul>
+<li><a href="../modules/index.html">Overview</a></li>
+<li><a href="../modules/custom-fields.html">Custom fields</a></li>
+<li><a href="../modules/workflows.html">Workflows</a></li>
+<li><a href="../modules/approvals.html">Approvals</a></li>
+<li><a href="../modules/automation.html">Automation</a></li>
+<li><a href="../modules/dashboards-reports.html">Dashboards and reports</a></li>
+<li><a href="../modules/forms.html">Forms</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Reference</p><ul>
+<li><a href="../api.html">API reference</a></li>
+<li><a href="../architecture.html">Architecture</a></li>
+<li><a href="../design.html">Design</a></li>
+<li><a href="../roadmap.html">Roadmap and status</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Project</p><ul>
+<li><a href="../upstream.html">Relationship to upstream</a></li>
+<li><a href="../security.html">Security</a></li>
+<li><a href="../contributing.html">Contributing</a></li>
+<li><a href="../license.html">License</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Design history</p><ul>
+<li><a href="index.html">Overview</a></li>
+<li><a href="custom-fields.html" aria-current="page">Custom fields design</a></li>
+<li><a href="workflow.html">Workflow design</a></li>
+<li><a href="forms-approvals.html">Forms and approvals design</a></li>
+<li><a href="automation.html">Automation design</a></li>
+<li><a href="dashboards.html">Dashboards design</a></li>
+</ul></div>
+      </nav>
+    </details>
+  </div>
+</header>
+<div class="docs-layout">
+<nav class="sidebar" aria-label="Documentation">
+<p class="side-title">Start</p><ul>
+<li><a href="../getting-started.html">Getting started</a></li>
+<li><a href="../configuration.html">Configuration</a></li>
+</ul>
+<p class="side-title">Modules</p><ul>
+<li><a href="../modules/index.html">Overview</a></li>
+<li><a href="../modules/custom-fields.html">Custom fields</a></li>
+<li><a href="../modules/workflows.html">Workflows</a></li>
+<li><a href="../modules/approvals.html">Approvals</a></li>
+<li><a href="../modules/automation.html">Automation</a></li>
+<li><a href="../modules/dashboards-reports.html">Dashboards and reports</a></li>
+<li><a href="../modules/forms.html">Forms</a></li>
+</ul>
+<p class="side-title">Reference</p><ul>
+<li><a href="../api.html">API reference</a></li>
+<li><a href="../architecture.html">Architecture</a></li>
+<li><a href="../design.html">Design</a></li>
+<li><a href="../roadmap.html">Roadmap and status</a></li>
+</ul>
+<p class="side-title">Project</p><ul>
+<li><a href="../upstream.html">Relationship to upstream</a></li>
+<li><a href="../security.html">Security</a></li>
+<li><a href="../contributing.html">Contributing</a></li>
+<li><a href="../license.html">License</a></li>
+</ul>
+<p class="side-title">Design history</p><ul>
+<li><a href="index.html">Overview</a></li>
+<li><a href="custom-fields.html" aria-current="page">Custom fields design</a></li>
+<li><a href="workflow.html">Workflow design</a></li>
+<li><a href="forms-approvals.html">Forms and approvals design</a></li>
+<li><a href="automation.html">Automation design</a></li>
+<li><a href="dashboards.html">Dashboards design</a></li>
+</ul>
+</nav>
+<main id="main" class="doc">
+<nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="../index.html">Home</a></li><li>Design history</li><li aria-current="page">Custom fields design</li></ol></nav>
+<h1>Custom fields — design</h1>
+<details class="toc-inline"><summary>On this page</summary>
+<nav aria-label="On this page"><ul>
+<li class="toc-2"><a href="#model">Model</a></li>
+<li class="toc-3"><a href="#custom_fields">custom_fields</a></li>
+<li class="toc-3"><a href="#custom_field_options-for-select-and-multi_select">custom_field_options (for select and multi_select)</a></li>
+<li class="toc-3"><a href="#task_custom_field_values">task_custom_field_values</a></li>
+<li class="toc-3"><a href="#types-v1">Types (v1)</a></li>
+<li class="toc-2"><a href="#api-apiv2">API (/api/v2)</a></li>
+<li class="toc-2"><a href="#permissions">Permissions</a></li>
+<li class="toc-2"><a href="#events">Events</a></li>
+<li class="toc-2"><a href="#lifecycle">Lifecycle</a></li>
+<li class="toc-2"><a href="#filtering-and-sorting">Filtering and sorting</a></li>
+<li class="toc-3"><a href="#field-names-in-the-filter-input">Field names in the filter input</a></li>
+<li class="toc-2"><a href="#display">Display</a></li>
+<li class="toc-3"><a href="#expandcustom_fields">expand=custom_fields</a></li>
+<li class="toc-3"><a href="#table-view">Table view</a></li>
+<li class="toc-3"><a href="#kanban-cards">Kanban cards</a></li>
+</ul></nav></details>
+<div class="prose">
+<p>Status: backend done (step 1a), filtering and sorting done, display in task
+lists, table columns and kanban cards done, filter input with field names done.</p>
+<h2 id="model">Model <a class="anchor" href="#model" aria-label="Link to this section: Model">#</a></h2>
+<p>Field <strong>definitions</strong> belong to a project. Field <strong>values</strong> belong to a task.
+Definition and value are separate tables; values are stored in typed columns
+(not one JSON blob) so they can be filtered and sorted in SQL.</p>
+<h3 id="custom_fields"><code>custom_fields</code> <a class="anchor" href="#custom_fields" aria-label="Link to this section: custom_fields">#</a></h3>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">column</th><th scope="col">type</th><th scope="col">notes</th></tr></thead><tbody>
+<tr><td>id</td><td>bigint pk</td><td></td></tr>
+<tr><td>project_id</td><td>bigint, index, not null</td><td>owning project</td></tr>
+<tr><td>title</td><td>varchar(250), not null</td><td></td></tr>
+<tr><td>description</td><td>text, null</td><td></td></tr>
+<tr><td>type</td><td>varchar(30), not null</td><td>see types below</td></tr>
+<tr><td>required</td><td>bool, default false</td><td>enforced by workflow transitions later, not on every save</td></tr>
+<tr><td>config</td><td>json/text, null</td><td>type specific: <code>{&quot;min&quot;:0,&quot;max&quot;:100,&quot;precision&quot;:2,&quot;currency&quot;:&quot;TRY&quot;,&quot;max_rating&quot;:5}</code></td></tr>
+<tr><td>position</td><td>double, not null</td><td>ordering inside the project</td></tr>
+<tr><td>created_by_id</td><td>bigint, not null</td><td></td></tr>
+<tr><td>created / updated</td><td>timestamps</td><td></td></tr>
+</tbody></table></div>
+<h3 id="custom_field_options-for-select-and-multi_select"><code>custom_field_options</code> (for <code>select</code> and <code>multi_select</code>) <a class="anchor" href="#custom_field_options-for-select-and-multi_select" aria-label="Link to this section: custom_field_options (for select and multi_select)">#</a></h3>
+<p>id, custom_field_id (index), title varchar(250), color varchar(7) null, position double.</p>
+<h3 id="task_custom_field_values"><code>task_custom_field_values</code> <a class="anchor" href="#task_custom_field_values" aria-label="Link to this section: task_custom_field_values">#</a></h3>
+<p>One row per value. Single-value types have at most one row per (task, field);
+<code>multi_select</code> and multi <code>user</code> have one row per selected option/user.</p>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">column</th><th scope="col">type</th></tr></thead><tbody>
+<tr><td>id</td><td>bigint pk</td></tr>
+<tr><td>task_id</td><td>bigint, index, not null</td></tr>
+<tr><td>custom_field_id</td><td>bigint, index, not null</td></tr>
+<tr><td>value_text</td><td>text null</td></tr>
+<tr><td>value_number</td><td>double null</td></tr>
+<tr><td>value_date</td><td>datetime null</td></tr>
+<tr><td>value_bool</td><td>bool null</td></tr>
+<tr><td>option_id</td><td>bigint null, index</td></tr>
+<tr><td>user_id</td><td>bigint null, index</td></tr>
+<tr><td>created / updated</td><td>timestamps</td></tr>
+</tbody></table></div>
+<h3 id="types-v1">Types (v1) <a class="anchor" href="#types-v1" aria-label="Link to this section: Types (v1)">#</a></h3>
+<p><code>text</code>, <code>long_text</code>, <code>number</code>, <code>currency</code>, <code>date</code>, <code>checkbox</code>, <code>select</code>,
+<code>multi_select</code>, <code>user</code>, <code>url</code>, <code>email</code>, <code>rating</code>, <code>progress</code>.</p>
+<p>Validation on write: number/currency respect <code>min</code>/<code>max</code>; rating is an integer
+<code>1..max_rating</code> (default 5); progress is <code>0..100</code>; url/email are format
+checked; select/multi_select option ids must belong to the field; user ids
+must have read access to the task's project. The field type cannot be changed
+after creation.</p>
+<h2 id="api-apiv2">API (<code>/api/v2</code>) <a class="anchor" href="#api-apiv2" aria-label="Link to this section: API (/api/v2)">#</a></h2>
+<ul>
+<li><code>GET  /projects/{project}/custom-fields</code> — list (paginated), options embedded.</li>
+<li><code>POST /projects/{project}/custom-fields</code> — create (options embedded).</li>
+<li><code>GET|PUT|DELETE /projects/{project}/custom-fields/{field}</code> — options are
+replaced by the submitted list on update (matched by id, new ones created,
+missing ones deleted together with the values that reference them).</li>
+<li><code>GET  /tasks/{task}/custom-field-values</code> — all values of the task, one
+entry per field of the task's project (unset fields are included with a
+null value so clients can render the full form).</li>
+<li><code>PUT  /tasks/{task}/custom-field-values/{field}</code> — set the value.</li>
+<li><code>DELETE /tasks/{task}/custom-field-values/{field}</code> — clear the value.</li>
+</ul>
+<p>The JSON value shape depends on the type: string (<code>text</code>, <code>long_text</code>, <code>url</code>,
+<code>email</code>), number (<code>number</code>, <code>currency</code>, <code>rating</code>, <code>progress</code>), RFC 3339 string
+(<code>date</code>), boolean (<code>checkbox</code>), option id (<code>select</code>), array of option ids
+(<code>multi_select</code>), array of user ids (<code>user</code>).</p>
+<h2 id="permissions">Permissions <a class="anchor" href="#permissions" aria-label="Link to this section: Permissions">#</a></h2>
+<ul>
+<li>Definitions: read needs read access to the project, create/update/delete
+needs <strong>admin</strong> on the project.</li>
+<li>Values: read needs read access to the task, set/clear needs write access to
+the task. Link shares follow the share's permission.</li>
+</ul>
+<h2 id="events">Events <a class="anchor" href="#events" aria-label="Link to this section: Events">#</a></h2>
+<ul>
+<li><code>custom-field.created|updated|deleted</code></li>
+<li><code>task.custom-field-value.updated</code> with task, field, old and new value and
+doer. This is the hook the automation engine will listen to.</li>
+</ul>
+<h2 id="lifecycle">Lifecycle <a class="anchor" href="#lifecycle" aria-label="Link to this section: Lifecycle">#</a></h2>
+<p>Deleting a field deletes its options and values. Deleting a task or a project
+deletes the values / definitions that belong to it. Duplicating a project
+copies the definitions and the values of the copied tasks (ids remapped);
+duplicating a task inside the same project copies the values. Values are
+removed when a task is purged, not when it is moved to the trash.</p>
+<p>When a task is moved to another project (single or bulk update that changes
+<code>project_id</code>), its values for fields of the old project are deleted, since
+those fields do not exist in the new project. Values of the new project's
+fields are kept.</p>
+<h2 id="filtering-and-sorting">Filtering and sorting <a class="anchor" href="#filtering-and-sorting" aria-label="Link to this section: Filtering and sorting">#</a></h2>
+<p>A field is addressed as <code>cf_&lt;fieldID&gt;</code> in the normal task <code>filter</code> and
+<code>sort_by</code> parameters, for example
+<code>cf_12 &gt; 100 &amp;&amp; cf_3 = 5 &amp;&amp; done = false</code>. Filters work everywhere the filter
+syntax does (task lists, views, saved filters) and combine freely with
+built-in fields, <code>&amp;&amp;</code>, <code>||</code> and groups.</p>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Field type</th><th scope="col">Comparators</th><th scope="col">Value</th></tr></thead><tbody>
+<tr><td>number, currency, rating, progress</td><td><code>=</code> <code>!=</code> <code>&gt;</code> <code>&gt;=</code> <code>&lt;</code> <code>&lt;=</code></td><td>number</td></tr>
+<tr><td>date</td><td><code>=</code> <code>!=</code> <code>&gt;</code> <code>&gt;=</code> <code>&lt;</code> <code>&lt;=</code></td><td>same formats, date math and <code>filter_timezone</code> handling as <code>due_date</code></td></tr>
+<tr><td>checkbox</td><td><code>=</code> <code>!=</code></td><td><code>true</code> / <code>false</code>; a task without a value counts as <code>false</code></td></tr>
+<tr><td>text, long_text, url, email</td><td><code>=</code> <code>!=</code> <code>like</code></td><td>text (<code>like</code> is a substring match)</td></tr>
+<tr><td>select, multi_select</td><td><code>=</code> <code>!=</code> <code>in</code> <code>not in</code></td><td>option ids, e.g. <code>cf_4 in 3,4</code>; multi_select matches if any selected option matches</td></tr>
+<tr><td>user</td><td><code>=</code> <code>!=</code> <code>in</code> <code>not in</code></td><td>user ids or usernames, e.g. <code>cf_9 in 1,alice</code></td></tr>
+</tbody></table></div>
+<ul>
+<li><code>!=</code> and <code>not in</code> also match tasks that have no value for the field.
+With <code>filter_include_nulls</code>, positive comparators match them too.</li>
+<li>Date <code>=</code> compares the exact stored instant, like <code>due_date =</code>; use a range
+(<code>&gt;</code> and <code>&lt;</code>) to match a whole day.</li>
+<li>An unknown field id, a field the user cannot read (its project is not
+readable) and a malformed identifier all return the same <code>400</code> as an
+unknown built-in field, so field ids of other projects cannot be probed. A
+comparator or value that does not fit the field type returns the usual
+invalid comparator / invalid value <code>400</code>.</li>
+<li>The check happens when the query runs, so a saved filter is accepted as long
+as it parses; it fails (and is skipped when matching tasks to views) if the
+field was deleted.</li>
+</ul>
+<h3 id="field-names-in-the-filter-input">Field names in the filter input <a class="anchor" href="#field-names-in-the-filter-input" aria-label="Link to this section: Field names in the filter input">#</a></h3>
+<p>The filter input in the UI never shows <code>cf_&lt;id&gt;</code>. It shows the field name and
+translates to and from the API form, also when a saved filter is loaded.
+Nothing changes on the API: the stored filter string keeps <code>cf_&lt;id&gt;</code> and option
+ids, so renaming a field does not break a saved filter.</p>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Shown in the input</th><th scope="col">Sent to the API</th></tr></thead><tbody>
+<tr><td><code>Budget &gt; 100</code></td><td><code>cf_12 &gt; 100</code></td></tr>
+<tr><td><code>&quot;Cost center&quot; like abc</code></td><td><code>cf_3 like abc</code></td></tr>
+<tr><td><code>Stage in Review, &quot;Won, closed&quot;</code></td><td><code>cf_4 in 31, 32</code></td></tr>
+<tr><td><code>&quot;Go live&quot; &lt; now/w+1w</code></td><td><code>cf_5 &lt; now/w+1w</code></td></tr>
+<tr><td><code>Owner in alice, bob</code></td><td><code>cf_6 in alice, bob</code></td></tr>
+</tbody></table></div>
+<ul>
+<li><strong>Quoting.</strong> A name made only of letters, digits and <code>_</code> is written as it is.
+Anything else (spaces, punctuation) is double quoted; <code>\&quot;</code> and <code>\\</code> escape a
+quote and a backslash inside. Matching is case-insensitive. Select option
+titles follow the same rule, and a title with a comma is quoted in lists.</li>
+<li><strong>Built-in names win.</strong> A bare <code>done</code>, <code>priority</code>, <code>labels</code>, ... is always the
+built-in field. A custom field with such a name is written quoted
+(<code>&quot;Priority&quot; &gt; 2</code>); the input does this by itself when it displays the filter.
+A quoted name never means a built-in field.</li>
+<li><strong>Where a field is looked up.</strong> In a project view the fields of that project.
+In saved filters and other cross-project places the fields of every
+non-archived project the user can read; they are fetched when the filter
+already uses one or the user starts typing in the input.</li>
+<li><strong>Name collisions.</strong> Fields whose names are equal (ignoring case) cannot be
+addressed by that name. Each gets the project title appended,
+<code>Budget (Marketing)</code>, and if that is still equal the field id,
+<code>Budget (Marketing) #12</code>. The order that decides this is project id, field
+position, field id, so the same set of fields always gets the same names. The
+plain name of a colliding field is not resolved and the API answers with the
+usual unknown-field <code>400</code>.</li>
+<li><strong>Values.</strong> Select and multi-select option titles are turned into option ids
+(and back); text that matches no option is sent unchanged and fails in the
+API like a wrong id. Numbers, text, checkbox values and dates are not
+touched, so date math works as before, and the date picker opens when
+clicking a date value of a date field. User values are sent as typed
+(usernames are accepted by the API); the assignee autocomplete suggests them.
+User ids from an old filter stay as ids.</li>
+<li><strong>Autocomplete.</strong> At the start of an expression, after one typed character,
+the field names are suggested; after the operator of a select field the
+option titles, after the operator of a user field the users.</li>
+<li><strong>Fallbacks.</strong> A raw <code>cf_&lt;id&gt;</code> still works when typed, and a field that is not
+known (deleted, not readable) stays as <code>cf_&lt;id&gt;</code> in the display.</li>
+</ul>
+<p>Sorting: <code>sort_by=cf_&lt;fieldID&gt;</code> with <code>order_by=asc|desc</code> works for all
+single-value types. Select fields sort by option position, not option id.
+<code>multi_select</code> and <code>user</code> fields cannot be sorted by (<code>400</code>). Tasks without a
+value sort last in both directions, like the built-in nullable columns.</p>
+<h2 id="display">Display <a class="anchor" href="#display" aria-label="Link to this section: Display">#</a></h2>
+<h3 id="expandcustom_fields"><code>expand=custom_fields</code> <a class="anchor" href="#expandcustom_fields" aria-label="Link to this section: expand=custom_fields">#</a></h3>
+<p>Task list and single task reads (<code>/api/v2/tasks</code>, <code>/projects/{project}/tasks</code>,
+<code>/projects/{project}/views/{view}/tasks</code>, <code>/projects/{project}/views/{view}/buckets/tasks</code>,
+<code>/tasks/{task}</code>, <code>/projects/{project}/tasks/by-index/{index}</code>) accept
+<code>expand=custom_fields</code>. Each task then carries <code>custom_fields</code>, a compact list
+with one entry per field that has a value, ordered by the field position:</p>
+<pre class="code"><code class="language-json">&quot;custom_fields&quot;: [
+  {&quot;custom_field_id&quot;: 1, &quot;type&quot;: &quot;text&quot;, &quot;value&quot;: &quot;REF-1&quot;},
+  {&quot;custom_field_id&quot;: 2, &quot;type&quot;: &quot;select&quot;, &quot;value&quot;: 1},
+  {&quot;custom_field_id&quot;: 4, &quot;type&quot;: &quot;multi_select&quot;, &quot;value&quot;: [3, 4]}
+]</code></pre>
+<p><code>value</code> has the same shape as in <code>/tasks/{task}/custom-field-values</code>. Fields
+without a value are left out (a checkbox set to <code>false</code> counts as a value). The
+values of a page are loaded with two queries, independent of the page size.
+Without the expand, and for tasks that have no value at all, the key is absent. API tokens need
+<code>tasks_custom_field_values</code> <code>read_all</code> to use it, like <code>comment_count</code> needs
+the comment scope.</p>
+<h3 id="table-view">Table view <a class="anchor" href="#table-view" aria-label="Link to this section: Table view">#</a></h3>
+<p>The columns menu of a table view lists the project's custom fields under a
+&quot;Custom fields&quot; heading. They are off by default; the choice is stored in the
+browser (<code>localStorage</code> key <code>tableViewCustomColumns</code>, field ids per project id).
+The view requests <code>expand=custom_fields</code> only while at least one custom column
+is shown. Cells are read-only; headers of all types except <code>multi_select</code> and
+<code>user</code> sort through <code>sort_by=cf_&lt;id&gt;</code>.</p>
+<h3 id="kanban-cards">Kanban cards <a class="anchor" href="#kanban-cards" aria-label="Link to this section: Kanban cards">#</a></h3>
+<p>A kanban view has a &quot;Card fields&quot; menu next to the filter. Selected fields are
+shown on every card as label and value; a card without a value for a field
+omits that line. The selection is stored in the browser (<code>localStorage</code> key
+<code>kanbanCardFields</code>, field ids per view id). The expand is added to the bucket
+requests only when a field is selected.</p>
+<p>Both use the read-only <code>CustomFieldValueDisplay</code> component, which renders text
+truncated, numbers and currency by locale, dates with the app's date format,
+checkboxes as a check mark, select values as coloured chips, users with
+avatar and name, links, rating stars and a progress bar.</p>
+</div>
+<p class="edit"><a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/docs/enterprise/custom-fields.md">Source of this page on GitHub</a></p>
+<nav class="pager" aria-label="Pages"><a class="prev" href="index.html" rel="prev"><span>Previous</span>Design documents</a><a class="next" href="workflow.html" rel="next"><span>Next</span>Workflow design</a></nav>
+</main>
+<nav class="toc-aside" aria-label="On this page"><p class="side-title">On this page</p><ul>
+<li class="toc-2"><a href="#model">Model</a></li>
+<li class="toc-3"><a href="#custom_fields">custom_fields</a></li>
+<li class="toc-3"><a href="#custom_field_options-for-select-and-multi_select">custom_field_options (for select and multi_select)</a></li>
+<li class="toc-3"><a href="#task_custom_field_values">task_custom_field_values</a></li>
+<li class="toc-3"><a href="#types-v1">Types (v1)</a></li>
+<li class="toc-2"><a href="#api-apiv2">API (/api/v2)</a></li>
+<li class="toc-2"><a href="#permissions">Permissions</a></li>
+<li class="toc-2"><a href="#events">Events</a></li>
+<li class="toc-2"><a href="#lifecycle">Lifecycle</a></li>
+<li class="toc-2"><a href="#filtering-and-sorting">Filtering and sorting</a></li>
+<li class="toc-3"><a href="#field-names-in-the-filter-input">Field names in the filter input</a></li>
+<li class="toc-2"><a href="#display">Display</a></li>
+<li class="toc-3"><a href="#expandcustom_fields">expand=custom_fields</a></li>
+<li class="toc-3"><a href="#table-view">Table view</a></li>
+<li class="toc-3"><a href="#kanban-cards">Kanban cards</a></li>
+</ul></nav>
+</div>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-about">
+      <p><strong>vikunja-enterprise</strong> is an independent community fork of Vikunja. It is not affiliated with, endorsed by or supported by the Vikunja project. Almost all of the software is their work.</p>
+      <p>Licensed under AGPL-3.0-or-later, as upstream. This site has no scripts, cookies or trackers.</p>
+    </div>
+    <nav class="footer-nav" aria-label="Footer">
+      <div><p class="footer-title">Project</p><ul>
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="../getting-started.html">Get started</a></li>
+        <li><a href="../roadmap.html">Roadmap and status</a></li>
+        <li><a href="../upstream.html">Relationship to upstream</a></li>
+      </ul></div>
+      <div><p class="footer-title">Reference</p><ul>
+        <li><a href="../modules/index.html">Modules</a></li>
+        <li><a href="../api.html">API</a></li>
+        <li><a href="../architecture.html">Architecture</a></li>
+        <li><a href="../configuration.html">Configuration</a></li>
+      </ul></div>
+      <div><p class="footer-title">Community</p><ul>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise">Repository</a></li>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise/issues">Issues</a></li>
+        <li><a href="../security.html">Security</a></li>
+        <li><a href="../contributing.html">Contributing</a></li>
+        <li><a href="../license.html">License</a></li>
+      </ul></div>
+      <div><p class="footer-title">Upstream Vikunja</p><ul>
+        <li><a href="https://github.com/go-vikunja/vikunja">Source code</a></li>
+        <li><a href="https://vikunja.io/docs/">Documentation</a></li>
+        <li><a href="https://vikunja.io/support/">Support upstream</a></li>
+      </ul></div>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Design - vikunja-enterprise</title>
+<meta name="description" content="User interface and visual design decisions of the fork&#x27;s features.">
+<link rel="canonical" href="https://vikunja.bahadirdogru.com/design.html">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1020" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="assets/docs.css">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="vikunja-enterprise">
+<meta property="og:title" content="Design - vikunja-enterprise">
+<meta property="og:description" content="User interface and visual design decisions of the fork&#x27;s features.">
+<meta property="og:url" content="https://vikunja.bahadirdogru.com/design.html">
+<meta property="og:image" content="https://vikunja.bahadirdogru.com/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="vikunja-enterprise, an independent community fork of Vikunja">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Design - vikunja-enterprise">
+<meta name="twitter:description" content="User interface and visual design decisions of the fork&#x27;s features.">
+<meta name="twitter:image" content="https://vikunja.bahadirdogru.com/assets/og.png">
+</head>
+<body class="docs">
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="index.html" aria-label="vikunja-enterprise home"><img src="assets/favicon.svg" alt="" width="30" height="30">vikunja-enterprise</a>
+    <nav class="top-nav" aria-label="Main">
+      <ul>
+<li><a href="modules/index.html">Modules</a></li>
+<li><a href="getting-started.html">Get started</a></li>
+<li><a href="api.html">API</a></li>
+<li><a href="architecture.html">Architecture</a></li>
+<li><a href="roadmap.html">Roadmap</a></li>
+<li><a href="upstream.html">Upstream</a></li>
+        <li><a class="gh" href="https://github.com/bahadirdogru/vikunja-enterprise">GitHub</a></li>
+      </ul>
+    </nav>
+    <details class="menu">
+      <summary><span class="menu-icon" aria-hidden="true"></span>Menu</summary>
+      <nav class="menu-panel" aria-label="Site">
+        <div class="menu-group"><p class="menu-title">Site</p><ul>
+<li><a href="index.html">Home</a></li>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise">GitHub repository</a></li>
+        </ul></div>
+<div class="menu-group"><p class="menu-title">Start</p><ul>
+<li><a href="getting-started.html">Getting started</a></li>
+<li><a href="configuration.html">Configuration</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Modules</p><ul>
+<li><a href="modules/index.html">Overview</a></li>
+<li><a href="modules/custom-fields.html">Custom fields</a></li>
+<li><a href="modules/workflows.html">Workflows</a></li>
+<li><a href="modules/approvals.html">Approvals</a></li>
+<li><a href="modules/automation.html">Automation</a></li>
+<li><a href="modules/dashboards-reports.html">Dashboards and reports</a></li>
+<li><a href="modules/forms.html">Forms</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Reference</p><ul>
+<li><a href="api.html">API reference</a></li>
+<li><a href="architecture.html">Architecture</a></li>
+<li><a href="design.html" aria-current="page">Design</a></li>
+<li><a href="roadmap.html">Roadmap and status</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Project</p><ul>
+<li><a href="upstream.html">Relationship to upstream</a></li>
+<li><a href="security.html">Security</a></li>
+<li><a href="contributing.html">Contributing</a></li>
+<li><a href="license.html">License</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Design history</p><ul>
+<li><a href="enterprise/index.html">Overview</a></li>
+<li><a href="enterprise/custom-fields.html">Custom fields design</a></li>
+<li><a href="enterprise/workflow.html">Workflow design</a></li>
+<li><a href="enterprise/forms-approvals.html">Forms and approvals design</a></li>
+<li><a href="enterprise/automation.html">Automation design</a></li>
+<li><a href="enterprise/dashboards.html">Dashboards design</a></li>
+</ul></div>
+      </nav>
+    </details>
+  </div>
+</header>
+<div class="docs-layout">
+<nav class="sidebar" aria-label="Documentation">
+<p class="side-title">Start</p><ul>
+<li><a href="getting-started.html">Getting started</a></li>
+<li><a href="configuration.html">Configuration</a></li>
+</ul>
+<p class="side-title">Modules</p><ul>
+<li><a href="modules/index.html">Overview</a></li>
+<li><a href="modules/custom-fields.html">Custom fields</a></li>
+<li><a href="modules/workflows.html">Workflows</a></li>
+<li><a href="modules/approvals.html">Approvals</a></li>
+<li><a href="modules/automation.html">Automation</a></li>
+<li><a href="modules/dashboards-reports.html">Dashboards and reports</a></li>
+<li><a href="modules/forms.html">Forms</a></li>
+</ul>
+<p class="side-title">Reference</p><ul>
+<li><a href="api.html">API reference</a></li>
+<li><a href="architecture.html">Architecture</a></li>
+<li><a href="design.html" aria-current="page">Design</a></li>
+<li><a href="roadmap.html">Roadmap and status</a></li>
+</ul>
+<p class="side-title">Project</p><ul>
+<li><a href="upstream.html">Relationship to upstream</a></li>
+<li><a href="security.html">Security</a></li>
+<li><a href="contributing.html">Contributing</a></li>
+<li><a href="license.html">License</a></li>
+</ul>
+<p class="side-title">Design history</p><ul>
+<li><a href="enterprise/index.html">Overview</a></li>
+<li><a href="enterprise/custom-fields.html">Custom fields design</a></li>
+<li><a href="enterprise/workflow.html">Workflow design</a></li>
+<li><a href="enterprise/forms-approvals.html">Forms and approvals design</a></li>
+<li><a href="enterprise/automation.html">Automation design</a></li>
+<li><a href="enterprise/dashboards.html">Dashboards design</a></li>
+</ul>
+</nav>
+<main id="main" class="doc">
+<nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="index.html">Home</a></li><li>Reference</li><li aria-current="page">Design</li></ol></nav>
+<h1>Design</h1>
+<details class="toc-inline"><summary>On this page</summary>
+<nav aria-label="On this page"><ul>
+<li class="toc-2"><a href="#principles">Principles</a></li>
+<li class="toc-2"><a href="#foundations-tokens-dark-mode-layout-i18n-accessibility">Foundations: tokens, dark mode, layout, i18n, accessibility</a></li>
+<li class="toc-2"><a href="#custom-fields">Custom fields</a></li>
+<li class="toc-2"><a href="#workflows">Workflows</a></li>
+<li class="toc-2"><a href="#approvals">Approvals</a></li>
+<li class="toc-2"><a href="#automation">Automation</a></li>
+<li class="toc-2"><a href="#dashboards-and-reports">Dashboards and reports</a></li>
+<li class="toc-2"><a href="#forms">Forms</a></li>
+<li class="toc-2"><a href="#empty-loading-and-error-states">Empty, loading and error states</a></li>
+<li class="toc-2"><a href="#security-relevant-ux">Security-relevant UX</a></li>
+<li class="toc-2"><a href="#browser-verification">Browser verification</a></li>
+</ul></nav></details>
+<div class="prose">
+<p>This document records the user interface and visual design decisions of vikunja-enterprise: how the fork's screens are structured, which patterns they follow, and why. It is about the web client in <code>frontend/</code>. How the system is built is in <a href="architecture.html">Architecture</a>; the HTTP surface is in <a href="api.html">API reference</a>; behaviour and data are in the <a href="modules/index.html">module pages</a>.</p>
+<p>The sketches below are schematic. They show structure, not appearance, and they are not screenshots.</p>
+<h2 id="principles">Principles <a class="anchor" href="#principles" aria-label="Link to this section: Principles">#</a></h2>
+<ol>
+<li><strong>Follow the patterns that already exist.</strong> The fork inherits Vikunja's interface and adds to it rather than redesigning it. New settings go on project settings pages next to the existing ones, task properties go in the task detail's property list, new filter fields go into the existing filter input, new notifications use the existing notification list, and new dialogs use the existing modal. A person who knows Vikunja should find the new screens where they expect them.</li>
+<li><strong>Reuse the building blocks.</strong> Buttons (<code>BaseButton</code>), checkboxes, modal, dropdown, popup, cards, avatars, pagination and the <code>Loading</code> and <code>Nothing</code> states in <code>components/base</code> and <code>components/misc</code> are used instead of one-off versions. Styling uses the existing custom properties, not hard-coded colours (the one deliberate exception, the accent colour of a public form, is described below).</li>
+<li><strong>The server is the authority; the client mirrors it.</strong> Forms validate in the browser what the server will validate, for fast feedback, and then show the server's typed errors on the control they belong to. The workflow, form and automation editors are generated from, or checked against, what the server reports: the automation editor from the catalog, the report widget editor from the report options, the form builder from the form options. A new action, dimension or form target does not need a new screen.</li>
+<li><strong>Say what is missing, offer what to do.</strong> A refused status change lists the missing fields and opens a dialog to fill them. A refused &quot;done&quot; that needs an approval offers &quot;Request approval&quot;. An empty page explains what the feature is and offers a way to start.</li>
+<li><strong>Never lose work silently.</strong> Editors with a draft (workflow, form builder, automation rule) ask before leaving with unsaved changes. Dashboards show whether the layout is saved, saving or failed.</li>
+<li><strong>Secrets are shown once, destructive things are confirmed.</strong> See <a href="#security-relevant-ux">Security-relevant UX</a>.</li>
+</ol>
+<h2 id="foundations-tokens-dark-mode-layout-i18n-accessibility">Foundations: tokens, dark mode, layout, i18n, accessibility <a class="anchor" href="#foundations-tokens-dark-mode-layout-i18n-accessibility" aria-label="Link to this section: Foundations: tokens, dark mode, layout, i18n, accessibility">#</a></h2>
+<p><strong>Tokens.</strong> Colours, shadows and spacing come from CSS custom properties defined in <code>frontend/src/styles/custom-properties/</code> (<code>colors.scss</code>, <code>shadows.scss</code>), documented in <code>frontend/src/styles/README.md</code>. The base is Bulma (through <code>bulma-css-variables</code>), mapped to semantic tokens such as <code>--primary</code>, <code>--text</code>, <code>--text-light</code>, <code>--grey-*</code>, <code>--card-border-color</code> and <code>--site-background</code>. Component styles are scoped to their <code>.vue</code> file; global styles are limited to the material in <code>styles/</code>. The fork's components use logical properties (<code>inset-inline-start</code>, <code>block-size</code>) so right-to-left languages work, as in upstream. Tailwind utilities exist with a <code>tw</code> prefix and are not the main styling mechanism.</p>
+<p><strong>Dark mode.</strong> The <code>useColorScheme</code> composable reads the user's <code>color_schema</code> setting (<code>auto</code>, <code>light</code> or <code>dark</code>; <code>auto</code> follows <code>prefers-color-scheme</code>) and toggles a <code>dark</code> class on the <code>html</code> element. The grey scale is reversed under <code>.dark</code> in <code>colors.scss</code>, so every component that uses tokens is themed for free. Charts, badges and the dashboard grid use tokens (<code>--grey-200</code> for grid lines, <code>--text-light</code> for axis text) and therefore follow. Colours that come from the data (a status colour, an option colour, a form accent) are the exception; see the sections below. The standalone public form page has no logged-in user, so it follows <code>prefers-color-scheme</code> directly.</p>
+<p><strong>Responsiveness.</strong> Desktop layouts use side-by-side panels; narrow layouts stack. The dashboard grid is 12 columns and becomes one column at 768 px and below. The form builder shows its live preview beside the editor at the desktop breakpoint and below it on narrow screens. The public form page is mobile first and was checked down to 320 px width. Dialogs and tables are the existing, already responsive components.</p>
+<p><strong>Internationalization.</strong> Strings are in <code>frontend/src/i18n/lang/en.json</code> (English is the source and the fallback). The fork's strings are also translated into Turkish in <code>tr-TR.json</code>, kept in the repository; other languages are synced from Crowdin and show the fork's strings in English until they are translated. Server errors carry a numeric code and <code>i18n_params</code>, and the client maps codes to localized messages. The public form page uses <code>navigator.language</code> when nobody is logged in, like the app's own pre-login rule. Dates and numbers use the user's locale (the custom field display component formats numbers and currency by locale and dates with the app's date format).</p>
+<p><strong>Accessibility, as present in the code.</strong></p>
+<ul>
+<li>Charts: one <code>aria-label</code> per mark, a visually hidden data table as an alternative (<code>ChartTable</code>), tooltips on hover and on focus, <code>aria-live</code> for status messages, selectable marks are <code>role=&quot;button&quot;</code> and others <code>role=&quot;img&quot;</code>, and transitions are gated by <code>prefers-reduced-motion</code>.</li>
+<li>Dashboard grid: drag by the widget header or move and resize with the keyboard (arrow keys move, Shift plus arrow keys resize).</li>
+<li>Public forms: a skip link, labels above inputs and help below, required fields marked with an asterisk and &quot;(required)&quot; for screen readers, errors tied to inputs with <code>aria-describedby</code>, an <code>aria-live</code> error summary, focus moved to the first invalid field, 44 px touch targets, a honeypot input that is <code>tabindex=&quot;-1&quot;</code>, <code>autocomplete=&quot;off&quot;</code> and inside an <code>aria-hidden</code> container, and <code>role=&quot;alert&quot;</code> for failure states.</li>
+<li>Status and category badges carry an icon as well as a colour, so category is not conveyed by colour alone.</li>
+</ul>
+<p>Accessibility has been designed in, not audited: no automated or manual audit against WCAG is recorded in the repository, and the claims above are limited to what the code does.</p>
+<h2 id="custom-fields">Custom fields <a class="anchor" href="#custom-fields" aria-label="Link to this section: Custom fields">#</a></h2>
+<p>Custom fields appear in four places.</p>
+<pre class="code"><code class="language-text">Project settings &gt; Custom fields            Task detail                          Table view / kanban card
++----------------------------------+        +-------------------------------+    +------------------+
+| [+ New field]                    |        | Status      [ In review  v ]  |    | Title | Budget   |
+| 1. Budget      number   [edit]   |        | Due date    ...               |    | ...   | 1,200.00 |
+| 2. Stage       select   [edit]   |        | -- custom fields ----------   |    +------------------+
+| 3. Go live     date     [edit]   |        | Budget      [ 1200       ]    |    Card: label + value,
++----------------------------------+        | Stage       ( Review ) ( ... )|    a line is omitted when
+  type fixed after creation                 | Rating      * * * . .         |    the card has no value
+                                            +-------------------------------+</code></pre>
+<ul>
+<li><strong>Definition editor</strong> (project settings, project admins). Title, type, required flag, per-type configuration (min, max, precision, currency, maximum rating) and, for select and multi select, an option list with colours. The type cannot be changed after creation, so the type control is disabled when editing.</li>
+<li><strong>Value editors</strong> (task detail) are one component per type, chosen by field type: text and long text (a long text shows a single clipped line until focused), number and currency, date, checkbox, select as chips or a select, multi select, user with avatars, url, email, rating as stars, progress as a bar. Values are validated in the client with the same ranges as the server and saved per field, so one invalid value never blocks the others.</li>
+<li><strong>Display</strong> is a separate read-only component (<code>CustomFieldValueDisplay</code>) used in table cells and kanban cards: truncated text, locale-formatted numbers and currency, dates, a check mark, option chips in the option's colour with a text colour chosen for contrast, avatars, links, stars and a progress bar.</li>
+<li><strong>Columns and card fields are opt-in.</strong> The Columns menu of a table view lists the project's custom fields under their own heading, off by default; a kanban view has a &quot;Card fields&quot; menu. The choice is stored in the browser (<code>localStorage</code>, per project or per view), not on the server, because it is a display preference. The view asks for <code>expand=custom_fields</code> only while at least one is shown.</li>
+<li><strong>Filter input shows names, not ids.</strong> The filter input accepts and shows the field name (<code>Budget &gt; 100</code>) and the option title (<code>Stage in Review</code>), and sends <code>cf_&lt;id&gt;</code> and option ids. Names with spaces or punctuation are double quoted; built-in names such as <code>done</code> and <code>priority</code> always win unless quoted; the field name is suggested after one typed character, option titles after the operator of a select field, users after the operator of a user field. Saved filters keep the id form, so renaming a field does not break them. When two fields share a name, each gets its project title appended. The rationale: people should not have to know ids, and stored data should not break on a rename.</li>
+</ul>
+<h2 id="workflows">Workflows <a class="anchor" href="#workflows" aria-label="Link to this section: Workflows">#</a></h2>
+<p>The workflow editor is in project settings (project admins). Without a workflow the page says what a workflow is and offers &quot;Enable workflow&quot;, which pre-fills To do (initial), In progress and Done in the user's language. Everything is edited as one draft and saved with one request, so partial states are never stored.</p>
+<pre class="code"><code class="language-text">Workflow editor                                          Transition rules (opens on a ticked cell)
++-----------------------------------------------+        +-----------------------------------+
+| Statuses              [ ] Only listed moves   |        | Button label   [ Send to design ] |
+|  o To do      open        initial   [up][dn]  |        | Min. permission ( ) write ( ) admin|
+|  o In progress in progress          [up][dn]  |        | Allowed teams   [ Editors  x ]    |
+|  o Done       done                  [up][dn]  |        | Required fields [ Due date ] [..] |
+|  [+ Add status]                               |        | [ ] Require a comment             |
+|                                               |        | [ ] Require approval  (see below) |
+| Transitions: [ List | Matrix ]                |        +-----------------------------------+
+|           to: To do | In prog. | Done         |
+| from To do      -   |   [x]    |  [ ]         |
+|   In progress  [ ]  |    -     |  [x]         |
++-----------------------------------------------+</code></pre>
+<ul>
+<li><strong>Statuses</strong>: colour, title, category (each category has its own icon and colour), a radio for the initial status, up and down buttons for order, and remove. Removing a status that still has tasks asks where the tasks should go and retries with that choice. Statuses with history are shown as archived instead of vanishing.</li>
+<li><strong>Transitions</strong> can be edited as a list or as a matrix (rows are the from status, columns the to status); a ticked cell opens that transition's rules.</li>
+<li><strong>Client checks mirror the server</strong>: exactly one initial status, at least one done status, unique titles, no self or duplicate transitions. Server errors are shown inline on the control they name.</li>
+<li><strong>Task detail.</strong> When the project has a workflow a Status row sits at the top of the property list. Its menu lists the transitions the person may perform now, with the button label or target status; transitions with unmet requirements say what is missing. A transition that needs fields or a comment opens a dialog with editors for exactly the missing fields and a comment box, then saves the fields and posts the change. A collapsible history shows who moved the task from where to where, when, and the comment. The done button of a task in a workflow project performs the transition to the first done status (or back to the initial one) through the same path, so its rules and dialog apply.</li>
+<li><strong>Views.</strong> A kanban view offers &quot;Workflow statuses&quot; next to manual and filter columns, with a one-line explanation. In that mode the column header is the status badge with a task count, a drop is a transition and snaps back if rejected, and &quot;Add a task&quot; in a column creates the task there (with the same dialog when the transition needs input). Bucket management controls are hidden because the columns are edited in the workflow editor. A table view gets a sortable Status column, on by default in projects with a workflow; list rows and manual kanban cards get a small status badge.</li>
+<li><strong>Filter input</strong> accepts <code>status</code> and <code>status_category</code>, suggests status titles and the four category names, shows ids as titles and sends titles as ids.</li>
+</ul>
+<p><strong>Why a status is not a bucket in the UI.</strong> Status mode is an option of a kanban view, not a replacement: manual boards keep working and keep their buckets, and a status is visible wherever a task is, not only on a board.</p>
+<h2 id="approvals">Approvals <a class="anchor" href="#approvals" aria-label="Link to this section: Approvals">#</a></h2>
+<pre class="code"><code class="language-text">Task detail                                              Approvals page  (/approvals)
++---------------------------------------------+          +------------------------------------+
+| Approval requested: Send to print           |          | [ Waiting for me | Requested by me | History ]
+| by Ada, mode: all, due in 2 days            |          | project filter  v                  |
+|   Bo      approved  &quot;fine&quot;       10:02      |          |  Task #12  Send to print  [Approve] [Reject]
+|   Cem     waiting                           |          |  ...                               |
+|   [ Approve ]  [ Reject ]  (comment needed) |          +------------------------------------+
+|   [ Cancel request ]  (requester or admin)  |          sidebar entry with a count badge
++---------------------------------------------+</code></pre>
+<ul>
+<li><strong>Where approvals are configured.</strong> In the workflow editor, a transition has an &quot;Approval&quot; section: a switch, the mode (any or all, each with one line of explanation), the approver sources (a person, a team the project is shared with, the assignees of the task, a person in a user field), the status after a rejection, the duration to decide within (<code>12h</code>, <code>2d</code>, <code>1w</code>) and a self-approval switch. Transitions with an approval carry a tag in the list and an icon in the matrix.</li>
+<li><strong>Requesting.</strong> The status menu labels such transitions &quot;Request approval&quot; and previews who will be asked. A successful request (HTTP <code>202</code>) is shown as &quot;Approval requested&quot;, never as an error. &quot;Request approval&quot; in the task's actions menu opens the ad-hoc dialog for a decision on any task.</li>
+<li><strong>Banner on the task.</strong> Above the property list: title, requester, mode, due (overdue marked), state, and per approver the decision, comment and time. Approvers who have not decided get approve and reject; a rejection needs a comment and the missing comment is shown at the field. The requester and project admins can cancel, with a confirmation. Resolved requests are in a collapsible section, with the cancel reason in words. A status history entry made by an approval links to that section.</li>
+<li><strong>Markers.</strong> Cards, list rows and the table status cell show a &quot;Waiting for approval&quot; marker, requested through <code>expand=approvals</code> only for projects with a workflow. A status-mode drop that answers <code>202</code> leaves the card where it is and shows a toast.</li>
+<li><strong>Refused plain &quot;done&quot;.</strong> When a checkbox in a list row asks for done and the transition needs approval, the server answers <code>409</code> with code <code>24007</code>. The client rolls back the optimistic change (the checkbox goes back) and shows a message naming the status with the action &quot;Request approval&quot;; if a request is already pending the message says so and offers to open the task. The design choice is that nothing changes silently: no request is created as a side effect of a failed update.</li>
+<li><strong>Approvals page</strong> (<code>/approvals</code>, sidebar entry with a count badge): waiting for me, requested by me, history, with a project filter, paging and approve or reject in the first tab. The badge refreshes on window focus, when an <code>approval.*</code> notification arrives over the WebSocket, and by polling every minute without a socket.</li>
+</ul>
+<h2 id="automation">Automation <a class="anchor" href="#automation" aria-label="Link to this section: Automation">#</a></h2>
+<p>Project settings, Automations (project admins). The page has a rule list and a Secrets section.</p>
+<pre class="code"><code class="language-text">Rule list                                                  Rule editor (When / If / Then)
++--------------------------------------------------+       +---------------------------------------------+
+| [+ New rule]  starts from a template gallery     |       | Title [ ________________ ]   [x] Enabled    |
+| (x) Urgent first       last run: success  12:04  |       | WHEN   [ Task status changed  v ]           |
+| ( ) Weekly digest      last run: failed   Mon  ! |       |        options generated from the catalog   |
+|     disabled by the system: too_many_failures    |       | IF     all of                               |
++--------------------------------------------------+       |          [ Priority  &gt;=  4 ]  [+ condition] |
+                                                           |          any of ... / not ...   [+ group]   |
+Runs of a rule                                             | THEN   1. [ Set field ... ]  [up][dn][dup][x]|
++--------------------------------------------------+       |        2. [ HTTP request ... ]               |
+| status  started  task   steps   [Retry]          |       |        [+ action]                           |
+|  &gt; run opens: each step, output, error, duration |       | [ Test with a task ]    [ Save ]            |
++--------------------------------------------------+       +---------------------------------------------+</code></pre>
+<ul>
+<li><strong>Three stacked blocks: When, If, Then.</strong> The structure mirrors the rule document (a trigger, a condition tree, an ordered list of actions) and the sentence a person would say. Nothing in the layout implies code.</li>
+<li><strong>Generated from the server catalog.</strong> The trigger and action pickers, the options and parameters, the condition fields and the operators of each come from <code>GET /api/v2/automations/catalog</code>. One generic renderer per parameter kind (string, text, template, number, duration, enum, user, users, team, label, status, custom field, project, secret, map, code, condition) draws the control. Custom fields of the project appear as condition fields. This is why a new action or trigger needs no UI work, and why the catalog's translation keys are checked against the English and Turkish files by a unit test.</li>
+<li><strong>Conditions</strong> are a nested builder of all, any and not groups over comparisons; operators are those valid for the field's kind; &quot;is empty&quot; operators hide the value input.</li>
+<li><strong>Actions</strong> are an ordered list of cards with move, duplicate and remove (buttons; there is no drag-and-drop reordering). Text parameters accept <code>{{placeholders}}</code> through a placeholder menu; <code>{{secrets.NAME}}</code> is offered only for <code>http.request</code> header values and body.</li>
+<li><strong>Time triggers.</strong> The schedule trigger has a cron input with presets (hourly, daily, weekly, monthly), a check in the browser that mirrors the server's parser, and a note that times are in the server's time zone. Overdue and due soon show a hint that tasks that are already overdue or inside the window when the rule is created or enabled do not fire. Wait takes a duration of at least one minute.</li>
+<li><strong>Scripts.</strong> A code editor with line numbers, a Tab key that indents, an error marker on the line the server reports (the server compiles the script on save, the editor does not compile while typing), a collapsible and filterable API reference that inserts at the cursor, example snippets and a collapsible limits table. When scripts are switched off on the instance, the script action and condition are not offered and existing ones are shown read-only with a note.</li>
+<li><strong>Dry run.</strong> &quot;Test with a task&quot; shows the plan: which conditions held, what each action would do, warnings for placeholders that do not resolve, and for scripts the &quot;would call&quot; lines and <code>log()</code> output in a monospace box. It tests only the saved rule, so the editor asks to save first and disables the test for a changed draft.</li>
+<li><strong>Runs.</strong> A table of runs with a status badge that refreshes automatically while a run is <code>running</code>, and a run opens to its steps with output, error and duration. Failed runs have a Retry action. The runs list has no server-side status filter; the filter narrows the loaded page.</li>
+<li><strong>Webhook address panel.</strong> For <code>webhook.incoming</code> the save that creates the address returns it once; the editor shows it with a copy button and the warning that it cannot be shown again, with notes on the timestamp and signature headers and on what replay protection covers (signed hooks only). Later it only says the address exists and offers &quot;Create a new address&quot; behind a confirmation (the old address stops working; disabled while the rule has unsaved changes). The address lives only in the component that shows it: closing the editor forgets it.</li>
+<li><strong>Manual run.</strong> A task's actions menu has &quot;Run automation...&quot; when the project has enabled manual rules and the person can write; a dialog lists the rules by their button text and queues the run; failures use the usual error toast with the localized code and the dialog stays open.</li>
+<li><strong>Secrets section.</strong> Names, timestamps, an &quot;unreadable&quot; badge, add, replace and delete with a confirmation. A value is typed into a password input, cleared after the request, and never fetched or logged.</li>
+<li><strong>Disabled-by-system badge.</strong> A rule disabled by the system shows a warning badge with the reason in words, so a rule that stopped is noticed.</li>
+</ul>
+<h2 id="dashboards-and-reports">Dashboards and reports <a class="anchor" href="#dashboards-and-reports" aria-label="Link to this section: Dashboards and reports">#</a></h2>
+<pre class="code"><code class="language-text">/dashboards/:id  (view mode)                         Widget editor (side panel)
++------------------------------------------------+   +------------------------------+
+| Title    [Edit] [+ Widget]   saved / saving / !|   | Type gallery &gt; form from the |
+| +--------+ +------------------+ +-------------+|   | report options               |
+| | Open   | | By status (donut)| | Created vs  ||   | Filter [ done = false     ]  |
+| |  42    | |                  | | done (line) ||   | Group by [ assignee v ]      |
+| | +5 vs  | +------------------+ |             ||   | Range  [ last 30 days v ]    |
+| | prev.  | +------------------+ +-------------+|   |                              |
+| +--------+ | Overdue (list)   |                |   | Live preview of the unsaved  |
+|            +------------------+                |   | configuration                |
++------------------------------------------------+   +------------------------------+
+12-column grid, one column at 768 px and below</code></pre>
+<ul>
+<li><strong>Pages.</strong> <code>/dashboards</code> lists personal and project dashboards, grouped, with create, rename and delete. <code>/dashboards/:id</code> shows and edits one. Each project has a Dashboards entry in its menu (<code>/projects/:id/dashboards</code>: it opens the only dashboard, lists several, and lets a project admin create the default one), and the sidebar has a Dashboards link. A new dashboard starts with a useful set of widgets: open tasks, tasks by status (or by done without a workflow), created vs completed over 30 days, open tasks by assignee and an overdue task list. The first version is a separate page rather than a new project view kind, because a new view kind touches a lot of upstream code.</li>
+<li><strong>Grid and edit mode.</strong> A 12-column CSS grid. In edit mode a widget is moved by dragging its header and resized from its corner, or with the keyboard; the layout is compacted vertically, saved after a short delay with a visible saved, saving or failed state and a retry, and the last layout changes can be undone. A project dashboard seen by someone who is not an admin is read-only.</li>
+<li><strong>Widget editor.</strong> A gallery of widget types first, then a form built from <code>GET /api/v2/reports/tasks/options</code> (labels from translation keys; custom fields by title), the same filter editor used in views, relative period presets, and a <strong>live preview of the unsaved configuration</strong>, so a configuration is seen before it is stored. Typed validation errors (<code>details.param</code>, the 23xxx codes and the filter errors) are shown on the matching control.</li>
+<li><strong>Charts are hand-written SVG</strong> (bar including stacked and grouped, donut, line, number tile). The viewBox follows a <code>ResizeObserver</code>, ticks are &quot;nice&quot; numbers, and there are a tooltip, a legend, a neutral colour for the folded &quot;other&quot; group and a visually hidden data table. The reason for no charting library is dependency weight and control over theming and accessibility (decision 6 in <a href="architecture.html#6-charts-are-hand-written-svg">ARCHITECTURE.md</a>). A note appears under a chart whose report is <code>multi_valued</code> (a task with several assignees counts in each group, so the sum of the groups can exceed the number of tasks).</li>
+<li><strong>Colours.</strong> Data colours come from the API where one exists (status and option colours); otherwise they come from a hash of the group's key and label, so the same option has the same colour in every widget. Colours of the empty and folded groups are neutral. Colours that come from data are used as given in both themes.</li>
+<li><strong>Drill-down.</strong> Clicking a bar, slice, point or number opens a panel that lists exactly the tasks behind it, by combining the widget's filter with the group and bucket. Marks that cannot be expressed in the filter syntax (the folded &quot;other&quot; group, the <code>status_entered</code> time field, some &quot;no value&quot; cases) are inert and say why, instead of showing a wrong list.</li>
+<li><strong>Export.</strong> CSV from the widget menu and from the drill-down panel. Previous-period comparison on number widgets shows a delta against the same elapsed share of the previous period.</li>
+<li><strong>Per-viewer display options.</strong> Bar direction, stacking and legend are stored in the browser, not in the widget, because widget configs are decoded strictly and have no room for them.</li>
+</ul>
+<h2 id="forms">Forms <a class="anchor" href="#forms" aria-label="Link to this section: Forms">#</a></h2>
+<p>Forms are built by project admins (project settings, Forms) and used from a standalone page.</p>
+<pre class="code"><code class="language-text">Form builder (project settings)                                   Public form page  /forms/:token
++------------------------------------+-----------------------+   +------------------------------+
+| Tabs: [Fields] [Settings] [Share]  |  Live preview         |   | [logo] Brand name            |
+| Fields               [+ Add field v]|  +-----------------+ |   | Description                  |
+|  1. Title      label help  [req]    |  | What do you need?| |   | What do you need? *          |
+|  2. Stage      label help  [ ]      |  | [______________] | |   | [______________________]     |
+|  3. Budget     label help  [hide]   |  | Stage  ( ) ( )   | |   | Stage  ( ) Open  ( ) Closed  |
+| per field: label, help, required,   |  | [ Submit ]       | |   | [ Submit ]  (accent colour)  |
+| default, &quot;do not show&quot;              |  +-----------------+ |   | footer: Powered by Vikunja   |
++------------------------------------+-----------------------+   +------------------------------+
+ preview sits below on narrow screens                              no app header, sidebar or login</code></pre>
+<ul>
+<li><strong>List.</strong> Title, an access badge (members, signed-in users, public), an open and closed switch that saves at once, the submission count, a warning badge with the translated reason when the system switched the form off, and copy link, open, edit, submissions, duplicate (the copy starts closed) and delete (with confirmation; the tasks stay). With no forms the page says what forms do and offers three starters built from what the project offers (a simple request, a request with a due date, a bug report).</li>
+<li><strong>Builder.</strong> Three tabs: Fields, Settings and Share, with a live preview next to them (below on narrow screens). Everything comes from <code>GET .../forms/options</code>; no target list is hard-coded. Fields are added from a menu grouped into task fields and custom fields, each target once; reordered with buttons; and have a label, help, required flag, &quot;do not show&quot; (a hidden field takes its default, which is how a status, label or custom field is pre-set), and a typed default (custom fields reuse the custom field editors). On a public form a target that may not be asked but may be preset (labels, user fields) is added as a hidden field; one that can be neither (attachments when the instance forbids them) is disabled with the reason; switching to public lists the fields that block it. The title rule (asked and required, or hidden with a value) is explained inline together with the placeholders.</li>
+<li><strong>Settings tab.</strong> Access, with a warning box for public; initial status (only with a workflow); default assignees; success message; redirect; &quot;submit another&quot;; close date; maximum submissions; who is notified; whether to ask for name and e-mail (off, optional, required; public forms only); and the branding: brand name, accent colour, hide the footer, and logo (PNG, JPEG, GIF or WebP, no SVG).</li>
+<li><strong>Share tab.</strong> The link with a copy button, &quot;create a new link&quot; behind a confirmation (the old link stops working), and an iframe snippet. There is no QR code, because it would need a new dependency.</li>
+<li><strong>Validation and drafts.</strong> Client checks mirror the server. Server issues (<code>400</code> with code <code>25002</code>, <code>details.issues[].path</code>) are mapped to the control and the tab: the tab is switched, the field opened, the control focused, and tabs show a badge with the count. Unsaved changes are guarded (route leave, tab close, back to the list). Saving keeps the builder open.</li>
+<li><strong>Public page.</strong> A route with <code>meta.standalone</code>, rendered without header, sidebar or the login layout; it loads the definition without credentials. Fields are native inputs chosen by kind (radios or checkboxes up to six options, selects above, stars as radio inputs, range, date or date-time input, a textarea with a counter near the maximum length, a file picker that honours the limits). Dates without a time are sent as noon in the viewer's time zone. Success shows the message or a default, &quot;submit another&quot; resets the form, and a redirect (http or https only) shows the target host and goes after four seconds. Failure states each have their own screen: not found, closed, full or disabled (with the form title), login required (a button that returns to the form after login), forbidden, rate limited (with the retry time) and network errors.</li>
+<li><strong>Branding and accent colour.</strong> The page shows the brand name and logo and can hide the &quot;Powered by Vikunja&quot; footer. The accent colour is <code>#rrggbb</code>, validated in the builder and on the server. The page cannot just change one variable, because <code>--primary</code> and its derived colours are resolved on <code>:root</code>; instead <code>accentStyle</code> converts the accent to hue, saturation and lightness and emits every derived variable already resolved (<code>--primary</code>, <code>--primary-light</code>, <code>--primary-dark</code>, <code>--link</code>, <code>--link-hover</code>) on the form container. <strong>Contrast:</strong> the text on buttons is chosen from the accent's relative luminance, black above a luminance of 0.4 and white otherwise (<code>--fp-button-text</code>). That guarantees readable button text; it does not check the accent against the page background, so a very light accent can give low-contrast links and outlines on a light page. An invalid or empty accent leaves the normal theme untouched.</li>
+</ul>
+<h2 id="empty-loading-and-error-states">Empty, loading and error states <a class="anchor" href="#empty-loading-and-error-states" aria-label="Link to this section: Empty, loading and error states">#</a></h2>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Place</th><th scope="col">Empty</th><th scope="col">Loading</th><th scope="col">Error</th></tr></thead><tbody>
+<tr><td>Workflow editor</td><td>Explains workflows, offers &quot;Enable workflow&quot;</td><td>The shared loading component</td><td>A 404 from the workflow route is treated as &quot;no workflow&quot; and renders nothing extra</td></tr>
+<tr><td>Task status row</td><td>Not shown without a workflow</td><td>-</td><td>Typed errors become plain messages; unmet requirements open the status dialog</td></tr>
+<tr><td>Charts</td><td>A localized empty state</td><td>A skeleton</td><td>A per-widget error state with the server's message (each widget has its own queries)</td></tr>
+<tr><td>Dashboards list</td><td>Offers creating the default dashboard (project admins)</td><td>Loading component</td><td>Request errors as toasts</td></tr>
+<tr><td>Automation rule list</td><td>A short explanation and the template gallery</td><td>Loading component</td><td>Server issues mapped to the exact input by path (<code>actions[1].params.status_id</code>)</td></tr>
+<tr><td>Form list</td><td>What forms do, three starters</td><td>Loading component</td><td>Server issues mapped to the control and the tab</td></tr>
+<tr><td>Public form page</td><td>-</td><td>Loading state before the definition arrives</td><td>Separate screens for 404, 410 (closed, full, disabled), 401, 403, 429 and network errors; 422 answers are mapped to the inputs</td></tr>
+<tr><td>Approvals page</td><td>An empty tab</td><td>Loading component</td><td>Request errors as toasts; a decision racing another shows the <code>409</code> message</td></tr>
+</tbody></table></div>
+<p>Failed queries toast through a global handler unless the consumer renders its own error state. A request that fails because the session or API base changed mid-request is ignored rather than shown.</p>
+<h2 id="security-relevant-ux">Security-relevant UX <a class="anchor" href="#security-relevant-ux" aria-label="Link to this section: Security-relevant UX">#</a></h2>
+<ul>
+<li><strong>Secrets are shown once.</strong> The incoming webhook address is returned only by the request that creates or regenerates it; the editor shows it once with a copy button and a warning, and it is kept only in the component, never in a query cache (the save and the address request use <code>useSecretMutation</code>), never logged. Automation secret values are write-only: password input, cleared after the request, never fetched. Form tokens are visible to project admins (they can read forms) but can be regenerated.</li>
+<li><strong>Confirmations on destructive or link-breaking actions.</strong> Deleting a form, a secret, a rule, a dashboard, disabling a workflow, creating a new form link or webhook address, and cancelling an approval each ask first. Leaving an editor with unsaved changes asks.</li>
+<li><strong>Honest warnings.</strong> Choosing public access on a form shows a warning box. The webhook panel states that only signed webhooks are protected against replays. The &quot;unreadable&quot; badge on a secret tells the admin that <code>service.secret</code> changed.</li>
+<li><strong>Nothing is hidden by the UI alone.</strong> Controls are hidden or disabled for people who cannot use them, but the server enforces every permission; a forbidden answer is shown as a plain message.</li>
+<li><strong>Little traffic from the public form page.</strong> A logged-out visitor sends only the instance <code>/info</code> the app always loads, the definition, and later the submission.</li>
+<li><strong>Abuse protection stays out of the way.</strong> The honeypot is invisible to people and assistive technology; a rate-limit answer shows the retry time.</li>
+</ul>
+<h2 id="browser-verification">Browser verification <a class="anchor" href="#browser-verification" aria-label="Link to this section: Browser verification">#</a></h2>
+<p>The newest parts of the interface were exercised in a real browser (Chromium, through the Playwright specs in <code>frontend/tests/e2e/forms/form-branding.spec.ts</code>, <code>frontend/tests/e2e/dashboards/dashboard-widgets.spec.ts</code> and <code>frontend/tests/e2e/automation/automation-triggers-actions.spec.ts</code>), with screenshots reviewed at desktop width, at 390 px and in dark mode: form branding in the builder and on the public page, the time in status, workload and tracked time widgets, the previous-period comparison, CSV export, and the automation editor for the schedule, overdue, due soon, manual and incoming webhook triggers and the wait, create task and notify actions, including the manual run dialog and the <code>automation.notify</code> notification. That pass found and fixed four defects: unreadable link and button text for some accent colours on the public form, durations shown as bare seconds on chart axes, a widget preview that sent the previous type's configuration, and a wrapping accent swatch in the builder.</p>
+<p>Still not verified, as the <a href="roadmap.html">roadmap</a> records: schedule, overdue and due-soon rules fired by the ticker and the continuation after a wait were not driven through the browser; the webhook signature header, the workload estimate field and a server-side validation error in the form builder were not exercised; the screens were checked in English only; the form builder's live preview does not show the accent colour; and no accessibility audit has been done. Earlier parts were exercised at the time they were built; the roadmap log lists what was and was not covered each time.</p>
+</div>
+<p class="edit"><a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/DESIGN.md">Source of this page on GitHub</a></p>
+<nav class="pager" aria-label="Pages"><a class="prev" href="architecture.html" rel="prev"><span>Previous</span>Architecture</a><a class="next" href="roadmap.html" rel="next"><span>Next</span>Roadmap and status</a></nav>
+</main>
+<nav class="toc-aside" aria-label="On this page"><p class="side-title">On this page</p><ul>
+<li class="toc-2"><a href="#principles">Principles</a></li>
+<li class="toc-2"><a href="#foundations-tokens-dark-mode-layout-i18n-accessibility">Foundations: tokens, dark mode, layout, i18n, accessibility</a></li>
+<li class="toc-2"><a href="#custom-fields">Custom fields</a></li>
+<li class="toc-2"><a href="#workflows">Workflows</a></li>
+<li class="toc-2"><a href="#approvals">Approvals</a></li>
+<li class="toc-2"><a href="#automation">Automation</a></li>
+<li class="toc-2"><a href="#dashboards-and-reports">Dashboards and reports</a></li>
+<li class="toc-2"><a href="#forms">Forms</a></li>
+<li class="toc-2"><a href="#empty-loading-and-error-states">Empty, loading and error states</a></li>
+<li class="toc-2"><a href="#security-relevant-ux">Security-relevant UX</a></li>
+<li class="toc-2"><a href="#browser-verification">Browser verification</a></li>
+</ul></nav>
+</div>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-about">
+      <p><strong>vikunja-enterprise</strong> is an independent community fork of Vikunja. It is not affiliated with, endorsed by or supported by the Vikunja project. Almost all of the software is their work.</p>
+      <p>Licensed under AGPL-3.0-or-later, as upstream. This site has no scripts, cookies or trackers.</p>
+    </div>
+    <nav class="footer-nav" aria-label="Footer">
+      <div><p class="footer-title">Project</p><ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="getting-started.html">Get started</a></li>
+        <li><a href="roadmap.html">Roadmap and status</a></li>
+        <li><a href="upstream.html">Relationship to upstream</a></li>
+      </ul></div>
+      <div><p class="footer-title">Reference</p><ul>
+        <li><a href="modules/index.html">Modules</a></li>
+        <li><a href="api.html">API</a></li>
+        <li><a href="architecture.html">Architecture</a></li>
+        <li><a href="configuration.html">Configuration</a></li>
+      </ul></div>
+      <div><p class="footer-title">Community</p><ul>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise">Repository</a></li>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise/issues">Issues</a></li>
+        <li><a href="security.html">Security</a></li>
+        <li><a href="contributing.html">Contributing</a></li>
+        <li><a href="license.html">License</a></li>
+      </ul></div>
+      <div><p class="footer-title">Upstream Vikunja</p><ul>
+        <li><a href="https://github.com/go-vikunja/vikunja">Source code</a></li>
+        <li><a href="https://vikunja.io/docs/">Documentation</a></li>
+        <li><a href="https://vikunja.io/support/">Support upstream</a></li>
+      </ul></div>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>

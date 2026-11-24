@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>API reference - vikunja-enterprise</title>
+<meta name="description" content="The vikunja-enterprise API: versions, authentication, filters, errors, and every endpoint the fork adds.">
+<link rel="canonical" href="https://vikunja.bahadirdogru.com/api.html">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1020" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="assets/docs.css">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="vikunja-enterprise">
+<meta property="og:title" content="API reference - vikunja-enterprise">
+<meta property="og:description" content="The vikunja-enterprise API: versions, authentication, filters, errors, and every endpoint the fork adds.">
+<meta property="og:url" content="https://vikunja.bahadirdogru.com/api.html">
+<meta property="og:image" content="https://vikunja.bahadirdogru.com/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="vikunja-enterprise, an independent community fork of Vikunja">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="API reference - vikunja-enterprise">
+<meta name="twitter:description" content="The vikunja-enterprise API: versions, authentication, filters, errors, and every endpoint the fork adds.">
+<meta name="twitter:image" content="https://vikunja.bahadirdogru.com/assets/og.png">
+</head>
+<body class="docs">
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="index.html" aria-label="vikunja-enterprise home"><img src="assets/favicon.svg" alt="" width="30" height="30">vikunja-enterprise</a>
+    <nav class="top-nav" aria-label="Main">
+      <ul>
+<li><a href="modules/index.html">Modules</a></li>
+<li><a href="getting-started.html">Get started</a></li>
+<li><a href="api.html" aria-current="page">API</a></li>
+<li><a href="architecture.html">Architecture</a></li>
+<li><a href="roadmap.html">Roadmap</a></li>
+<li><a href="upstream.html">Upstream</a></li>
+        <li><a class="gh" href="https://github.com/bahadirdogru/vikunja-enterprise">GitHub</a></li>
+      </ul>
+    </nav>
+    <details class="menu">
+      <summary><span class="menu-icon" aria-hidden="true"></span>Menu</summary>
+      <nav class="menu-panel" aria-label="Site">
+        <div class="menu-group"><p class="menu-title">Site</p><ul>
+<li><a href="index.html">Home</a></li>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise">GitHub repository</a></li>
+        </ul></div>
+<div class="menu-group"><p class="menu-title">Start</p><ul>
+<li><a href="getting-started.html">Getting started</a></li>
+<li><a href="configuration.html">Configuration</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Modules</p><ul>
+<li><a href="modules/index.html">Overview</a></li>
+<li><a href="modules/custom-fields.html">Custom fields</a></li>
+<li><a href="modules/workflows.html">Workflows</a></li>
+<li><a href="modules/approvals.html">Approvals</a></li>
+<li><a href="modules/automation.html">Automation</a></li>
+<li><a href="modules/dashboards-reports.html">Dashboards and reports</a></li>
+<li><a href="modules/forms.html">Forms</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Reference</p><ul>
+<li><a href="api.html" aria-current="page">API reference</a></li>
+<li><a href="architecture.html">Architecture</a></li>
+<li><a href="design.html">Design</a></li>
+<li><a href="roadmap.html">Roadmap and status</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Project</p><ul>
+<li><a href="upstream.html">Relationship to upstream</a></li>
+<li><a href="security.html">Security</a></li>
+<li><a href="contributing.html">Contributing</a></li>
+<li><a href="license.html">License</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Design history</p><ul>
+<li><a href="enterprise/index.html">Overview</a></li>
+<li><a href="enterprise/custom-fields.html">Custom fields design</a></li>
+<li><a href="enterprise/workflow.html">Workflow design</a></li>
+<li><a href="enterprise/forms-approvals.html">Forms and approvals design</a></li>
+<li><a href="enterprise/automation.html">Automation design</a></li>
+<li><a href="enterprise/dashboards.html">Dashboards design</a></li>
+</ul></div>
+      </nav>
+    </details>
+  </div>
+</header>
+<div class="docs-layout">
+<nav class="sidebar" aria-label="Documentation">
+<p class="side-title">Start</p><ul>
+<li><a href="getting-started.html">Getting started</a></li>
+<li><a href="configuration.html">Configuration</a></li>
+</ul>
+<p class="side-title">Modules</p><ul>
+<li><a href="modules/index.html">Overview</a></li>
+<li><a href="modules/custom-fields.html">Custom fields</a></li>
+<li><a href="modules/workflows.html">Workflows</a></li>
+<li><a href="modules/approvals.html">Approvals</a></li>
+<li><a href="modules/automation.html">Automation</a></li>
+<li><a href="modules/dashboards-reports.html">Dashboards and reports</a></li>
+<li><a href="modules/forms.html">Forms</a></li>
+</ul>
+<p class="side-title">Reference</p><ul>
+<li><a href="api.html" aria-current="page">API reference</a></li>
+<li><a href="architecture.html">Architecture</a></li>
+<li><a href="design.html">Design</a></li>
+<li><a href="roadmap.html">Roadmap and status</a></li>
+</ul>
+<p class="side-title">Project</p><ul>
+<li><a href="upstream.html">Relationship to upstream</a></li>
+<li><a href="security.html">Security</a></li>
+<li><a href="contributing.html">Contributing</a></li>
+<li><a href="license.html">License</a></li>
+</ul>
+<p class="side-title">Design history</p><ul>
+<li><a href="enterprise/index.html">Overview</a></li>
+<li><a href="enterprise/custom-fields.html">Custom fields design</a></li>
+<li><a href="enterprise/workflow.html">Workflow design</a></li>
+<li><a href="enterprise/forms-approvals.html">Forms and approvals design</a></li>
+<li><a href="enterprise/automation.html">Automation design</a></li>
+<li><a href="enterprise/dashboards.html">Dashboards design</a></li>
+</ul>
+</nav>
+<main id="main" class="doc">
+<nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="index.html">Home</a></li><li>Reference</li><li aria-current="page">API reference</li></ol></nav>
+<h1>API</h1>
+<details class="toc-inline"><summary>On this page</summary>
+<nav aria-label="On this page"><ul>
+<li class="toc-2"><a href="#versions">Versions</a></li>
+<li class="toc-2"><a href="#base-url-and-documentation">Base URL and documentation</a></li>
+<li class="toc-2"><a href="#authentication">Authentication</a></li>
+<li class="toc-2"><a href="#conventions">Conventions</a></li>
+<li class="toc-2"><a href="#filter-syntax">Filter syntax</a></li>
+<li class="toc-2"><a href="#errors">Errors</a></li>
+<li class="toc-2"><a href="#rate-limits">Rate limits</a></li>
+<li class="toc-2"><a href="#the-automation-request-marker">The automation request marker</a></li>
+<li class="toc-2"><a href="#unauthenticated-endpoints">Unauthenticated endpoints</a></li>
+<li class="toc-2"><a href="#endpoints-added-by-the-fork">Endpoints added by the fork</a></li>
+<li class="toc-3"><a href="#custom-fields">Custom fields</a></li>
+<li class="toc-3"><a href="#workflows">Workflows</a></li>
+<li class="toc-3"><a href="#approvals">Approvals</a></li>
+<li class="toc-3"><a href="#automation">Automation</a></li>
+<li class="toc-3"><a href="#dashboards-and-reports">Dashboards and reports</a></li>
+<li class="toc-3"><a href="#forms">Forms</a></li>
+<li class="toc-2"><a href="#examples">Examples</a></li>
+<li class="toc-3"><a href="#log-in">Log in</a></li>
+<li class="toc-3"><a href="#create-a-custom-field-and-set-a-value">Create a custom field and set a value</a></li>
+<li class="toc-3"><a href="#filter-tasks-by-status-category-and-a-custom-field">Filter tasks by status category and a custom field</a></li>
+<li class="toc-3"><a href="#replace-a-workflow">Replace a workflow</a></li>
+<li class="toc-3"><a href="#change-a-tasks-status-when-the-transition-needs-approval">Change a task&#x27;s status when the transition needs approval</a></li>
+<li class="toc-3"><a href="#create-an-automation-rule">Create an automation rule</a></li>
+<li class="toc-3"><a href="#call-an-incoming-webhook">Call an incoming webhook</a></li>
+<li class="toc-3"><a href="#run-a-report">Run a report</a></li>
+<li class="toc-3"><a href="#read-and-submit-a-public-form">Read and submit a public form</a></li>
+<li class="toc-2"><a href="#the-generated-frontend-client">The generated frontend client</a></li>
+<li class="toc-2"><a href="#mcp">MCP</a></li>
+</ul></nav></details>
+<div class="prose">
+<p>This document describes the HTTP API of vikunja-enterprise with the focus on what the fork adds. For everything that is inherited from upstream (projects, tasks, labels, teams, users, CalDAV, ...) the OpenAPI document of your instance is the reference, and <a href="https://vikunja.io/docs/">upstream's documentation</a> applies.</p>
+<p>Related documents: <a href="architecture.html">Architecture</a> (how requests are processed), the <a href="modules/index.html">module pages</a> (behaviour and data per module), <a href="design.html">Design</a> (how the UI uses the API).</p>
+<h2 id="versions">Versions <a class="anchor" href="#versions" aria-label="Link to this section: Versions">#</a></h2>
+<ul>
+<li><strong><code>/api/v1</code></strong> is the original Echo-based API with swaggo annotations. It is <strong>frozen</strong>: it keeps running and is supported, but it does not grow. It gets bug fixes and ports of resources to v2, nothing else. None of the fork's features exists on v1.</li>
+<li><strong><code>/api/v2</code></strong> is built with <a href="https://huma.rocks">Huma</a>. Every new route goes here, including everything the fork adds. What that implies:
+<ul>
+<li>The OpenAPI document is generated from the Go types; there are no hand-written annotations.</li>
+<li>Verbs are REST-style: <code>POST</code> creates, <code>PUT</code> replaces, <code>PATCH</code> updates partially. (v1 used <code>PUT</code> to create and <code>POST</code> to update.)</li>
+<li>URLs are kebab-case, JSON is snake_case.</li>
+<li>Errors are RFC 9457 <code>application/problem+json</code> with Vikunja's numeric <code>code</code>.</li>
+<li>Lists have one envelope, reads send ETags, and a <code>PATCH</code> is synthesised for every resource that has a <code>GET</code> and a <code>PUT</code> on the same path.</li>
+<li>A successful <code>PUT</code> that sets a value in place answers <code>200</code>; a <code>POST</code> that creates answers <code>201</code>; a <code>DELETE</code> answers <code>204</code>; operations that start asynchronous work answer <code>202</code>.</li>
+</ul></li>
+</ul>
+<h2 id="base-url-and-documentation">Base URL and documentation <a class="anchor" href="#base-url-and-documentation" aria-label="Link to this section: Base URL and documentation">#</a></h2>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">What</th><th scope="col">Where</th></tr></thead><tbody>
+<tr><td>API base</td><td><code>&lt;service.publicurl&gt;/api/v2</code> (for example <code>https://tasks.example.com/api/v2</code>)</td></tr>
+<tr><td>OpenAPI 3.1 document</td><td><code>/api/v2/openapi.json</code> and <code>/api/v2/openapi.yaml</code></td></tr>
+<tr><td>OpenAPI 3.0 downgrade</td><td><code>/api/v2/openapi-3.0.json</code> and <code>/api/v2/openapi-3.0.yaml</code></td></tr>
+<tr><td>Interactive reference (Scalar, served from the binary, no CDN)</td><td><code>/api/v2/docs</code></td></tr>
+<tr><td>JSON schemas referenced by <code>$schema</code> links in responses</td><td><code>/api/v2/schemas/{schema}</code></td></tr>
+<tr><td>Instance information (version, enabled features)</td><td><code>GET /api/v2/info</code></td></tr>
+<tr><td>Health check</td><td><code>GET /api/v2/health</code></td></tr>
+<tr><td>v1 reference (Redoc) and document</td><td><code>/api/v1/docs</code> and <code>/api/v1/docs.json</code></td></tr>
+</tbody></table></div>
+<p>All of these are public. Responses of the API carry <code>Cache-Control: no-store</code>.</p>
+<h2 id="authentication">Authentication <a class="anchor" href="#authentication" aria-label="Link to this section: Authentication">#</a></h2>
+<p>Three kinds of credential are accepted, always as <code>Authorization: Bearer &lt;token&gt;</code>:</p>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Credential</th><th scope="col">How to get it</th><th scope="col">Notes</th></tr></thead><tbody>
+<tr><td><strong>User JWT</strong></td><td><code>POST /api/v2/login</code> with <code>username</code>, <code>password</code>, optionally <code>totp_passcode</code> and <code>long_token</code> (needs local or LDAP authentication to be enabled). The answer is <code>{&quot;token&quot;: &quot;...&quot;}</code>. A refresh token is set as an <code>HttpOnly</code> cookie scoped to the refresh endpoint (<code>POST /api/v2/user/token/refresh</code>). OpenID Connect and OAuth flows are also available.</td><td>Short-lived. Full rights of the user. Sessions are listed at <code>GET /api/v2/user/sessions</code>.</td></tr>
+<tr><td><strong>API token</strong></td><td><code>POST /api/v2/tokens</code> with a <code>title</code>, an <code>expires_at</code> and <code>permissions</code>. The cleartext token (prefix <code>tk_</code>) is returned once, in that response.</td><td>Limited to the permission groups it was created with. <code>GET /api/v2/routes</code> lists the groups and permissions that exist, and the available groups are generated from the registered routes.</td></tr>
+<tr><td><strong>Link share JWT</strong></td><td><code>POST /api/v2/shares/{share}/auth</code> with the share's hash (and a password for password-protected shares).</td><td>Scoped to one project with the share's permission.</td></tr>
+</tbody></table></div>
+<p><code>GET /api/v2/token/test</code> checks that a bearer token is valid.</p>
+<p><strong>Which of the fork's routes accept which credential.</strong> Every authenticated route of the fork accepts a user JWT and, where an API token has the matching permission group, an API token. The model's <code>Can*</code> methods decide the rest:</p>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Module</th><th scope="col">Link shares</th><th scope="col">API tokens</th></tr></thead><tbody>
+<tr><td>Custom fields</td><td>Read follows the share; changing values follows the share's write permission; definitions need project admin, so never</td><td>Groups <code>projects_custom_fields</code> and <code>tasks_custom_field_values</code></td></tr>
+<tr><td>Workflows</td><td>Read yes; changing the definition needs admin, so no; status changes follow write permission and the transition's rules</td><td>Routes under <code>projects</code> and <code>tasks</code> (the <code>status</code> permission of the <code>tasks</code> group)</td></tr>
+<tr><td>Approvals</td><td><strong>No access at all</strong> (403 on every route)</td><td>Groups <code>approvals</code> and <code>tasks_approvals</code></td></tr>
+<tr><td>Automation</td><td>No: needs project admin</td><td>Groups <code>projects_automations</code>, <code>projects_automations_runs</code>, and the other automation routes by path</td></tr>
+<tr><td>Dashboards and reports</td><td>Project dashboards: read yes, change never; reports yes, except the time tracking report and the <code>time_spent</code> measure (403, code 23005)</td><td>Group <code>dashboards</code>; report routes by path</td></tr>
+<tr><td>Forms (admin)</td><td>Never</td><td>Groups <code>projects_forms</code> and <code>projects_forms_submissions</code></td></tr>
+<tr><td>Forms (public) and the incoming webhook</td><td>Not applicable, see <a href="#unauthenticated-endpoints">Unauthenticated endpoints</a></td><td>Not applicable</td></tr>
+</tbody></table></div>
+<p>Reading expanded data needs the permission of what is embedded: <code>expand=custom_fields</code> needs <code>tasks_custom_field_values</code> <code>read_all</code>, <code>expand=status</code> needs the <code>status</code> permission of <code>tasks</code>, and <code>expand=approvals</code> needs <code>tasks_approvals</code> <code>read_all</code>. Use <code>GET /api/v2/routes</code> for the authoritative list.</p>
+<h2 id="conventions">Conventions <a class="anchor" href="#conventions" aria-label="Link to this section: Conventions">#</a></h2>
+<p><strong>Media types.</strong> Requests and responses are <code>application/json</code>. <code>PATCH</code> takes <code>application/merge-patch+json</code>. Form bodies (<code>application/x-www-form-urlencoded</code>) are refused with <code>415</code>, except on the OAuth token endpoint. File uploads are <code>multipart/form-data</code>.</p>
+<p><strong>Resources.</strong> Single resources are returned as the resource itself, without an envelope. Reads send an <code>ETag</code> (it includes the caller's permission) and accept <code>If-None-Match</code> for a <code>304</code>. A single read of a resource that has permissions includes <code>max_permission</code> (0 read, 1 read and write, 2 admin) where the operation documents it.</p>
+<p><strong>Lists</strong> are paginated with one envelope:</p>
+<pre class="code"><code class="language-json">{&quot;items&quot;: [], &quot;total&quot;: 0, &quot;page&quot;: 1, &quot;per_page&quot;: 50, &quot;total_pages&quot;: 0}</code></pre>
+<p><code>page</code> is 1-based. <code>per_page</code> defaults to and is silently capped at <code>service.maxitemsperpage</code> (default 50, reported as <code>max_items_per_page</code> by <code>/info</code>); asking for more is not an error, so drive paging from <code>total_pages</code> and <code>per_page</code> in the response. Many lists accept <code>q</code> for a search string.</p>
+<p><strong>Task lists</strong> (<code>GET /tasks</code>, <code>GET /projects/{project}/tasks</code>, <code>GET /projects/{project}/views/{view}/tasks</code>, <code>GET /projects/{project}/views/{view}/buckets/tasks</code>) take <code>q</code> (search), <code>filter</code>, <code>filter_timezone</code>, <code>filter_include_nulls</code>, <code>include_subprojects</code>, <code>sort_by</code> and <code>order_by</code> (repeatable, paired by position), and <code>expand</code> (repeatable), besides <code>page</code> and <code>per_page</code>. The accepted <code>expand</code> values are <code>subtasks</code>, <code>buckets</code>, <code>reactions</code>, <code>comments</code>, <code>comment_count</code>, <code>time_entries_count</code>, <code>is_unread</code>, and the fork's <code>custom_fields</code>, <code>status</code> and <code>approvals</code>. Single task reads (<code>GET /tasks/{task}</code>, <code>GET /projects/{project}/tasks/by-index/{index}</code>) accept the same <code>expand</code> values.</p>
+<ul>
+<li><code>expand=custom_fields</code> adds <code>custom_fields: [{&quot;custom_field_id&quot;: 1, &quot;type&quot;: &quot;text&quot;, &quot;value&quot;: &quot;REF-1&quot;}, ...]</code> with one entry per field that has a value, in field order.</li>
+<li><code>expand=status</code> adds <code>status: {&quot;id&quot;, &quot;title&quot;, &quot;color&quot;, &quot;category&quot;}</code> to tasks that have a status.</li>
+<li><code>expand=approvals</code> adds <code>approvals: {&quot;has_pending&quot;, &quot;pending_count&quot;}</code>.</li>
+</ul>
+<p>The values of a page are loaded with a fixed number of queries, independent of the page size.</p>
+<p><strong>Kanban status mode.</strong> A project view with <code>bucket_configuration_mode: &quot;status&quot;</code> has the workflow statuses as its columns. Its bucket ids are negated status ids (status 7 is bucket <code>-7</code>); <code>filter=bucket_id = -7</code> loads one column and <code>POST /projects/{project}/tasks</code> with <code>bucket_id: -7</code> creates a task in that column. See <a href="modules/workflows.html">Workflows</a>.</p>
+<h2 id="filter-syntax">Filter syntax <a class="anchor" href="#filter-syntax" aria-label="Link to this section: Filter syntax">#</a></h2>
+<p>The <code>filter</code> parameter of task lists (and saved filters and view filters) is one or more conditions <code>field operator value</code>, combined with <code>&amp;&amp;</code> and <code>||</code> and grouped with parentheses. The words <code>and</code> and <code>or</code> are not operators. Operators are <code>=</code>, <code>!=</code>, <code>&gt;</code>, <code>&gt;=</code>, <code>&lt;</code>, <code>&lt;=</code>, <code>like</code>, <code>in</code> and <code>not in</code>. Values containing spaces or <code>&amp;</code>, <code>|</code>, <code>(</code>, <code>)</code> are quoted. Date fields accept absolute dates and date math (<code>now</code>, <code>now+24h</code>, <code>now/d</code>, <code>now/w+1w</code>, <code>now-1M/M</code>) resolved in <code>filter_timezone</code> or the server time zone.</p>
+<p>The fork adds fields:</p>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Field</th><th scope="col">Comparators</th><th scope="col">Value</th><th scope="col">Notes</th></tr></thead><tbody>
+<tr><td><code>status</code></td><td><code>=</code> <code>!=</code> <code>in</code> <code>not in</code></td><td>status ids, for example <code>status in 1,2</code></td><td>A task without a status never matches a positive comparison and always matches a negative one; with <code>filter_include_nulls</code> positive comparators match it too.</td></tr>
+<tr><td><code>status_category</code></td><td><code>=</code> <code>!=</code> <code>in</code> <code>not in</code></td><td><code>open</code>, <code>in_progress</code>, <code>done</code>, <code>cancelled</code>, for example <code>status_category not in done,cancelled</code></td><td>Same rules as <code>status</code>.</td></tr>
+<tr><td><code>cf_&lt;id&gt;</code></td><td>by field type</td><td>see below</td><td><code>&lt;id&gt;</code> is the custom field id.</td></tr>
+</tbody></table></div>
+<p>Custom field comparators by type: number, currency, rating and progress use <code>=</code> <code>!=</code> <code>&gt;</code> <code>&gt;=</code> <code>&lt;</code> <code>&lt;=</code> with numbers; date uses the same comparators with the formats of <code>due_date</code> (<code>=</code> compares the exact stored instant, so use a range to match a day); checkbox uses <code>=</code> and <code>!=</code> with <code>true</code> or <code>false</code> (a task without a value counts as <code>false</code>); text, long text, url and email use <code>=</code>, <code>!=</code> and <code>like</code>; select and multi select use <code>=</code>, <code>!=</code>, <code>in</code> and <code>not in</code> with option ids (<code>cf_4 in 3,4</code>); user fields use the same with user ids or usernames (<code>cf_9 in 1,alice</code>). <code>!=</code> and <code>not in</code> also match tasks that have no value.</p>
+<p>Sorting: <code>sort_by=status</code> orders by the position of the status in its workflow; <code>sort_by=cf_&lt;id&gt;</code> works for all single-value types (select fields sort by option position; <code>multi_select</code> and <code>user</code> fields cannot be sorted by and answer <code>400</code>). Tasks without a value sort last in both directions.</p>
+<p>An unknown <code>cf_&lt;id&gt;</code>, one of a project the caller cannot read, and a malformed identifier all answer the same <code>400</code> with code <code>4016</code>, so field ids of other projects cannot be probed. A comparator that does not fit is <code>400</code> with <code>4017</code>, an invalid value is <code>400</code> with <code>4019</code>. The checks run when the query runs, so a saved filter is accepted as long as it parses and fails if its field was deleted. In the web client the filter input shows field names; the API always uses ids.</p>
+<h2 id="errors">Errors <a class="anchor" href="#errors" aria-label="Link to this section: Errors">#</a></h2>
+<p>Errors are <code>application/problem+json</code>:</p>
+<pre class="code"><code class="language-json">{
+  &quot;title&quot;: &quot;Conflict&quot;,
+  &quot;status&quot;: 409,
+  &quot;detail&quot;: &quot;Moving the task to this status needs an approval. Nothing was changed. Request it with POST /tasks/{task}/status.&quot;,
+  &quot;code&quot;: 24007,
+  &quot;details&quot;: {
+    &quot;task_id&quot;: 20,
+    &quot;from_status_id&quot;: 1,
+    &quot;from_status_title&quot;: &quot;Todo&quot;,
+    &quot;to_status_id&quot;: 5,
+    &quot;to_status_title&quot;: &quot;Dropped&quot;,
+    &quot;to_status_category&quot;: &quot;cancelled&quot;,
+    &quot;pending_approval_id&quot;: 0,
+    &quot;approval_pending&quot;: false,
+    &quot;requestable&quot;: true
+  }
+}</code></pre>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Field</th><th scope="col">Meaning</th></tr></thead><tbody>
+<tr><td><code>status</code>, <code>title</code>, <code>detail</code></td><td>HTTP status, its text, and a human-readable message</td></tr>
+<tr><td><code>code</code></td><td>Vikunja's numeric error code; this is what clients should switch on</td></tr>
+<tr><td><code>i18n_params</code></td><td>Values referenced by the message, for client-side localization</td></tr>
+<tr><td><code>details</code></td><td>Error-specific data; its shape depends on <code>code</code> (for example <code>issues</code>, a list of <code>{path, message}</code> for invalid definitions, or <code>errors</code> on a form submission)</td></tr>
+<tr><td><code>errors</code></td><td>Huma's per-field validation details for schema errors</td></tr>
+</tbody></table></div>
+<p>Schema violations (an enum, a range, a missing required property) are <code>422</code>, and so are <code>govalidator</code> failures. Server errors (<code>5xx</code>) never carry internal detail. An expired or invalid token is <code>401</code> with code <code>11</code>, which clients use to refresh.</p>
+<p><strong>Ranges.</strong> Codes below 20000 are upstream's. The fork's codes are in these ranges, each defined in <code>pkg/models/error_&lt;module&gt;.go</code>:</p>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Range</th><th scope="col">Module</th><th scope="col">File</th></tr></thead><tbody>
+<tr><td>20001 - 20005</td><td>Custom fields</td><td><code>pkg/models/error_custom_fields.go</code></td></tr>
+<tr><td>21001 - 21010</td><td>Workflows</td><td><code>pkg/models/error_workflow.go</code></td></tr>
+<tr><td>22001 - 22014</td><td>Automation (22005 - 22008 are scripts and secrets)</td><td><code>pkg/models/error_automation.go</code>, <code>pkg/models/error_automation_secrets.go</code></td></tr>
+<tr><td>23001 - 23010</td><td>Reports and dashboards</td><td><code>pkg/models/error_reports.go</code></td></tr>
+<tr><td>24001 - 24010</td><td>Approvals</td><td><code>pkg/models/error_approvals.go</code></td></tr>
+<tr><td>25001 - 25009</td><td>Forms</td><td><code>pkg/models/error_forms.go</code></td></tr>
+</tbody></table></div>
+<p><strong>Codes a client most needs.</strong></p>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Code</th><th scope="col">HTTP</th><th scope="col">Meaning</th><th scope="col">Where</th></tr></thead><tbody>
+<tr><td>4016</td><td>400</td><td>Unknown task field (also an unreadable or unknown <code>cf_&lt;id&gt;</code>)</td><td>filters, sorting</td></tr>
+<tr><td>4017</td><td>400</td><td>Invalid filter comparator</td><td>filters</td></tr>
+<tr><td>4019</td><td>400</td><td>Invalid filter value</td><td>filters</td></tr>
+<tr><td>20002</td><td>400</td><td>Invalid custom field definition</td><td>custom fields</td></tr>
+<tr><td>20003</td><td>400</td><td>The type of a field cannot change</td><td>custom fields</td></tr>
+<tr><td>20005</td><td>400</td><td>Value not valid for the field</td><td>custom field values</td></tr>
+<tr><td>21002</td><td>400</td><td>Invalid workflow definition (<code>details.issues</code>)</td><td>workflow PUT</td></tr>
+<tr><td>21005</td><td>400</td><td>The workflow does not allow this status change</td><td>status change</td></tr>
+<tr><td>21006</td><td>403</td><td>Not allowed to perform this transition (permission or team)</td><td>status change</td></tr>
+<tr><td>21007</td><td>422</td><td>Requirements not met: <code>details</code> has <code>task_id</code>, <code>from_status_id</code>, <code>to_status_id</code>, <code>missing_fields</code>, <code>comment_required</code></td><td>status change</td></tr>
+<tr><td>21008</td><td>409</td><td>Removed statuses still have tasks; send <code>move_tasks_to</code></td><td>workflow PUT</td></tr>
+<tr><td>21009</td><td>400</td><td>A status board needs a workflow</td><td>views</td></tr>
+<tr><td>21010</td><td>400</td><td>Buckets of a status view are managed by the workflow</td><td>views</td></tr>
+<tr><td>22002</td><td>400</td><td>Invalid rule, with <code>details.issues[] = {path, message}</code> and, for scripts, <code>line</code> and <code>column</code></td><td>automation</td></tr>
+<tr><td>22005</td><td>400</td><td>Scripts are disabled on this instance</td><td>automation</td></tr>
+<tr><td>22008</td><td>409</td><td>A secret cannot be decrypted (<code>service.secret</code> changed)</td><td>secrets</td></tr>
+<tr><td>22009</td><td>409</td><td>The rule cannot be run this way (disabled, or no manual trigger)</td><td>manual run</td></tr>
+<tr><td>22010</td><td>404</td><td>Webhook not found (unknown token, disabled rule, other trigger)</td><td>incoming webhook</td></tr>
+<tr><td>22011</td><td>401</td><td>Signature or timestamp missing, wrong, stale or in the future, or the call was already accepted (replay); one answer for all</td><td>incoming webhook</td></tr>
+<tr><td>22012</td><td>429</td><td>Webhook rate limited, with <code>Retry-After</code></td><td>incoming webhook</td></tr>
+<tr><td>22013</td><td>400</td><td>The webhook body is not a JSON object</td><td>incoming webhook</td></tr>
+<tr><td>22014</td><td>409</td><td>The project already has <code>automation.maxrulesperproject</code> rules; only adding is refused</td><td>rule create, project duplicate</td></tr>
+<tr><td>23001</td><td>400</td><td>Invalid report parameter, <code>details.param</code> names it</td><td>reports</td></tr>
+<tr><td>23002 / 23003</td><td>400</td><td>Too many buckets or groups</td><td>reports</td></tr>
+<tr><td>23005</td><td>403</td><td>Not available through a link share</td><td>reports</td></tr>
+<tr><td>23008</td><td>400</td><td>Invalid dashboard or widget, with the path</td><td>dashboards</td></tr>
+<tr><td>23009</td><td>503</td><td>The report took longer than <code>reports.timeout</code></td><td>reports</td></tr>
+<tr><td>23010</td><td>400</td><td>More rows than <code>reports.maxrows</code></td><td>reports, exports</td></tr>
+<tr><td>24002</td><td>409</td><td>Approval already resolved or cancelled</td><td>approvals</td></tr>
+<tr><td>24003</td><td>403</td><td>You are not an approver of this request</td><td>approvals</td></tr>
+<tr><td>24005</td><td>422</td><td>A rejection needs a comment</td><td>approvals</td></tr>
+<tr><td>24006</td><td>422</td><td>Nobody left to ask</td><td>approval requests</td></tr>
+<tr><td>24007</td><td>409</td><td>The change needs an approval; nothing was changed (<code>details</code>, see above)</td><td>plain done updates</td></tr>
+<tr><td>25002</td><td>400</td><td>Invalid form definition (<code>details.issues</code>)</td><td>forms</td></tr>
+<tr><td>25003</td><td>410</td><td>The form takes no submissions (<code>details.reason</code>: <code>disabled</code>, <code>closed</code>, <code>full</code>)</td><td>public forms</td></tr>
+<tr><td>25004</td><td>401</td><td>Login required for this form</td><td>forms</td></tr>
+<tr><td>25006</td><td>422</td><td>Some answers are invalid (<code>details.errors[] = {field, code, message}</code>)</td><td>form submission</td></tr>
+<tr><td>25007</td><td>429</td><td>Too many submissions, with <code>Retry-After</code></td><td>public forms</td></tr>
+</tbody></table></div>
+<p>The complete lists are in the files above and in the <a href="modules/index.html">module pages</a>.</p>
+<h2 id="rate-limits">Rate limits <a class="anchor" href="#rate-limits" aria-label="Link to this section: Rate limits">#</a></h2>
+<ul>
+<li><strong>Global per-user or per-IP limit</strong> for authenticated routes: off by default. <code>ratelimit.enabled</code>, <code>ratelimit.kind</code> (<code>user</code> or <code>ip</code>), <code>ratelimit.period</code> (seconds), <code>ratelimit.limit</code> and <code>ratelimit.store</code>.</li>
+<li><strong>Credential endpoints</strong> (login, registration, password reset, email confirmation, link share auth, OpenID callback): <code>ratelimit.noauthlimit</code> requests per minute per IP, default 10. This limit cannot be disabled.</li>
+<li><strong>Session renewal</strong> (token refresh and the OAuth token endpoint): <code>ratelimit.tokenrefreshlimit</code>, default 60 per minute per IP.</li>
+<li><strong>Public form endpoints and the incoming webhook endpoint</strong>: a floor of <code>forms.public.requestratelimit</code> requests per client IP and minute (default 60), which applies even when <code>ratelimit.enabled</code> is off. On top of it, public form submissions are limited per IP and per form per hour (<code>forms.public.ratelimit</code>, <code>forms.public.formratelimit</code>), and webhook calls per rule and minute (<code>automation.webhook.ratelimit</code>). Limited responses are <code>429</code> with a <code>Retry-After</code> header.</li>
+<li>Which address counts as the client's follows <code>service.ipextractionmethod</code> and <code>service.trustedproxies</code>.</li>
+</ul>
+<h2 id="the-automation-request-marker">The automation request marker <a class="anchor" href="#the-automation-request-marker" aria-label="Link to this section: The automation request marker">#</a></h2>
+<p>Every HTTP request that the automation engine itself sends (the <code>http.request</code> action and <code>http.fetch</code> in scripts) carries the header <code>X-Vikunja-Automation-Depth</code>. The server answers <strong>every</strong> <code>/api/v1</code> and <code>/api/v2</code> request that carries this header with <code>508 Loop Detected</code>, before authentication. This stops a rule from calling the task API or the incoming webhook endpoint of its own instance, whatever address or token it uses, which would create work that no run, origin or depth accounts for. The header cannot be removed or changed by a rule and survives redirects. A reverse proxy that strips the header, or a second hop through an external service that calls back without it, is outside what the guard can see. Do not send this header from your own clients.</p>
+<h2 id="unauthenticated-endpoints">Unauthenticated endpoints <a class="anchor" href="#unauthenticated-endpoints" aria-label="Link to this section: Unauthenticated endpoints">#</a></h2>
+<p>Besides the public endpoints of upstream (<code>/info</code>, <code>/health</code>, the OpenAPI document and docs page, login, registration, password reset, link share auth), the fork adds these. All of them are bounded as described in <a href="architecture.html#public-surface">ARCHITECTURE.md</a>.</p>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Method</th><th scope="col">Path</th><th scope="col">Credential</th></tr></thead><tbody>
+<tr><td>GET</td><td><code>/api/v2/forms/{token}</code></td><td>The form token. Public forms need no authentication; forms for signed-in users answer <code>401</code> / <code>25004</code> without a valid <code>Authorization</code> header.</td></tr>
+<tr><td>GET</td><td><code>/api/v2/forms/{token}/logo</code></td><td>The form token; the logo is served whatever the access mode, because a browser cannot send credentials with an image request.</td></tr>
+<tr><td>POST</td><td><code>/api/v2/forms/{token}/submissions</code></td><td>As above. JSON body.</td></tr>
+<tr><td>POST</td><td><code>/api/v2/forms/{token}/submissions/multipart</code></td><td>As above. <code>multipart/form-data</code> with the JSON in the part <code>data</code> and files in the parts <code>files</code>.</td></tr>
+<tr><td>POST</td><td><code>/api/v2/automation/hooks/{token}</code></td><td>The secret token in the URL.</td></tr>
+</tbody></table></div>
+<p>The form routes are <em>optional-auth</em>: with no <code>Authorization</code> header the caller is anonymous; with a header it is validated like anywhere (an invalid or expired token is <code>401</code> code <code>11</code>). Link shares are not users: they get <code>403</code> on <code>users</code> and <code>members</code> forms and are treated as anonymous on <code>public</code> forms.</p>
+<p><strong>Incoming webhook.</strong> <code>POST /api/v2/automation/hooks/{token}</code> with a JSON object body (<code>{}</code> for none; at most <code>automation.webhook.maxbody</code> bytes, <code>413</code> above) starts the rule asynchronously and answers <code>202</code> with <code>{&quot;queued&quot;: true}</code>. The body becomes <code>event.payload</code> for templates and conditions. Unknown tokens, disabled rules and rules with another trigger are all the same <code>404</code> (code 22010). If the rule names a project secret, the call must carry the headers</p>
+<pre class="code"><code class="language-text">X-Vikunja-Timestamp: &lt;Unix time in seconds, digits only&gt;
+X-Vikunja-Signature: sha256=&lt;64 hex digits: HMAC-SHA256 of timestamp + &quot;.&quot; + token + &quot;.&quot; + raw body, keyed with the secret&gt;</code></pre>
+<p><code>token</code> is the token of the hook as it appears in its URL (base64url: it never contains a dot), so the signed string is unambiguous and a call signed for one hook is refused by every other hook, also one that uses the same secret. For example <code>ts=$(date +%s); sig=$(printf &#x27;%s.%s.%s&#x27; &quot;$ts&quot; &quot;$token&quot; &quot;$body&quot; | openssl dgst -sha256 -hmac &quot;$secret&quot; -hex | sed &#x27;s/^.* //&#x27;)</code>, then <code>-H &quot;X-Vikunja-Timestamp: $ts&quot; -H &quot;X-Vikunja-Signature: sha256=$sig&quot;</code>. The headers are parsed strictly: the timestamp is 1 to 11 ASCII digits (no sign, space or fraction), the signature is exactly <code>sha256=</code> and 64 hex digits, anything else is refused without being decoded. The MAC is compared in constant time, and the whole check runs before the rate limit counts.</p>
+<p><strong>Replay protection.</strong> A signed call is accepted once. The timestamp may be at most <code>automation.webhook.tolerance</code> (default 5 minutes) in the past and at most one minute in the future (clock skew of the sender); the signature covers the timestamp, so it cannot be changed. Within the window, an exact repeat of an accepted call is refused: the accepted signatures are kept in the table <code>automation_webhook_seen</code> (unique on rule and signature), so every instance that shares the database refuses them, and the ticker deletes them once their timestamp is older than the tolerance plus a margin of two minutes. This assumes that the clocks of the instances differ by less than that margin and that all instances use the same tolerance. A replay is answered before the rate limit is applied, so it is the same 401 and does not use the sender's budget. A call that is refused for another reason after the signature checked out (a body that is not a JSON object, the rate limit) does not use its signature up. Send a new timestamp, and so a new signature, with every call. A retry of a request that was already accepted gets the same 401 as a replay (a sender cannot tell &quot;accepted but the answer was lost&quot; from a replay): this is deliberate, so a sender that retries has to re-sign with a fresh timestamp, and has to expect that the first attempt may have run.</p>
+<p>A wrong or malformed signature, a missing, stale or future timestamp, a signature over the body alone (the scheme before this change) and a replay are all the same <code>401</code> with code 22011 and the same body, so a caller learns nothing about which part failed (the reason is logged at debug level on the server). When a correct sender is refused, check its clock and that it signs every call anew.</p>
+<p><strong>Unsigned webhooks are not protected.</strong> A rule that names no secret takes unsigned calls, as before: the address is its only credential, nothing is checked or remembered, and whoever has the address can call it as often as the rate limit allows (headers sent anyway are ignored). Rotate the address (<code>POST /api/v2/projects/{project}/automations/{rule}/webhook-token</code>) when it leaks, and name a secret for any hook that needs more.</p>
+<h2 id="endpoints-added-by-the-fork">Endpoints added by the fork <a class="anchor" href="#endpoints-added-by-the-fork" aria-label="Link to this section: Endpoints added by the fork">#</a></h2>
+<p>The tables below list every <code>/api/v2</code> operation the fork registers, grouped by module. Paths are relative to <code>/api/v2</code>. &quot;Permission&quot; is the right the caller needs; &quot;read, write and admin on project&quot; are the project rights of the caller, &quot;on task&quot; means on the project of the task. A <code>PATCH</code> is also available on every path below that has both a <code>GET</code> and a <code>PUT</code> (custom fields, workflow, automation rules, dashboards, forms); it is synthesised by Huma and not counted in the tables.</p>
+<p><strong>67 operations are documented</strong>: custom fields 8, workflows 6, approvals 6, automation 17, dashboards 6, reports 10, forms 14. The list was produced by a throwaway script that read every <code>huma.Operation{...}</code> block (operation id, method, path, summary) from the fork's route files in <code>pkg/routes/api/v2/</code> (<code>custom_fields.go</code>, <code>workflow.go</code>, <code>approvals.go</code>, <code>automation.go</code>, <code>automation_secrets.go</code>, <code>automation_hooks.go</code>, <code>dashboards.go</code>, <code>reports.go</code>, <code>forms.go</code>, <code>forms_public.go</code>), and the totals were cross-checked against a count of <code>OperationID:</code> lines in those files. The script is not kept in the repository, so when a route changes, edit these tables by hand or re-extract them the same way. The permission column is written from the model's <code>Can*</code> methods and the operation descriptions.</p>
+<h3 id="custom-fields">Custom fields <a class="anchor" href="#custom-fields" aria-label="Link to this section: Custom fields">#</a></h3>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Method</th><th scope="col">Path</th><th scope="col">Operation ID</th><th scope="col">Permission</th><th scope="col">Description</th></tr></thead><tbody>
+<tr><td>GET</td><td><code>/projects/{project}/custom-fields</code></td><td><code>custom-fields-list</code></td><td>read on project</td><td>List the custom fields of a project</td></tr>
+<tr><td>GET</td><td><code>/projects/{project}/custom-fields/{field}</code></td><td><code>custom-fields-read</code></td><td>read on project</td><td>Get a custom field</td></tr>
+<tr><td>POST</td><td><code>/projects/{project}/custom-fields</code></td><td><code>custom-fields-create</code></td><td>admin on project</td><td>Create a custom field</td></tr>
+<tr><td>PUT</td><td><code>/projects/{project}/custom-fields/{field}</code></td><td><code>custom-fields-update</code></td><td>admin on project</td><td>Update a custom field</td></tr>
+<tr><td>DELETE</td><td><code>/projects/{project}/custom-fields/{field}</code></td><td><code>custom-fields-delete</code></td><td>admin on project</td><td>Delete a custom field</td></tr>
+<tr><td>GET</td><td><code>/tasks/{task}/custom-field-values</code></td><td><code>task-custom-field-values-list</code></td><td>read on task</td><td>List the custom field values of a task</td></tr>
+<tr><td>PUT</td><td><code>/tasks/{task}/custom-field-values/{field}</code></td><td><code>task-custom-field-values-set</code></td><td>write on task</td><td>Set a custom field value on a task</td></tr>
+<tr><td>DELETE</td><td><code>/tasks/{task}/custom-field-values/{field}</code></td><td><code>task-custom-field-values-clear</code></td><td>write on task</td><td>Clear a custom field value on a task</td></tr>
+</tbody></table></div>
+<h3 id="workflows">Workflows <a class="anchor" href="#workflows" aria-label="Link to this section: Workflows">#</a></h3>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Method</th><th scope="col">Path</th><th scope="col">Operation ID</th><th scope="col">Permission</th><th scope="col">Description</th></tr></thead><tbody>
+<tr><td>GET</td><td><code>/projects/{project}/workflow</code></td><td><code>workflow-read</code></td><td>read on project</td><td>Get the workflow of a project</td></tr>
+<tr><td>PUT</td><td><code>/projects/{project}/workflow</code></td><td><code>workflow-replace</code></td><td>admin on project</td><td>Create or replace the workflow of a project</td></tr>
+<tr><td>DELETE</td><td><code>/projects/{project}/workflow</code></td><td><code>workflow-delete</code></td><td>admin on project</td><td>Delete the workflow of a project</td></tr>
+<tr><td>GET</td><td><code>/tasks/{task}/status</code></td><td><code>task-status-read</code></td><td>read on task</td><td>Get the status of a task</td></tr>
+<tr><td>POST</td><td><code>/tasks/{task}/status</code></td><td><code>task-status-change</code></td><td>write on task, plus the transition rules</td><td>Change the status of a task</td></tr>
+<tr><td>GET</td><td><code>/tasks/{task}/status/history</code></td><td><code>task-status-history-list</code></td><td>read on task</td><td>List the status history of a task</td></tr>
+</tbody></table></div>
+<h3 id="approvals">Approvals <a class="anchor" href="#approvals" aria-label="Link to this section: Approvals">#</a></h3>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Method</th><th scope="col">Path</th><th scope="col">Operation ID</th><th scope="col">Permission</th><th scope="col">Description</th></tr></thead><tbody>
+<tr><td>GET</td><td><code>/approvals</code></td><td><code>approvals-list</code></td><td>signed-in user (own requests only)</td><td>List my approvals</td></tr>
+<tr><td>GET</td><td><code>/approvals/{request}</code></td><td><code>approvals-read</code></td><td>read on task (no link shares)</td><td>Get an approval request</td></tr>
+<tr><td>POST</td><td><code>/approvals/{request}/decision</code></td><td><code>approvals-decide</code></td><td>an approver who has not decided</td><td>Decide on an approval request</td></tr>
+<tr><td>POST</td><td><code>/approvals/{request}/cancel</code></td><td><code>approvals-cancel</code></td><td>the requester or project admin</td><td>Cancel an approval request</td></tr>
+<tr><td>GET</td><td><code>/tasks/{task}/approvals</code></td><td><code>task-approvals-list</code></td><td>read on task (no link shares)</td><td>List the approval requests of a task</td></tr>
+<tr><td>POST</td><td><code>/tasks/{task}/approvals</code></td><td><code>task-approvals-create</code></td><td>write on task (no link shares)</td><td>Request an approval for a task</td></tr>
+</tbody></table></div>
+<h3 id="automation">Automation <a class="anchor" href="#automation" aria-label="Link to this section: Automation">#</a></h3>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Method</th><th scope="col">Path</th><th scope="col">Operation ID</th><th scope="col">Permission</th><th scope="col">Description</th></tr></thead><tbody>
+<tr><td>GET</td><td><code>/automations/catalog</code></td><td><code>automation-catalog</code></td><td>signed-in user (read on project for project_id)</td><td>Get the automation catalog</td></tr>
+<tr><td>GET</td><td><code>/projects/{project}/automations</code></td><td><code>automations-list</code></td><td>admin on project</td><td>List the automation rules of a project</td></tr>
+<tr><td>GET</td><td><code>/projects/{project}/automations/{rule}</code></td><td><code>automations-read</code></td><td>admin on project</td><td>Get an automation rule</td></tr>
+<tr><td>POST</td><td><code>/projects/{project}/automations</code></td><td><code>automations-create</code></td><td>admin on project</td><td>Create an automation rule</td></tr>
+<tr><td>PUT</td><td><code>/projects/{project}/automations/{rule}</code></td><td><code>automations-update</code></td><td>admin on project</td><td>Update an automation rule</td></tr>
+<tr><td>DELETE</td><td><code>/projects/{project}/automations/{rule}</code></td><td><code>automations-delete</code></td><td>admin on project</td><td>Delete an automation rule</td></tr>
+<tr><td>POST</td><td><code>/projects/{project}/automations/{rule}/test</code></td><td><code>automations-test</code></td><td>admin on project</td><td>Test an automation rule with a task</td></tr>
+<tr><td>POST</td><td><code>/projects/{project}/automations/{rule}/run</code></td><td><code>automation-run-manually</code></td><td>write on task</td><td>Run a manual automation rule for a task</td></tr>
+<tr><td>GET</td><td><code>/projects/{project}/manual-automations</code></td><td><code>automation-manual-list</code></td><td>write on project</td><td>List the manual automation rules of a project</td></tr>
+<tr><td>POST</td><td><code>/projects/{project}/automations/{rule}/webhook-token</code></td><td><code>automation-webhook-token</code></td><td>admin on project</td><td>Regenerate the webhook URL of a rule</td></tr>
+<tr><td>GET</td><td><code>/projects/{project}/automations/{rule}/runs</code></td><td><code>automation-runs-list</code></td><td>admin on project</td><td>List the runs of an automation rule</td></tr>
+<tr><td>GET</td><td><code>/projects/{project}/automations/{rule}/runs/{run}</code></td><td><code>automation-runs-read</code></td><td>admin on project</td><td>Get an automation run with its steps</td></tr>
+<tr><td>POST</td><td><code>/projects/{project}/automations/{rule}/runs/{run}/retry</code></td><td><code>automation-runs-retry</code></td><td>admin on project</td><td>Retry a failed automation run</td></tr>
+<tr><td>GET</td><td><code>/projects/{project}/automation-secrets</code></td><td><code>automation-secrets-list</code></td><td>admin on project</td><td>List the secrets of a project</td></tr>
+<tr><td>PUT</td><td><code>/projects/{project}/automation-secrets/{name}</code></td><td><code>automation-secrets-set</code></td><td>admin on project</td><td>Create or replace a secret</td></tr>
+<tr><td>DELETE</td><td><code>/projects/{project}/automation-secrets/{name}</code></td><td><code>automation-secrets-delete</code></td><td>admin on project</td><td>Delete a secret</td></tr>
+<tr><td>POST</td><td><code>/automation/hooks/{token}</code></td><td><code>automation-hook-incoming</code></td><td>none, the secret token is the credential</td><td>Call an incoming webhook of an automation rule</td></tr>
+</tbody></table></div>
+<h3 id="dashboards-and-reports">Dashboards and reports <a class="anchor" href="#dashboards-and-reports" aria-label="Link to this section: Dashboards and reports">#</a></h3>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Method</th><th scope="col">Path</th><th scope="col">Operation ID</th><th scope="col">Permission</th><th scope="col">Description</th></tr></thead><tbody>
+<tr><td>GET</td><td><code>/dashboards</code></td><td><code>dashboards-list</code></td><td>signed-in user (own personal and readable project dashboards)</td><td>List dashboards</td></tr>
+<tr><td>GET</td><td><code>/dashboards/{dashboard}</code></td><td><code>dashboards-read</code></td><td>owner (personal) or read on project</td><td>Get a dashboard</td></tr>
+<tr><td>POST</td><td><code>/dashboards</code></td><td><code>dashboards-create</code></td><td>any user (personal) or admin on project</td><td>Create a dashboard</td></tr>
+<tr><td>PUT</td><td><code>/dashboards/{dashboard}</code></td><td><code>dashboards-update</code></td><td>owner (personal) or admin on project</td><td>Update a dashboard</td></tr>
+<tr><td>DELETE</td><td><code>/dashboards/{dashboard}</code></td><td><code>dashboards-delete</code></td><td>owner (personal) or admin on project</td><td>Delete a dashboard</td></tr>
+<tr><td>PUT</td><td><code>/dashboards/{dashboard}/layout</code></td><td><code>dashboards-layout</code></td><td>owner (personal) or admin on project</td><td>Move and resize widgets</td></tr>
+<tr><td>POST</td><td><code>/reports/tasks</code></td><td><code>reports-tasks</code></td><td>signed-in user, tasks limited to what the user can read</td><td>Aggregate tasks</td></tr>
+<tr><td>POST</td><td><code>/reports/tasks/export</code></td><td><code>reports-tasks-export</code></td><td>as reports-tasks</td><td>Export an aggregate report as CSV</td></tr>
+<tr><td>POST</td><td><code>/reports/tasks/export/rows</code></td><td><code>reports-tasks-export-rows</code></td><td>as reports-tasks</td><td>Export the tasks behind a report as CSV</td></tr>
+<tr><td>POST</td><td><code>/reports/status-time</code></td><td><code>reports-status-time</code></td><td>as reports-tasks</td><td>Time tasks spent in each status</td></tr>
+<tr><td>POST</td><td><code>/reports/status-time/export</code></td><td><code>reports-status-time-export</code></td><td>as reports-tasks</td><td>Export the time in status report as CSV</td></tr>
+<tr><td>POST</td><td><code>/reports/workload</code></td><td><code>reports-workload</code></td><td>as reports-tasks</td><td>Open tasks per assignee</td></tr>
+<tr><td>POST</td><td><code>/reports/workload/export</code></td><td><code>reports-workload-export</code></td><td>as reports-tasks</td><td>Export the workload report as CSV</td></tr>
+<tr><td>POST</td><td><code>/reports/time-tracking</code></td><td><code>reports-time-tracking</code></td><td>signed-in user, not for link shares</td><td>Tracked time per user, project, label or day</td></tr>
+<tr><td>POST</td><td><code>/reports/time-tracking/export</code></td><td><code>reports-time-tracking-export</code></td><td>as reports-time-tracking</td><td>Export the time tracking report as CSV</td></tr>
+<tr><td>GET</td><td><code>/reports/tasks/options</code></td><td><code>reports-tasks-options</code></td><td>signed-in user (read on project for project_id)</td><td>List what a task report can use</td></tr>
+</tbody></table></div>
+<h3 id="forms">Forms <a class="anchor" href="#forms" aria-label="Link to this section: Forms">#</a></h3>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Method</th><th scope="col">Path</th><th scope="col">Operation ID</th><th scope="col">Permission</th><th scope="col">Description</th></tr></thead><tbody>
+<tr><td>GET</td><td><code>/projects/{project}/forms/options</code></td><td><code>forms-options</code></td><td>admin on project</td><td>List what a form of the project can ask for</td></tr>
+<tr><td>GET</td><td><code>/projects/{project}/forms</code></td><td><code>forms-list</code></td><td>admin on project</td><td>List the forms of a project</td></tr>
+<tr><td>GET</td><td><code>/projects/{project}/forms/{form}</code></td><td><code>forms-read</code></td><td>admin on project</td><td>Get a form</td></tr>
+<tr><td>POST</td><td><code>/projects/{project}/forms</code></td><td><code>forms-create</code></td><td>admin on project</td><td>Create a form</td></tr>
+<tr><td>PUT</td><td><code>/projects/{project}/forms/{form}</code></td><td><code>forms-update</code></td><td>admin on project</td><td>Update a form</td></tr>
+<tr><td>DELETE</td><td><code>/projects/{project}/forms/{form}</code></td><td><code>forms-delete</code></td><td>admin on project</td><td>Delete a form</td></tr>
+<tr><td>POST</td><td><code>/projects/{project}/forms/{form}/token</code></td><td><code>forms-token</code></td><td>admin on project</td><td>Regenerate the token of a form</td></tr>
+<tr><td>PUT</td><td><code>/projects/{project}/forms/{form}/logo</code></td><td><code>forms-logo-upload</code></td><td>admin on project</td><td>Upload the logo of a form</td></tr>
+<tr><td>DELETE</td><td><code>/projects/{project}/forms/{form}/logo</code></td><td><code>forms-logo-delete</code></td><td>admin on project</td><td>Remove the logo of a form</td></tr>
+<tr><td>GET</td><td><code>/projects/{project}/forms/{form}/submissions</code></td><td><code>form-submissions-list</code></td><td>admin on project</td><td>List the submissions of a form</td></tr>
+<tr><td>GET</td><td><code>/forms/{token}</code></td><td><code>form-public-read</code></td><td>none for public forms, else per access mode</td><td>Get the public definition of a form</td></tr>
+<tr><td>GET</td><td><code>/forms/{token}/logo</code></td><td><code>form-public-logo</code></td><td>none, the token is the credential</td><td>Get the logo of a form</td></tr>
+<tr><td>POST</td><td><code>/forms/{token}/submissions</code></td><td><code>form-public-submit</code></td><td>none for public forms, else per access mode</td><td>Submit a form</td></tr>
+<tr><td>POST</td><td><code>/forms/{token}/submissions/multipart</code></td><td><code>form-public-submit-multipart</code></td><td>none for public forms, else per access mode</td><td>Submit a form with files</td></tr>
+</tbody></table></div>
+<h2 id="examples">Examples <a class="anchor" href="#examples" aria-label="Link to this section: Examples">#</a></h2>
+<p>The examples use <code>$BASE</code> for <code>https://tasks.example.com/api/v2</code> and <code>$TOKEN</code> for a user JWT or API token. Request bodies are taken from the web tests in <code>pkg/webtests</code>; response bodies are abridged (<code>...</code> stands for omitted members, and ids and timestamps are illustrative) unless stated otherwise.</p>
+<h3 id="log-in">Log in <a class="anchor" href="#log-in" aria-label="Link to this section: Log in">#</a></h3>
+<pre class="code"><code class="language-bash">curl -sS -X POST &quot;$BASE/login&quot; \
+  -H &#x27;Content-Type: application/json&#x27; \
+  -d &#x27;{&quot;username&quot;: &quot;alice&quot;, &quot;password&quot;: &quot;secret&quot;}&#x27;</code></pre>
+<pre class="code"><code class="language-json">{&quot;token&quot;: &quot;eyJhbGciOi...&quot;}</code></pre>
+<h3 id="create-a-custom-field-and-set-a-value">Create a custom field and set a value <a class="anchor" href="#create-a-custom-field-and-set-a-value" aria-label="Link to this section: Create a custom field and set a value">#</a></h3>
+<pre class="code"><code class="language-bash">curl -sS -X POST &quot;$BASE/projects/1/custom-fields&quot; \
+  -H &quot;Authorization: Bearer $TOKEN&quot; -H &#x27;Content-Type: application/json&#x27; \
+  -d &#x27;{&quot;title&quot;:&quot;Severity&quot;,&quot;type&quot;:&quot;select&quot;,&quot;required&quot;:true,&quot;options&quot;:[{&quot;title&quot;:&quot;Minor&quot;,&quot;color&quot;:&quot;#00ff00&quot;},{&quot;title&quot;:&quot;Major&quot;}]}&#x27;</code></pre>
+<pre class="code"><code class="language-json">{
+  &quot;id&quot;: 6, &quot;project_id&quot;: 1, &quot;title&quot;: &quot;Severity&quot;, &quot;type&quot;: &quot;select&quot;, &quot;required&quot;: true,
+  &quot;options&quot;: [
+    {&quot;id&quot;: 11, &quot;custom_field_id&quot;: 6, &quot;title&quot;: &quot;Minor&quot;, &quot;color&quot;: &quot;#00ff00&quot;, &quot;...&quot;: &quot;...&quot;},
+    {&quot;id&quot;: 12, &quot;custom_field_id&quot;: 6, &quot;title&quot;: &quot;Major&quot;, &quot;...&quot;: &quot;...&quot;}
+  ],
+  &quot;created_by&quot;: {&quot;id&quot;: 1, &quot;username&quot;: &quot;alice&quot;},
+  &quot;created&quot;: &quot;2026-11-24T10:00:00Z&quot;, &quot;updated&quot;: &quot;2026-11-24T10:00:00Z&quot;
+}</code></pre>
+<pre class="code"><code class="language-bash"># the shape of &quot;value&quot; depends on the type: an option id for select
+curl -sS -X PUT &quot;$BASE/tasks/1/custom-field-values/6&quot; \
+  -H &quot;Authorization: Bearer $TOKEN&quot; -H &#x27;Content-Type: application/json&#x27; \
+  -d &#x27;{&quot;value&quot;: 11}&#x27;</code></pre>
+<h3 id="filter-tasks-by-status-category-and-a-custom-field">Filter tasks by status category and a custom field <a class="anchor" href="#filter-tasks-by-status-category-and-a-custom-field" aria-label="Link to this section: Filter tasks by status category and a custom field">#</a></h3>
+<pre class="code"><code class="language-bash">curl -sS -G &quot;$BASE/projects/1/tasks&quot; -H &quot;Authorization: Bearer $TOKEN&quot; \
+  --data-urlencode &#x27;filter=status_category != done &amp;&amp; cf_6 in 11,12&#x27; \
+  --data-urlencode &#x27;sort_by=status&#x27; --data-urlencode &#x27;order_by=asc&#x27; \
+  --data-urlencode &#x27;expand=status&#x27; --data-urlencode &#x27;expand=custom_fields&#x27;</code></pre>
+<h3 id="replace-a-workflow">Replace a workflow <a class="anchor" href="#replace-a-workflow" aria-label="Link to this section: Replace a workflow">#</a></h3>
+<p>Negative ids are temporary ids that the transitions of the same document can refer to.</p>
+<pre class="code"><code class="language-bash">curl -sS -X PUT &quot;$BASE/projects/1/workflow&quot; \
+  -H &quot;Authorization: Bearer $TOKEN&quot; -H &#x27;Content-Type: application/json&#x27; -d &#x27;{
+  &quot;restrict_transitions&quot;: true,
+  &quot;statuses&quot;: [
+    {&quot;id&quot;: -1, &quot;title&quot;: &quot;Backlog&quot;,  &quot;category&quot;: &quot;open&quot;, &quot;is_initial&quot;: true},
+    {&quot;id&quot;: -2, &quot;title&quot;: &quot;Working&quot;,  &quot;category&quot;: &quot;in_progress&quot;},
+    {&quot;id&quot;: -3, &quot;title&quot;: &quot;Finished&quot;, &quot;category&quot;: &quot;done&quot;}
+  ],
+  &quot;transitions&quot;: [
+    {&quot;from_status_id&quot;: -1, &quot;to_status_id&quot;: -2, &quot;title&quot;: &quot;Start&quot;, &quot;required_fields&quot;: [&quot;due_date&quot;, &quot;cf_2&quot;], &quot;require_comment&quot;: true},
+    {&quot;from_status_id&quot;: -2, &quot;to_status_id&quot;: -3, &quot;min_permission&quot;: &quot;admin&quot;}
+  ]
+}&#x27;</code></pre>
+<h3 id="change-a-tasks-status-when-the-transition-needs-approval">Change a task's status when the transition needs approval <a class="anchor" href="#change-a-tasks-status-when-the-transition-needs-approval" aria-label="Link to this section: Change a task&#x27;s status when the transition needs approval">#</a></h3>
+<p><code>POST /tasks/{task}/status</code> answers <code>202</code> and the pending request, instead of <code>200</code> and the new status. This body is a response recorded by the approvals tests.</p>
+<pre class="code"><code class="language-bash">curl -sS -X POST &quot;$BASE/tasks/20/status&quot; \
+  -H &quot;Authorization: Bearer $TOKEN&quot; -H &#x27;Content-Type: application/json&#x27; \
+  -d &#x27;{&quot;to_status_id&quot;: 5, &quot;comment&quot;: &quot;No longer needed&quot;}&#x27;</code></pre>
+<pre class="code"><code class="language-json">{
+  &quot;task_id&quot;: 20,
+  &quot;to_status_id&quot;: 5,
+  &quot;comment&quot;: &quot;No longer needed&quot;,
+  &quot;from_status_id&quot;: 1,
+  &quot;status&quot;: {&quot;id&quot;: 1, &quot;title&quot;: &quot;Todo&quot;, &quot;category&quot;: &quot;open&quot;, &quot;is_initial&quot;: true},
+  &quot;done&quot;: false,
+  &quot;approval&quot;: {
+    &quot;id&quot;: 1, &quot;task_id&quot;: 20, &quot;project_id&quot;: 11, &quot;transition_id&quot;: 3,
+    &quot;from_status_id&quot;: 1, &quot;to_status_id&quot;: 5, &quot;rejected_status_id&quot;: 2,
+    &quot;title&quot;: &quot;Todo → Dropped&quot;, &quot;comment&quot;: &quot;No longer needed&quot;,
+    &quot;mode&quot;: &quot;any&quot;, &quot;status&quot;: &quot;pending&quot;, &quot;allow_self&quot;: false,
+    &quot;approvers&quot;: [{&quot;id&quot;: 1, &quot;request_id&quot;: 1, &quot;user_id&quot;: 2, &quot;decision&quot;: null}],
+    &quot;...&quot;: &quot;...&quot;
+  }
+}</code></pre>
+<p>The approver then decides:</p>
+<pre class="code"><code class="language-bash">curl -sS -X POST &quot;$BASE/approvals/1/decision&quot; \
+  -H &quot;Authorization: Bearer $TOKEN&quot; -H &#x27;Content-Type: application/json&#x27; \
+  -d &#x27;{&quot;decision&quot;: &quot;approved&quot;, &quot;comment&quot;: &quot;Fine&quot;}&#x27;</code></pre>
+<h3 id="create-an-automation-rule">Create an automation rule <a class="anchor" href="#create-an-automation-rule" aria-label="Link to this section: Create an automation rule">#</a></h3>
+<pre class="code"><code class="language-bash">curl -sS -X POST &quot;$BASE/projects/1/automations&quot; \
+  -H &quot;Authorization: Bearer $TOKEN&quot; -H &#x27;Content-Type: application/json&#x27; -d &#x27;{
+  &quot;title&quot;: &quot;Urgent first&quot;,
+  &quot;enabled&quot;: true,
+  &quot;trigger&quot;: {&quot;type&quot;: &quot;task.created&quot;},
+  &quot;conditions&quot;: {&quot;field&quot;: &quot;title&quot;, &quot;op&quot;: &quot;like&quot;, &quot;value&quot;: &quot;urgent&quot;},
+  &quot;actions&quot;: [{&quot;type&quot;: &quot;task.set_field&quot;, &quot;params&quot;: {&quot;field&quot;: &quot;priority&quot;, &quot;value&quot;: 5}}]
+}&#x27;</code></pre>
+<p>The answer is <code>201</code> with the rule, including <code>revision</code>, <code>owner_id</code> (you), <code>enabled</code> and <code>last_run_status</code>. For a rule with the <code>webhook.incoming</code> trigger it also contains <code>webhook_token</code> and <code>webhook_url</code>, <strong>only in this response</strong> (the server stores a hash); <code>has_webhook</code> stays true afterwards. An invalid rule is <code>400</code> with code <code>22002</code> and <code>details.issues</code>, a list of <code>{path, message}</code> such as <code>actions[1].params.status_id</code>.</p>
+<h3 id="call-an-incoming-webhook">Call an incoming webhook <a class="anchor" href="#call-an-incoming-webhook" aria-label="Link to this section: Call an incoming webhook">#</a></h3>
+<pre class="code"><code class="language-bash">body=&#x27;{&quot;id&quot;: 77, &quot;customer&quot;: {&quot;name&quot;: &quot;Ada&quot;}}&#x27;
+ts=$(date +%s)
+sig=&quot;sha256=$(printf &#x27;%s.%s.%s&#x27; &quot;$ts&quot; &quot;$WEBHOOK_TOKEN&quot; &quot;$body&quot; | openssl dgst -sha256 -hmac &quot;$SECRET&quot; -hex | sed &#x27;s/^.* //&#x27;)&quot;
+curl -sS -X POST &quot;$BASE/automation/hooks/$WEBHOOK_TOKEN&quot; \
+  -H &#x27;Content-Type: application/json&#x27; -H &quot;X-Vikunja-Timestamp: $ts&quot; -H &quot;X-Vikunja-Signature: $sig&quot; -d &quot;$body&quot;</code></pre>
+<pre class="code"><code class="language-json">{&quot;queued&quot;: true}</code></pre>
+<p>Without a secret on the rule, omit both headers. Sign every call anew, also a retry. A rule action can then use <code>{{event.payload.customer.name}}</code>.</p>
+<h3 id="run-a-report">Run a report <a class="anchor" href="#run-a-report" aria-label="Link to this section: Run a report">#</a></h3>
+<pre class="code"><code class="language-bash">curl -sS -X POST &quot;$BASE/reports/tasks&quot; \
+  -H &quot;Authorization: Bearer $TOKEN&quot; -H &#x27;Content-Type: application/json&#x27; \
+  -d &#x27;{&quot;project_id&quot;:1,&quot;group_by&quot;:&quot;done&quot;,&quot;time&quot;:{&quot;field&quot;:&quot;created&quot;,&quot;bucket&quot;:&quot;month&quot;,&quot;from&quot;:&quot;2018-11-01&quot;,&quot;to&quot;:&quot;2018-12-31&quot;,&quot;timezone&quot;:&quot;Europe/Istanbul&quot;}}&#x27;</code></pre>
+<p>This response was recorded on the test fixtures:</p>
+<pre class="code"><code class="language-json">{
+  &quot;groups&quot;: [
+    {&quot;key&quot;: false, &quot;label&quot;: &quot;Open&quot;, &quot;color&quot;: &quot;#94a3b8&quot;, &quot;value&quot;: 19,
+     &quot;series&quot;: [
+       {&quot;bucket&quot;: &quot;2018-11-01&quot;, &quot;start&quot;: &quot;2018-11-01T00:00:00+03:00&quot;, &quot;end&quot;: &quot;2018-12-01T00:00:00+03:00&quot;, &quot;value&quot;: 0},
+       {&quot;bucket&quot;: &quot;2018-12-01&quot;, &quot;start&quot;: &quot;2018-12-01T00:00:00+03:00&quot;, &quot;end&quot;: &quot;2019-01-01T00:00:00+03:00&quot;, &quot;value&quot;: 19}]},
+    {&quot;key&quot;: true, &quot;label&quot;: &quot;Done&quot;, &quot;color&quot;: &quot;#22c55e&quot;, &quot;value&quot;: 1, &quot;series&quot;: [&quot;...&quot;]}
+  ],
+  &quot;total&quot;: 20, &quot;value&quot;: 20, &quot;measure&quot;: &quot;count&quot;, &quot;unit&quot;: &quot;tasks&quot;, &quot;multi_valued&quot;: false,
+  &quot;time&quot;: {&quot;field&quot;: &quot;created&quot;, &quot;bucket&quot;: &quot;month&quot;, &quot;from&quot;: &quot;2018-11-01T00:00:00+03:00&quot;,
+           &quot;to&quot;: &quot;2019-01-01T00:00:00+03:00&quot;, &quot;timezone&quot;: &quot;Europe/Istanbul&quot;, &quot;buckets&quot;: 2}
+}</code></pre>
+<h3 id="read-and-submit-a-public-form">Read and submit a public form <a class="anchor" href="#read-and-submit-a-public-form" aria-label="Link to this section: Read and submit a public form">#</a></h3>
+<pre class="code"><code class="language-bash">curl -sS &quot;$BASE/forms/$FORM_TOKEN&quot;
+
+curl -sS -X POST &quot;$BASE/forms/$FORM_TOKEN/submissions&quot; \
+  -H &#x27;Content-Type: application/json&#x27; \
+  -d &#x27;{&quot;values&quot;:{&quot;title&quot;:&quot;Hello&quot;,&quot;cf_2&quot;:1},&quot;submitter&quot;:{},&quot;honeypot&quot;:&quot;&quot;}&#x27;</code></pre>
+<p>A successful submission answers <code>{&quot;message&quot;: &quot;Thanks&quot;, &quot;redirect_url&quot;: &quot;&quot;, &quot;submit_another&quot;: true}</code> (the message is the form's success message); <code>task_id</code> is added only for signed-in submitters who can read the project, never for public ones. Invalid answers are <code>422</code> with code <code>25006</code>:</p>
+<pre class="code"><code class="language-json">{&quot;status&quot;: 422, &quot;code&quot;: 25006, &quot;detail&quot;: &quot;Some answers are not valid.&quot;,
+ &quot;details&quot;: {&quot;errors&quot;: [{&quot;field&quot;: &quot;cf_12&quot;, &quot;code&quot;: &quot;invalid&quot;, &quot;message&quot;: &quot;option does not belong to this field&quot;},
+                        {&quot;field&quot;: &quot;title&quot;, &quot;code&quot;: &quot;required&quot;, &quot;message&quot;: &quot;This field is required.&quot;}]}}</code></pre>
+<h2 id="the-generated-frontend-client">The generated frontend client <a class="anchor" href="#the-generated-frontend-client" aria-label="Link to this section: The generated frontend client">#</a></h2>
+<p>The web client does not hand-write API calls. It uses a TypeScript client generated from the OpenAPI document of the Go code with <code>@hey-api/openapi-ts</code>, in <code>frontend/src/client/generated</code>, wrapped by query modules in <code>frontend/src/client/queries</code> (TanStack Query). The rules:</p>
+<ul>
+<li>After adding or changing a v2 route or schema, run <strong><code>mage generate:frontend-client</code></strong> and commit the regenerated output. It builds the canonical OpenAPI document from the registered operations (<code>apiv2.NewCanonicalAPI</code>), writes it to a temporary file, and runs <code>pnpm run generate:api-client</code> in <code>frontend/</code>.</li>
+<li><strong><code>mage check:frontend-client</code></strong> regenerates twice and fails if the generated directory differs between the two runs (generation is not repeatable) or from what is committed (<code>frontend/src/client/generated</code> has uncommitted changes). CI uses it to keep the client current.</li>
+<li>Never edit the generated files by hand. Use the snake_case fields directly.</li>
+<li>Feature code goes through the query modules (<code>customFields.ts</code>, <code>workflow.ts</code>, <code>approvals.ts</code>, <code>automation.ts</code>, <code>automationSecrets.ts</code>, <code>dashboards.ts</code>, <code>reports.ts</code>, <code>reportWidgets.ts</code>, <code>forms.ts</code>); importing <code>axios</code> or the legacy <code>models</code>, <code>modelTypes</code> or <code>services</code> paths is a lint error. Failed requests throw an <code>ApiError</code> that carries <code>status</code>, <code>detail</code> and <code>code</code>.</li>
+</ul>
+<p>You can use the same OpenAPI document to generate a client in another language.</p>
+<h2 id="mcp">MCP <a class="anchor" href="#mcp" aria-label="Link to this section: MCP">#</a></h2>
+<p>The server exposes an MCP endpoint (a streamable HTTP endpoint at <code>/api/v2/mcp</code>; <code>GET /api/v2/mcp/info</code> returns its connection settings and the token permissions usable by exposed tools). Which operations become tools is decided by an allow-list in <code>pkg/modules/mcp/exposure.go</code>; anything not listed stays off MCP.</p>
+<p><strong>None of the fork's operations is on that allow-list</strong>: custom fields, workflows, approvals, automation, dashboards, reports and forms are not available over MCP. The roadmap lists this as open. To expose an operation, add its operation ID to the allow-list as a typed tool or a catalog action.</p>
+</div>
+<p class="edit"><a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/API.md">Source of this page on GitHub</a></p>
+<nav class="pager" aria-label="Pages"><a class="prev" href="modules/forms.html" rel="prev"><span>Previous</span>Forms</a><a class="next" href="architecture.html" rel="next"><span>Next</span>Architecture</a></nav>
+</main>
+<nav class="toc-aside" aria-label="On this page"><p class="side-title">On this page</p><ul>
+<li class="toc-2"><a href="#versions">Versions</a></li>
+<li class="toc-2"><a href="#base-url-and-documentation">Base URL and documentation</a></li>
+<li class="toc-2"><a href="#authentication">Authentication</a></li>
+<li class="toc-2"><a href="#conventions">Conventions</a></li>
+<li class="toc-2"><a href="#filter-syntax">Filter syntax</a></li>
+<li class="toc-2"><a href="#errors">Errors</a></li>
+<li class="toc-2"><a href="#rate-limits">Rate limits</a></li>
+<li class="toc-2"><a href="#the-automation-request-marker">The automation request marker</a></li>
+<li class="toc-2"><a href="#unauthenticated-endpoints">Unauthenticated endpoints</a></li>
+<li class="toc-2"><a href="#endpoints-added-by-the-fork">Endpoints added by the fork</a></li>
+<li class="toc-3"><a href="#custom-fields">Custom fields</a></li>
+<li class="toc-3"><a href="#workflows">Workflows</a></li>
+<li class="toc-3"><a href="#approvals">Approvals</a></li>
+<li class="toc-3"><a href="#automation">Automation</a></li>
+<li class="toc-3"><a href="#dashboards-and-reports">Dashboards and reports</a></li>
+<li class="toc-3"><a href="#forms">Forms</a></li>
+<li class="toc-2"><a href="#examples">Examples</a></li>
+<li class="toc-3"><a href="#log-in">Log in</a></li>
+<li class="toc-3"><a href="#create-a-custom-field-and-set-a-value">Create a custom field and set a value</a></li>
+<li class="toc-3"><a href="#filter-tasks-by-status-category-and-a-custom-field">Filter tasks by status category and a custom field</a></li>
+<li class="toc-3"><a href="#replace-a-workflow">Replace a workflow</a></li>
+<li class="toc-3"><a href="#change-a-tasks-status-when-the-transition-needs-approval">Change a task&#x27;s status when the transition needs approval</a></li>
+<li class="toc-3"><a href="#create-an-automation-rule">Create an automation rule</a></li>
+<li class="toc-3"><a href="#call-an-incoming-webhook">Call an incoming webhook</a></li>
+<li class="toc-3"><a href="#run-a-report">Run a report</a></li>
+<li class="toc-3"><a href="#read-and-submit-a-public-form">Read and submit a public form</a></li>
+<li class="toc-2"><a href="#the-generated-frontend-client">The generated frontend client</a></li>
+<li class="toc-2"><a href="#mcp">MCP</a></li>
+</ul></nav>
+</div>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-about">
+      <p><strong>vikunja-enterprise</strong> is an independent community fork of Vikunja. It is not affiliated with, endorsed by or supported by the Vikunja project. Almost all of the software is their work.</p>
+      <p>Licensed under AGPL-3.0-or-later, as upstream. This site has no scripts, cookies or trackers.</p>
+    </div>
+    <nav class="footer-nav" aria-label="Footer">
+      <div><p class="footer-title">Project</p><ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="getting-started.html">Get started</a></li>
+        <li><a href="roadmap.html">Roadmap and status</a></li>
+        <li><a href="upstream.html">Relationship to upstream</a></li>
+      </ul></div>
+      <div><p class="footer-title">Reference</p><ul>
+        <li><a href="modules/index.html">Modules</a></li>
+        <li><a href="api.html">API</a></li>
+        <li><a href="architecture.html">Architecture</a></li>
+        <li><a href="configuration.html">Configuration</a></li>
+      </ul></div>
+      <div><p class="footer-title">Community</p><ul>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise">Repository</a></li>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise/issues">Issues</a></li>
+        <li><a href="security.html">Security</a></li>
+        <li><a href="contributing.html">Contributing</a></li>
+        <li><a href="license.html">License</a></li>
+      </ul></div>
+      <div><p class="footer-title">Upstream Vikunja</p><ul>
+        <li><a href="https://github.com/go-vikunja/vikunja">Source code</a></li>
+        <li><a href="https://vikunja.io/docs/">Documentation</a></li>
+        <li><a href="https://vikunja.io/support/">Support upstream</a></li>
+      </ul></div>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>

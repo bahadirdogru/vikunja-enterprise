@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Security - vikunja-enterprise</title>
+<meta name="description" content="How to report a security problem in vikunja-enterprise, and what the public surface is.">
+<link rel="canonical" href="https://vikunja.bahadirdogru.com/security.html">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1020" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="assets/docs.css">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="vikunja-enterprise">
+<meta property="og:title" content="Security - vikunja-enterprise">
+<meta property="og:description" content="How to report a security problem in vikunja-enterprise, and what the public surface is.">
+<meta property="og:url" content="https://vikunja.bahadirdogru.com/security.html">
+<meta property="og:image" content="https://vikunja.bahadirdogru.com/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="vikunja-enterprise, an independent community fork of Vikunja">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Security - vikunja-enterprise">
+<meta name="twitter:description" content="How to report a security problem in vikunja-enterprise, and what the public surface is.">
+<meta name="twitter:image" content="https://vikunja.bahadirdogru.com/assets/og.png">
+</head>
+<body class="docs">
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="index.html" aria-label="vikunja-enterprise home"><img src="assets/favicon.svg" alt="" width="30" height="30">vikunja-enterprise</a>
+    <nav class="top-nav" aria-label="Main">
+      <ul>
+<li><a href="modules/index.html">Modules</a></li>
+<li><a href="getting-started.html">Get started</a></li>
+<li><a href="api.html">API</a></li>
+<li><a href="architecture.html">Architecture</a></li>
+<li><a href="roadmap.html">Roadmap</a></li>
+<li><a href="upstream.html">Upstream</a></li>
+        <li><a class="gh" href="https://github.com/bahadirdogru/vikunja-enterprise">GitHub</a></li>
+      </ul>
+    </nav>
+    <details class="menu">
+      <summary><span class="menu-icon" aria-hidden="true"></span>Menu</summary>
+      <nav class="menu-panel" aria-label="Site">
+        <div class="menu-group"><p class="menu-title">Site</p><ul>
+<li><a href="index.html">Home</a></li>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise">GitHub repository</a></li>
+        </ul></div>
+<div class="menu-group"><p class="menu-title">Start</p><ul>
+<li><a href="getting-started.html">Getting started</a></li>
+<li><a href="configuration.html">Configuration</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Modules</p><ul>
+<li><a href="modules/index.html">Overview</a></li>
+<li><a href="modules/custom-fields.html">Custom fields</a></li>
+<li><a href="modules/workflows.html">Workflows</a></li>
+<li><a href="modules/approvals.html">Approvals</a></li>
+<li><a href="modules/automation.html">Automation</a></li>
+<li><a href="modules/dashboards-reports.html">Dashboards and reports</a></li>
+<li><a href="modules/forms.html">Forms</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Reference</p><ul>
+<li><a href="api.html">API reference</a></li>
+<li><a href="architecture.html">Architecture</a></li>
+<li><a href="design.html">Design</a></li>
+<li><a href="roadmap.html">Roadmap and status</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Project</p><ul>
+<li><a href="upstream.html">Relationship to upstream</a></li>
+<li><a href="security.html" aria-current="page">Security</a></li>
+<li><a href="contributing.html">Contributing</a></li>
+<li><a href="license.html">License</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Design history</p><ul>
+<li><a href="enterprise/index.html">Overview</a></li>
+<li><a href="enterprise/custom-fields.html">Custom fields design</a></li>
+<li><a href="enterprise/workflow.html">Workflow design</a></li>
+<li><a href="enterprise/forms-approvals.html">Forms and approvals design</a></li>
+<li><a href="enterprise/automation.html">Automation design</a></li>
+<li><a href="enterprise/dashboards.html">Dashboards design</a></li>
+</ul></div>
+      </nav>
+    </details>
+  </div>
+</header>
+<div class="docs-layout">
+<nav class="sidebar" aria-label="Documentation">
+<p class="side-title">Start</p><ul>
+<li><a href="getting-started.html">Getting started</a></li>
+<li><a href="configuration.html">Configuration</a></li>
+</ul>
+<p class="side-title">Modules</p><ul>
+<li><a href="modules/index.html">Overview</a></li>
+<li><a href="modules/custom-fields.html">Custom fields</a></li>
+<li><a href="modules/workflows.html">Workflows</a></li>
+<li><a href="modules/approvals.html">Approvals</a></li>
+<li><a href="modules/automation.html">Automation</a></li>
+<li><a href="modules/dashboards-reports.html">Dashboards and reports</a></li>
+<li><a href="modules/forms.html">Forms</a></li>
+</ul>
+<p class="side-title">Reference</p><ul>
+<li><a href="api.html">API reference</a></li>
+<li><a href="architecture.html">Architecture</a></li>
+<li><a href="design.html">Design</a></li>
+<li><a href="roadmap.html">Roadmap and status</a></li>
+</ul>
+<p class="side-title">Project</p><ul>
+<li><a href="upstream.html">Relationship to upstream</a></li>
+<li><a href="security.html" aria-current="page">Security</a></li>
+<li><a href="contributing.html">Contributing</a></li>
+<li><a href="license.html">License</a></li>
+</ul>
+<p class="side-title">Design history</p><ul>
+<li><a href="enterprise/index.html">Overview</a></li>
+<li><a href="enterprise/custom-fields.html">Custom fields design</a></li>
+<li><a href="enterprise/workflow.html">Workflow design</a></li>
+<li><a href="enterprise/forms-approvals.html">Forms and approvals design</a></li>
+<li><a href="enterprise/automation.html">Automation design</a></li>
+<li><a href="enterprise/dashboards.html">Dashboards design</a></li>
+</ul>
+</nav>
+<main id="main" class="doc">
+<nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="index.html">Home</a></li><li>Project</li><li aria-current="page">Security</li></ol></nav>
+<h1>Security</h1>
+<details class="toc-inline"><summary>On this page</summary>
+<nav aria-label="On this page"><ul>
+<li class="toc-2"><a href="#what-can-be-reached-without-a-login">What can be reached without a login</a></li>
+<li class="toc-2"><a href="#reporting">Reporting</a></li>
+<li class="toc-2"><a href="#known-gaps">Known gaps</a></li>
+</ul></nav></details>
+<div class="prose">
+
+<p><a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/SECURITY.md">SECURITY.md</a> is upstream's policy and points at upstream's advisories and contact page. That is right for problems that also exist in upstream Vikunja. For issues in the fork's own code (custom fields, workflows, approvals, forms, automation, dashboards and reports), use the <a href="https://github.com/bahadirdogru/vikunja-enterprise/security/advisories">security advisories of this repository</a> if private reporting is available there; otherwise open an <a href="https://github.com/bahadirdogru/vikunja-enterprise/issues">issue</a> that says you have a security report, without exploit details. Please do not send fork-specific problems to the upstream maintainers. The trust model and the list of non-issues in SECURITY.md apply here too.</p>
+<h2 id="what-can-be-reached-without-a-login">What can be reached without a login <a class="anchor" href="#what-can-be-reached-without-a-login" aria-label="Link to this section: What can be reached without a login">#</a></h2>
+<p>Two parts of the fork are reachable without an account. Both are described in detail on their module pages; this is the short list of what the repository does about them. It is not a security audit.</p>
+<ul>
+<li><strong>Public forms</strong> are served from <code>/forms/&lt;token&gt;</code> on the same address as the app. They have rate limits, a honeypot, size limits, an optional submission cap and a close date, and public attachments are off by default. A submission creates the task as the form owner through the normal create path. See <a href="modules/forms.html">forms</a>.</li>
+<li><strong>Incoming webhooks</strong> of automation rules use a secret address. A webhook with a signing secret is verified and protected against replays within a time window; one without is not signed and cannot be protected that way. See <a href="modules/automation.html">automation</a> and the <a href="api.html">API reference</a>.</li>
+</ul>
+<p>Automation scripts run in a sandboxed interpreter with limits, outgoing HTTP requests are signed and guarded against requests to internal addresses, and project secrets are stored encrypted. The trade-offs are written down in the <a href="architecture.html#architecture-decisions">architecture decisions</a>.</p>
+<h2 id="reporting">Reporting <a class="anchor" href="#reporting" aria-label="Link to this section: Reporting">#</a></h2>
+<p>For problems in the fork's own code, use the <a href="https://github.com/bahadirdogru/vikunja-enterprise/security/advisories">security advisories of this repository</a> if private reporting is available there. Otherwise open an <a href="https://github.com/bahadirdogru/vikunja-enterprise/issues">issue</a> that says you have a security report, without exploit details.</p>
+<p>Problems that also exist in upstream Vikunja should go to upstream, under <a href="https://vikunja.io/security">upstream's policy</a>.</p>
+<h2 id="known-gaps">Known gaps <a class="anchor" href="#known-gaps" aria-label="Link to this section: Known gaps">#</a></h2>
+<p>The gaps that are known today are listed in the <a href="roadmap.html">roadmap</a>, which is updated more often than this page.</p>
+</div>
+<p class="edit"><a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/site/pages/security.md">Source of this page on GitHub</a></p>
+<nav class="pager" aria-label="Pages"><a class="prev" href="upstream.html" rel="prev"><span>Previous</span>Relationship to upstream</a><a class="next" href="contributing.html" rel="next"><span>Next</span>Contributing</a></nav>
+</main>
+<nav class="toc-aside" aria-label="On this page"><p class="side-title">On this page</p><ul>
+<li class="toc-2"><a href="#what-can-be-reached-without-a-login">What can be reached without a login</a></li>
+<li class="toc-2"><a href="#reporting">Reporting</a></li>
+<li class="toc-2"><a href="#known-gaps">Known gaps</a></li>
+</ul></nav>
+</div>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-about">
+      <p><strong>vikunja-enterprise</strong> is an independent community fork of Vikunja. It is not affiliated with, endorsed by or supported by the Vikunja project. Almost all of the software is their work.</p>
+      <p>Licensed under AGPL-3.0-or-later, as upstream. This site has no scripts, cookies or trackers.</p>
+    </div>
+    <nav class="footer-nav" aria-label="Footer">
+      <div><p class="footer-title">Project</p><ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="getting-started.html">Get started</a></li>
+        <li><a href="roadmap.html">Roadmap and status</a></li>
+        <li><a href="upstream.html">Relationship to upstream</a></li>
+      </ul></div>
+      <div><p class="footer-title">Reference</p><ul>
+        <li><a href="modules/index.html">Modules</a></li>
+        <li><a href="api.html">API</a></li>
+        <li><a href="architecture.html">Architecture</a></li>
+        <li><a href="configuration.html">Configuration</a></li>
+      </ul></div>
+      <div><p class="footer-title">Community</p><ul>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise">Repository</a></li>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise/issues">Issues</a></li>
+        <li><a href="security.html">Security</a></li>
+        <li><a href="contributing.html">Contributing</a></li>
+        <li><a href="license.html">License</a></li>
+      </ul></div>
+      <div><p class="footer-title">Upstream Vikunja</p><ul>
+        <li><a href="https://github.com/go-vikunja/vikunja">Source code</a></li>
+        <li><a href="https://vikunja.io/docs/">Documentation</a></li>
+        <li><a href="https://vikunja.io/support/">Support upstream</a></li>
+      </ul></div>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>

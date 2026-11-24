@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Design documents - vikunja-enterprise</title>
+<meta name="description" content="The original design documents of the fork&#x27;s modules, kept for their history and rationale.">
+<link rel="canonical" href="https://vikunja.bahadirdogru.com/enterprise/index.html">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1020" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+<link rel="manifest" href="../site.webmanifest">
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="../assets/docs.css">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="vikunja-enterprise">
+<meta property="og:title" content="Design documents - vikunja-enterprise">
+<meta property="og:description" content="The original design documents of the fork&#x27;s modules, kept for their history and rationale.">
+<meta property="og:url" content="https://vikunja.bahadirdogru.com/enterprise/index.html">
+<meta property="og:image" content="https://vikunja.bahadirdogru.com/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="vikunja-enterprise, an independent community fork of Vikunja">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Design documents - vikunja-enterprise">
+<meta name="twitter:description" content="The original design documents of the fork&#x27;s modules, kept for their history and rationale.">
+<meta name="twitter:image" content="https://vikunja.bahadirdogru.com/assets/og.png">
+</head>
+<body class="docs">
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="../index.html" aria-label="vikunja-enterprise home"><img src="../assets/favicon.svg" alt="" width="30" height="30">vikunja-enterprise</a>
+    <nav class="top-nav" aria-label="Main">
+      <ul>
+<li><a href="../modules/index.html">Modules</a></li>
+<li><a href="../getting-started.html">Get started</a></li>
+<li><a href="../api.html">API</a></li>
+<li><a href="../architecture.html">Architecture</a></li>
+<li><a href="../roadmap.html">Roadmap</a></li>
+<li><a href="../upstream.html">Upstream</a></li>
+        <li><a class="gh" href="https://github.com/bahadirdogru/vikunja-enterprise">GitHub</a></li>
+      </ul>
+    </nav>
+    <details class="menu">
+      <summary><span class="menu-icon" aria-hidden="true"></span>Menu</summary>
+      <nav class="menu-panel" aria-label="Site">
+        <div class="menu-group"><p class="menu-title">Site</p><ul>
+<li><a href="../index.html">Home</a></li>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise">GitHub repository</a></li>
+        </ul></div>
+<div class="menu-group"><p class="menu-title">Start</p><ul>
+<li><a href="../getting-started.html">Getting started</a></li>
+<li><a href="../configuration.html">Configuration</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Modules</p><ul>
+<li><a href="../modules/index.html">Overview</a></li>
+<li><a href="../modules/custom-fields.html">Custom fields</a></li>
+<li><a href="../modules/workflows.html">Workflows</a></li>
+<li><a href="../modules/approvals.html">Approvals</a></li>
+<li><a href="../modules/automation.html">Automation</a></li>
+<li><a href="../modules/dashboards-reports.html">Dashboards and reports</a></li>
+<li><a href="../modules/forms.html">Forms</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Reference</p><ul>
+<li><a href="../api.html">API reference</a></li>
+<li><a href="../architecture.html">Architecture</a></li>
+<li><a href="../design.html">Design</a></li>
+<li><a href="../roadmap.html">Roadmap and status</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Project</p><ul>
+<li><a href="../upstream.html">Relationship to upstream</a></li>
+<li><a href="../security.html">Security</a></li>
+<li><a href="../contributing.html">Contributing</a></li>
+<li><a href="../license.html">License</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Design history</p><ul>
+<li><a href="index.html" aria-current="page">Overview</a></li>
+<li><a href="custom-fields.html">Custom fields design</a></li>
+<li><a href="workflow.html">Workflow design</a></li>
+<li><a href="forms-approvals.html">Forms and approvals design</a></li>
+<li><a href="automation.html">Automation design</a></li>
+<li><a href="dashboards.html">Dashboards design</a></li>
+</ul></div>
+      </nav>
+    </details>
+  </div>
+</header>
+<div class="docs-layout">
+<nav class="sidebar" aria-label="Documentation">
+<p class="side-title">Start</p><ul>
+<li><a href="../getting-started.html">Getting started</a></li>
+<li><a href="../configuration.html">Configuration</a></li>
+</ul>
+<p class="side-title">Modules</p><ul>
+<li><a href="../modules/index.html">Overview</a></li>
+<li><a href="../modules/custom-fields.html">Custom fields</a></li>
+<li><a href="../modules/workflows.html">Workflows</a></li>
+<li><a href="../modules/approvals.html">Approvals</a></li>
+<li><a href="../modules/automation.html">Automation</a></li>
+<li><a href="../modules/dashboards-reports.html">Dashboards and reports</a></li>
+<li><a href="../modules/forms.html">Forms</a></li>
+</ul>
+<p class="side-title">Reference</p><ul>
+<li><a href="../api.html">API reference</a></li>
+<li><a href="../architecture.html">Architecture</a></li>
+<li><a href="../design.html">Design</a></li>
+<li><a href="../roadmap.html">Roadmap and status</a></li>
+</ul>
+<p class="side-title">Project</p><ul>
+<li><a href="../upstream.html">Relationship to upstream</a></li>
+<li><a href="../security.html">Security</a></li>
+<li><a href="../contributing.html">Contributing</a></li>
+<li><a href="../license.html">License</a></li>
+</ul>
+<p class="side-title">Design history</p><ul>
+<li><a href="index.html" aria-current="page">Overview</a></li>
+<li><a href="custom-fields.html">Custom fields design</a></li>
+<li><a href="workflow.html">Workflow design</a></li>
+<li><a href="forms-approvals.html">Forms and approvals design</a></li>
+<li><a href="automation.html">Automation design</a></li>
+<li><a href="dashboards.html">Dashboards design</a></li>
+</ul>
+</nav>
+<main id="main" class="doc">
+<nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="../index.html">Home</a></li><li>Design history</li><li aria-current="page">Design documents</li></ol></nav>
+<h1>Design documents</h1>
+
+<div class="prose">
+<p>These are the design documents the modules were built from. They keep the history and the reasoning behind decisions, and they were written before the code. They are <strong>not</strong> kept up to date: for the current behaviour, use the <a href="../modules/index.html">module pages</a>, the <a href="../api.html">API reference</a> and the <a href="../roadmap.html">roadmap</a>.</p>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Document</th><th scope="col">Module</th></tr></thead><tbody>
+<tr><td><a href="custom-fields.html">Custom fields</a></td><td><a href="../modules/custom-fields.html">Custom fields</a></td></tr>
+<tr><td><a href="workflow.html">Workflow</a></td><td><a href="../modules/workflows.html">Workflows</a></td></tr>
+<tr><td><a href="forms-approvals.html">Forms and approvals</a></td><td><a href="../modules/forms.html">Forms</a> and <a href="../modules/approvals.html">Approvals</a></td></tr>
+<tr><td><a href="automation.html">Automation</a></td><td><a href="../modules/automation.html">Automation</a></td></tr>
+<tr><td><a href="dashboards.html">Dashboards</a></td><td><a href="../modules/dashboards-reports.html">Dashboards and reports</a></td></tr>
+</tbody></table></div>
+</div>
+<p class="edit"><a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/site/pages/history.md">Source of this page on GitHub</a></p>
+<nav class="pager" aria-label="Pages"><a class="prev" href="../license.html" rel="prev"><span>Previous</span>License</a><a class="next" href="custom-fields.html" rel="next"><span>Next</span>Custom fields design</a></nav>
+</main>
+
+</div>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-about">
+      <p><strong>vikunja-enterprise</strong> is an independent community fork of Vikunja. It is not affiliated with, endorsed by or supported by the Vikunja project. Almost all of the software is their work.</p>
+      <p>Licensed under AGPL-3.0-or-later, as upstream. This site has no scripts, cookies or trackers.</p>
+    </div>
+    <nav class="footer-nav" aria-label="Footer">
+      <div><p class="footer-title">Project</p><ul>
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="../getting-started.html">Get started</a></li>
+        <li><a href="../roadmap.html">Roadmap and status</a></li>
+        <li><a href="../upstream.html">Relationship to upstream</a></li>
+      </ul></div>
+      <div><p class="footer-title">Reference</p><ul>
+        <li><a href="../modules/index.html">Modules</a></li>
+        <li><a href="../api.html">API</a></li>
+        <li><a href="../architecture.html">Architecture</a></li>
+        <li><a href="../configuration.html">Configuration</a></li>
+      </ul></div>
+      <div><p class="footer-title">Community</p><ul>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise">Repository</a></li>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise/issues">Issues</a></li>
+        <li><a href="../security.html">Security</a></li>
+        <li><a href="../contributing.html">Contributing</a></li>
+        <li><a href="../license.html">License</a></li>
+      </ul></div>
+      <div><p class="footer-title">Upstream Vikunja</p><ul>
+        <li><a href="https://github.com/go-vikunja/vikunja">Source code</a></li>
+        <li><a href="https://vikunja.io/docs/">Documentation</a></li>
+        <li><a href="https://vikunja.io/support/">Support upstream</a></li>
+      </ul></div>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>

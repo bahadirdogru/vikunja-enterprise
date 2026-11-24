@@ -1,0 +1,384 @@
+<section class="hero" aria-labelledby="hero-title">
+  <div class="wrap">
+    <div class="notice" role="note" aria-label="Notice">
+      <strong>Not an official Vikunja product.</strong>
+      <p>This is an independent community fork. It is not affiliated with, endorsed by or supported by the Vikunja project or its maintainers, so please do not ask them for help with it. Almost all of the software is their work. If Vikunja is useful to you, <a href="https://vikunja.io/support/">please support the upstream project</a>.</p>
+    </div>
+    <div>
+      <p class="eyebrow">Community fork · Go + Vue · AGPL-3.0</p>
+      <h1 id="hero-title">Vikunja, taken further <span class="arrow">→</span> workflows, fields, automation.</h1>
+      <p class="lede">vikunja-enterprise keeps upstream's Go API and Vue 3 frontend and adds custom fields, workflows and approvals, automation, dashboards and forms on top.</p>
+      <div class="actions">
+        <a class="btn btn-primary" href="@getting-started.html">Get started</a>
+        <a class="btn btn-ghost" href="https://github.com/bahadirdogru/vikunja-enterprise">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.02 1.76 2.68 1.25 3.34.96.1-.74.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.18-3.09-.12-.29-.51-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.62 1.59.23 2.76.11 3.05.74.81 1.18 1.83 1.18 3.09 0 4.42-2.7 5.4-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z"/></svg>
+          View on GitHub
+        </a>
+      </div>
+      <pre class="cmd"><code><span class="p">$ </span>docker pull ghcr.io/bahadirdogru/vikunja-enterprise:main</code></pre>
+    </div>
+    <figure class="shot">
+      <div class="paper">
+        <svg class="hero-art" viewBox="0 0 420 460" role="img" aria-labelledby="hero-art-t"><title id="hero-art-t">Schematic of the fork's ideas: a task with typed custom fields and a status, a status change passing an approval gate before Done, a When, If, Then automation rule, and a row of dashboard tiles</title>
+<text class="lbl" x="1" y="20">Custom fields on a task</text>
+<rect class="f-surface s-line" x="1" y="30" width="418" height="118" rx="12"/>
+<rect class="f-accent" x="20" y="46" width="20" height="20" rx="5"/><path class="s-onaccent" d="M25 56l4 4 7-8"/>
+<text class="t" x="50" y="61">A task</text>
+<rect class="f-soft" x="312" y="45" width="92" height="22" rx="11"/><text class="t-ac mid" x="358" y="60">In review</text>
+<rect class="f-bg s-line" x="20" y="78" width="116" height="26" rx="13"/><text class="t" x="32" y="96">Budget 1 200</text>
+<rect class="f-bg s-line" x="144" y="78" width="124" height="26" rx="13"/><text class="t" x="156" y="96">Priority High</text>
+<rect class="f-bg s-line" x="276" y="78" width="128" height="26" rx="13"/><text class="t" x="288" y="96">Due Dec 1</text>
+<text class="t-m" x="20" y="127">Progress</text><rect class="f-line" x="88" y="119" width="316" height="8" rx="4"/><rect class="f-accent" x="88" y="119" width="190" height="8" rx="4"/>
+
+<text class="lbl" x="1" y="176">A status change needs approval</text>
+<rect class="f-surface s-ink" x="1" y="190" width="100" height="34" rx="17"/><text class="t mid" x="51" y="212">In review</text>
+<path class="s-ink" d="M101 207H186M180 201l6 6-6 6"/>
+<path class="f-soft s-accent" d="M210 187l24 20-24 20-24-20z"/><path class="s-accent" d="M201 207l6 6 11-12"/>
+<text class="t-m mid" x="210" y="246">approval</text>
+<path class="s-ink" d="M234 207H318M312 201l6 6-6 6"/>
+<rect class="f-accent" x="319" y="190" width="100" height="34" rx="17"/><text class="t-a mid" x="369" y="212">Done</text>
+
+<text class="lbl" x="1" y="274">When, if, then</text>
+<rect class="f-surface s-ink" x="1" y="284" width="112" height="66" rx="10"/><text class="t-m" x="14" y="305">WHEN</text><text class="t" x="14" y="324">status</text><text class="t" x="14" y="340">changes</text>
+<rect class="f-surface s-ink" x="154" y="284" width="112" height="66" rx="10"/><text class="t-m" x="167" y="305">IF</text><text class="t" x="167" y="324">a field</text><text class="t" x="167" y="340">matches</text>
+<rect class="f-accent" x="307" y="284" width="112" height="66" rx="10"/><text class="t-a" x="320" y="305">THEN</text><text class="t-a" x="320" y="324">notify</text><text class="t-a" x="320" y="340">a team</text>
+<path class="s-accent" d="M115 317h37M146 311l6 6-6 6M268 317h37M299 311l6 6-6 6"/>
+
+<text class="lbl" x="1" y="378">Dashboards over the same tasks</text>
+<rect class="f-surface s-line" x="1" y="388" width="130" height="62" rx="10"/><rect class="f-accent" x="17" y="404" width="46" height="16" rx="4"/><rect class="f-mute" x="17" y="430" width="72" height="6" rx="3" opacity=".5"/>
+<rect class="f-surface s-line" x="145" y="388" width="130" height="62" rx="10"/><g class="f-accent"><rect x="163" y="422" width="14" height="14" rx="2"/><rect x="183" y="408" width="14" height="28" rx="2"/><rect x="203" y="414" width="14" height="22" rx="2"/><rect x="223" y="402" width="14" height="34" rx="2"/><rect x="243" y="416" width="14" height="20" rx="2"/></g>
+<rect class="f-surface s-line" x="289" y="388" width="130" height="62" rx="10"/><circle cx="330" cy="419" r="16" fill="none" stroke="var(--line)" stroke-width="9"/><circle cx="330" cy="419" r="16" fill="none" stroke="var(--accent)" stroke-width="9" stroke-dasharray="62 100" transform="rotate(-90 330 419)"/><rect class="f-mute" x="360" y="408" width="44" height="6" rx="3" opacity=".5"/><rect class="f-mute" x="360" y="422" width="32" height="6" rx="3" opacity=".5"/>
+</svg>
+      </div>
+      <figcaption>An illustration of the concepts, not a screenshot. The modules are described below and on the <a href="@modules/index.html">module pages</a>.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="block" id="why" aria-labelledby="why-title">
+  <div class="wrap">
+    <p class="kicker">Why this fork</p>
+    <h2 id="why-title">An aim, in concrete terms</h2>
+    <p class="intro">The aim is a copy of Vikunja that is complete and properly built in every respect up to enterprise level, true to the spirit of the original, and accessible to everyone. It is an aim, not a finished state: the <a href="#status">status section</a> says what is done and what is not.</p>
+    <p class="intro">"True to the spirit of Vikunja" is meant in concrete terms, and only as far as the repository supports it:</p>
+    <div class="grid grid-3">
+      <article class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5"/></svg></div>
+        <h3>Same stack</h3>
+        <p>Go API and Vue 3 frontend, as upstream.</p>
+      </article>
+      <article class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9zM12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg></div>
+        <h3>One binary</h3>
+        <p>The API and the web UI are served by the same process on port 3456. Automation runs inside it too, with no separate worker container.</p>
+      </article>
+      <article class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="6" rx="2"/><rect x="4" y="14" width="16" height="6" rx="2"/><path d="M8 7h.01M8 17h.01"/></svg></div>
+        <h3>Self-hosted</h3>
+        <p>One image, <code>linux/amd64</code> and <code>linux/arm64</code>. SQLite by default; MySQL and PostgreSQL are supported.</p>
+      </article>
+      <article class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 15l2 2 3-4"/></svg></div>
+        <h3>AGPL-3.0-or-later</h3>
+        <p>Same license as upstream.</p>
+      </article>
+      <article class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="14" r="2.5"/><path d="M6 8.5v7M18 11.5V10a4 4 0 00-4-4h-2"/></svg></div>
+        <h3>Small diff to upstream</h3>
+        <p>New features live in their own packages and tables so upstream can be merged. There is no promised sync schedule.</p>
+      </article>
+      <article class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3"/></svg></div>
+        <h3>No license key</h3>
+        <p>Upstream gates a few optional features behind a key. Here nothing reads a key or contacts a license server, so those features are simply on.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="modules" aria-labelledby="modules-title">
+  <div class="wrap">
+    <p class="kicker">What it adds</p>
+    <h2 id="modules-title">Five modules on top of upstream</h2>
+    <p class="intro">All new API routes are on <code>/api/v2</code>. The diagrams are schematic illustrations of the ideas, not screenshots.</p>
+    <div class="grid grid-6">
+      <article class="card module">
+        <figure class="fig">
+          <svg viewBox="0 0 360 190" role="img" aria-labelledby="f1t"><title id="f1t">Schematic: a task with typed custom fields such as number, select, date and progress</title>
+        <rect class="f-bg s-line" x="8" y="8" width="344" height="174" rx="8"/>
+        <rect class="f-none s-ink" x="22" y="22" width="14" height="14" rx="3"/><path class="s-accent" d="M25 29l3 3 6-7"/>
+        <text class="t" x="46" y="34">A task</text>
+        <g class="t-m"><text x="22" y="66">number</text><text x="22" y="98">select</text><text x="22" y="130">date</text><text x="22" y="162">progress</text></g>
+        <rect class="f-surface s-line" x="110" y="50" width="226" height="24" rx="4"/><text class="t" x="122" y="66">Budget  1 200</text>
+        <rect class="f-surface s-line" x="110" y="82" width="226" height="24" rx="4"/><rect class="f-soft" x="120" y="88" width="64" height="12" rx="6"/><text class="t-m" x="128" y="98">Review</text>
+        <rect class="f-surface s-line" x="110" y="114" width="226" height="24" rx="4"/><text class="t" x="122" y="130">2026-12-01</text>
+        <rect class="f-surface s-line" x="110" y="146" width="226" height="24" rx="4"/><rect class="f-bg" x="122" y="154" width="190" height="8" rx="4"/><rect class="f-accent" x="122" y="154" width="120" height="8" rx="4"/>
+      </svg>
+          <figcaption>Illustration, not the UI</figcaption>
+        </figure>
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/></svg></div>
+        <h3>Custom fields</h3>
+        <ul><li>Thirteen per-project field types, from text and number to select, user, rating and progress, validated per type.</li><li>Filter and sort tasks by field in the API; in the filter input you type the field name, so renaming a field does not break a saved filter.</li><li>Show values in task lists, table columns and on kanban cards.</li><li>Fields can be required on workflow transitions, used in automation and asked for in forms.</li></ul>
+        <p class="more"><a href="@modules/custom-fields.html">Module reference</a> · <a href="@enterprise/custom-fields.html">Design document</a></p>
+      </article>
+      <article class="card module">
+        <figure class="fig">
+          <svg viewBox="0 0 360 190" role="img" aria-labelledby="f2t"><title id="f2t">Schematic: statuses Draft, Review and Done connected by transitions, with an approval gate before Done and a Cancelled status</title>
+        <rect class="f-bg s-line" x="8" y="8" width="344" height="174" rx="8"/>
+        <rect class="f-surface s-ink" x="22" y="60" width="72" height="34" rx="17"/><text class="t" x="40" y="82">Draft</text>
+        <rect class="f-surface s-ink" x="136" y="60" width="76" height="34" rx="17"/><text class="t" x="153" y="82">Review</text>
+        <rect class="f-accent" x="288" y="60" width="58" height="34" rx="17"/><text class="t-a" x="304" y="82">Done</text>
+        <path class="s-line" d="M94 77h42M212 77h18M262 77h26"/>
+        <path class="f-soft s-accent" d="M246 56l16 21-16 21-16-21z"/><text class="t-m" x="213" y="116">approval</text>
+        <rect class="f-surface s-line s-dash" x="136" y="136" width="96" height="30" rx="15"/><text class="t-m" x="153" y="156">Cancelled</text>
+        <path class="s-line s-dash" d="M174 94v42"/>
+      </svg>
+          <figcaption>Illustration, not the UI</figcaption>
+        </figure>
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="12" r="2.5"/><path d="M6 8.5v7M8.5 6H12a3 3 0 013 3v.5M8.5 18H12a3 3 0 003-3v-.5"/></svg></div>
+        <h3>Workflows and approvals</h3>
+        <ul><li>Real statuses per project, each with a category (including done and cancelled), independent of kanban buckets, with a status history per task.</li><li>Optional restriction to listed transitions, with per-transition rules: minimum permission, allowed teams, required fields and a required comment.</li><li>A transition can require approval from one or several approvers, in mode "any" or "all", with a deadline.</li><li>Kanban status mode: columns are statuses and a drag is a transition. Filter and sort by status.</li></ul>
+        <p class="more"><a href="@modules/workflows.html">Workflows</a> · <a href="@modules/approvals.html">Approvals</a> · <a href="@enterprise/workflow.html">Workflow design</a></p>
+      </article>
+      <article class="card module">
+        <figure class="fig">
+          <svg viewBox="0 0 360 190" role="img" aria-labelledby="f3t"><title id="f3t">Schematic: a When, If, Then rule: status changed, a condition on a field, then notify a team</title>
+        <rect class="f-bg s-line" x="8" y="8" width="344" height="174" rx="8"/>
+        <g><rect class="f-surface s-ink" x="20" y="50" width="92" height="90" rx="6"/><text class="t-m" x="32" y="72">WHEN</text><text class="t" x="32" y="96">status</text><text class="t" x="32" y="112">changed</text></g>
+        <g><rect class="f-surface s-ink" x="134" y="50" width="92" height="90" rx="6"/><text class="t-m" x="146" y="72">IF</text><text class="t" x="146" y="96">field</text><text class="t" x="146" y="112">matches</text></g>
+        <g><rect class="f-accent" x="248" y="50" width="92" height="90" rx="6"/><text class="t-a" x="260" y="72">THEN</text><text class="t-a" x="260" y="96">notify</text><text class="t-a" x="260" y="112">a team</text></g>
+        <path class="s-accent" d="M112 95h22M226 95h22"/>
+        <text class="t-m" x="20" y="166">outbox event, then a worker</text>
+      </svg>
+          <figcaption>Illustration, not the UI</figcaption>
+        </figure>
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M13 3L5 13h6l-1 8 8-10h-6z"/></svg></div>
+        <h3>Automation</h3>
+        <ul><li>Rules of the form When / If / Then, run from a database outbox by workers inside the same process.</li><li>Triggers include task events, status and field changes, schedules (cron), overdue and due soon, a manual run, and incoming webhooks with a secret URL and optional HMAC signature.</li><li>Actions include setting fields, changing status, assigning, commenting, creating tasks, notifying, requesting approval, waiting, signed <code>http.request</code> calls and sandboxed JavaScript.</li><li>Dry run, a recorded history of every run with retry, and configurable limits and kill switches.</li></ul>
+        <p class="more"><a href="@modules/automation.html">Module reference</a> · <a href="@enterprise/automation.html">Design document</a></p>
+      </article>
+      <article class="card module">
+        <figure class="fig">
+          <svg viewBox="0 0 360 190" role="img" aria-labelledby="f4t"><title id="f4t">Schematic: a grid of widget shapes, a number tile, a bar chart, a donut, a line chart and a list</title>
+        <rect class="f-bg s-line" x="8" y="8" width="344" height="174" rx="8"/>
+        <rect class="f-surface s-line" x="20" y="20" width="90" height="62" rx="5"/><rect class="f-accent" x="32" y="34" width="38" height="14" rx="3"/><rect class="f-mute" x="32" y="58" width="60" height="6" rx="3" opacity=".5"/>
+        <rect class="f-surface s-line" x="122" y="20" width="218" height="62" rx="5"/><g class="f-accent"><rect x="136" y="56" width="16" height="14"/><rect x="160" y="42" width="16" height="28"/><rect x="184" y="48" width="16" height="22"/><rect x="208" y="34" width="16" height="36"/><rect x="232" y="46" width="16" height="24"/></g><rect class="f-mute" x="262" y="40" width="64" height="6" rx="3" opacity=".5"/><rect class="f-mute" x="262" y="54" width="44" height="6" rx="3" opacity=".5"/>
+        <rect class="f-surface s-line" x="20" y="94" width="90" height="76" rx="5"/><circle cx="65" cy="132" r="22" fill="none" stroke="var(--line)" stroke-width="10"/><circle cx="65" cy="132" r="22" fill="none" stroke="var(--accent)" stroke-width="10" stroke-dasharray="86 138" transform="rotate(-90 65 132)"/>
+        <rect class="f-surface s-line" x="122" y="94" width="120" height="76" rx="5"/><path class="s-accent" d="M134 152l24-22 24 8 24-30 24 14"/>
+        <rect class="f-surface s-line" x="254" y="94" width="86" height="76" rx="5"/><g class="f-mute" opacity=".5"><rect x="266" y="108" width="60" height="6" rx="3"/><rect x="266" y="124" width="48" height="6" rx="3"/><rect x="266" y="140" width="56" height="6" rx="3"/><rect x="266" y="156" width="40" height="6" rx="3"/></g>
+      </svg>
+          <figcaption>Illustration, not the UI</figcaption>
+        </figure>
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 20h16M7 20v-7M12 20V6M17 20v-10"/></svg></div>
+        <h3>Dashboards and reports</h3>
+        <ul><li>Dashboards of widgets over task filters; every number is computed over the tasks the viewer can read.</li><li>Widgets: number (with previous-period comparison), bar, donut, line, created vs done, task list, text, time in status, workload and time tracking.</li><li>A drag-and-resize grid, a widget editor with live preview, and drill-down to the tasks behind a value.</li><li>An aggregation API (<code>POST /api/v2/reports/tasks</code>) and CSV export.</li></ul>
+        <p class="more"><a href="@modules/dashboards-reports.html">Module reference</a> · <a href="@enterprise/dashboards.html">Design document</a></p>
+      </article>
+      <article class="card module">
+        <figure class="fig">
+          <svg viewBox="0 0 360 190" role="img" aria-labelledby="f5t"><title id="f5t">Schematic: a form with three fields becomes a task with a checkbox</title>
+        <rect class="f-bg s-line" x="8" y="8" width="344" height="174" rx="8"/>
+        <rect class="f-surface s-ink" x="24" y="26" width="132" height="138" rx="6"/>
+        <rect class="f-bg s-line" x="38" y="42" width="104" height="18" rx="3"/><rect class="f-bg s-line" x="38" y="70" width="104" height="18" rx="3"/><rect class="f-bg s-line" x="38" y="98" width="104" height="30" rx="3"/><rect class="f-accent" x="38" y="138" width="46" height="16" rx="3"/>
+        <path class="s-accent" d="M166 95h46"/><path class="s-accent" d="M204 87l10 8-10 8"/>
+        <rect class="f-surface s-ink" x="224" y="64" width="116" height="62" rx="6"/>
+        <rect class="f-none s-ink" x="238" y="82" width="16" height="16" rx="3"/><path class="s-accent" d="M241 90l4 4 7-8"/>
+        <rect class="f-mute" x="264" y="84" width="60" height="6" rx="3" opacity=".6"/><rect class="f-mute" x="264" y="98" width="40" height="6" rx="3" opacity=".4"/>
+        <text class="t-m" x="238" y="118">a task</text>
+      </svg>
+          <figcaption>Illustration, not the UI</figcaption>
+        </figure>
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h4"/></svg></div>
+        <h3>Forms</h3>
+        <ul><li>A builder in project settings with a live preview; fields map to task fields, labels, attachments and custom fields, and hidden fields can pre-set a value.</li><li>Access for project members, any signed-in user, or public through a standalone page without login.</li><li>Submissions create the task through the normal create path, so workflows, validation and automation apply; <code>form.submitted</code> is an automation trigger.</li><li>Public forms are protected by rate limits, a honeypot, size limits, an optional submission cap and a close date. Public attachments are off by default.</li></ul>
+        <p class="more"><a href="@modules/forms.html">Module reference</a> · <a href="@enterprise/forms-approvals.html">Design document</a></p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="architecture" aria-labelledby="arch-title">
+  <div class="wrap">
+    <p class="kicker">Architecture</p>
+    <h2 id="arch-title">How it fits together</h2>
+    <p class="intro">One process serves the API and the web UI. Automation events are written to a database outbox and picked up by workers in the same process; a ticker handles schedules and due dates.</p>
+    <div class="arch">
+      <svg viewBox="0 0 760 340" role="img" aria-labelledby="archt"><title id="archt">Architecture sketch: browsers, public forms and incoming webhooks reach one process containing the API and web UI, workers and a ticker; the process uses a database that holds the outbox; actions reach outgoing webhooks and notifications</title>
+      <g class="t-m"><text x="14" y="30">CLIENTS</text><text x="592" y="30">OUTSIDE</text></g>
+      <rect class="f-surface s-line" x="14" y="44" width="150" height="46" rx="6"/><text class="t" x="28" y="72">Web UI users</text>
+      <rect class="f-surface s-line" x="14" y="108" width="150" height="46" rx="6"/><text class="t" x="28" y="128">Public form</text><text class="t-m" x="28" y="144">/forms/&lt;token&gt;</text>
+      <rect class="f-surface s-line" x="14" y="172" width="150" height="46" rx="6"/><text class="t" x="28" y="192">Incoming webhook</text><text class="t-m" x="28" y="208">secret URL</text>
+      <rect class="f-bg s-ink" x="200" y="38" width="360" height="190" rx="10"/>
+      <text class="t-m" x="214" y="60">ONE PROCESS, ONE BINARY, PORT 3456</text>
+      <rect class="f-accent" x="216" y="74" width="328" height="44" rx="6"/><text class="t-a" x="232" y="101">API (/api/v1, /api/v2) + web UI</text>
+      <rect class="f-surface s-ink" x="216" y="134" width="100" height="74" rx="6"/><text class="t" x="230" y="160">Workers</text><text class="t-m" x="230" y="178">run rules</text><text class="t-m" x="230" y="194">and actions</text>
+      <rect class="f-surface s-ink" x="330" y="134" width="100" height="74" rx="6"/><text class="t" x="344" y="160">Ticker</text><text class="t-m" x="344" y="178">cron and</text><text class="t-m" x="344" y="194">due dates</text>
+      <rect class="f-surface s-ink" x="444" y="134" width="100" height="74" rx="6"/><text class="t" x="458" y="160">Reports</text><text class="t-m" x="458" y="178">counts tasks</text><text class="t-m" x="458" y="194">you can read</text>
+      <path class="s-line" d="M164 67h36M164 131h36M164 195h36"/>
+      <rect class="f-surface s-ink" x="200" y="268" width="360" height="56" rx="10"/>
+      <text class="t" x="216" y="292">Database</text><text class="t-m" x="216" y="310">SQLite, MySQL, PostgreSQL</text>
+      <rect class="f-soft s-accent" x="430" y="278" width="118" height="36" rx="5"/><text class="t" x="446" y="301">outbox table</text>
+      <path class="s-accent" d="M266 208v60M380 208v60"/>
+            <rect class="f-surface s-line" x="592" y="44" width="154" height="46" rx="6"/><text class="t" x="606" y="72">Notifications</text>
+      <rect class="f-surface s-line" x="592" y="108" width="154" height="46" rx="6"/><text class="t" x="606" y="128">http.request</text><text class="t-m" x="606" y="144">signed, retried</text>
+      <rect class="f-surface s-line" x="592" y="172" width="154" height="46" rx="6"/><text class="t" x="606" y="192">Files volume</text><text class="t-m" x="606" y="208">attachments</text>
+      <path class="s-line" d="M560 67h32M560 131h32M560 195h32"/>
+    </svg>
+    </div>
+    <div class="grid grid-3">
+      <article class="card"><h3>Outbox</h3><p>A transactional outbox in the database makes background work durable. No Redis requirement.</p></article>
+      <article class="card"><h3>Same permissions</h3><p>Reports and dashboards only count tasks the viewer can read; form submissions create the task as the form owner through the normal create path.</p></article>
+      <article class="card"><h3>Same origin</h3><p>Public forms are served from <code>/forms/&lt;token&gt;</code> on the same address as the app.</p></article>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="upstream" aria-labelledby="upstream-title">
+  <div class="wrap">
+    <p class="kicker">Compared to upstream</p>
+    <h2 id="upstream-title">Upstream Vikunja and this fork</h2>
+    <p class="intro">The fork was created from upstream <code>main</code> (v2.8.0-187) and aims to keep its diff to upstream small so that upstream can be merged. Almost everything here is the Vikunja project's work.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th scope="col">Area</th><th scope="col">Upstream base</th><th scope="col">vikunja-enterprise</th></tr></thead>
+        <tbody>
+<tr><th scope="row">Core to-do and project features, CalDAV, webhooks</th><td data-label="Upstream base">Yes. Upstream documents them.</td><td class="us" data-label="vikunja-enterprise">Inherited. Upstream's documentation applies to everything this site does not list.</td></tr>
+<tr><th scope="row">Custom fields</th><td data-label="Upstream base">Not in the base</td><td class="us" data-label="vikunja-enterprise">Thirteen per-project field types, filter and sort by field in the API, values in lists, table columns and kanban cards.</td></tr>
+<tr><th scope="row">Statuses and workflows</th><td data-label="Upstream base">Kanban buckets and a done flag</td><td class="us" data-label="vikunja-enterprise">Per-project statuses with categories, restricted transitions, status history and a kanban status mode.</td></tr>
+<tr><th scope="row">Approvals</th><td data-label="Upstream base">Not in the base</td><td class="us" data-label="vikunja-enterprise">Approvals on workflow transitions and ad-hoc approvals, with one or several approvers.</td></tr>
+<tr><th scope="row">Automation</th><td data-label="Upstream base">Not in the base</td><td class="us" data-label="vikunja-enterprise">When / If / Then rules with a database outbox, run history, dry run and limits.</td></tr>
+<tr><th scope="row">Dashboards and reports</th><td data-label="Upstream base">Not in the base</td><td class="us" data-label="vikunja-enterprise">Widget dashboards, an aggregation API and CSV export.</td></tr>
+<tr><th scope="row">Forms</th><td data-label="Upstream base">Not in the base</td><td class="us" data-label="vikunja-enterprise">Form builder and public forms, submitted through the normal task create path.</td></tr>
+<tr><th scope="row">Optional features gated by a license key</th><td data-label="Upstream base">Admin panel, time tracking, audit logs and user invites need a key</td><td class="us" data-label="vikunja-enterprise">Enabled. Nothing reads a key or contacts a license server.</td></tr>
+<tr><th scope="row">API</th><td data-label="Upstream base"><code>/api/v1</code></td><td class="us" data-label="vikunja-enterprise"><code>/api/v1</code> is frozen (bug fixes and ports only). Everything the fork adds is on <code>/api/v2</code>.</td></tr>
+<tr><th scope="row">Databases</th><td data-label="Upstream base">SQLite, MySQL and PostgreSQL</td><td class="us" data-label="vikunja-enterprise">The same. The fork's backend test suites pass on SQLite, PostgreSQL 18 and 19, and MySQL 8. PostgreSQL 18 or newer is recommended; MariaDB and upstream's documented minimum versions have not been tested here.</td></tr>
+<tr><th scope="row">License</th><td data-label="Upstream base">AGPL-3.0-or-later</td><td class="us" data-label="vikunja-enterprise">AGPL-3.0-or-later</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">"Base" is upstream <code>main</code> at the fork point (v2.8.0-187). Upstream moves on; its own documentation is the reference for what it offers today.</p>
+    <p class="note-block">Upstream is not affiliated with, endorsed by or supported by this fork, and this fork is not supported by it. Please do not send fork problems to the upstream maintainers.</p>
+    <div class="actions">
+      <a class="btn btn-primary" href="https://vikunja.io/support/">Support upstream Vikunja</a>
+      <a class="btn btn-ghost" href="https://github.com/go-vikunja/vikunja">Upstream repository</a>
+      <a class="btn btn-ghost" href="@upstream.html">How the fork relates to upstream</a>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="quick-start" aria-labelledby="qs-title">
+  <div class="wrap">
+    <p class="kicker">Quick start</p>
+    <h2 id="qs-title">Run it with Docker</h2>
+    <p class="intro">The image is built from the repository's <code>Dockerfile</code> as one binary on a <code>scratch</code> base. Replace the public URL and the secret before you run it.</p>
+    <div class="quick">
+      <input type="radio" name="qs" id="qs-sqlite" checked>
+      <input type="radio" name="qs" id="qs-pg">
+      <input type="radio" name="qs" id="qs-proxy">
+      <div class="cmp-tabs" role="group" aria-label="Setup variant">
+        <label for="qs-sqlite">SQLite</label>
+        <label for="qs-pg">PostgreSQL</label>
+        <label for="qs-proxy">Behind a proxy</label>
+      </div>
+      <div class="qs-panels">
+        <div class="qs-panel" id="qs-panel-sqlite">
+          <p>SQLite is the default, so a public URL, a secret and two mounted directories are enough.</p>
+<pre class="code"><code>mkdir -p vikunja/db vikunja/files
+sudo chown -R 1000:1000 vikunja
+
+docker run -d --name vikunja \
+  -p 3456:3456 \
+  -e VIKUNJA_SERVICE_PUBLICURL=https://tasks.example.com/ \
+  -e VIKUNJA_SERVICE_SECRET=change-me-to-a-long-random-string \
+  -v "$PWD/vikunja/db:/db" \
+  -v "$PWD/vikunja/files:/app/vikunja/files" \
+  ghcr.io/bahadirdogru/vikunja-enterprise:main</code></pre>
+          <p class="note">Without further settings the image uses SQLite at <code>/db/vikunja.db</code>, so mount <code>/db</code>. The container runs as user <code>1000</code>, so the mounted directories must be writable for that user.</p>
+        </div>
+        <div class="qs-panel" id="qs-panel-pg">
+          <p>Create the database and user first, then pass the connection settings. No <code>/db</code> mount is needed.</p>
+<pre class="code"><code>mkdir -p vikunja/files
+sudo chown -R 1000:1000 vikunja
+
+docker run -d --name vikunja \
+  -p 3456:3456 \
+  -e VIKUNJA_SERVICE_PUBLICURL=https://tasks.example.com/ \
+  -e VIKUNJA_SERVICE_SECRET=change-me-to-a-long-random-string \
+  -e VIKUNJA_DATABASE_TYPE=postgres \
+  -e VIKUNJA_DATABASE_HOST=db.example.internal \
+  -e VIKUNJA_DATABASE_USER=vikunja \
+  -e VIKUNJA_DATABASE_PASSWORD=change-me \
+  -e VIKUNJA_DATABASE_DATABASE=vikunja \
+  -v "$PWD/vikunja/files:/app/vikunja/files" \
+  ghcr.io/bahadirdogru/vikunja-enterprise:main</code></pre>
+          <p class="note">MySQL works the same way with <code>VIKUNJA_DATABASE_TYPE=mysql</code>. For PostgreSQL, <code>database.sslmode</code> defaults to <code>disable</code>. All keys are on the <a href="@configuration.html">configuration page</a>.</p>
+        </div>
+        <div class="qs-panel" id="qs-panel-proxy">
+          <p>Put TLS in front of the container. The per-IP limits of public forms and webhooks use the client address the router determines, so tell it which proxy to trust.</p>
+<pre class="code"><code><span class="c"># add to the docker run command of either variant</span>
+  -e VIKUNJA_SERVICE_IPEXTRACTIONMETHOD=xff \
+  -e VIKUNJA_SERVICE_TRUSTEDPROXIES=172.16.0.0/12 \</code></pre>
+          <p class="note"><code>xff</code> reads <code>X-Forwarded-For</code> and trusts it only from the listed CIDR ranges; the range above is an example, use your proxy's. Set <code>VIKUNJA_SERVICE_PUBLICURL</code> to the address people really use.</p>
+        </div>
+      </div>
+    </div>
+    <ul class="qs-notes">
+      <li><b>Port 3456.</b> The API and the web frontend share it.</li>
+      <li><b>service.publicurl.</b> Set it to the address people really use. Incoming webhook addresses and links in e-mails are built from it.</li>
+      <li><b>service.secret.</b> It signs tokens. If unset, a random one is generated at every start, which invalidates all issued tokens on each restart. Encrypted project secrets of automation rules depend on it too.</li>
+      <li><b>Files.</b> Attachments go to <code>/app/vikunja/files</code>.</li>
+    </ul>
+    <p class="note">The <a href="@getting-started.html">getting started guide</a> also covers Docker Compose, databases, a reverse proxy, upgrading and backups. The <a href="@configuration.html">configuration page</a> lists the fork's own keys, and the <a href="https://vikunja.io/docs/installing/">upstream installation docs</a> cover everything generic.</p>
+  </div>
+</section>
+
+<section class="block" id="security" aria-labelledby="security-title">
+  <div class="wrap">
+    <p class="kicker">Public surface</p>
+    <h2 id="security-title">What is exposed, and how it is limited</h2>
+    <p class="intro">Public forms and incoming webhooks are the parts of the fork that can be reached without a login. This is what the repository does about them. It is not a security audit.</p>
+    <div class="grid grid-3">
+<article class="card"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg></div><h3>Public forms</h3><ul class="checks"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12l5 5 9-10"/></svg><span>Served from <code>/forms/&lt;token&gt;</code> on the same address as the app.</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12l5 5 9-10"/></svg><span>Rate limits, a honeypot, size limits, an optional submission cap and a close date.</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12l5 5 9-10"/></svg><span>Public attachments are off by default.</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12l5 5 9-10"/></svg><span>Submissions create the task as the form owner through the normal create path, so workflows and validation apply.</span></li></ul><p class="note">The per-IP limits use the address the router determines; see the reverse proxy tab above.</p></article><article class="card"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 14a4 4 0 010-6l2-2a4 4 0 016 6l-1 1M14 10a4 4 0 010 6l-2 2a4 4 0 01-6-6l1-1"/></svg></div><h3>Webhooks, scripts and limits</h3><ul class="checks"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12l5 5 9-10"/></svg><span>Incoming webhooks use a secret URL and an optional HMAC signature over a timestamp, the hook address and the body, with replay protection.</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12l5 5 9-10"/></svg><span>Outgoing <code>http.request</code> calls are signed.</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12l5 5 9-10"/></svg><span>JavaScript actions run sandboxed in a child process that is killed at the timeout, with a memory limit on Linux, and can be switched off with <code>automation.scripts.enabled</code>.</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12l5 5 9-10"/></svg><span>Limits and kill switches are configurable.</span></li></ul><p class="note">Known gaps: the script memory limit is hard on Linux only.</p></article><article class="card"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg></div><h3>Permissions and secrets</h3><ul class="checks"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12l5 5 9-10"/></svg><span>Reports and dashboards only count tasks the viewer can read.</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12l5 5 9-10"/></svg><span>Encrypted project secrets of automation rules depend on <code>service.secret</code>.</span></li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12l5 5 9-10"/></svg><span>An unset secret is replaced by a random one at every start, which invalidates issued tokens.</span></li></ul><p class="note">For security issues in the fork's own code, see the <a href="@security.html">security page</a>.</p></article>    </div>
+  </div>
+</section>
+
+<section class="block" id="status" aria-labelledby="status-title">
+  <div class="wrap">
+    <p class="kicker">Status</p>
+    <h2 id="status-title">A development fork</h2>
+    <p class="intro">Read this before relying on it. The <a href="@roadmap.html">roadmap</a> is the source of truth for what is done, what has been tested, and the test results per database.</p>
+    <div class="grid grid-3"><article class="card"><h3>Implemented</h3><ul><li>Custom fields, workflows, approvals, automation, dashboards and reports, and forms, each with backend and web UI.</li><li>No license key needed; multi-arch image published from CI.</li></ul></article><article class="card"><h3>Tested</h3><ul><li>Backend test suites pass on SQLite, PostgreSQL 18 and 19, and MySQL 8; MariaDB and upstream's documented minimum versions are untested. See the roadmap for the details and the date of the last pass.</li><li>Documented database minimums come from the SQL in the code and are not tested in CI.</li></ul></article><article class="card"><h3>Not yet verified</h3><ul><li>The newest UI parts were checked in a browser; rules fired by the ticker, wait actions, signed webhook calls and the Turkish strings of those screens were not.</li><li>The arm64 image has not been started on real ARM hardware.</li><li>Several design decisions are open and listed in the roadmap.</li></ul></article></div>
+    <div class="grid grid-2"><article class="card"><h3>Known gaps</h3><ul><li>Incoming webhooks without a signing secret are not signed and cannot be protected against replays.</li><li>The fork's endpoints are not exposed over MCP.</li><li>Default dashboards for new workflow projects are not created yet.</li><li>The script memory limit is hard on Linux only; scripts can be switched off with <code>automation.scripts.enabled</code>.</li></ul></article><article class="card"><h3>Deferred</h3><ul><li>Organisation and multi-tenant hierarchy.</li><li>AI features.</li></ul></article></div>
+  </div>
+</section>
+
+<section class="block" id="docs" aria-labelledby="docs-title">
+  <div class="wrap">
+    <p class="kicker">Documentation</p>
+    <h2 id="docs-title">Read the documentation</h2>
+    <p class="intro">Everything is written once, in Markdown in the repository, and rendered to this site. Each page links to its source on GitHub.</p>
+    <ul class="doc-grid">
+      <li><a href="@getting-started.html"><b>Getting started</b>Install with Docker, databases, reverse proxy, upgrades, backups</a></li>
+      <li><a href="@configuration.html"><b>Configuration</b>The fork's keys and their defaults</a></li>
+      <li><a href="@api.html"><b>API reference</b>Authentication, filters, errors, every endpoint the fork adds</a></li>
+      <li><a href="@architecture.html"><b>Architecture</b>How the pieces fit together, and why</a></li>
+      <li><a href="@design.html"><b>Design</b>Interface and visual design decisions</a></li>
+      <li><a href="@roadmap.html"><b>Roadmap and status</b>Done, tested and open</a></li>
+    </ul>
+    <h3 class="sub">Module guides</h3>
+    <ul class="doc-grid">
+      <li><a href="@modules/custom-fields.html"><b>Custom fields</b>Typed per-project fields on tasks</a></li>
+      <li><a href="@modules/workflows.html"><b>Workflows</b>Statuses, transitions and history</a></li>
+      <li><a href="@modules/approvals.html"><b>Approvals</b>Decisions by people, teams or fields</a></li>
+      <li><a href="@modules/automation.html"><b>Automation</b>When / If / Then rules, scripts, limits</a></li>
+      <li><a href="@modules/dashboards-reports.html"><b>Dashboards and reports</b>Widgets over task filters</a></li>
+      <li><a href="@modules/forms.html"><b>Forms</b>Public and internal forms that create tasks</a></li>
+    </ul>
+    <h3 class="sub">The project</h3>
+    <ul class="doc-grid">
+      <li><a href="@upstream.html"><b>Relationship to upstream</b>What the fork is, what it is not</a></li>
+      <li><a href="@security.html"><b>Security</b>How to report a problem</a></li>
+      <li><a href="@contributing.html"><b>Contributing</b>Conventions and how to help</a></li>
+    </ul>
+  </div>
+</section>

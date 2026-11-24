@@ -1,0 +1,16 @@
+{
+  "name": "vikunja-enterprise",
+  "short_name": "vikunja-enterprise",
+  "description": "An independent community fork of Vikunja with custom fields, workflows, approvals, automation, dashboards and forms.",
+  "lang": "en",
+  "start_url": "./",
+  "scope": "./",
+  "display": "browser",
+  "background_color": "#ffffff",
+  "theme_color": "#4252d9",
+  "icons": [
+    {"src": "assets/favicon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "assets/favicon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "assets/favicon.svg", "sizes": "any", "type": "image/svg+xml"}
+  ]
+}

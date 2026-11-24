@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Automation design - vikunja-enterprise</title>
+<meta name="description" content="Design document of the automation module.">
+<link rel="canonical" href="https://vikunja.bahadirdogru.com/enterprise/automation.html">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1020" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+<link rel="manifest" href="../site.webmanifest">
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="../assets/docs.css">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="vikunja-enterprise">
+<meta property="og:title" content="Automation design - vikunja-enterprise">
+<meta property="og:description" content="Design document of the automation module.">
+<meta property="og:url" content="https://vikunja.bahadirdogru.com/enterprise/automation.html">
+<meta property="og:image" content="https://vikunja.bahadirdogru.com/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="vikunja-enterprise, an independent community fork of Vikunja">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Automation design - vikunja-enterprise">
+<meta name="twitter:description" content="Design document of the automation module.">
+<meta name="twitter:image" content="https://vikunja.bahadirdogru.com/assets/og.png">
+</head>
+<body class="docs">
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="../index.html" aria-label="vikunja-enterprise home"><img src="../assets/favicon.svg" alt="" width="30" height="30">vikunja-enterprise</a>
+    <nav class="top-nav" aria-label="Main">
+      <ul>
+<li><a href="../modules/index.html">Modules</a></li>
+<li><a href="../getting-started.html">Get started</a></li>
+<li><a href="../api.html">API</a></li>
+<li><a href="../architecture.html">Architecture</a></li>
+<li><a href="../roadmap.html">Roadmap</a></li>
+<li><a href="../upstream.html">Upstream</a></li>
+        <li><a class="gh" href="https://github.com/bahadirdogru/vikunja-enterprise">GitHub</a></li>
+      </ul>
+    </nav>
+    <details class="menu">
+      <summary><span class="menu-icon" aria-hidden="true"></span>Menu</summary>
+      <nav class="menu-panel" aria-label="Site">
+        <div class="menu-group"><p class="menu-title">Site</p><ul>
+<li><a href="../index.html">Home</a></li>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise">GitHub repository</a></li>
+        </ul></div>
+<div class="menu-group"><p class="menu-title">Start</p><ul>
+<li><a href="../getting-started.html">Getting started</a></li>
+<li><a href="../configuration.html">Configuration</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Modules</p><ul>
+<li><a href="../modules/index.html">Overview</a></li>
+<li><a href="../modules/custom-fields.html">Custom fields</a></li>
+<li><a href="../modules/workflows.html">Workflows</a></li>
+<li><a href="../modules/approvals.html">Approvals</a></li>
+<li><a href="../modules/automation.html">Automation</a></li>
+<li><a href="../modules/dashboards-reports.html">Dashboards and reports</a></li>
+<li><a href="../modules/forms.html">Forms</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Reference</p><ul>
+<li><a href="../api.html">API reference</a></li>
+<li><a href="../architecture.html">Architecture</a></li>
+<li><a href="../design.html">Design</a></li>
+<li><a href="../roadmap.html">Roadmap and status</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Project</p><ul>
+<li><a href="../upstream.html">Relationship to upstream</a></li>
+<li><a href="../security.html">Security</a></li>
+<li><a href="../contributing.html">Contributing</a></li>
+<li><a href="../license.html">License</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Design history</p><ul>
+<li><a href="index.html">Overview</a></li>
+<li><a href="custom-fields.html">Custom fields design</a></li>
+<li><a href="workflow.html">Workflow design</a></li>
+<li><a href="forms-approvals.html">Forms and approvals design</a></li>
+<li><a href="automation.html" aria-current="page">Automation design</a></li>
+<li><a href="dashboards.html">Dashboards design</a></li>
+</ul></div>
+      </nav>
+    </details>
+  </div>
+</header>
+<div class="docs-layout">
+<nav class="sidebar" aria-label="Documentation">
+<p class="side-title">Start</p><ul>
+<li><a href="../getting-started.html">Getting started</a></li>
+<li><a href="../configuration.html">Configuration</a></li>
+</ul>
+<p class="side-title">Modules</p><ul>
+<li><a href="../modules/index.html">Overview</a></li>
+<li><a href="../modules/custom-fields.html">Custom fields</a></li>
+<li><a href="../modules/workflows.html">Workflows</a></li>
+<li><a href="../modules/approvals.html">Approvals</a></li>
+<li><a href="../modules/automation.html">Automation</a></li>
+<li><a href="../modules/dashboards-reports.html">Dashboards and reports</a></li>
+<li><a href="../modules/forms.html">Forms</a></li>
+</ul>
+<p class="side-title">Reference</p><ul>
+<li><a href="../api.html">API reference</a></li>
+<li><a href="../architecture.html">Architecture</a></li>
+<li><a href="../design.html">Design</a></li>
+<li><a href="../roadmap.html">Roadmap and status</a></li>
+</ul>
+<p class="side-title">Project</p><ul>
+<li><a href="../upstream.html">Relationship to upstream</a></li>
+<li><a href="../security.html">Security</a></li>
+<li><a href="../contributing.html">Contributing</a></li>
+<li><a href="../license.html">License</a></li>
+</ul>
+<p class="side-title">Design history</p><ul>
+<li><a href="index.html">Overview</a></li>
+<li><a href="custom-fields.html">Custom fields design</a></li>
+<li><a href="workflow.html">Workflow design</a></li>
+<li><a href="forms-approvals.html">Forms and approvals design</a></li>
+<li><a href="automation.html" aria-current="page">Automation design</a></li>
+<li><a href="dashboards.html">Dashboards design</a></li>
+</ul>
+</nav>
+<main id="main" class="doc">
+<nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="../index.html">Home</a></li><li>Design history</li><li aria-current="page">Automation design</li></ol></nav>
+<h1>Automation and scripting — design</h1>
+<details class="toc-inline"><summary>On this page</summary>
+<nav aria-label="On this page"><ul>
+<li class="toc-2"><a href="#goals">Goals</a></li>
+<li class="toc-2"><a href="#model">Model</a></li>
+<li class="toc-3"><a href="#automation_rules">automation_rules</a></li>
+<li class="toc-3"><a href="#automation_events-the-outbox">automation_events (the outbox)</a></li>
+<li class="toc-3"><a href="#automation_runs">automation_runs</a></li>
+<li class="toc-3"><a href="#automation_run_steps">automation_run_steps</a></li>
+<li class="toc-3"><a href="#automation_secrets-3b">automation_secrets (3b)</a></li>
+<li class="toc-3"><a href="#code-layout">Code layout</a></li>
+<li class="toc-3"><a href="#how-the-outbox-works">How the outbox works</a></li>
+<li class="toc-2"><a href="#triggers">Triggers</a></li>
+<li class="toc-2"><a href="#conditions">Conditions</a></li>
+<li class="toc-2"><a href="#actions">Actions</a></li>
+<li class="toc-2"><a href="#scripting-3b">Scripting (3b)</a></li>
+<li class="toc-3"><a href="#globals">Globals</a></li>
+<li class="toc-3"><a href="#examples">Examples</a></li>
+<li class="toc-3"><a href="#test-run-dry-run">Test run (dry run)</a></li>
+<li class="toc-3"><a href="#http-httprequest-and-httpfetch">HTTP (http.request and http.fetch)</a></li>
+<li class="toc-3"><a href="#secrets">Secrets</a></li>
+<li class="toc-3"><a href="#security-model">Security model</a></li>
+<li class="toc-2"><a href="#safety-limits">Safety limits</a></li>
+<li class="toc-2"><a href="#api-apiv2">API (/api/v2)</a></li>
+<li class="toc-3"><a href="#time-manual-and-webhook-triggers-3d">Time, manual and webhook triggers (3d)</a></li>
+<li class="toc-2"><a href="#ui">UI</a></li>
+<li class="toc-3"><a href="#ui-status-3c-3b-scripting-ui">UI status (3c, 3b scripting UI)</a></li>
+<li class="toc-3"><a href="#ui-status-3d">UI status (3d)</a></li>
+<li class="toc-2"><a href="#what-3a-and-3b-do-and-do-not-do">What 3a and 3b do and do not do</a></li>
+<li class="toc-2"><a href="#steps">Steps</a></li>
+</ul></nav></details>
+<div class="prose">
+<p>Status: <strong>3a, 3b and 3d implemented (backend and UI).</strong> 3a: outbox, workers, rules, conditions, the
+non-script actions, run history, limits, API v2, catalog, dry run. 3b: JavaScript
+script actions and script conditions, the <code>http.request</code> action, <code>http.fetch</code> in
+scripts and project secrets. 3d adds the schedule, overdue, due soon, manual and
+incoming webhook triggers and the wait, create task and notify actions; their UI is
+described under &quot;UI status (3d)&quot;. 3c (UI) is implemented (see <a href="../roadmap.html">Roadmap and status</a>). Builds on custom fields and
+workflow (their events are the most useful triggers). Where this document
+describes something that is not implemented yet it says so; the section &quot;What 3a
+and 3b do and do not do&quot; lists the differences in one place.</p>
+<h2 id="goals">Goals <a class="anchor" href="#goals" aria-label="Link to this section: Goals">#</a></h2>
+<ul>
+<li>Project admins describe rules as <strong>when</strong> (trigger) → <strong>if</strong> (conditions) →
+<strong>then</strong> (actions), without code, in a visual editor.</li>
+<li>When the building blocks are not enough, an action or condition can be a
+<strong>script</strong> (JavaScript) with a small, safe API.</li>
+<li>Everything a rule does is recorded: every run, every step, its result,
+error and duration.</li>
+<li>Still one process, no Redis: durable work is a database outbox processed by
+workers inside the Vikunja process. Several replicas may run; a row is
+claimed by exactly one worker.</li>
+<li>Delivery is <strong>at least once</strong>. Every action step is idempotent per
+(event, rule revision, step) so a retry never performs a step twice.</li>
+</ul>
+<h2 id="model">Model <a class="anchor" href="#model" aria-label="Link to this section: Model">#</a></h2>
+<h3 id="automation_rules"><code>automation_rules</code> <a class="anchor" href="#automation_rules" aria-label="Link to this section: automation_rules">#</a></h3>
+<p>id, project_id (index), title, description, enabled, revision (int, bumped on
+every change), owner_id, trigger (json), conditions (json), actions (json),
+disabled_reason, consecutive_failures, last_run_at, last_run_status,
+created / updated.</p>
+<p>A rule runs <strong>as its owner</strong>. Creating or changing a rule needs project
+admin, and the user who saves a rule becomes its owner (so nobody can borrow
+the permissions of another admin by editing their rule). If the owner loses
+admin on the project, or cannot log in any more, the rule is disabled and
+<code>disabled_reason</code> says why (<code>owner_not_admin</code>, <code>owner_unavailable</code>). The system
+also disables a rule that failed <code>automation.maxconsecutivefailures</code> times in a
+row (<code>too_many_failures</code>), one whose custom field or status was deleted
+(<code>custom_field_deleted</code>, <code>status_deleted</code>) and the copy of a duplicated project
+(<code>duplicated</code>, or <code>duplicated_unmapped_reference</code>). Saving the rule by hand
+clears the reason. Actions can never do more than the owner could do by hand.</p>
+<p>Reading and writing rules and runs needs <strong>project admin</strong>: conditions,
+templates and run errors can reveal data of users who are not allowed to see the
+whole project.</p>
+<h3 id="automation_events-the-outbox"><code>automation_events</code> (the outbox) <a class="anchor" href="#automation_events-the-outbox" aria-label="Link to this section: automation_events (the outbox)">#</a></h3>
+<p>id, project_id (index), task_id (null), name (e.g. <code>task.status.changed</code>),
+payload (json), depth (int), origin_run_id (null), status (<code>pending</code> |
+<code>processing</code> | <code>done</code> | <code>dead</code>), attempts, run_after, locked_until,
+created.</p>
+<p>Rows are inserted <strong>in the same database transaction</strong> as the change that
+caused them (through a transactional hook in the event dispatcher), so an
+event is never lost and never exists for a rolled back change. Only events
+of projects that have at least one enabled rule are written.</p>
+<h3 id="automation_runs"><code>automation_runs</code> <a class="anchor" href="#automation_runs" aria-label="Link to this section: automation_runs">#</a></h3>
+<p>id, rule_id (index), rule_revision, event_id, project_id (index), task_id (null),
+status (<code>running</code> | <code>success</code> | <code>failed</code> | <code>skipped</code> | <code>aborted</code>), skip_reason,
+error, depth, started, finished. Unique on (event_id, rule_id): the row is
+inserted first, which makes a delivery idempotent. <code>running</code> also covers a run
+that waits for a retry. <code>skipped</code> is a limit (<code>max_depth</code>, <code>rate_limit</code>,
+<code>self_trigger</code>) or a condition (<code>conditions_not_met</code>, <code>task_not_found</code>);
+<code>aborted</code> means the owner may no longer run the rule.</p>
+<h3 id="automation_run_steps"><code>automation_run_steps</code> <a class="anchor" href="#automation_run_steps" aria-label="Link to this section: automation_run_steps">#</a></h3>
+<p>id, run_id (index), position, action_type, status (<code>success</code> | <code>failed</code>), error,
+output (text, truncated to 16 KiB), duration_ms, unique (run_id, position). The
+step row of a successful step is written in the same transaction as the work of
+the step, so a step recorded as successful has been applied exactly once; a run
+that is resumed starts at the first step that is not recorded as successful.</p>
+<h3 id="automation_secrets-3b"><code>automation_secrets</code> (3b) <a class="anchor" href="#automation_secrets-3b" aria-label="Link to this section: automation_secrets (3b)">#</a></h3>
+<p>id, project_id, name (unique per project, <code>^[A-Za-z_][A-Za-z0-9_]{0,63}$</code>),
+value, created_by_id, created / updated. A secret is a named value of a project
+(a signing key, a token, a list of user ids) that rules may use without it being
+shown anywhere. Values are write-only in the API and are masked in everything a
+run stores (see &quot;Secrets&quot; below).</p>
+<p>Old events and runs are deleted by a daily job (<code>automation.retention</code>,
+default 30 days; 0 keeps everything). Runs that are still running are never
+deleted.</p>
+<h3 id="code-layout">Code layout <a class="anchor" href="#code-layout" aria-label="Link to this section: Code layout">#</a></h3>
+<ul>
+<li><code>pkg/automation/spec</code> - pure data: the rule document, the catalog (triggers,
+fields, operators, actions with their parameter schemas), structural validation
+with paths, and the walk over the ids of a document (used for validation of
+references, remapping when a project is duplicated and disabling rules whose
+custom field or status is deleted). No database access.</li>
+<li><code>pkg/models/automation_*.go</code> - tables (<code>automation_rules</code>, <code>automation_events</code>,
+<code>automation_runs</code>, <code>automation_run_steps</code>), the CRUD of rules, runs and retry,
+permissions (project admin), the subscription cache and the lifecycle hooks.</li>
+<li><code>pkg/automation</code> - the engine: the outbox hook, workers and claiming, the
+runner, conditions, templates, actions (plan / apply) and the dry run; for 3b
+<code>script_*.go</code> (the script action and condition, the three hosts, snapshots),
+<code>secrets.go</code> (secret store and masker).</li>
+<li><code>pkg/automation/script</code> - the JavaScript runtime (goja): sandbox, limits,
+the <code>Host</code> interface. It knows nothing of the database.</li>
+<li><code>pkg/automation/outbound</code> - the one HTTP client path for <code>http.request</code> and
+<code>http.fetch</code> (SSRF protection, redirects, size caps, signing).</li>
+<li><code>pkg/routes/api/v2/automation.go</code> - the routes.</li>
+</ul>
+<h3 id="how-the-outbox-works">How the outbox works <a class="anchor" href="#how-the-outbox-works" aria-label="Link to this section: How the outbox works">#</a></h3>
+<ul>
+<li><code>pkg/events</code> has a generic transactional hook
+(<code>RegisterTransactionalHook</code>). <code>DispatchOnCommit(s, event)</code> calls the hooks
+synchronously with the session <code>s</code>, before the transaction commits. The
+automation hook inserts the <code>automation_events</code> row there, so it commits or
+rolls back with the change. The generic CRUD handlers (<code>handler.Do*</code>) check
+<code>events.PendingHookError(s)</code> before committing: a hook that could not write
+fails the request instead of silently losing the event. Code that commits
+sessions itself (cron jobs, CalDAV, importers) does not run that check; there
+a failed outbox insert is logged and the event is lost for automation. This is
+the one known gap in &quot;at least once&quot;.</li>
+<li>The hook writes a row only when <code>automation.enabled</code> is true and at least one
+enabled rule of the project listens to the event. The set of event names per
+project is cached in memory (<code>automation.cachettl</code>, 30 s). A rule change made
+through this process invalidates the cache at once (and again after commit);
+another replica notices the change after at most the TTL, so a rule enabled on
+replica A may miss events written by replica B in the last 30 seconds.</li>
+<li>Workers poll <code>status=&#x27;pending&#x27; AND run_after&lt;=now</code> in id order. A row is
+claimed with <code>UPDATE ... SET status=&#x27;processing&#x27;, locked_until=?,
+attempts=attempts+1 WHERE id=? AND status=&#x27;pending&#x27;</code> and only used when exactly
+one row was changed - no <code>SKIP LOCKED</code>, so the same SQL runs on SQLite, MySQL
+and PostgreSQL. Rows left in <code>processing</code> past <code>locked_until</code> go back to
+<code>pending</code> (or <code>dead</code> when the attempts are used up). The lock is renewed
+before every rule of the event, because each run has the run timeout to
+itself. Should two workers hold the same run anyway (an expired lock, a manual
+retry while the event is still being processed), a step checks again, after
+taking the write lock of its run, whether it was recorded as successful in
+the meantime, and does nothing then. Events written by this
+process wake the workers at once; <code>automation.pollinterval</code> (1 s) finds the
+ones of other replicas.</li>
+<li>Events written by an action of a run carry <code>origin_run_id</code> and <code>depth + 1</code>.
+The action runs in a session that is registered under the run; the hook looks
+the session up. Only the session of the step is marked: work an action does in
+a second session of its own would lose the mark (no action does that today).</li>
+<li>A step failure that will happen again (rejected by a permission or workflow
+rule, invalid value, vanished task) fails the run at once. Anything else - a
+database error, a timeout - leaves the run <code>running</code> and the event goes back to
+<code>pending</code> with exponential backoff (10 s, 20 s, 40 s ...) until
+<code>automation.maxattempts</code>, then the event is <code>dead</code> and the run <code>failed</code>.</li>
+</ul>
+<h2 id="triggers">Triggers <a class="anchor" href="#triggers" aria-label="Link to this section: Triggers">#</a></h2>
+<p>3a implements the triggers marked with <em>(3a)</em>, 3d the time, manual and external ones
+(<em>(3d)</em>). The others need events that do not exist yet (labels, relations, moving
+between projects).</p>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Kind</th><th scope="col">Triggers</th></tr></thead><tbody>
+<tr><td>Task</td><td>created <em>(3a)</em>, updated (optionally: only when a given field changed) <em>(3a)</em>, deleted <em>(3a)</em>, completed <em>(3a)</em>, reopened <em>(3a)</em>, moved into / out of the project</td></tr>
+<tr><td>Workflow</td><td>status changed (optionally from / to a status or to a category) <em>(3a)</em></td></tr>
+<tr><td>Custom field</td><td>value changed (a given field) <em>(3a)</em></td></tr>
+<tr><td>People</td><td>assignee added / removed <em>(3a)</em></td></tr>
+<tr><td>Content</td><td>comment added <em>(3a)</em>, attachment added <em>(3a)</em>, label added / removed, relation added</td></tr>
+<tr><td>Time</td><td>task became overdue <em>(3d)</em>, due date approaching (N hours/days before) <em>(3d)</em>, reminder fired, schedule (cron expression, in the time zone of the server) <em>(3d)</em></td></tr>
+<tr><td>Manual</td><td>a button on the task (&quot;Run automation&quot;) <em>(3d)</em></td></tr>
+<tr><td>External</td><td>incoming webhook with a per-rule secret URL <em>(3d)</em></td></tr>
+</tbody></table></div>
+<p>Trigger types in the API: <code>task.created</code>, <code>task.updated</code> (option <code>fields</code>),
+<code>task.completed</code>, <code>task.reopened</code>, <code>task.deleted</code>, <code>task.status_changed</code> (options
+<code>from_status_id</code>, <code>to_status_id</code>, <code>to_category</code>), <code>task.custom_field_changed</code>
+(option <code>field_id</code>), <code>task.assignee_added</code>, <code>task.assignee_removed</code>,
+<code>task.comment_added</code>, <code>task.attachment_added</code>, <code>approval.requested</code>,
+<code>approval.resolved</code> (option <code>outcome</code>: <code>any</code>, <code>approved</code>, <code>rejected</code>,
+<code>cancelled</code>). The approval triggers see the fields of the request as
+<code>event.new.*</code> and the placeholders <code>{{event.approval.id|title|outcome}}</code>; see
+<a href="forms-approvals.html#approvals">forms-approvals.md</a>.</p>
+<ul>
+<li><em>completed</em> and <em>reopened</em> are <code>task.updated</code> events in which the done flag
+changed; they need the old state, which <code>TaskUpdatedEvent</code> now carries in
+<code>OldTask</code> (in-process only, not part of the serialized event or webhook
+payload). An update that is not made through the task model and has no old
+state (assignee changes, kanban moves to a done bucket) matches <em>updated</em> but
+never <em>completed</em> / <em>reopened</em> or a <code>fields</code> filter.</li>
+<li>The task of an event is only handed to a rule (conditions, templates, the
+<code>task</code> global of scripts) while the owner of the rule can read it. A task
+that was moved to a project the owner cannot see since the event was written
+is treated like a task that is gone: the run is skipped (<code>task_not_found</code>), a
+run that is already under way fails.</li>
+<li><em>Task deleted</em> runs after the task is gone; conditions and templates see the
+task as it was when it was deleted, and actions that need the task fail.</li>
+<li><em>Task overdue</em> does not use the existing overdue events (per user, at the user's
+reminder time, only dispatched when webhooks are configured); 3d has its own
+ticker, see &quot;Time, manual and webhook triggers (3d)&quot;.</li>
+<li>Label changes only produce a generic <code>task.updated</code> without old state, so
+label triggers are not offered either.</li>
+</ul>
+<h2 id="conditions">Conditions <a class="anchor" href="#conditions" aria-label="Link to this section: Conditions">#</a></h2>
+<p>A tree of <code>all</code> / <code>any</code> / <code>not</code> groups over comparisons. <code>not</code> is true when none
+of its children holds. A comparison is
+<code>{field, op, value}</code> where <code>field</code> is a built-in task field, <code>status</code>,
+<code>status_category</code>, <code>cf_&lt;id&gt;</code>, or a value from the trigger payload
+(<code>event.old.status</code>, <code>event.doer.username</code>). The operators are <code>=</code>, <code>!=</code>, <code>&gt;</code>, <code>&gt;=</code>, <code>&lt;</code>, <code>&lt;=</code>,
+<code>like</code>, <code>in</code>, <code>not in</code>, <code>is_empty</code>, <code>is_not_empty</code>. Conditions are evaluated in
+memory over a normalized snapshot of the task as it is when the rule runs, not in
+SQL: dates accept RFC 3339, plain dates and <code>now</code>, <code>now+3d</code>, <code>now-12h</code>; <code>like</code>
+is case-insensitive, <code>%</code> is a wildcard and without one it is a substring match;
+<code>=</code> and <code>in</code> are case-sensitive; for lists (assignees, labels, multi select and
+user custom fields) <code>=</code> / <code>in</code> mean &quot;contains&quot;, <code>!=</code> / <code>not in</code> &quot;contains none&quot;;
+<code>is_empty</code> is null, empty text or empty list. The user keywords <code>event_doer</code> and
+<code>task_creator</code> can be used as values of user fields. Fields: the built-in task
+fields, <code>assignees</code>, <code>labels</code>, <code>status</code>, <code>status_category</code>, <code>cf_&lt;id&gt;</code>,
+<code>event.doer.id|username|name</code> and <code>event.old.&lt;key&gt;</code> / <code>event.new.&lt;key&gt;</code> (the old
+and new value the event knows: the task fields for updates, <code>status</code> and
+<code>status_category</code> for status changes, <code>value</code> for custom field changes,
+<code>assignee</code>, <code>comment</code>, <code>attachment_name</code>). <code>GET /automations/catalog</code> lists them
+with the operators of each. A condition is evaluated once, before the first
+action; a resumed run does not evaluate it again. A condition can also be a
+script that returns a boolean (3b).</p>
+<h2 id="actions">Actions <a class="anchor" href="#actions" aria-label="Link to this section: Actions">#</a></h2>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Kind</th><th scope="col">Actions</th></tr></thead><tbody>
+<tr><td>Task</td><td>set a field (title, description, priority, due/start/end date — absolute or relative such as <code>+3d</code> or <code>none</code>, percent done, color) <em>(3a)</em>, set a custom field <em>(3a)</em>, mark done / reopen <em>(3a)</em>, move to project <em>(3a)</em>, duplicate, delete (to trash)</td></tr>
+<tr><td>Workflow</td><td>change status (goes through the normal transition checks, as the rule owner; a transition that requires approval creates the request and the step finishes with <code>approval requested (#id)</code>) <em>(3a)</em></td></tr>
+<tr><td>Approval</td><td><code>approval.request</code>: ask users (ids, <code>assignees</code>, <code>task_creator</code>, <code>event_doer</code>) to approve the task, ad hoc, <code>mode</code>, templated title and description, <code>due_offset</code> <em>(5a)</em></td></tr>
+<tr><td>People</td><td>assign / unassign (a user id, the event's doer, the task creator) <em>(3a)</em>, round robin over a team</td></tr>
+<tr><td>Content</td><td>add comment <em>(3a)</em>, add / remove label <em>(3a)</em>, create subtask or related task from a template <em>(3a)</em>, add checklist to description</td></tr>
+<tr><td>Notify</td><td><code>notify</code>: in-app notification (plus the e-mail the person's settings allow) to users, <code>assignees</code>, <code>task_creator</code>, <code>event_doer</code> or a team <em>(3d)</em></td></tr>
+<tr><td>Content</td><td><code>task.create</code>: create a task from templated parameters; with no task in the run (webhook, project-scope schedule) it becomes the task of the actions after it <em>(3d)</em></td></tr>
+<tr><td>Integrate</td><td>call a webhook: <code>http.request</code> (signed, SSRF-protected, with retry) <em>(3b)</em></td></tr>
+<tr><td>Flow</td><td>stop if a condition holds <em>(3a)</em>, <code>wait</code> (delay, 1 minute to <code>automation.waitmax</code>; stored as a scheduled event, never a sleeping goroutine) <em>(3d)</em></td></tr>
+<tr><td>Script</td><td>run JavaScript: <code>script.run</code> <em>(3b)</em></td></tr>
+</tbody></table></div>
+<p>Text parameters are templates: <code>{{task.title}}</code>, <code>{{task.identifier}}</code>,
+<code>{{task.cf.12}}</code>, <code>{{event.doer.name}}</code>, <code>{{project.title}}</code> (plus <code>task.id</code>,
+<code>task.description</code> and <code>event.doer.username</code>). It is a plain substitution, no
+logic and no code. Unknown placeholders render empty and are reported as warnings
+in the dry run and in the output of the step. Select custom fields render the
+option title.</p>
+<p>Details of the 3a actions: dates in <code>set_field</code> are relative to <em>now</em>, not to the
+current value; <code>create_subtask</code> / <code>create_related</code> take <code>due_offset</code> relative to
+now; comment text is escaped and wrapped in paragraphs; an action that would not
+change anything (&quot;assign a user who is assigned already&quot;) succeeds with the
+output &quot;nothing to do&quot; and writes nothing, so it causes no event. Every action
+exists as a <em>plan</em> (reads, checks, resolves templates; used by the dry run) and an
+<em>apply</em> (writes); a real run is plan followed by apply in one transaction.</p>
+<h2 id="scripting-3b">Scripting (3b) <a class="anchor" href="#scripting-3b" aria-label="Link to this section: Scripting (3b)">#</a></h2>
+<p>Scripts run in an embedded, pure-Go JavaScript interpreter
+(<a href="https://github.com/dop251/goja">goja</a>: ECMAScript 5.1 and most of ES6 - <code>let</code>,
+<code>const</code>, arrow functions, template strings, <code>for...of</code>, destructuring, <code>Map</code>, <code>Set</code>,
+<code>Promise</code> objects exist, but there is no event loop). Every run gets a <strong>fresh
+interpreter</strong> that is thrown away afterwards; nothing is shared between runs. There
+is no <code>require</code>, no file system, no process, no environment, no timers (<code>setTimeout</code>
+and friends do not exist) and no network except <code>http.fetch</code>.</p>
+<p>A script is used in two places:</p>
+<ul>
+<li><strong>Script action</strong> <code>{&quot;type&quot;: &quot;script.run&quot;, &quot;params&quot;: {&quot;source&quot;: &quot;...&quot;}}</code>. The
+source is the <strong>body of a function</strong> in strict mode. Use <code>return</code> to give a
+result; it is stored as JSON in the output of the step (cut off after 16 KiB). A
+thrown error fails the step; the error text carries the JavaScript stack with
+line and column of the source (<code>at explode (line 3, column 9)</code>).</li>
+<li><strong>Script condition</strong> <code>{&quot;script&quot;: &quot;...&quot;}</code> as a node of the condition tree (also
+inside <code>flow.stop_if</code>). Same convention - the body of a function - and the result
+of <code>return</code> is converted to true or false. The other convention (the value of the
+last expression, as in <code>task.priority &gt; 3</code> without <code>return</code>) is <strong>refused</strong>: a
+condition script that returns nothing fails the run with &quot;the condition script
+returned nothing: end it with <code>return true</code> or <code>return false</code>&quot;. Condition scripts
+always get a <strong>read-only</strong> API, even in a real run, and a shorter timeout (1 s).
+<code>vikunja.*</code> calls that change something, <code>http.fetch</code> and <code>secrets.get</code> throw
+&quot;... is not available in a condition script&quot;.</li>
+</ul>
+<h3 id="globals">Globals <a class="anchor" href="#globals" aria-label="Link to this section: Globals">#</a></h3>
+<pre class="code"><code class="language-js">event      // the trigger event: {name, task_id, project_id, doer: {id, username, name}, old, new, changed, field_id}. Frozen.
+task       // the task the rule runs for, as it is when the script starts. Frozen. null for task.deleted.
+           //   {id, title, description, done, priority, percent_done, due_date, start_date, end_date, done_at,
+           //    created, updated, hex_color, identifier, project_id, created_by, assignees: [userId],
+           //    labels: [labelId], status: {id, title, category} | null, custom_fields: {&quot;&lt;fieldId&gt;&quot;: value},
+           //    relations: {&quot;subtask&quot;: [taskId], &quot;parenttask&quot;: [taskId], &quot;related&quot;: [...], ...}}
+           //   Dates are RFC 3339 strings or null.
+project    // {id, title}. Frozen.
+
+vikunja.tasks.get(id)                       // -&gt; task (same shape as the global)
+vikunja.tasks.find(filter, {project_id}?)   // -&gt; task[]; filter syntax of the task list, e.g. &quot;done = false &amp;&amp; cf_12 &gt; 5&quot;
+vikunja.tasks.update(id, patch)             // -&gt; task. patch: title, description, priority (0-5), percent_done (0-1),
+                                            //    hex_color, done, due_date / start_date / end_date (&quot;2026-12-24T09:00:00Z&quot;,
+                                            //    &quot;2026-12-24&quot;, &quot;+3d&quot;, &quot;now-12h&quot;, &quot;none&quot; or null to clear, or a Date)
+vikunja.tasks.create(projectId, data)       // -&gt; task. data: title (required), description, priority, percent_done,
+                                            //    hex_color, due_date, start_date, end_date, assignees: [userId],
+                                            //    parent_id (makes it a subtask of that task)
+vikunja.tasks.comment(id, text)             // plain text, escaped like the add_comment action
+vikunja.fields.get(taskId, fieldId)         // -&gt; value
+vikunja.fields.set(taskId, fieldId, value)  // like task.set_custom_field; null clears
+vikunja.status.set(taskId, statusId, comment?)   // through the workflow transition checks
+vikunja.assignees.add(taskId, userId) / .remove(taskId, userId)
+vikunja.labels.add(taskId, labelId) / .remove(taskId, labelId)
+
+http.fetch(url, {method, headers, body, timeout})
+           // -&gt; {status, ok, headers (lower-case names), body, truncated, json()}
+secrets.get(name)                           // -&gt; string
+log(...args)                                // goes to the step output; console.log is the same function</code></pre>
+<p>Nothing else is a global beyond the standard built-ins (<code>Object</code>, <code>Array</code>, <code>JSON</code>,
+<code>Math</code>, <code>Date</code>, <code>RegExp</code>, ...). <code>console</code> has only <code>log</code>.</p>
+<ul>
+<li><code>event</code>, <code>task</code>, <code>project</code> and the namespaces are <strong>frozen</strong> plain objects:
+assigning to them throws a <code>TypeError</code> in the script and cannot change anything in
+Vikunja. Values returned by <code>vikunja.*</code> are fresh plain objects that a script may
+change freely - they are copies.</li>
+<li>Every <code>vikunja.*</code> call runs through <strong>the same model functions and permission
+checks the built-in actions use</strong> (it literally builds the plans of
+<code>task.set_field</code>, <code>task.set_custom_field</code>, <code>task.set_status</code>, <code>task.assign</code>,
+<code>task.add_label</code>, <code>task.add_comment</code>), <strong>as the rule owner</strong>, in the transaction of
+the step. So events caused by a script carry the origin run and depth like those of
+any action: the depth limit and the self-trigger guard apply. Text passed to
+<code>vikunja.*</code> is data: <code>{{placeholders}}</code> are <strong>not</strong> replaced.</li>
+<li>Errors surface as thrown <code>Error</code>s with the typed message (&quot;Forbidden&quot;, &quot;Workflow
+requirements not met ...&quot;), so they can be caught with <code>try/catch</code>. An uncaught
+error fails the step. A failing script is a failure of the rule and is not retried;
+a temporary failure (a cancelled step timeout, a database error) is retried like
+for any action.</li>
+<li><code>vikunja.tasks.find</code> returns only tasks the rule owner can read, at most
+<code>automation.scripts.maxresults</code>. Each result has the shape of <code>task</code>.</li>
+<li>A database error (as opposed to a permission or validation error) inside a script
+should not be caught and ignored: on PostgreSQL the transaction of the step is
+unusable after it.</li>
+</ul>
+<h3 id="examples">Examples <a class="anchor" href="#examples" aria-label="Link to this section: Examples">#</a></h3>
+<p>When the status of a subtask becomes a done status, sum a number custom field (here
+field 12, &quot;Hours&quot;) over all subtasks into the parent. Trigger <code>task.status_changed</code>
+with <code>to_category: done</code>:</p>
+<pre class="code"><code class="language-js">const FIELD = 12;
+const parentId = (task.relations.parenttask || [])[0];
+if (!parentId) return &quot;no parent&quot;;
+let sum = 0;
+for (const id of vikunja.tasks.get(parentId).relations.subtask || []) {
+  const value = vikunja.fields.get(id, FIELD);
+  if (typeof value === &quot;number&quot;) sum += value;
+}
+vikunja.fields.set(parentId, FIELD, sum);
+return {parent: parentId, sum: sum};</code></pre>
+<p>Post to a chat webhook with a signed body - no script needed, the <code>http.request</code>
+action does it (<code>CHAT_TOKEN</code> and <code>CHAT_SIGNING_KEY</code> are project secrets):</p>
+<pre class="code"><code class="language-json">{&quot;type&quot;: &quot;http.request&quot;, &quot;params&quot;: {
+  &quot;url&quot;: &quot;https://chat.example.com/hooks/vikunja&quot;,
+  &quot;method&quot;: &quot;POST&quot;,
+  &quot;headers&quot;: {&quot;Authorization&quot;: &quot;Bearer {{secrets.CHAT_TOKEN}}&quot;},
+  &quot;body&quot;: &quot;{\&quot;text\&quot;: \&quot;{{event.doer.name}} created {{task.identifier}}: {{task.title}}\&quot;}&quot;,
+  &quot;secret&quot;: &quot;CHAT_SIGNING_KEY&quot;
+}}</code></pre>
+<p>Assign from a list of user ids stored in the secret <code>ASSIGNEES</code> (a JSON array such as
+<code>[4, 7, 9]</code>), spread over the tasks by their id (there is no counter that survives
+between runs, so this is an even spread, not a strict rotation):</p>
+<pre class="code"><code class="language-js">const team = JSON.parse(secrets.get(&quot;ASSIGNEES&quot;));
+const pick = team[task.id % team.length];
+vikunja.assignees.add(task.id, pick);
+log(&quot;assigned&quot;, pick);
+return pick;</code></pre>
+<h3 id="test-run-dry-run">Test run (dry run) <a class="anchor" href="#test-run-dry-run" aria-label="Link to this section: Test run (dry run)">#</a></h3>
+<p><code>POST .../automations/{rule}/test</code> runs scripts with a <strong>read-only</strong> host: <code>get</code>,
+<code>find</code>, <code>fields.get</code> and <code>log</code> work against the real data; every mutating call
+(<code>update</code>, <code>create</code>, <code>comment</code>, <code>fields.set</code>, <code>status.set</code>, <code>assignees.*</code>,
+<code>labels.*</code>) is checked exactly like a real call - permissions, workflow transitions,
+validation - and then only <strong>recorded</strong> as <code>would call vikunja.tasks.update(12,
+{&quot;priority&quot;:5}): set priority to 5</code> in the step summary, returning a stub (<code>update</code>
+returns the task with the patch applied, <code>create</code> a task with the id -1);
+<code>http.fetch</code> is recorded and returns <code>{status: 200, body: &quot;{}&quot;}</code> without sending
+anything; <code>secrets.get</code> checks that the secret exists and can be read and returns the
+placeholder <code>[secret NAME]</code>, never the value. This is structural: the runner builds
+one of three implementations of the same <code>Host</code> interface (<code>liveHost</code>, <code>dryHost</code>,
+<code>readOnlyHost</code>) and the script cannot choose; all three share the code that builds
+the changes (<code>hostBase</code>), and only <code>liveHost</code> ever applies them. A script condition
+gets the read-only host in every mode.</p>
+<h3 id="http-httprequest-and-httpfetch">HTTP (<code>http.request</code> and <code>http.fetch</code>) <a class="anchor" href="#http-httprequest-and-httpfetch" aria-label="Link to this section: HTTP (http.request and http.fetch)">#</a></h3>
+<p>Both use one code path (<code>pkg/automation/outbound</code>) and the SSRF-protected client the
+webhooks use (<code>utils.NewSSRFSafeHTTPClient</code>, built on <code>code.dny.dev/ssrf</code>): requests
+to loopback, private, link-local and cloud-metadata addresses, and to anything not
+globally routable, are refused unless the administrator set
+<code>outgoingrequests.allownonroutableips</code> (the same switch as for webhooks;
+<code>outgoingrequests.proxyurl</code> is honoured too, and connections through a proxy are
+the proxy's business as it is for webhooks). The check is made when the connection is
+<strong>dialled</strong> (a <code>net.Dialer</code> control function on the address that is actually
+connected to), not on a pre-resolved name, so DNS rebinding does not help, and it runs
+again for every redirect because each redirect dials. Only <code>http</code> and <code>https</code>; at
+most 3 redirects, a redirect to another host drops the headers the rule set; no
+credentials in the URL; the default <code>User-Agent</code> is <code>Vikunja-Automation</code>; no
+Vikunja credential is ever sent. Timeout: the request's own (<code>timeout</code> in
+<code>http.fetch</code>) but at most <code>automation.scripts.httptimeout</code> (10 s), and the context of
+the step. Response bodies are read up to <code>automation.scripts.maxresponsesize</code> (1 MiB;
+<code>truncated</code> is true when more was cut off); request bodies larger than that are
+refused.</p>
+<p><code>http.request</code> action: <code>url</code> (template; the values of placeholders are
+URL-escaped), <code>method</code> (default <code>POST</code>), <code>headers</code> (name to template; <code>Host</code>,
+<code>Content-Length</code>, <code>Transfer-Encoding</code>, <code>Connection</code>, <code>Upgrade</code> cannot be set),
+<code>body</code> (template) and optionally <code>secret</code>, the name of a project secret that signs
+the body: the request gets <code>X-Vikunja-Signature: sha256=&lt;hex&gt;</code> with the hex
+HMAC-SHA256 of the exact body, keyed with the secret. This mirrors the signature of
+the user webhooks (<code>pkg/models/webhooks.go</code>: the same header name, the same
+HMAC-SHA256 of the exact payload, hex encoded); the difference is the <code>sha256=</code>
+prefix, which names the algorithm. Without a <code>Content-Type</code> header the body is sent
+as <code>application/json</code> when it is valid JSON, otherwise as <code>text/plain</code>. The step
+output is <code>METHOD url: status text</code> plus the first 2 KiB of the answer, with secrets
+masked.</p>
+<p>Retry semantics are those of the engine: a network error, a timeout or a <strong>5xx</strong>
+answer is a temporary failure (the step is retried with backoff up to
+<code>automation.maxattempts</code>); a <strong>4xx</strong> answer, a refused address, an invalid URL or
+header fail the run at once. The call happens inside the transaction of the step, so
+it is delivered <strong>at least once</strong>: when the commit fails after the request went out,
+the retry sends it again.</p>
+<h3 id="secrets">Secrets <a class="anchor" href="#secrets" aria-label="Link to this section: Secrets">#</a></h3>
+<p>Project secrets are managed with API v2, <strong>project admin only</strong>:
+<code>GET /projects/{project}/automation-secrets</code> (names, timestamps, <code>unreadable</code>; never
+values), <code>PUT /projects/{project}/automation-secrets/{name}</code> with <code>{&quot;value&quot;: &quot;...&quot;}</code>
+(creates or replaces; at most 8 KiB) and <code>DELETE .../{name}</code>. There is no endpoint
+that returns a value.</p>
+<ul>
+<li><strong>At rest</strong>: AES-256-GCM, key derived with HKDF-SHA256 from <code>service.secret</code> (info
+string <code>vikunja automation secrets v1</code>), a random 96-bit nonce per value, the
+project id and name authenticated as additional data (a stored value cannot be moved
+to another secret), and a version prefix (<code>v1:</code>) so the scheme can change later. If
+<code>service.secret</code> changes - note that Vikunja generates a random one at every start
+when none is configured, so <strong>set <code>service.secret</code> explicitly</strong> - the values cannot
+be decrypted any more: the API lists the secret as <code>unreadable: true</code>,
+<code>secrets.get</code> throws &quot;the secret &quot;X&quot; cannot be decrypted (service.secret changed
+since it was stored): set it again&quot;, and setting it again fixes it.</li>
+<li><strong>Where they can be used</strong>: <code>secrets.get(name)</code> in scripts (not in condition scripts),
+and <code>{{secrets.NAME}}</code> <strong>only</strong> in <code>http.request</code> header values and body, plus the
+<code>secret</code> parameter. A rule that uses <code>{{secrets.NAME}}</code> anywhere else (a comment, a
+title, a field value, the URL, a script source) is rejected when it is saved, and a
+rule that names a secret that does not exist in the project is rejected too (<code>actions[1].params.secret</code>).</li>
+<li><strong>Masking</strong>: before anything is stored - step output, step error, run error, the
+last error of the event, the dry-run result - the engine replaces every secret value
+the step read <strong>and every other readable secret value of the project</strong> (values
+shorter than 4 characters only when the step read them) by <code>***</code>, in plain,
+URL-encoded, base64 and JSON-escaped form. A script that does <code>log(secrets.get(&quot;X&quot;))</code>
+or throws it, or an answer that echoes it, shows <code>***</code>. The error type is kept, so
+masking does not change the retry classification.</li>
+<li><strong>Lifecycle</strong>: purging a project deletes its secrets; <strong>duplicating a project copies
+none</strong>: the rules of the copy are disabled as before, with the reason
+<code>duplicated_secrets_missing</code> when they use secrets, and enabling one fails until the
+secrets exist in the new project.</li>
+</ul>
+<h3 id="security-model">Security model <a class="anchor" href="#security-model" aria-label="Link to this section: Security model">#</a></h3>
+<p><em>Who can write scripts</em>: only project admins (creating or changing a rule needs admin
+on the project), and <code>automation.scripts.enabled = false</code> turns scripts off for the
+whole instance: rules with scripts cannot be saved (typed 400, code 22005) and
+existing ones fail their step with &quot;scripts are disabled on this instance&quot; without
+executing anything (<code>http.request</code> is not a script and is not affected). Instances
+that do not trust their project admins should turn scripts off.</p>
+<p><em>What a script can reach</em>: only what the rule owner could do by hand - every
+<code>vikunja.*</code> call is permission-checked as the owner with the code the API uses - plus
+public HTTP(S) destinations through the SSRF guard, plus the secrets of <strong>its own
+project</strong>. It cannot reach the file system, the process, the environment, the
+database directly, other users' data beyond the owner's permissions, other projects'
+secrets, or any Go object: everything handed to the interpreter is built as plain
+JavaScript objects, never as wrapped Go values with methods or pointers; what comes
+back is converted to plain data with a size and depth cap. A <code>constructor.constructor</code>
+escape yields the interpreter's own global object and nothing else. Secrets are
+protected from <em>display</em>, not from the script author: a project admin who can write
+scripts can make a script send a secret to a server of their choice. That is why
+writing scripts needs project admin and why the kill switch exists.</p>
+<p><em>What is not protected</em>: (0) <strong>The script process is not a sandbox.</strong> It runs as the
+server's user, reused across projects; an escape from the interpreter would be a
+compromise of the server (it could read the server's configuration and the
+environment of the server process). What the server does against the child (see
+&quot;Script processes&quot;) makes the protocol robust and the resources bounded, nothing
+more. (1) <strong>Memory and CPU up to the limits.</strong> Every script runs in a child process
+that is killed half a second after its timeout and, on Linux, cannot map more than
+<code>automation.scripts.maxmemory</code> (256 MiB) beyond what it uses before its first script.
+At most <code>automation.workers</code> (4) + 2 script processes live at a time: every worker can
+always get one; dry runs and the compile check on save share the two others, one per
+project, so parallel test requests of one project admin wait or are refused as busy
+and can neither take a worker's process nor block the test runs of every other project
+(two projects together can). So a malicious script costs at most one core for its
+timeout plus half a second and that much memory, times <code>automation.workers</code> + 2; the
+server reads at most 4 MiB of one message of a script process and sends at most 8 MiB
+(the start with the task, the answer of a host call), estimated before it is encoded.
+On macOS, the BSDs and Windows the memory limit is only the soft limit of the Go
+runtime, so there a script can still allocate until the timeout kills it. (2) <strong>Idle
+script processes</strong>: up to <code>automation.workers</code> + 1 wait for the next script (about
+65 MB of private memory each with a development build).
+(3) <strong>Database locks</strong>: a script runs inside the
+transaction of its step, so a script (or <code>http.request</code>) that waits for the network
+holds that transaction open, and on SQLite the write lock, for up to the step
+timeout (10 s). (4) <strong>External effects are not rolled back</strong> when the step fails
+afterwards, and are delivered at least once. (5) The regexp match timeout is a
+process-wide setting of the regexp engine the interpreter uses; in the script process
+it is the timeout of the script.</p>
+<h2 id="safety-limits">Safety limits <a class="anchor" href="#safety-limits" aria-label="Link to this section: Safety limits">#</a></h2>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Limit</th><th scope="col">Default</th><th scope="col">Config</th></tr></thead><tbody>
+<tr><td>Kill switch (whole instance)</td><td>on</td><td><code>automation.enabled</code></td></tr>
+<tr><td>Scripts allowed (kill switch for scripts)</td><td>on</td><td><code>automation.scripts.enabled</code></td></tr>
+<tr><td>Chain depth (a rule's action triggering further rules)</td><td>3</td><td><code>automation.maxdepth</code></td></tr>
+<tr><td>Actions per run</td><td>25</td><td><code>automation.maxactions</code></td></tr>
+<tr><td>Step timeout</td><td>10 s</td><td><code>automation.steptimeout</code></td></tr>
+<tr><td>Run timeout</td><td>60 s</td><td><code>automation.runtimeout</code></td></tr>
+<tr><td>Script wall-clock timeout (action / condition)</td><td>5 s / 1 s</td><td><code>automation.scripts.timeout</code>, <code>automation.scripts.conditiontimeout</code></td></tr>
+<tr><td>Script source size (checked when saving)</td><td>64 KiB</td><td><code>automation.scripts.maxsource</code></td></tr>
+<tr><td>Script <code>vikunja.*</code> calls per run</td><td>100</td><td><code>automation.scripts.maxapicalls</code></td></tr>
+<tr><td>Script <code>http.fetch</code> requests per run</td><td>5</td><td><code>automation.scripts.maxhttprequests</code></td></tr>
+<tr><td>HTTP request body and response body read (<code>http.request</code>, <code>http.fetch</code>)</td><td>1 MiB</td><td><code>automation.scripts.maxresponsesize</code></td></tr>
+<tr><td>Duration of one HTTP request, whatever a script asks for</td><td>10 s</td><td><code>automation.scripts.httptimeout</code></td></tr>
+<tr><td>Script log output per step (then a truncation marker)</td><td>16 KiB</td><td><code>automation.scripts.maxlogsize</code></td></tr>
+<tr><td>Script call stack depth</td><td>512</td><td><code>automation.scripts.maxcallstack</code></td></tr>
+<tr><td>Tasks returned by <code>vikunja.tasks.find</code></td><td>200</td><td><code>automation.scripts.maxresults</code></td></tr>
+<tr><td>Memory of a script (hard limit on Linux)</td><td>256 MiB</td><td><code>automation.scripts.maxmemory</code></td></tr>
+<tr><td>Runs per rule per minute (excess is skipped and recorded)</td><td>60</td><td><code>automation.ratelimit</code></td></tr>
+<tr><td>Concurrent workers</td><td>4</td><td><code>automation.workers</code></td></tr>
+<tr><td>Live script processes (dry runs and checks share 2 of them, one per project)</td><td>workers + 2</td><td>derived from <code>automation.workers</code></td></tr>
+<tr><td>Retries with exponential backoff, then <code>dead</code></td><td>5</td><td><code>automation.maxattempts</code></td></tr>
+<tr><td>Consecutive failed runs before a rule is disabled</td><td>20</td><td><code>automation.maxconsecutivefailures</code></td></tr>
+<tr><td>Poll interval / cache TTL / retention (days)</td><td>1 s / 30 s / 30</td><td><code>automation.pollinterval</code>, <code>automation.cachettl</code>, <code>automation.retention</code></td></tr>
+</tbody></table></div>
+<p>Chain depth: events caused by the actions of a run (and by the <code>vikunja.*</code> calls of
+scripts) have depth + 1; an event deeper than <code>maxdepth</code> is recorded as a skipped run
+(<code>max_depth</code>), so with the default a person's change can start a chain of four rules
+(depths 0 to 3). The step timeout cancels the database work of the step (the session
+context); the run timeout cancels the whole run. Both count as temporary failures. A
+rule with more actions than <code>maxactions</code> (the limit was lowered after it was saved)
+fails its run without executing anything.</p>
+<p>The script timeout is enforced four times: a timer interrupts the interpreter
+(<code>vm.Interrupt</code>; an interrupt cannot be caught by the script, not even in a <code>finally</code>);
+the same deadline is the context of every blocking host call (HTTP), which is
+cancelled, and no new host call is answered after it; half a second after the deadline
+the server kills the script process; and the process ends itself 1.5 s after the
+deadline, or as soon as the server is gone (its input closes or its parent changes),
+also inside a native call. A script that runs into its own timeout fails its step for
+good (&quot;the script ran longer than 5s and was stopped&quot;); when the step or run timeout
+ends it first, it is the temporary failure those are. The interrupt alone is only seen
+between JavaScript instructions; the kill is what stops a single native call that never
+returns to the interpreter (an array built-in over a huge array-like such as
+<code>Array.prototype.indexOf.call({length: 2**53 - 1}, 1)</code>, a huge <code>sort</code>, <code>join</code>,
+<code>JSON.stringify</code> or <code>eval</code>, big integer arithmetic). A worker is held at most for the
+timeout plus half a second plus the host call in flight at the deadline (a database
+call is bounded by the step timeout, an HTTP request by its own timeout). A script that
+allocates more than <code>automation.scripts.maxmemory</code> fails with &quot;the script hit the
+memory limit of 256 MiB and was stopped&quot;. The Go runtime needs part of the limit: at the
+default a script can allocate about 190 MiB in one typed array, about 390000 small
+objects or about 2 million short strings (at 512 MiB: 440 MiB, 780000, 4 million).</p>
+<p><strong>Script processes.</strong> A script, and the compile check when a rule is saved, runs in a
+child process: on Linux the running binary itself (<code>/proc/self/exe</code>, so an upgrade
+that replaced the file does not matter), elsewhere the file at its path, started again
+with the argument <code>__vikunja-script-process</code>, <code>VIKUNJA_AUTOMATION_SCRIPT_PROCESS=1</code>,
+<code>GOMAXPROCS=1</code>, <code>MALLOC_ARENA_MAX=1</code> and nothing else of the server's environment
+(only <code>TZ</code> so dates are the same; this is about the environment handed over, not a
+sandbox: see (0) above). A new process has to identify itself within 5 s, a window of
+its own that the caller's remaining time does not cut, with the protocol version and
+the build of the server; anything else is killed and the log asks to restart Vikunja.
+The argument makes a binary without the script process (an older or upstream build at
+the same path, which outside Linux is what gets started after an upgrade) stop with
+&quot;unknown command&quot; instead of starting a server for those 5 s. When the workers start,
+one process is started as a check; if that fails, one error in the log says why
+scripts cannot run. The compile check is never done in the server: when no script
+process is available, the save is refused with &quot;the script could not be checked&quot;.
+Only new or changed script sources are checked, so a rule can still be disabled, or
+edited outside its scripts, while checking is unavailable. The
+server sends the source, the event, the task and the limits as JSON over a pipe with a
+sequence number (at most 8 MiB, without HTML escapes; a larger task or event fails the
+step for good with &quot;the task or the event is too large to be passed to a script&quot;,
+which does not count against the rule, because anyone who can write the task can make
+it that large; fields are not cut, since a script that writes a cut field back would
+lose the rest) and answers every host call (<code>vikunja.*</code>, <code>http.fetch</code>, <code>secrets.get</code>)
+on the goroutine of the step, so database work stays in the step's transaction and
+under the owner's permissions; an answer larger than 8 MiB is an exception in the
+script instead, and if the script does not catch it, the step fails for good without
+counting against the rule, like an oversized start. A task or event nested deeper than
+1000 levels (an incoming webhook can send that) is refused the same way. It checks the sequence number of every message, refuses a line longer
+than 4 MiB before holding it, and enforces the limits of the run again (calls,
+requests, sizes of strings, size and depth of values); a child that breaks any of it
+is killed. A process serves one script at a time, each with a fresh interpreter. It
+waits in a pool (<code>automation.workers</code> + 1, ended after a minute idle or 1000 scripts)
+only after a script that succeeded or threw an ordinary exception, with nothing left
+unread on its output, and only when the next script gets about the room of a new
+process: a script that left more than 8 MiB of garbage has the heap collected and
+returned before the next one, and a process whose address space grew by more than
+32 MiB is retired, because the Go runtime never returns address space. After a
+timeout, a stack or memory error, a crash or a broken protocol the process is killed.
+On Linux it is the first choice of the kernel's OOM killer and is killed when the
+server exits. The overhead is about 0.7 ms per script with a pooled process and about
+25 ms when a process has to be started (measured with a development build; a
+UPX-compressed binary starts more slowly). <code>NaN</code>, <code>Infinity</code> and <code>-0</code> from the server
+reach the script unchanged, but a number that is not finite cannot be passed to a
+<code>vikunja.*</code> call (&quot;the value cannot be passed to the host&quot;); the return value, an
+error message and a stack are cut off at 16 KiB, the log at 256 KiB, and a host call
+larger than 4 MiB throws.</p>
+<p><strong>Who is blamed.</strong> Blame is default-deny: once a process got the script, whatever ends
+the run is the script's fault unless it is positively not. The script fails its step
+for good, which counts towards disabling the rule, when it threw, hit its timeout,
+overflowed the stack, hit the memory limit, passed more than the limits allow, or its
+process ended or broke the protocol in any other way. Not counted: (a) failures before
+the script got to a process (none could be started, it did not identify itself, none
+was free in time, a pooled process that had died while it waited, a message left over
+by the previous script of a pooled process) are temporary and retried, and when the
+retries run out the run fails without counting towards
+<code>automation.maxconsecutivefailures</code>; (b) a SIGKILL the server did not send: with the
+OOM killer preferring script processes, memory pressure caused by anyone can kill a
+running script, while the script's own excess is the memory limit above. It is
+retried only when the script had not called <code>http.fetch</code>; after a request the run
+fails for good without counting, since a retry would send the request again (writes
+to the database are rolled back with the step and are safe to retry); (c) a task too
+large to be passed to a script; (d) a memory error in a reused process, which runs
+again in a new one with a whole new timeout (so a worker is held up to twice as long) (after an <code>http.fetch</code> it fails without counting instead), because
+a reused process gives about, not exactly, the room of a new one. When an event gives up, each of its runs fails with
+the error of its own rule. So the shared processes do not let one project's scripts get
+another project's rules disabled; memory pressure on the server can still fail any
+rule's run, without counting.</p>
+<p>A rule that fails 20 times in a row is disabled automatically with the reason
+<code>too_many_failures</code> (visible on the rule). The owner is not notified in 3a/3b: that
+needs a new notification type with a frontend renderer.</p>
+<p>A rule never reacts to an event whose chain of origin runs (<code>origin_run_id</code>,
+followed up to <code>maxdepth</code>) contains a run of the same rule, whichever task the
+event is about; the event is recorded as a skipped run (<code>self_trigger</code>). So a
+rule that creates tasks does not react to the tasks it created.</p>
+<h2 id="api-apiv2">API (<code>/api/v2</code>) <a class="anchor" href="#api-apiv2" aria-label="Link to this section: API (/api/v2)">#</a></h2>
+<ul>
+<li><code>GET|POST /projects/{project}/automations</code>, <code>GET|PUT|DELETE
+/projects/{project}/automations/{rule}</code></li>
+<li><code>POST /projects/{project}/automations/{rule}/test</code> with <code>{task_id}</code> — dry run
+against a task of the project: evaluates the conditions, plans every action as
+the owner of the rule (templates, permissions, workflow transitions) and
+returns the plan, warnings and what would fail. Nothing is written; the event
+is simulated (you are the doer, <code>event.old.*</code> / <code>event.new.*</code> are empty).
+Scripts run with a recording, read-only host (see &quot;Test run&quot; under Scripting):
+nothing is written, no HTTP request is sent, secrets are placeholders.</li>
+<li><code>POST /projects/{project}/automations/{rule}/run</code> with <code>{task_id}</code> — manual trigger
+(3d), 202 <code>{event_id, status: &quot;queued&quot;}</code>; see below. <code>GET /projects/{project}/
+manual-automations</code> lists the enabled manual rules (id, title, button label) for
+people with write access to the project. <code>POST /projects/{project}/automations/
+{rule}/webhook-token</code> regenerates the secret of an incoming webhook (project admin).</li>
+<li><code>POST /automation/hooks/{token}</code> — the public incoming webhook (3d), no auth.</li>
+<li><code>GET /projects/{project}/automations/{rule}/runs</code>, <code>GET .../runs/{run}</code>
+(with steps), <code>POST .../runs/{run}/retry</code>.</li>
+<li><code>GET /automations/catalog[?project_id=]</code> — machine readable list of triggers,
+condition fields/operators and actions with their parameter schemas (name,
+kind, required, enum, <code>title_key</code>). With <code>project_id</code> the custom fields of the
+project are added as <code>cf_&lt;id&gt;</code> fields. The visual
+editor is generated from this, so a new action needs no frontend change. Params have a
+<code>kind</code> (3b adds <code>code</code> with <code>language: &quot;javascript&quot;</code>, <code>secret</code> - the name of a project
+secret - and <code>map</code> - an object of templates, for headers), an optional <code>description</code>
+(plain English help for the editor) and a <code>default</code>. The response has a <code>script</code>
+object: the language, the convention of script actions and conditions, the limits
+with their configured values and config keys, and <code>api</code>, the list of every global and
+function with its signature, description, whether it is <code>mutating</code> and whether it is
+available in a condition (<code>in_condition</code>), from which the editor's help panel is
+generated.</li>
+<li><code>GET /projects/{project}/automation-secrets</code> (names, timestamps, <code>unreadable</code>; never
+values), <code>PUT /projects/{project}/automation-secrets/{name}</code> with <code>{&quot;value&quot;}</code>
+(create or replace), <code>DELETE /projects/{project}/automation-secrets/{name}</code> (3b;
+project admin only).</li>
+</ul>
+<p>Errors: an invalid rule is <code>400</code> with code 22002 and <code>details.issues</code>, a list of
+<code>{path, message}</code> for every problem (<code>actions[1].params.status_id</code>, ...); a script
+that does not compile is reported with its path and the <code>line</code> and <code>column</code> of the
+syntax error in the source (<code>actions[2].params.source</code>, <code>conditions.all[1].script</code>).
+22005 scripts are disabled on this instance (400, on saving a rule with a script),
+22006 invalid secret name or value (400), 22007 secret not found (404), 22008 secret
+cannot be decrypted (409). 22001
+rule not found, 22003 run not found, 22004 run cannot be retried (409; only runs
+with the status <code>failed</code>). Retrying a run puts its event back in the queue; steps
+that succeeded are not executed again. 22009 the rule cannot be run (409: disabled, or no manual trigger), 22010 webhook not
+found (404), 22011 invalid signature (401), 22012 webhook rate limited (429 with
+<code>Retry-After</code>), 22013 the webhook body is not a JSON object (400).</p>
+<h3 id="time-manual-and-webhook-triggers-3d">Time, manual and webhook triggers (3d) <a class="anchor" href="#time-manual-and-webhook-triggers-3d" aria-label="Link to this section: Time, manual and webhook triggers (3d)">#</a></h3>
+<p>All of these write an outbox event for <strong>one rule</strong> (<code>rule_id</code> on the event; the model
+events of the project do not reach it and it does not see theirs), so they appear in
+the run history, obey the conditions and the self-trigger guard and run as the
+rule owner like any other run. The owner is checked again when the run starts and, for
+schedule and due rules, when the ticker is about to fire: an owner who is gone or no
+longer administers the project disables the rule (<code>owner_not_admin</code> /
+<code>owner_unavailable</code>) instead of firing it.</p>
+<ul>
+<li><strong>Manual</strong> (<code>manual</code>, option <code>label</code>): <code>POST .../{rule}/run</code> needs write access to
+the task and the task to belong to the project of the rule. The actions still run
+with the permissions of the owner of the rule, never more than the owner has.
+Access to the project is checked first: whoever cannot write in it gets the same 403
+whether the project, the rule or the task exist, are enabled or have a manual
+trigger (an archived project included: it does not reveal itself to an outsider). For people with access, disabled rules and rules with another trigger are 409.</li>
+<li><strong>Schedule</strong> (<code>schedule</code>, options <code>cron</code>, <code>scope</code>): a five field cron expression
+or <code>@hourly</code>, <code>@daily</code>, <code>@weekly</code>, <code>@monthly</code>, <code>@yearly</code>, evaluated in the <strong>time zone of the server</strong>
+(<code>service.timezone</code>), on wall clock time. <code>@every ...</code> and <code>TZ=</code> / <code>CRON_TZ=</code> prefixes are
+rejected: an interval would fire on every tick, and a zone of its own would break the daylight saving handling. <code>scope: tasks</code> (default) starts one run per
+task of the project that matches the conditions; <code>scope: project</code> starts one run
+with no task (use <code>task.create</code> first). Nothing fires for the time before the rule
+was last saved (enabling does not replay the past), and a server that was down fires
+once for all the occurrences it missed, however long it was down. Daylight saving: a wall clock time that does
+not exist (02:30 on the night the clocks jump forward) is skipped that day, an hourly
+job loses only the hour that does not exist; a wall clock time that happens twice
+(the clocks go back) fires once, for the first of them. When the day of the month and
+the day of the week are both restricted, a day matches when <strong>either</strong> does (classic cron
+semantics: <code>0 0 1 * 1</code> is the 1st and every Monday). A schedule that never happens
+(30 February) is rejected on save.</li>
+<li><strong>Overdue</strong> (<code>task.overdue</code>) and <strong>due soon</strong> (<code>task.due_soon</code>, option <code>offset</code>,
+at least 1m): fire for not done tasks of the project the first time they cross the
+line. A marker per (rule, task) stores the due date it fired for, so a task fires
+once per due date and a changed due date arms it again. Tasks that were already
+overdue when the rule was armed do not fire, and neither do tasks that were in the
+due soon window then. A rule is armed when it is created, enabled again or gets another
+trigger (type or options); editing its title, conditions or actions does not move the
+line, so a task that crossed meanwhile still fires. Arming writes a marker, with its
+current due date, for every task of the project that already is overdue (overdue) or
+inside the window (due soon), in the transaction of the save and at most 20000 of them
+(tasks beyond that have no marker and fire once, at the pace of the ticker caps). The
+ticker then fires for every task without a marker for its due date: a task that
+entered the window or became overdue since, one created there, and one whose due date
+was edited into the window or into the past after arming (a new due date). A task
+created with a due date in the past fires overdue, too. A task a rule created that sits at
+max depth is skipped by all time based rules until the chain is shorter (see Loops).
+(The schedule keeps counting from the last save.) Conditions are checked before a run is
+queued (script conditions only in the run); a non matching task is marked too.</li>
+<li><strong>The ticker</strong>: every process runs it every <code>automation.ticker.interval</code>
+(30s). It only reads while nothing is due. A firing is claimed in the database in the
+same transaction that writes the events: a schedule by a conditional update of
+<code>last_fired_at</code> (only one replica changes the row), a due marker by its unique
+(rule, task) index. Several instances therefore never fire twice. Per tick and
+rule at most <code>automation.ticker.maxtasks</code> runs start (the rest is skipped for a
+schedule and the note is on the rule as <code>last_fire_note</code>; overdue and due soon
+continue on the next tick) and a schedule looks at no more than
+<code>automation.ticker.maxscan</code> tasks. The per-minute run limit does not apply to the
+time based triggers; this cap does. A schedule scans the tasks in a read only session
+and then claims its occurrence and writes the events in one short transaction; a
+replica that loses the claim discards its scan.
+<strong>Loops</strong>: a task created by a run (<code>task.create</code>, the subtask and related task
+actions, scripts) is remembered with that run (<code>automation_task_origins</code>). The time
+based events for such a task carry the run as their origin and one more level of
+depth, so a rule never fires for what its own run created and a chain of rules that
+create tasks for each other ends at <code>automation.maxdepth</code>. <code>http.request</code> and
+<code>http.fetch</code> refuse URLs that are incoming webhooks of this server (the host of
+<code>service.publicurl</code> and the path <code>/api/v2/automation/hooks/</code>, whatever the scheme, port,
+trailing dot of the host or path prefix; without a public URL the path alone decides),
+also after redirects. That is only the cheap first line. Every request the engine sends
+carries the header <code>X-Vikunja-Automation-Depth: 1</code> (a rule cannot remove or change it,
+and it survives redirects), and this server answers every <code>/api/v1</code> and <code>/api/v2</code>
+request that carries it with 508, so a rule cannot call the hook endpoint or the task
+API of its own instance, whatever address or token it uses. A reverse proxy that strips
+the header, or a second hop through an external service that calls back without it, is
+outside what the guard can see.
+The loop guards are bounded by retention: origin rows are deleted with their run, so
+after <code>automation.retention</code> days the own-run guard no longer knows a task was created by
+a rule, and a task a person took over from a rule stays marked only that long.
+Limits that need a value above 0 (<code>automation.ticker.maxscan</code>,
+<code>automation.webhook.maxbody</code>, <code>automation.maxpendingwaits</code>) are replaced with their
+defaults at startup when set to 0 or less; a negative <code>automation.maxdepth</code> gets its
+default (0 forbids chains), a negative <code>automation.ratelimit</code> or <code>automation.ticker.maxtasks</code>
+means 0, which turns that limit off.</li>
+<li><strong>Incoming webhook</strong> (<code>webhook.incoming</code>, option <code>secret</code>):
+<code>POST /api/v2/automation/hooks/{token}</code> with a JSON object (<code>{}</code> for none; at most
+<code>automation.webhook.maxbody</code> bytes, 413 above) starts the rule asynchronously (202).
+The body is <code>event.payload</code> for templates (<code>{{event.payload.customer.name}}</code>) and
+conditions (<code>event.payload.&lt;path&gt;</code>). The token is 32 random bytes (base64url),
+returned once, in the answer that created or regenerated it (<code>webhook_token</code>,
+<code>webhook_url</code>); the database stores its SHA-256 only, and it is looked up by that
+hash, after a shape check that never lets a malformed token reach the database.
+It is not logged. Unknown tokens, disabled rules and rules with another trigger are
+all the same 404. With a <code>secret</code> option the call has to carry
+<code>X-Vikunja-Signature: sha256=&lt;hex HMAC-SHA256 of the raw body&gt;</code> keyed with that
+project secret (401 otherwise, compared in constant time; checked before the rate
+limit counts). <strong>There is no replay protection</strong>: the signature covers the body only,
+without a timestamp or nonce, so whoever captured a signed request can send it again
+until the secret or the address is changed. Rules keep no state between runs, so they
+cannot filter out requests they have seen. The address (or the secret) should be
+rotated when a capture is suspected, and a proxy that verifies requests should sit in
+front of Vikunja where more is needed. The wire format is kept as it is. Calls are limited per
+rule (<code>automation.webhook.ratelimit</code> per minute, 429 + <code>Retry-After</code>; counted from
+the outbox, so with simultaneous calls it can overshoot by a few) and per IP by the
+router (the floor of the public form endpoints). The route sets no cookies and
+needs no CSRF token. The test run (<code>/test</code>) takes an optional <code>payload</code>.</li>
+<li><strong>Notify</strong> only reaches users who can read the project of the rule (and so its
+tasks), at most 100 per step; others are skipped with a warning and the step fails
+when nobody is left. The notification is <code>automation.notify</code> and is shown by the
+notification list, which shows the message and links to the task (or the project when the
+run had none).</li>
+<li><strong>Wait</strong>: the run stays <code>running</code>, a <code>rule.resume</code> event due after the delay
+continues it with the actions after the wait; conditions are not evaluated again.
+A rule that was disabled or deleted meanwhile aborts the run. Only the resume event
+continues past a wait: another delivery of the original event never does. A project
+can have <code>automation.maxpendingwaits</code> (1000) runs waiting; a wait over that fails. The
+cap is soft: it is checked without a lock, so workers times replicas can overshoot it by
+a few. A retry of a run that stopped after its wait queues a fresh resume event for it
+instead of the original event, and a dead event of another rule does not fail the run
+that waits.
+The retention cleanup keeps the event of a run that is still running, and the daily
+cleanup fails runs that are running for longer than <code>automation.waitmax</code> per wait
+action of their rule plus a day (the resume event was lost); a reaped run counts as a
+failed run in the statistics of its rule. Lowering <code>automation.waitmax</code> can therefore
+reap runs that legitimately wait for a longer wait than the new maximum, and
+<code>automation.waitmax: 0</code> turns the reaper (and the maximum wait) off.</li>
+</ul>
+<h2 id="ui">UI <a class="anchor" href="#ui" aria-label="Link to this section: UI">#</a></h2>
+<ul>
+<li>Project settings → Automations: list with enable switch, last run status
+and time, run count; &quot;New rule&quot; starts from a small gallery of templates.</li>
+<li>Editor: three stacked blocks <strong>When / If / Then</strong>; conditions as nested
+groups; actions as an ordered list with drag to reorder; a script editor
+with syntax highlighting and the API reference beside it; &quot;Test with a
+task&quot; shows the plan before saving.</li>
+<li>Runs: table of runs, a run opens to its steps with output and error.</li>
+</ul>
+<h3 id="ui-status-3c-3b-scripting-ui">UI status (3c, 3b scripting UI) <a class="anchor" href="#ui-status-3c-3b-scripting-ui" aria-label="Link to this section: UI status (3c, 3b scripting UI)">#</a></h3>
+<p>Implemented in <code>frontend/</code>: project settings -&gt; Automations (project admins),
+rule list with enable switch, last run, a warning badge for rules the system
+disabled, duplicate and delete; starter templates (only offered when the
+catalog and the project can serve them); the rule editor with When / If / Then
+generated from the catalog (one generic parameter renderer per catalog <code>kind</code>,
+nested all / any / not condition builder, ordered actions with move, duplicate
+and remove); client-side required checks and mapping of the server's issue
+paths (<code>actions[1].params.status_id</code>) onto the exact inputs; &quot;Test with a task&quot;
+(dry run); per-rule runs table with steps, output, error, retry and automatic
+refresh while a run is <code>running</code>. Translation keys of the catalog are checked
+against <code>en.json</code> and <code>tr-TR.json</code> by a unit test on a catalog snapshot (taken
+from a real 3b backend, with the custom fields of a test project).</p>
+<p>Scripting UI (3b), checked in a browser against a real backend (script action
+with log, <code>task</code>, <code>vikunja.fields.set</code> and a comment; syntax error marked on its
+line and fixed; dry run with the &quot;would call&quot; lines and <code>log()</code> output; a real
+run with its step output; a script condition that returns false (run skipped,
+&quot;conditions not met&quot;); <code>http.request</code> to a loopback address (step fails with the
+SSRF message); <code>while (true) {}</code> (fails with the timeout after 5 s); secrets
+created, replaced, deleted and shown as unreadable after <code>service.secret</code>
+changed): the script editor (line numbers, the conventions of the catalog as a
+hint, a collapsible filterable API reference that inserts at the cursor, example
+snippets from the examples above, a collapsible limits table), compile errors
+under the editor and on the offending line, the multi-line dry run output in a
+monospace box, the <code>secret</code> parameter as a select over the project secrets with
+an inline &quot;New secret...&quot; form, the <code>map</code> parameter (headers) as key/value rows
+with a secret placeholder menu, and a Secrets section on the Automations page
+(names, timestamps, <code>unreadable</code> badge, add, replace the value, delete with
+confirmation; values are write-only: a password input, cleared after the
+request, never fetched or logged).</p>
+<p>Known limits / deferred:</p>
+<ul>
+<li>The dry run endpoint only tests a <em>saved</em> rule, so the editor asks to save
+first and disables the test for a changed draft.</li>
+<li>The runs list has no server-side status filter; the filter narrows the loaded
+page.</li>
+<li>Script editing has no syntax highlighting (monospace textarea with line
+numbers, Tab support and an error marker on the line the server reports).
+A script is only checked by the server when the rule is saved (syntax errors
+with line and column); the editor does not compile it while typing.</li>
+<li><code>{{secrets.NAME}}</code> is offered in the placeholder menu only for the <code>http.request</code>
+header values and body. The catalog does not mark those places, so the list
+is a constant in <code>frontend/src/helpers/automationScript.ts</code>; the server still
+rejects the placeholder elsewhere when the rule is saved.</li>
+<li>Scripts switched off on the instance (<code>automation.scripts.enabled = false</code>):
+the catalog still carries the <code>script</code> object, but its limits row
+<code>automation.scripts.enabled</code> has the value <code>false</code>. The UI treats that (or a
+catalog without <code>script</code>) as &quot;scripts unavailable&quot;: the script action and the
+script condition are not offered, existing ones are shown read-only with a note.</li>
+<li>No drag-and-drop reordering (buttons only).</li>
+</ul>
+<h3 id="ui-status-3d">UI status (3d) <a class="anchor" href="#ui-status-3d" aria-label="Link to this section: UI status (3d)">#</a></h3>
+<p>Built in <code>frontend/</code> (generated client regenerated for the 3d routes; the catalog snapshot
+and the English and Turkish strings cover the new triggers, options, parameters, enum
+values and the error codes 22009 to 22013):</p>
+<ul>
+<li><strong>Rule editor.</strong> The five triggers and the three actions are selectable and are
+rendered from the catalog like any other. <code>schedule</code>: a cron input with the presets
+hourly / daily / weekly / monthly, a check of the expression in the browser
+(<code>helpers/automationCron.ts</code>, mirrors <code>spec.ParseCron</code>: five fields with ranges,
+steps, lists and month / weekday names, the descriptors, <code>@every</code> and <code>TZ=</code> refused,
+a day that no month has refused) and a note that times are in the time zone of the
+server. <code>task.overdue</code> / <code>task.due_soon</code>: a hint that tasks that are already overdue or
+inside the window when the rule is created or enabled do not fire; <code>offset</code> is a
+duration input (at least one minute). <code>manual</code>: the optional button text. <code>webhook.incoming</code>: see below.
+<code>wait</code>: duration of at least one minute; <code>task.create</code>: title, description, priority,
+assignee and due offset; <code>notify</code>: recipients (people and the keywords), a team
+(<code>team</code> parameter kind, a select over the teams of the person) and the message with the
+placeholder menu. Client side checks (cron, durations, a recipient or a team) are a
+copy of the server's rules in <code>validateSpecial</code> in <code>helpers/automation.ts</code>; the
+server stays the authority and its issues are mapped onto the same inputs. Hints are
+looked up as <code>automation.hint.&lt;type with _&gt;.&lt;name&gt;</code> and <code>automation.triggerHint.&lt;type&gt;</code>.</li>
+<li><strong>Incoming webhook address.</strong> The save that creates the address returns it once
+(<code>webhook_url</code>); the editor shows it with a copy button and the warning that it cannot be shown
+again, together with the notes on the signature header and the missing replay
+protection. Later the editor says that the address exists and offers &quot;Create a new
+address&quot; (a confirmation, the old address stops working, disabled while the rule has
+unsaved changes). The address lives only in the component that shows it: the save and
+the token request run through <code>useSecretMutation</code> (no mutation cache entry), the rule
+list cache gets the rule without it, nothing is logged or stored. Closing the editor
+forgets it. The signing secret option is the usual select over the project secrets.</li>
+<li><strong>Manual run.</strong> The actions menu of a task has &quot;Run automation...&quot; when the project has
+enabled manual rules (<code>GET .../manual-automations</code>, only asked for people who can write);
+a dialog lists the rules by their button text and queues the run
+(<code>POST .../automations/{rule}/run</code>). Success is a toast, failures are the usual error
+toast with the localized code (22009 and the others); the dialog stays open on a failure.</li>
+<li><strong>Notification.</strong> <code>automation.notify</code> shows the message of the rule and links to the
+task, or to the project when the run had no task; it has no doer.</li>
+</ul>
+<p>Not built / deferred: the maximum of a wait and the time zone of the server are not in the
+catalog or <code>/info</code>, so the editor can only say &quot;at most what the administrator allows
+(30 days by default)&quot; and &quot;the time zone of the server&quot; and leaves the check to the
+server; no per-rule display of the last scan note (<code>last_fire_note</code>) or of the number of
+waiting runs; the editor does not warn that an action needs a task when a project scope
+schedule or a webhook starts the rule (the server rejects it on save and the message is
+shown under the action); the list of
+rules shows no marker for the new trigger types beyond their title. Checked in a browser
+against a running server since (see the roadmap).</p>
+<h2 id="what-3a-and-3b-do-and-do-not-do">What 3a and 3b do and do not do <a class="anchor" href="#what-3a-and-3b-do-and-do-not-do" aria-label="Link to this section: What 3a and 3b do and do not do">#</a></h2>
+<p>Implemented: everything marked <em>(3a)</em> or <em>(3b)</em> above, rules CRUD with validation against
+the catalog (<code>pkg/automation/spec</code>) and the project (ids must exist, labels and
+move targets must be usable by the saving user, scripts must compile, named secrets
+must exist), the dry run, run history with
+steps, retry of failed runs, the outbox with its hook, the workers, all limits of
+the table above, the retention job, project purge (deletes
+rules, events, runs and secrets), project duplicate (rules are copied <strong>disabled</strong>; ids of
+custom fields, options and statuses are remapped, labels and projects are kept;
+secrets are not copied), deleting a custom field or removing / deleting a workflow status (the rules that
+reference it are disabled with a reason, the delete is not blocked) and the
+Prometheus metrics <code>vikunja_automation_runs_total{status}</code> and
+<code>vikunja_automation_events{status}</code> (only with <code>metrics.enabled</code>).</p>
+<p>3b: JavaScript script action and script condition, <code>http.request</code>, <code>http.fetch</code>,
+project secrets with masking, the script reference in the catalog.</p>
+<p>3d (backend): the triggers <code>schedule</code>, <code>task.overdue</code>, <code>task.due_soon</code>, <code>manual</code> and
+<code>webhook.incoming</code>, the actions <code>notify</code>, <code>wait</code> and <code>task.create</code>, the ticker, the
+due markers table, the incoming webhook endpoint with token regeneration and
+optional HMAC signature, <code>event.payload.*</code> in templates and conditions.</p>
+<p>Not implemented: the e-mail action, the owner notification on auto-disable, label /
+relation / move / reminder triggers, the rest of the frontend (3c), a templates gallery for the 3d types, round robin and
+duplicate / delete task actions.
+<code>vikunja.notify(userIds, text)</code> of the first design is not part of the script API: it
+needs the notification type of 3a. Scripts cannot create or delete relations, labels,
+or projects, move tasks between projects or delete tasks. Secrets are not rotated or
+versioned; changing <code>service.secret</code> makes all of them unreadable until they are set
+again.</p>
+<p>Test coverage: the sandbox (no <code>require</code>, <code>process</code>, timers, Go objects; escapes through
+<code>constructor.constructor</code>; frozen globals), every limit, every <code>vikunja.*</code> function with
+its permission failure as the rule owner, origin and depth of script-caused events,
+the dry run (nothing written, no request sent), conditions, the HTTP paths against
+<code>httptest</code> servers (the SSRF guard is replaced in tests only through
+<code>outbound.SetClientFactory</code>, with a guard that allows the single test listener
+<code>127.0.0.1/32</code> and keeps everything else blocked at dial time, so redirects to
+private addresses are still stopped by the real check), secrets (round trip, wrong
+key, masking) and the API are covered by the tests of <code>pkg/automation/...</code>,
+<code>pkg/models</code> and <code>pkg/webtests</code>. The automation, model and web tests run on SQLite (a file in WAL
+mode, like a real installation; the shared-cache in-memory database of the other
+tests cannot run concurrent workers) and the automation, model and automation web
+tests (including all of 3b: scripts, HTTP, secrets) were also run against PostgreSQL 17. MySQL was <strong>not</strong> run; the SQL is plain
+xorm builder code (conditional update, no <code>SKIP LOCKED</code>), times in conditions are
+formatted as UTC text like the existing reminder code does.</p>
+<p>SQLite note: a transaction that reads and then writes fails immediately when
+another writer committed in between, which <code>busy_timeout</code> cannot fix. Every step
+therefore starts its transaction with a write (a no-op update of its run row), so
+concurrent steps wait for each other instead of failing. A genuinely busy
+database is treated as a temporary failure and retried.</p>
+<p>A run that is resumed (retry, or the next attempt) first checks that the steps it
+recorded still are the actions at their positions in the rule; if the rule was
+edited so that they are not, the run is <code>aborted</code> with <code>rule_changed</code> instead of
+guessing. Editing the action that failed and retrying works.</p>
+<h2 id="steps">Steps <a class="anchor" href="#steps" aria-label="Link to this section: Steps">#</a></h2>
+<ul>
+<li>3a: outbox + transactional hook, workers, rules, conditions, the non-script
+actions, run history, limits, API, catalog. <strong>Done.</strong></li>
+<li>3b: script condition/action, <code>http.request</code>, <code>http.fetch</code>, secrets. <strong>Done.</strong></li>
+<li>3c: UI. <strong>Done.</strong></li>
+<li>3d: schedule, due-date-approaching, manual and incoming webhook triggers;
+wait action; notify action. <strong>Done</strong>, backend and UI (editor forms, webhook address,
+manual run, notification); templates gallery for them not started.</li>
+</ul>
+</div>
+<p class="edit"><a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/docs/enterprise/automation.md">Source of this page on GitHub</a></p>
+<nav class="pager" aria-label="Pages"><a class="prev" href="forms-approvals.html" rel="prev"><span>Previous</span>Forms and approvals design</a><a class="next" href="dashboards.html" rel="next"><span>Next</span>Dashboards design</a></nav>
+</main>
+<nav class="toc-aside" aria-label="On this page"><p class="side-title">On this page</p><ul>
+<li class="toc-2"><a href="#goals">Goals</a></li>
+<li class="toc-2"><a href="#model">Model</a></li>
+<li class="toc-3"><a href="#automation_rules">automation_rules</a></li>
+<li class="toc-3"><a href="#automation_events-the-outbox">automation_events (the outbox)</a></li>
+<li class="toc-3"><a href="#automation_runs">automation_runs</a></li>
+<li class="toc-3"><a href="#automation_run_steps">automation_run_steps</a></li>
+<li class="toc-3"><a href="#automation_secrets-3b">automation_secrets (3b)</a></li>
+<li class="toc-3"><a href="#code-layout">Code layout</a></li>
+<li class="toc-3"><a href="#how-the-outbox-works">How the outbox works</a></li>
+<li class="toc-2"><a href="#triggers">Triggers</a></li>
+<li class="toc-2"><a href="#conditions">Conditions</a></li>
+<li class="toc-2"><a href="#actions">Actions</a></li>
+<li class="toc-2"><a href="#scripting-3b">Scripting (3b)</a></li>
+<li class="toc-3"><a href="#globals">Globals</a></li>
+<li class="toc-3"><a href="#examples">Examples</a></li>
+<li class="toc-3"><a href="#test-run-dry-run">Test run (dry run)</a></li>
+<li class="toc-3"><a href="#http-httprequest-and-httpfetch">HTTP (http.request and http.fetch)</a></li>
+<li class="toc-3"><a href="#secrets">Secrets</a></li>
+<li class="toc-3"><a href="#security-model">Security model</a></li>
+<li class="toc-2"><a href="#safety-limits">Safety limits</a></li>
+<li class="toc-2"><a href="#api-apiv2">API (/api/v2)</a></li>
+<li class="toc-3"><a href="#time-manual-and-webhook-triggers-3d">Time, manual and webhook triggers (3d)</a></li>
+<li class="toc-2"><a href="#ui">UI</a></li>
+<li class="toc-3"><a href="#ui-status-3c-3b-scripting-ui">UI status (3c, 3b scripting UI)</a></li>
+<li class="toc-3"><a href="#ui-status-3d">UI status (3d)</a></li>
+<li class="toc-2"><a href="#what-3a-and-3b-do-and-do-not-do">What 3a and 3b do and do not do</a></li>
+<li class="toc-2"><a href="#steps">Steps</a></li>
+</ul></nav>
+</div>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-about">
+      <p><strong>vikunja-enterprise</strong> is an independent community fork of Vikunja. It is not affiliated with, endorsed by or supported by the Vikunja project. Almost all of the software is their work.</p>
+      <p>Licensed under AGPL-3.0-or-later, as upstream. This site has no scripts, cookies or trackers.</p>
+    </div>
+    <nav class="footer-nav" aria-label="Footer">
+      <div><p class="footer-title">Project</p><ul>
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="../getting-started.html">Get started</a></li>
+        <li><a href="../roadmap.html">Roadmap and status</a></li>
+        <li><a href="../upstream.html">Relationship to upstream</a></li>
+      </ul></div>
+      <div><p class="footer-title">Reference</p><ul>
+        <li><a href="../modules/index.html">Modules</a></li>
+        <li><a href="../api.html">API</a></li>
+        <li><a href="../architecture.html">Architecture</a></li>
+        <li><a href="../configuration.html">Configuration</a></li>
+      </ul></div>
+      <div><p class="footer-title">Community</p><ul>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise">Repository</a></li>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise/issues">Issues</a></li>
+        <li><a href="../security.html">Security</a></li>
+        <li><a href="../contributing.html">Contributing</a></li>
+        <li><a href="../license.html">License</a></li>
+      </ul></div>
+      <div><p class="footer-title">Upstream Vikunja</p><ul>
+        <li><a href="https://github.com/go-vikunja/vikunja">Source code</a></li>
+        <li><a href="https://vikunja.io/docs/">Documentation</a></li>
+        <li><a href="https://vikunja.io/support/">Support upstream</a></li>
+      </ul></div>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>

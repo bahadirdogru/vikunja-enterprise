@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Forms and approvals design - vikunja-enterprise</title>
+<meta name="description" content="Design document of the forms and approvals modules.">
+<link rel="canonical" href="https://vikunja.bahadirdogru.com/enterprise/forms-approvals.html">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1020" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+<link rel="manifest" href="../site.webmanifest">
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="../assets/docs.css">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="vikunja-enterprise">
+<meta property="og:title" content="Forms and approvals design - vikunja-enterprise">
+<meta property="og:description" content="Design document of the forms and approvals modules.">
+<meta property="og:url" content="https://vikunja.bahadirdogru.com/enterprise/forms-approvals.html">
+<meta property="og:image" content="https://vikunja.bahadirdogru.com/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="vikunja-enterprise, an independent community fork of Vikunja">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Forms and approvals design - vikunja-enterprise">
+<meta name="twitter:description" content="Design document of the forms and approvals modules.">
+<meta name="twitter:image" content="https://vikunja.bahadirdogru.com/assets/og.png">
+</head>
+<body class="docs">
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="../index.html" aria-label="vikunja-enterprise home"><img src="../assets/favicon.svg" alt="" width="30" height="30">vikunja-enterprise</a>
+    <nav class="top-nav" aria-label="Main">
+      <ul>
+<li><a href="../modules/index.html">Modules</a></li>
+<li><a href="../getting-started.html">Get started</a></li>
+<li><a href="../api.html">API</a></li>
+<li><a href="../architecture.html">Architecture</a></li>
+<li><a href="../roadmap.html">Roadmap</a></li>
+<li><a href="../upstream.html">Upstream</a></li>
+        <li><a class="gh" href="https://github.com/bahadirdogru/vikunja-enterprise">GitHub</a></li>
+      </ul>
+    </nav>
+    <details class="menu">
+      <summary><span class="menu-icon" aria-hidden="true"></span>Menu</summary>
+      <nav class="menu-panel" aria-label="Site">
+        <div class="menu-group"><p class="menu-title">Site</p><ul>
+<li><a href="../index.html">Home</a></li>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise">GitHub repository</a></li>
+        </ul></div>
+<div class="menu-group"><p class="menu-title">Start</p><ul>
+<li><a href="../getting-started.html">Getting started</a></li>
+<li><a href="../configuration.html">Configuration</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Modules</p><ul>
+<li><a href="../modules/index.html">Overview</a></li>
+<li><a href="../modules/custom-fields.html">Custom fields</a></li>
+<li><a href="../modules/workflows.html">Workflows</a></li>
+<li><a href="../modules/approvals.html">Approvals</a></li>
+<li><a href="../modules/automation.html">Automation</a></li>
+<li><a href="../modules/dashboards-reports.html">Dashboards and reports</a></li>
+<li><a href="../modules/forms.html">Forms</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Reference</p><ul>
+<li><a href="../api.html">API reference</a></li>
+<li><a href="../architecture.html">Architecture</a></li>
+<li><a href="../design.html">Design</a></li>
+<li><a href="../roadmap.html">Roadmap and status</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Project</p><ul>
+<li><a href="../upstream.html">Relationship to upstream</a></li>
+<li><a href="../security.html">Security</a></li>
+<li><a href="../contributing.html">Contributing</a></li>
+<li><a href="../license.html">License</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Design history</p><ul>
+<li><a href="index.html">Overview</a></li>
+<li><a href="custom-fields.html">Custom fields design</a></li>
+<li><a href="workflow.html">Workflow design</a></li>
+<li><a href="forms-approvals.html" aria-current="page">Forms and approvals design</a></li>
+<li><a href="automation.html">Automation design</a></li>
+<li><a href="dashboards.html">Dashboards design</a></li>
+</ul></div>
+      </nav>
+    </details>
+  </div>
+</header>
+<div class="docs-layout">
+<nav class="sidebar" aria-label="Documentation">
+<p class="side-title">Start</p><ul>
+<li><a href="../getting-started.html">Getting started</a></li>
+<li><a href="../configuration.html">Configuration</a></li>
+</ul>
+<p class="side-title">Modules</p><ul>
+<li><a href="../modules/index.html">Overview</a></li>
+<li><a href="../modules/custom-fields.html">Custom fields</a></li>
+<li><a href="../modules/workflows.html">Workflows</a></li>
+<li><a href="../modules/approvals.html">Approvals</a></li>
+<li><a href="../modules/automation.html">Automation</a></li>
+<li><a href="../modules/dashboards-reports.html">Dashboards and reports</a></li>
+<li><a href="../modules/forms.html">Forms</a></li>
+</ul>
+<p class="side-title">Reference</p><ul>
+<li><a href="../api.html">API reference</a></li>
+<li><a href="../architecture.html">Architecture</a></li>
+<li><a href="../design.html">Design</a></li>
+<li><a href="../roadmap.html">Roadmap and status</a></li>
+</ul>
+<p class="side-title">Project</p><ul>
+<li><a href="../upstream.html">Relationship to upstream</a></li>
+<li><a href="../security.html">Security</a></li>
+<li><a href="../contributing.html">Contributing</a></li>
+<li><a href="../license.html">License</a></li>
+</ul>
+<p class="side-title">Design history</p><ul>
+<li><a href="index.html">Overview</a></li>
+<li><a href="custom-fields.html">Custom fields design</a></li>
+<li><a href="workflow.html">Workflow design</a></li>
+<li><a href="forms-approvals.html" aria-current="page">Forms and approvals design</a></li>
+<li><a href="automation.html">Automation design</a></li>
+<li><a href="dashboards.html">Dashboards design</a></li>
+</ul>
+</nav>
+<main id="main" class="doc">
+<nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="../index.html">Home</a></li><li>Design history</li><li aria-current="page">Forms and approvals design</li></ol></nav>
+<h1>Forms and approvals — design</h1>
+<details class="toc-inline"><summary>On this page</summary>
+<nav aria-label="On this page"><ul>
+<li class="toc-2"><a href="#forms">Forms</a></li>
+<li class="toc-3"><a href="#goals">Goals</a></li>
+<li class="toc-3"><a href="#model">Model</a></li>
+<li class="toc-3"><a href="#behaviour">Behaviour</a></li>
+<li class="toc-3"><a href="#api-apiv2">API (/api/v2)</a></li>
+<li class="toc-3"><a href="#implementation-5c-backend">Implementation (5c, backend)</a></li>
+<li class="toc-3"><a href="#ui">UI</a></li>
+<li class="toc-3"><a href="#ui-status-5d">UI status (5d)</a></li>
+<li class="toc-2"><a href="#approvals">Approvals</a></li>
+<li class="toc-3"><a href="#goals-1">Goals</a></li>
+<li class="toc-3"><a href="#model-1">Model</a></li>
+<li class="toc-3"><a href="#transition-configuration">Transition configuration</a></li>
+<li class="toc-3"><a href="#behaviour-1">Behaviour</a></li>
+<li class="toc-3"><a href="#api-apiv2-2">API (/api/v2)</a></li>
+<li class="toc-3"><a href="#events-automation-notifications-1">Events, automation, notifications</a></li>
+<li class="toc-3"><a href="#ui-1">UI</a></li>
+<li class="toc-3"><a href="#ui-status-5b">UI status (5b)</a></li>
+<li class="toc-2"><a href="#steps">Steps</a></li>
+</ul></nav></details>
+<div class="prose">
+<p>Status: approvals (5a, backend; 5b, UI) and forms (5c, backend; 5d, UI) are implemented. Both build on custom fields, workflow and automation.</p>
+<h2 id="forms">Forms <a class="anchor" href="#forms" aria-label="Link to this section: Forms">#</a></h2>
+<h3 id="goals">Goals <a class="anchor" href="#goals" aria-label="Link to this section: Goals">#</a></h3>
+<ul>
+<li>A team publishes a <strong>request form</strong> (&quot;New cover request&quot;, &quot;Purchase
+request&quot;); a submission becomes a task in a project, with the answers in
+the task's fields.</li>
+<li>A form is a view of the project's own fields: the form builder picks which
+task fields and custom fields to ask for. No second field system.</li>
+<li>Forms can be internal (signed-in users) or public (a secret link, no
+account).</li>
+</ul>
+<h3 id="model">Model <a class="anchor" href="#model" aria-label="Link to this section: Model">#</a></h3>
+<h4 id="forms-1"><code>forms</code> <a class="anchor" href="#forms-1" aria-label="Link to this section: forms">#</a></h4>
+<p>id, project_id (index), title, description (rich text shown above the form),
+token (unique, unguessable; the public URL is <code>/forms/&lt;token&gt;</code>), access
+(<code>members</code> — users who can read the project, <code>users</code> — any signed-in user,
+<code>public</code> — anyone with the link), enabled, owner_id, fields (json), settings
+(json), submission_count, created / updated.</p>
+<p><code>fields</code> is an ordered list of
+<code>{target, label, help, required, default, hidden}</code> where <code>target</code> is <code>title</code>,
+<code>description</code>, <code>due_date</code>, <code>priority</code>, <code>labels</code>, <code>attachments</code> or <code>cf_&lt;id&gt;</code>.
+<code>title</code> is mandatory (asked, or built from a template such as
+<code>Request from {{submitter.name}}</code>). <code>hidden</code> fields are not shown and always
+take their default — the way to pre-set a status, label or custom field.</p>
+<p><code>settings</code>: initial workflow status, default assignees, success message or
+redirect URL, &quot;submit another&quot; link, close date, maximum number of
+submissions, notify users on submission, collect submitter name / e-mail for
+public forms (stored on the submission and added to the task description).</p>
+<h4 id="form_submissions"><code>form_submissions</code> <a class="anchor" href="#form_submissions" aria-label="Link to this section: form_submissions">#</a></h4>
+<p>id, form_id (index), task_id, submitter_id (null for anonymous),
+submitter_name, submitter_email, ip_hash (salted, for rate limiting only),
+created.</p>
+<h3 id="behaviour">Behaviour <a class="anchor" href="#behaviour" aria-label="Link to this section: Behaviour">#</a></h3>
+<ul>
+<li>Submitting creates the task <strong>as the form owner</strong>, through the normal task
+create path, so workflow initial status, custom field validation and
+automations all apply. If the owner loses write access the form is
+disabled with a reason (same rule as automation rule owners).</li>
+<li>Values are validated with the field's own rules (custom field type,
+min/max, options). Errors are returned per field.</li>
+<li>Public forms: no session, no cookies, CSRF-safe by being token-only JSON;
+protected by per-IP and per-form rate limits, a honeypot field, size limits
+and an optional maximum submission count. Attachments on public forms are
+off by default and size/type limited when enabled. A public form never
+reveals project data: option lists of the asked fields are the only thing
+it exposes. User and label pickers are not available on public forms.</li>
+<li>A submission dispatches <code>form.submitted</code> (form, task, submitter) — an
+automation trigger.</li>
+<li>Deleting a form keeps the tasks it created.</li>
+</ul>
+<h3 id="api-apiv2">API (<code>/api/v2</code>) <a class="anchor" href="#api-apiv2" aria-label="Link to this section: API (/api/v2)">#</a></h3>
+<ul>
+<li><code>GET|POST /projects/{project}/forms</code>, <code>GET|PUT|DELETE
+/projects/{project}/forms/{form}</code> — project admins.</li>
+<li><code>GET /projects/{project}/forms/{form}/submissions</code> — project admins.</li>
+<li><code>GET /forms/{token}</code> — the public definition (title, description, visible
+fields with labels/options/validation); no auth for public forms.</li>
+<li><code>POST /forms/{token}/submissions</code> — submit.</li>
+</ul>
+<h3 id="implementation-5c-backend">Implementation (5c, backend) <a class="anchor" href="#implementation-5c-backend" aria-label="Link to this section: Implementation (5c, backend)">#</a></h3>
+<h4 id="differences-to-the-sketch-above">Differences to the sketch above <a class="anchor" href="#differences-to-the-sketch-above" aria-label="Link to this section: Differences to the sketch above">#</a></h4>
+<ul>
+<li><code>forms</code> has two more columns: <code>disabled_reason</code> (set when the system disables a form) and <code>max_submissions</code>
+(a copy of <code>settings.max_submissions</code>, so the maximum can be enforced with one conditional <code>UPDATE</code>).
+<code>form_submissions.created</code> is set by the code (not by xorm) so the rate limits can be tested with a clock.</li>
+<li><code>fields[].options</code> (only for a shown <code>labels</code> field) lists the label ids the submitter may pick. Not allowed on
+public forms.</li>
+<li>Attachments travel in <strong>one multipart request</strong> (<code>POST /forms/{token}/submissions/multipart</code>), not in a second
+request with an upload token. One transaction, so a rejected file creates nothing and nothing has to be stored
+between two requests. The JSON endpoint cannot carry files; a form that asks for attachments requires the
+multipart one. The response has no <code>upload</code> member.</li>
+<li>The owner of a form is the user who last saved it (like the owner of an automation rule).</li>
+</ul>
+<h4 id="api-apiv2-1">API (<code>/api/v2</code>) <a class="anchor" href="#api-apiv2-1" aria-label="Link to this section: API (/api/v2)">#</a></h4>
+<p>Admin (project admin only, never link shares): <code>GET /projects/{project}/forms/options</code> (what a field can target,
+generated from the project; <code>public_visible</code> / <code>public_hidden</code> say what a public form may do with it),
+<code>GET|POST /projects/{project}/forms</code>, <code>GET|PUT|PATCH|DELETE /projects/{project}/forms/{form}</code>,
+<code>POST /projects/{project}/forms/{form}/token</code> (new token, the old link stops working),
+<code>GET /projects/{project}/forms/{form}/submissions</code> (task id, submitter, created; never the IP hash).</p>
+<p>Public (no <code>Security</code>, listed in <code>unauthenticatedAPIPaths</code> and <code>optionalAuthAPIPaths</code>): <code>GET /forms/{token}</code>,
+<code>POST /forms/{token}/submissions</code>, <code>POST /forms/{token}/submissions/multipart</code>.</p>
+<p>Public definition (<code>GET /forms/{token}</code>; Huma adds <code>$schema</code>):</p>
+<pre class="code"><code class="language-json">{
+  &quot;title&quot;: &quot;Cover request&quot;,
+  &quot;description&quot;: &quot;&lt;p&gt;Tell us what you need.&lt;/p&gt;&quot;,
+  &quot;fields&quot;: [
+    {&quot;target&quot;: &quot;title&quot;, &quot;label&quot;: &quot;What do you need?&quot;, &quot;help&quot;: &quot;&quot;, &quot;required&quot;: true, &quot;kind&quot;: &quot;text&quot;, &quot;max_length&quot;: 250},
+    {&quot;target&quot;: &quot;cf_12&quot;, &quot;label&quot;: &quot;Stage&quot;, &quot;help&quot;: &quot;&quot;, &quot;required&quot;: false, &quot;kind&quot;: &quot;select&quot;,
+     &quot;options&quot;: [{&quot;id&quot;: 1, &quot;title&quot;: &quot;Open&quot;, &quot;color&quot;: &quot;#00aa00&quot;}]},
+    {&quot;target&quot;: &quot;cf_13&quot;, &quot;label&quot;: &quot;Budget&quot;, &quot;help&quot;: &quot;&quot;, &quot;required&quot;: false, &quot;kind&quot;: &quot;number&quot;,
+     &quot;config&quot;: {&quot;min&quot;: 0, &quot;max&quot;: 1000, &quot;precision&quot;: 2}}
+  ],
+  &quot;success&quot;: {&quot;message&quot;: &quot;Thanks&quot;, &quot;redirect_url&quot;: &quot;&quot;, &quot;submit_another&quot;: true},
+  &quot;submitter&quot;: {&quot;collect_name&quot;: true, &quot;name_required&quot;: true, &quot;collect_email&quot;: true, &quot;email_required&quot;: false}
+}</code></pre>
+<p>A field may also carry <code>default</code> (the prefill; omitted when it contains a placeholder) and <code>max_length</code>; when a
+form asks for attachments there is a top-level <code>attachments: {max_files, max_file_size}</code>. Nothing else is exposed:
+no project, owner, count, hidden field or default, user or label list (labels only on non-public forms).</p>
+<p>Submission (<code>POST /forms/{token}/submissions</code>) and its answer:</p>
+<pre class="code"><code class="language-json">{&quot;values&quot;: {&quot;title&quot;: &quot;Laptop&quot;, &quot;cf_12&quot;: 1, &quot;cf_13&quot;: 12.5}, &quot;submitter&quot;: {&quot;name&quot;: &quot;Ada&quot;, &quot;email&quot;: &quot;ada@example.com&quot;}, &quot;honeypot&quot;: &quot;&quot;}</code></pre>
+<pre class="code"><code class="language-json">{&quot;message&quot;: &quot;Thanks&quot;, &quot;redirect_url&quot;: &quot;&quot;, &quot;submit_another&quot;: true}</code></pre>
+<p><code>task_id</code> is only added for signed-in submitters who can read the project, never for public submissions.
+Validation errors are <code>422</code>, code <code>25006</code>, one entry per field:</p>
+<pre class="code"><code class="language-json">{&quot;status&quot;: 422, &quot;code&quot;: 25006, &quot;detail&quot;: &quot;Some answers are not valid.&quot;,
+ &quot;details&quot;: {&quot;errors&quot;: [{&quot;field&quot;: &quot;cf_12&quot;, &quot;code&quot;: &quot;invalid&quot;, &quot;message&quot;: &quot;option does not belong to this field&quot;},
+                        {&quot;field&quot;: &quot;title&quot;, &quot;code&quot;: &quot;required&quot;, &quot;message&quot;: &quot;This field is required.&quot;}]}}</code></pre>
+<p>Codes: <code>required</code>, <code>invalid</code>, <code>too_long</code>, <code>too_many</code>, <code>unknown_field</code> (also for hidden targets), <code>file_too_large</code>,
+<code>file_type_not_allowed</code>, <code>attachments_disabled</code>; submitter details are <code>submitter.name</code> / <code>submitter.email</code>.
+Definition errors on save are <code>400</code>, code <code>25002</code>, with <code>details.issues[] = {path, message}</code> (e.g. <code>fields[2].target</code>).</p>
+<p>Other typed errors: <code>25001</code> unknown token or form (404), <code>25003</code> form takes no submissions (410, <code>details</code>
+<code>{reason: disabled|closed|full, title}</code>), <code>25004</code> login required (401), <code>25005</code> not allowed (403: link share, or a
+user who cannot read the project of a members form), <code>25007</code> rate limited (429, <code>Retry-After</code> header),
+<code>25008</code> forms disabled on the instance (403, saving only), <code>25009</code> invalid form logo (400, <code>details.reason</code>: too large, not an image or unsupported type).</p>
+<h4 id="access-modes-on-the-public-routes">Access modes on the public routes <a class="anchor" href="#access-modes-on-the-public-routes" aria-label="Link to this section: Access modes on the public routes">#</a></h4>
+<p><code>public</code>: no authentication at all. <code>users</code>: any signed-in user; <code>members</code>: signed-in users who can read the
+project. Link shares are not users (403 for <code>users</code>/<code>members</code>, treated as anonymous for <code>public</code>). The routes are
+optional-auth: no <code>Authorization</code> header means anonymous; a header is validated like everywhere (an invalid or
+expired token is a <code>401</code> with code <code>11</code>, so the client can refresh). An anonymous request to a non-public form
+is <code>401</code> code <code>25004</code>, which the UI turns into a login redirect.</p>
+<h4 id="protections-and-their-config-keys">Protections and their config keys <a class="anchor" href="#protections-and-their-config-keys" aria-label="Link to this section: Protections and their config keys">#</a></h4>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Protection</th><th scope="col">Key (default)</th></tr></thead><tbody>
+<tr><td>Kill switch for all forms (public endpoints answer 410 <code>disabled</code>)</td><td><code>forms.enabled</code> (true)</td></tr>
+<tr><td>Kill switch for public forms (cannot be saved, existing ones answer 410 <code>disabled</code>)</td><td><code>forms.public.enabled</code> (true)</td></tr>
+<tr><td>Submissions per client IP and hour on public forms, counted in the database from the salted hash</td><td><code>forms.public.ratelimit</code> (10)</td></tr>
+<tr><td>Submissions per public form and hour</td><td><code>forms.public.formratelimit</code> (300)</td></tr>
+<tr><td>Request floor per IP and minute on the public routes (router middleware, <code>ratelimit.store</code>)</td><td><code>forms.public.requestratelimit</code> (60)</td></tr>
+<tr><td>JSON body size, 413 above (also the <code>data</code> part of the multipart route)</td><td><code>forms.maxbodysize</code> (262144 bytes)</td></tr>
+<tr><td>Attachments on public forms</td><td><code>forms.public.attachments</code> (false)</td></tr>
+<tr><td>Files per submission</td><td><code>forms.maxattachments</code> (5)</td></tr>
+<tr><td>Size per file (the smaller of this and <code>files.maxsize</code> applies)</td><td><code>forms.maxattachmentsize</code> (10MB)</td></tr>
+<tr><td>Value caps</td><td>title 250, text/url/email 10000, long text 50000 characters (fixed)</td></tr>
+<tr><td>Honeypot</td><td>a non-empty <code>honeypot</code> is answered like a success and creates nothing</td></tr>
+<tr><td>Maximum submissions</td><td><code>settings.max_submissions</code>, enforced by <code>UPDATE forms SET submission_count = submission_count + 1 WHERE id = ? AND (max_submissions = 0 OR submission_count &lt; max_submissions)</code> in the submission transaction, after a lock write on the form row</td></tr>
+<tr><td>Close date, disabled flag</td><td><code>settings.close_date</code>, <code>enabled</code></td></tr>
+</tbody></table></div>
+<p>Rate limits are 429 with <code>Retry-After</code>; the window is one hour and runs on the clock of the server. The client IP is
+the one the router determines (<code>service.ipextractionmethod</code>, <code>service.trustedproxies</code>); it is stored only as
+<code>HMAC-SHA256(key derived from service.secret, ip)</code>. Files are sniffed by content (not only by extension) and
+executable, script, HTML and SVG types are rejected.</p>
+<h4 id="behaviour-of-a-submission">Behaviour of a submission <a class="anchor" href="#behaviour-of-a-submission" aria-label="Link to this section: Behaviour of a submission">#</a></h4>
+<p>One transaction: lock the form row, check availability and access, honeypot, rate limits, load the owner and
+check that they can still write to the project (otherwise the form is disabled with <code>owner_not_writer</code> or
+<code>owner_unavailable</code>, that change is committed, nothing else is created, answer 410 <code>disabled</code>), validate every
+visible field, count the submission, create the task with <code>Task.Create</code> as the owner (workflow initial status,
+<code>task.created</code> and the automation outbox apply), write custom field values, labels, default assignees, the initial
+status override (a system transition without checks) and the attachments, record the submission, and dispatch
+<code>form.submitted</code> on commit. Hidden targets cannot be supplied by the client. A shown field that is missing from
+<code>values</code> takes its default. Title and description defaults (and text custom fields) accept the placeholders
+<code>{{submitter.name}}</code>, <code>{{submitter.email}}</code>, <code>{{form.title}}</code> and <code>{{date}}</code>; it is a plain substitution, answers
+are never substituted. Rich text is HTML sanitized by an allow-list (basic formatting, links with http, https
+and mailto, no images, styles or handlers); text that is not HTML is escaped into paragraphs. Titles and custom
+field text are stored as plain text without control characters. A &quot;Submitted by name &lt;email&gt;&quot; paragraph is added to
+the description when a name or an e-mail address is known. <code>submitter.name</code> / <code>submitter.email</code> of a request are only
+taken when the form collects them (<code>collect_name</code> / <code>collect_email</code>); otherwise they are ignored and a signed-in
+submitter is recorded with the name of the account.</p>
+<h4 id="events-automation-notifications">Events, automation, notifications <a class="anchor" href="#events-automation-notifications" aria-label="Link to this section: Events, automation, notifications">#</a></h4>
+<p><code>form.submitted</code> (form id/title, submission id, task, doer = form owner, submitter id/name/email, no token, no IP)
+is an automation trigger with the option <code>form_id</code>, the condition fields <code>event.new.form_id</code>, <code>form_title</code>,
+<code>submitter_name</code>, <code>submitter_email</code>, and the placeholders <code>{{event.form.title}}</code>, <code>{{event.form.submitter_name}}</code>,
+<code>{{event.form.submitter_email}}</code>. Its task is the created task; <code>task.created</code> of the same submission is delivered
+too. Users in <code>settings.notify_user_ids</code> get the in-app (and mail) notification <code>form.submitted</code>
+(<code>form_id</code>, <code>form_title</code>, <code>submitter_name</code>, <code>submitter_email</code>, <code>task</code>, <code>project</code>), if they can read the project.</p>
+<h4 id="lifecycle">Lifecycle <a class="anchor" href="#lifecycle" aria-label="Link to this section: Lifecycle">#</a></h4>
+<p>Purging a project deletes its forms and submissions; deleting a form keeps its tasks; duplicating a project copies
+forms disabled (<code>duplicated</code>, or <code>duplicated_unmapped_reference</code>) with a new token and remapped custom field, option
+and status ids; deleting a custom field, a workflow status or a label that a form uses disables the form
+(<code>custom_field_deleted</code>, <code>status_deleted</code>, <code>label_deleted</code>); deleting the owner disables their forms
+(<code>owner_unavailable</code>).</p>
+<h4 id="security-model">Security model <a class="anchor" href="#security-model" aria-label="Link to this section: Security model">#</a></h4>
+<p>An anonymous submitter can read the definition of one form (what is listed above) and create one task per
+accepted submission, as the form owner, in the one project of the form, with the fields the form asks for and the
+presets the admin chose. They cannot choose where the task goes, set hidden fields, see the task or its id, any
+other task, project, user or label, or learn how many submissions exist. They cannot upload unless the instance and
+the form allow it, and then only limited, non-executable files. Every text they send is escaped, sanitized or
+stored as plain text. They are limited per address and per form, cannot exceed the maximum number of submissions
+even in parallel, and a form silently stops when its owner loses write access. The routes use no cookies and
+no CSRF tokens (nothing depends on ambient credentials); the CORS policy is the global one (only the configured
+origins, nothing wider for these routes), and JSON <code>Content-Type</code> is required, so a cross-site HTML form cannot
+post to the JSON endpoint.</p>
+<h3 id="ui">UI <a class="anchor" href="#ui" aria-label="Link to this section: UI">#</a></h3>
+<ul>
+<li>Project settings → Forms: list with link copy, enable switch, submission
+count. Builder: field list on the left (add from the project's fields,
+reorder, label/help/required/default/hidden per field), live preview on the
+right, settings tab, share tab with the link and an embed snippet.</li>
+<li>The form page itself is a clean, standalone page (no app chrome for public
+forms), mobile first, with the instance's logo, per-field errors and a
+confirmation screen.</li>
+</ul>
+<h3 id="ui-status-5d">UI status (5d) <a class="anchor" href="#ui-status-5d" aria-label="Link to this section: UI status (5d)">#</a></h3>
+<p>Done (web client, <code>frontend/</code>):</p>
+<ul>
+<li><strong>Forms page</strong> (project settings -&gt; Forms, project admins only, route <code>project.settings.forms</code>). The list shows
+title, access badge (members / signed-in users / public), the open/closed switch (saved at once), the submission
+count, a warning badge with the translated reason when the system switched the form off, and copy link, open,
+edit, submissions, duplicate (the copy starts closed) and delete (confirm; the tasks stay). Without forms the
+page says what forms do and offers three starters (&quot;Simple request&quot;, &quot;Request with a due date&quot;, &quot;Bug report&quot;)
+built from what the project offers.</li>
+<li><strong>Builder</strong> (tabs Fields, Settings, Share; the live preview sits on the right, below on narrow screens).
+Everything comes from <code>GET .../forms/options</code>; no target list is hard-coded. Fields: reorder with buttons, label,
+help, required, &quot;do not show&quot; (a hidden field takes its default), a typed default (custom fields reuse the custom
+field editors, labels use a picker, dates a date input), the label subset of a shown labels field, and an add menu
+grouped into task and custom fields where every target can be added once. On a public form a target that may not
+be asked but may be preset (labels, user fields) is added as a hidden field; one that can be neither (attachments
+when the instance forbids them) is disabled with the reason. Switching to public lists the fields that block it.
+The title rule (asked and required, or hidden with a value) is explained inline, with the placeholders. Settings:
+access with a warning box for public, initial status (only with a workflow), default assignees, success message,
+redirect, &quot;submit another&quot;, close date, maximum, who is notified, name/e-mail (off / optional / required, public
+only). Share: link and copy, &quot;create a new link&quot; (confirm), iframe snippet. Client checks mirror the server;
+server issues (<code>400</code> / <code>25002</code>, <code>details.issues[].path</code>) are mapped to the control and tab (the tab is
+switched, the field opened, the control focused, tabs show a badge with the count). Unsaved changes are guarded
+(route leave, tab close, back to the list). Saving keeps the builder open.</li>
+<li><strong>Submissions</strong> (paged table: date, submitter name / e-mail or &quot;signed in&quot;, link to the task, empty state).</li>
+<li><strong>Public page</strong> <code>/forms/:token</code>. A route with <code>meta.standalone</code> is rendered by <code>App.vue</code> without header, sidebar
+or the login layout, and the router guard lets it through for visitors without a session. The page loads the
+definition without credentials (the <code>publicClient</code>, no <code>Authorization</code>); only when a form for signed-in users
+answers <code>25004</code> and the browser has a token, it asks again with the session. A logged-out visitor therefore
+sends only the instance <code>/info</code> the app always loads, the definition and, later, the submission.
+Fields are native inputs by <code>kind</code> (radios or checkboxes up to six options, selects above, stars as radios,
+range, date or date-time input, textarea with a counter near <code>max_length</code>, file picker honouring the limits);
+labels above, help below, required marked with an asterisk and &quot;(required)&quot; for screen readers, errors tied with
+<code>aria-describedby</code>, an <code>aria-live</code> summary, focus on the first invalid field, 44px targets. A honeypot input is
+<code>tabindex=-1</code>, <code>autocomplete=off</code> and inside an <code>aria-hidden</code> box. 422 answers (<code>25006</code>) are mapped to the
+inputs; 404, 410 (closed / full / disabled, with the form title), 401 (a button that returns to the form after
+login through the saved last-visited route), 403, 429 (retry time from <code>details.retry_after</code>) and network errors
+have their own states. A submission with files uses the multipart endpoint, one without uses JSON. Success shows
+the message (or a default), &quot;submit another&quot; resets the form, a redirect (http/https only) shows the target host
+and goes after four seconds. The language follows <code>navigator.language</code> when nobody is logged in (the app's own
+pre-login rule) and dark mode follows <code>prefers-color-scheme</code>.</li>
+<li><strong>Notifications and automation.</strong> <code>form.submitted</code> has text and a link to the task. The catalog fixture and the
+English and Turkish strings cover the trigger, its <code>form_id</code> option and the new condition fields; the generic
+editor renders <code>form_id</code> as a select over the project's forms (a number input when the list is not known).</li>
+</ul>
+<p>Behaviour worth knowing:</p>
+<ul>
+<li>Date defaults and date answers: a date without a time is sent as noon in the viewer's time zone (RFC 3339), a date
+with a time as that time. The server accepts no relative dates (<code>+3d</code>), so the builder offers none.</li>
+<li>Submitter name / e-mail are only part of a public form; the builder sends them as off for other access modes and a
+signed-in submitter is not asked.</li>
+<li>No QR code: it needs an encoder and no dependency may be added.</li>
+</ul>
+<h2 id="approvals">Approvals <a class="anchor" href="#approvals" aria-label="Link to this section: Approvals">#</a></h2>
+<p>Status: <strong>5a (backend) is implemented</strong> in the models, migration <code>20261124100000</code>
+and <code>/api/v2</code> routes described below. The UI (5b) is built (see <a href="../roadmap.html">Roadmap and status</a>).</p>
+<h3 id="goals-1">Goals <a class="anchor" href="#goals-1" aria-label="Link to this section: Goals">#</a></h3>
+<ul>
+<li>&quot;This cannot go to print until the editor in chief approves&quot; — an explicit,
+recorded decision by named people, not just a status anyone can set.</li>
+<li>Approvals plug into the workflow: a transition can <strong>require approval</strong>.</li>
+</ul>
+<h3 id="model-1">Model <a class="anchor" href="#model-1" aria-label="Link to this section: Model">#</a></h3>
+<h4 id="approval_requests"><code>approval_requests</code> <a class="anchor" href="#approval_requests" aria-label="Link to this section: approval_requests">#</a></h4>
+<p>id, task_id (index), project_id (index), transition_id (null for ad-hoc
+requests), from_status_id, to_status_id, rejected_status_id (all null for
+ad-hoc), title, description, comment (the comment sent with the status change;
+it ends up in the history), mode (<code>any</code> — the first decision wins, <code>all</code> —
+every approver must approve, one rejection rejects), status (<code>pending</code> |
+<code>approved</code> | <code>rejected</code> | <code>cancelled</code>, indexed), allow_self, requested_by_id
+(index), due (null), reminded_at (null; the reminder runs once), resolved_by_id
+(0 when the system resolved), cancel_reason (machine readable, see below),
+cancel_message (human text), created, updated, resolved (null).</p>
+<h4 id="approval_approvers"><code>approval_approvers</code> <a class="anchor" href="#approval_approvers" aria-label="Link to this section: approval_approvers">#</a></h4>
+<p>id, request_id, user_id (together unique), decision (null | <code>approved</code> |
+<code>rejected</code>), comment, decided (null).</p>
+<p>Approvers on a transition are configured as users, a team (expanded to its
+members when the request is created, later team changes do not touch the
+request), the task's assignees, or a <code>user</code> custom field of the task (&quot;the
+editor named on the task&quot;). They are resolved to concrete users when the
+request is created: in the order of the sources, de-duplicated, only active
+users who can read the task, and without the requester unless <code>allow_self</code> is
+set. Nobody left: the request is not created, the caller gets <code>422</code> / <code>24006</code>.</p>
+<h4 id="on-workflow_transitions-and-task_status_history">On <code>workflow_transitions</code> and <code>task_status_history</code> <a class="anchor" href="#on-workflow_transitions-and-task_status_history" aria-label="Link to this section: On workflow_transitions and task_status_history">#</a></h4>
+<p><code>workflow_transitions</code> gets <code>requires_approval</code> (bool) and <code>approval</code> (json,
+null unless <code>requires_approval</code>). <code>task_status_history</code> gets
+<code>approval_request_id</code> (null), which is set on the history entry of an approved
+transition and of the move after a rejection.</p>
+<h3 id="transition-configuration">Transition configuration <a class="anchor" href="#transition-configuration" aria-label="Link to this section: Transition configuration">#</a></h3>
+<p>The workflow document (<code>GET|PUT /projects/{project}/workflow</code>) carries the new
+fields on every transition:</p>
+<pre class="code"><code class="language-json">{
+  &quot;from_status_id&quot;: 1, &quot;to_status_id&quot;: 5, &quot;title&quot;: &quot;Send to print&quot;,
+  &quot;requires_approval&quot;: true,
+  &quot;approval&quot;: {
+    &quot;mode&quot;: &quot;any&quot;,
+    &quot;approvers&quot;: [
+      {&quot;type&quot;: &quot;user&quot;, &quot;id&quot;: 2},
+      {&quot;type&quot;: &quot;team&quot;, &quot;id&quot;: 4},
+      {&quot;type&quot;: &quot;assignees&quot;},
+      {&quot;type&quot;: &quot;custom_field&quot;, &quot;id&quot;: 12}
+    ],
+    &quot;rejected_status_id&quot;: 2,
+    &quot;allow_self&quot;: false,
+    &quot;due_in&quot;: &quot;3d&quot;
+  }
+}</code></pre>
+<p>Validation (all <code>400</code> / <code>21002</code>): <code>approval</code> is required when
+<code>requires_approval</code> is set and is dropped (stored as null) when it is not;
+<code>mode</code> is <code>any</code> (default) or <code>all</code>; at least one and at most 50 sources; a
+<code>user</code> source is an active user who can read the project; a <code>team</code> source is a
+team the project (or a parent) is shared with; a <code>custom_field</code> source is a
+<code>user</code> field of the same project; <code>rejected_status_id</code> (by id, or by the
+negative id of a new status of the same document) belongs to the document, is
+not archived and is not the target status; <code>due_in</code> is a positive duration such
+as <code>12h</code>, <code>3d</code> or <code>2w</code>. Duplicating a project copies the configuration and
+translates the rejected status and the custom field to the copies; requests are
+not copied.</p>
+<h3 id="behaviour-1">Behaviour <a class="anchor" href="#behaviour-1" aria-label="Link to this section: Behaviour">#</a></h3>
+<ul>
+<li><strong>Requesting.</strong> Performing a transition with <code>requires_approval</code> runs every
+other check first (target exists and is not archived, pair allowed,
+permission and team, required fields, required comment). It then does <strong>not</strong>
+change the status: it creates the pending request and returns it. Asking
+again for the same task and target status returns the existing request (no
+duplicate, no new notification); a pending request for a different target on
+the same task is allowed. Even a project admin asks. Link shares cannot ask
+(<code>403</code> / <code>24010</code>).</li>
+<li><strong>Deciding.</strong> <code>POST /approvals/{request}/decision</code>. Only an approver who has
+not decided can; a rejection needs a comment. Approvers who lost read access to the
+project are dropped first and no longer count (and cannot decide: they
+cannot see the request any more). With <code>any</code> the first decision resolves the
+request. With <code>all</code> the last approval resolves it and one rejection resolves
+it at once.</li>
+<li><strong>Approved.</strong> The system performs the transition on behalf of the requester,
+all checks except the approval requirement run again at that moment. History
+shows the requester as doer, carries the comment of the request and the id of
+the request. If something no longer holds the request becomes <code>cancelled</code>
+(the decisions stay as they are, the status does not change) with a
+<code>cancel_reason</code>: <code>task_moved</code>, <code>workflow_removed</code>, <code>status_removed</code>,
+<code>transition_removed</code>, <code>target_archived</code>, <code>status_changed</code> (the task is no
+longer in the <code>from</code> status), <code>requirements_not_met</code> (a required field or the
+comment is gone; the message lists them), <code>requester_lost_access</code>,
+<code>requester_not_in_team</code> or <code>requester_deleted</code>. The response to the decision
+is still <code>200</code>; the request in it says what happened.</li>
+<li><strong>Rejected.</strong> The task stays, or moves to <code>rejected_status_id</code> as a system
+transition (rules bypassed; the history names the rejecting approver and the
+request; skipped when the task left the <code>from</code> status or the status is gone).
+The comment is added to the task as a comment authored by the approver.</li>
+<li><strong>Cancelling.</strong> <code>POST /approvals/{request}/cancel</code> by the requester or a
+project admin (<code>cancelled_by_requester</code>). Automatic cancellations: the task is
+deleted (<code>task_deleted</code>) or moved to another project (<code>task_moved</code>), the
+workflow is deleted (<code>workflow_removed</code>), a status of the request is removed
+or archived (<code>status_removed</code>), the transition is removed
+(<code>transition_removed</code>) or no longer requires approval (<code>approval_disabled</code>),
+the task leaves the <code>from</code> status by another route (<code>status_changed</code>; ad-hoc
+requests are not tied to a status), or nobody who can read the task is left
+to decide (<code>no_approvers</code>, also when an approver is deleted).</li>
+<li><strong>Ad-hoc approvals.</strong> <code>POST /tasks/{task}/approvals</code> — a recorded decision on
+any task without a status change. Needs a title and <code>approver_ids</code> (users who
+can read the task; the requester cannot be one), <code>mode</code> defaults to <code>any</code>,
+<code>due</code> is optional. The requester needs write access to the task.</li>
+<li><strong>Concurrency.</strong> Every decision and cancellation starts by taking the write lock
+of the request (a no-op <code>UPDATE</code> of its row) and then reads with locking reads;
+resolving, cancelling and approving are conditional updates on
+<code>status = pending</code> inside the same transaction as the transition. Two
+approvers deciding at the same time, or a decision racing a cancel, are
+serialized; the loser gets <code>409</code> / <code>24002</code> and writes nothing. Creating a
+request takes the lock of the task row for the same reason (status changes
+of one task run one after the other).</li>
+</ul>
+<h4 id="what-each-caller-of-the-status-change-does">What each caller of the status change does <a class="anchor" href="#what-each-caller-of-the-status-change-does" aria-label="Link to this section: What each caller of the status change does">#</a></h4>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Caller</th><th scope="col">Transition needs approval</th></tr></thead><tbody>
+<tr><td><code>POST /tasks/{task}/status</code></td><td><code>202</code>, the pending request in <code>approval</code>, <code>status</code> is the status the task is still in. <code>200</code> when the status changed, as before.</td></tr>
+<tr><td>Done checkbox: <code>PUT /tasks/{task}</code> with <code>done</code>, kanban moves into a done bucket of a manual view, bulk updates</td><td><strong>Refused</strong>: <code>409</code> / <code>24007</code> with <code>details</code> <code>task_id</code>, <code>from_status_id</code>, <code>from_status_title</code>, <code>to_status_id</code>, <code>to_status_title</code>, <code>to_status_category</code>, <code>pending_approval_id</code> (0 when none) and <code>requestable</code> (<code>true</code>: the task is where it was and the client may ask with <code>POST /tasks/{task}/status</code>), <code>approval_pending</code> (an open request for the same task and target status already exists, so the client says so instead of offering a second request; looking it up creates nothing); the whole update is rolled back and <strong>no request is created</strong>. Silently ignoring <code>done: true</code> would look like a bug to clients; creating a request as a side effect of a failed update would be a surprise. The client asks explicitly with <code>POST /tasks/{task}/status</code>. The same holds for un-doing.</td></tr>
+<tr><td>A task created done (<code>done: true</code> or the done bucket of a manual view), a done task moved in from another project</td><td><strong>Refused</strong> like the checkbox: <code>409</code> / <code>24007</code> with the same <code>details</code>, but <code>requestable</code> is <code>false</code> (the creation or the move is rolled back as a whole, so there is no task in the project to request the approval for; the client only explains the refusal), nothing is created or moved. The task starts in the first done status only when its creator or mover could perform the done transition without an approval.</td></tr>
+<tr><td>Kanban status-mode move (<code>PUT .../buckets/{bucket}/tasks</code>)</td><td>A drag is an explicit status change: the request is created, the card does not move, <code>202</code> with <code>approval</code> and the column the card is still in as <code>bucket</code>.</td></tr>
+<tr><td>Task created in a status column</td><td>The task is created in the initial status, the request for the column is created, <code>bucket_id</code> of the response is the initial column.</td></tr>
+<tr><td>Automation <code>task.set_status</code>, script <code>vikunja.status.set</code></td><td>Creates the request as the owner of the rule and finishes the step successfully with the output <code>approval requested (#id)</code>. The dry run says <code>would request approval for the status change to &lt;id&gt;</code>. Nobody to ask fails the step (<code>24006</code>).</td></tr>
+<tr><td>Automation <code>task.set_done</code>, <code>vikunja.tasks.update({done})</code></td><td>Like the checkbox: the step fails with <code>24007</code>.</td></tr>
+<tr><td>Re-opening a repeating task, the move after a rejection, assigning the first status, moving the tasks of a removed status</td><td>System transitions: <strong>never</strong> create approvals.</td></tr>
+</tbody></table></div>
+<h3 id="api-apiv2-2">API (<code>/api/v2</code>) <a class="anchor" href="#api-apiv2-2" aria-label="Link to this section: API (/api/v2)">#</a></h3>
+<ul>
+<li><code>GET /approvals?status=&amp;role=approver|requester&amp;project_id=&amp;page=&amp;per_page=</code>
+— &quot;my approvals&quot;: the requests where the caller is approver or requester and can
+still read the task (in the project the task is in now, not the one the
+request was made in), newest first, each with the approvers, the statuses and a
+compact <code>task</code> (<code>id</code>, <code>title</code>, <code>identifier</code>, <code>project_id</code>, <code>project_title</code>).</li>
+<li><code>GET /approvals/{request}</code> — readable by everyone who can read the task.</li>
+<li><code>GET /tasks/{task}/approvals?status=</code>, <code>POST /tasks/{task}/approvals</code> (ad-hoc, <code>201</code>).</li>
+<li><code>POST /approvals/{request}/decision</code> <code>{decision: approved|rejected, comment}</code>
+(<code>200</code>, body has the updated <code>request</code>),
+<code>POST /approvals/{request}/cancel</code> <code>{message}</code> (<code>200</code>).</li>
+<li><code>GET /tasks/{task}/status</code> additionally returns <code>pending_approvals</code> and, per
+offered transition, <code>requires_approval</code>, <code>approval_mode</code> and <code>approvers</code> (the
+users who would be asked if the caller asked now).</li>
+<li>Task lists accept <code>expand=approvals</code>: every task gets
+<code>approvals: {has_pending, pending_count}</code> (one query for the page).</li>
+<li>Workflow transitions carry <code>requires_approval</code> and <code>approval</code>.</li>
+</ul>
+<p>Link shares have no access to approvals at all (<code>403</code> on every route, no
+<code>approvals</code> expand, no approval data in the task status).
+Requests of tasks the caller cannot read answer <code>404</code> on decision and cancel
+(<code>24001</code>), <code>403</code> on read.</p>
+<p>Error codes: <code>24001</code> request not found, <code>24002</code> not pending (<code>409</code>), <code>24003</code> not
+an approver (<code>403</code>), <code>24004</code> already decided (<code>409</code>), <code>24005</code> rejection without
+comment (<code>422</code>), <code>24006</code> no approvers (<code>422</code>), <code>24007</code> approval required for a
+done change (<code>409</code>), <code>24008</code> requester may not decide (<code>403</code>), <code>24009</code> invalid
+ad-hoc request (<code>400</code>), <code>24010</code> link share cannot request (<code>403</code>).</p>
+<p>Token scopes: <code>approvals</code> (<code>read_all</code>, <code>read_one</code>, <code>decision</code>, <code>cancel</code>) and
+<code>tasks_approvals</code> (<code>read_all</code>, <code>create</code>); <code>expand=approvals</code> needs
+<code>tasks_approvals</code> <code>read_all</code>.</p>
+<p>Example: asking for a transition that needs approval (<code>POST /tasks/20/status</code>
+<code>{&quot;to_status_id&quot;: 5, &quot;comment&quot;: &quot;No longer needed&quot;}</code>) answers <code>202</code>:</p>
+<pre class="code"><code class="language-json">{
+  &quot;task_id&quot;: 20,
+  &quot;to_status_id&quot;: 5,
+  &quot;comment&quot;: &quot;No longer needed&quot;,
+  &quot;from_status_id&quot;: 1,
+  &quot;status&quot;: {&quot;id&quot;: 1, &quot;title&quot;: &quot;Todo&quot;, &quot;category&quot;: &quot;open&quot;, &quot;is_initial&quot;: true},
+  &quot;done&quot;: false,
+  &quot;approval&quot;: {
+    &quot;id&quot;: 1, &quot;task_id&quot;: 20, &quot;project_id&quot;: 11, &quot;transition_id&quot;: 3,
+    &quot;from_status_id&quot;: 1, &quot;to_status_id&quot;: 5, &quot;rejected_status_id&quot;: 2,
+    &quot;title&quot;: &quot;Todo → Dropped&quot;, &quot;comment&quot;: &quot;No longer needed&quot;,
+    &quot;mode&quot;: &quot;any&quot;, &quot;status&quot;: &quot;pending&quot;, &quot;allow_self&quot;: false,
+    &quot;due&quot;: &quot;2026-11-26T00:13:09Z&quot;, &quot;resolved&quot;: null,
+    &quot;approvers&quot;: [
+      {&quot;id&quot;: 1, &quot;request_id&quot;: 1, &quot;user_id&quot;: 2, &quot;decision&quot;: null, &quot;comment&quot;: &quot;&quot;,
+       &quot;decided&quot;: null, &quot;user&quot;: {&quot;id&quot;: 2, &quot;username&quot;: &quot;user2&quot;}}
+    ],
+    &quot;requested_by&quot;: {&quot;id&quot;: 1, &quot;username&quot;: &quot;user1&quot;},
+    &quot;task&quot;: {&quot;id&quot;: 20, &quot;title&quot;: &quot;task #20&quot;, &quot;identifier&quot;: &quot;TEST11-1&quot;, &quot;project_id&quot;: 11, &quot;project_title&quot;: &quot;Test11&quot;},
+    &quot;to_status&quot;: {&quot;id&quot;: 5, &quot;title&quot;: &quot;Dropped&quot;, &quot;category&quot;: &quot;cancelled&quot;}
+  }
+}</code></pre>
+<p>Example: a decision (<code>POST /approvals/1/decision</code>
+<code>{&quot;decision&quot;: &quot;approved&quot;, &quot;comment&quot;: &quot;Fine&quot;}</code>) answers <code>200</code>; the task is in
+Dropped now and its history names user1 (the requester) with
+<code>approval_request_id: 1</code>:</p>
+<pre class="code"><code class="language-json">{
+  &quot;request_id&quot;: 1,
+  &quot;decision&quot;: &quot;approved&quot;,
+  &quot;comment&quot;: &quot;Fine&quot;,
+  &quot;request&quot;: {
+    &quot;id&quot;: 1, &quot;task_id&quot;: 20, &quot;status&quot;: &quot;approved&quot;, &quot;mode&quot;: &quot;any&quot;,
+    &quot;resolved&quot;: &quot;2026-11-22T21:13:09Z&quot;, &quot;cancel_reason&quot;: &quot;&quot;,
+    &quot;approvers&quot;: [
+      {&quot;id&quot;: 1, &quot;request_id&quot;: 1, &quot;user_id&quot;: 2, &quot;decision&quot;: &quot;approved&quot;,
+       &quot;comment&quot;: &quot;Fine&quot;, &quot;decided&quot;: &quot;2026-11-22T21:13:09Z&quot;,
+       &quot;user&quot;: {&quot;id&quot;: 2, &quot;username&quot;: &quot;user2&quot;}}
+    ],
+    &quot;resolved_by&quot;: {&quot;id&quot;: 2, &quot;username&quot;: &quot;user2&quot;}
+  }
+}</code></pre>
+<h3 id="events-automation-notifications-1">Events, automation, notifications <a class="anchor" href="#events-automation-notifications-1" aria-label="Link to this section: Events, automation, notifications">#</a></h3>
+<ul>
+<li>Events, dispatched on commit: <code>approval.requested</code> (request, task, doer =
+requester), <code>approval.decided</code> (per decision; doer = approver, plus the
+decision and comment) and <code>approval.resolved</code> (outcome <code>approved</code>, <code>rejected</code>
+or <code>cancelled</code>; the doer is who ended it, null when the system did). Requests
+that were only returned again announce nothing.</li>
+<li>Automation triggers <code>approval.requested</code> and <code>approval.resolved</code> (option
+<code>outcome</code>: <code>any</code> (default), <code>approved</code>, <code>rejected</code>, <code>cancelled</code>). Event fields
+for conditions: <code>event.new.approval_id</code>, <code>.approval_title</code>, <code>.approval_mode</code>,
+<code>.ad_hoc</code>, <code>.requested_by</code>, <code>.approvers</code>, <code>.outcome</code>, <code>.cancel_reason</code>,
+<code>event.old.status</code> (the status the task has to be in) and <code>event.new.status</code>
+(the target) for transition requests, <code>event.doer.*</code>. Placeholders for
+templates: <code>{{event.approval.id}}</code>, <code>{{event.approval.title}}</code>,
+<code>{{event.approval.outcome}}</code>.</li>
+<li>Automation action <code>approval.request</code> (ad-hoc): <code>approvers</code> (user ids,
+<code>assignees</code>, <code>task_creator</code>, <code>event_doer</code>), <code>mode</code>, <code>title</code> and <code>description</code>
+(templates), <code>due_offset</code>. The owner of the rule asks and is never one of the
+approvers. Events an action causes carry <code>origin_run_id</code> and <code>depth + 1</code> like
+all others.</li>
+<li>Notifications (in-app, plus e-mail when the mailer is on): <code>approval.requested</code>
+to every approver; <code>approval.resolved</code> to the requester and to the approvers
+who did not decide (not to whoever resolved or cancelled it);
+<code>approval.reminder</code> once to the undecided approvers when <code>due</code> has passed (cron
+every five minutes). The English strings are in <code>pkg/i18n/lang/en.json</code>; other
+languages come from Crowdin. The web client renders unknown notification
+names with an empty text and without a link until 5b adds them.</li>
+</ul>
+<h3 id="ui-1">UI <a class="anchor" href="#ui-1" aria-label="Link to this section: UI">#</a></h3>
+<ul>
+<li>Task detail: an approval banner (who is asked, who decided what, due),
+approve / reject buttons with a comment for approvers.</li>
+<li>&quot;Approvals&quot; page in the sidebar with a count badge: waiting for me, sent by
+me, history.</li>
+<li>Workflow editor: approval settings on a transition; kanban status mode
+shows a &quot;waiting for approval&quot; marker on the card.</li>
+</ul>
+<h3 id="ui-status-5b">UI status (5b) <a class="anchor" href="#ui-status-5b" aria-label="Link to this section: UI status (5b)">#</a></h3>
+<p>Done (web client, <code>frontend/</code>):</p>
+<ul>
+<li><strong>Workflow editor.</strong> A transition has an &quot;Approval&quot; section: the switch, the
+mode (any / all, each with one line of explanation), the approver sources
+(a person, a team the project is shared with, the assignees of the task, a
+person in a <code>user</code> field of the project), the status after a rejection, the
+duration to decide within (<code>12h</code>, <code>2d</code>, <code>1w</code>) and the self-approval switch.
+Transitions with an approval carry a tag in the list and an icon in the
+matrix. The client checks what the server checks (at least one complete
+source, the duration format, a rejected status that differs from the
+target). The server's 21002 messages name no transition, so one that is
+about an approval control is shown at that control of the transition that
+is open.</li>
+<li><strong>Task detail.</strong> The status menu labels transitions that need an approval
+(&quot;Request approval -&gt; Print ready&quot;) and previews who will be asked; the
+requirements dialog runs first, the <code>202</code> shows &quot;Approval requested&quot;, never
+an error. The done button goes through the status endpoint, so it asks for
+the approval too and no failing <code>PUT</code> is needed. An approval banner sits
+above the property list: title, requester, mode, due (overdue marked),
+state, comment and time per approver, approve / reject (comment required for
+a rejection, 24005 shown at the field) for approvers who have not decided,
+cancel with a confirmation for the requester and project admins. Resolved
+requests are in a collapsible section (outcome, decisions, the cancel
+reason in words). The status history links an entry made by an approval to
+that section. &quot;Request approval&quot; in the actions menu opens the ad-hoc
+dialog.</li>
+<li><strong>Boards, lists, table.</strong> A status mode drop that answers <code>202</code> leaves the
+card in place and shows a toast; cards, list rows and the table status cell
+show a &quot;Waiting for approval&quot; marker (from <code>expand=approvals</code>, requested only
+for projects with a workflow).</li>
+<li><strong>Approvals page</strong> (<code>/approvals</code>, sidebar entry with a count badge): waiting
+for me, requested by me, history, with a project filter, paging, and
+approve / reject in the first tab. Notifications <code>approval.requested</code>,
+<code>approval.resolved</code> and <code>approval.reminder</code> have text and a link to the task.</li>
+<li><strong>Automation.</strong> The catalog fixture and the English and Turkish strings
+cover the new triggers, options, fields and the <code>approval.request</code> action;
+the generic editor renders its parameters with the existing user list
+(people plus <code>assignees</code>, <code>task_creator</code>, <code>event_doer</code>) and enum controls.</li>
+</ul>
+<p>Behaviour worth knowing:</p>
+<ul>
+<li><code>GET /approvals?role=approver&amp;status=pending</code> also lists the requests the
+caller has already decided (they stay open for the others). &quot;Waiting for me&quot;
+and the badge therefore read all pages and keep only the requests the
+caller can still decide. The badge refreshes on window focus, when an
+<code>approval.*</code> notification arrives over the websocket, and by polling every
+minute without a socket.</li>
+<li>The history tab asks for one outcome at a time (approved, rejected,
+cancelled), because the endpoint takes a single status; there is no
+combined &quot;all resolved&quot; list.</li>
+<li>Plain updates with <code>done: true</code> (checkbox of a list row, a drop into a done
+bucket of a manual board) still answer <code>409</code> / <code>24007</code>; the backend stays
+strict. The client handles that refusal in one place (the task update and
+the kanban move mutations): the optimistic change is rolled back, so the
+checkbox goes back, and a message names the status (&quot;The task was not marked
+as done: &quot;Done&quot; needs an approval first.&quot;) with the action <strong>Request
+approval</strong>. The action starts the same transition as the status menu of the
+task (<code>POST /tasks/{task}/status</code>), including the dialog for missing fields
+and a required comment. If the refusal says a request is already pending,
+the message says so and offers to open the task instead. The same applies to
+re-opening a task whose transition back needs an approval. The task detail
+done button asks for the approval directly, as before.</li>
+<li>Paging of &quot;Waiting for me&quot; is done in the client.</li>
+</ul>
+<h2 id="steps">Steps <a class="anchor" href="#steps" aria-label="Link to this section: Steps">#</a></h2>
+<ul>
+<li>5a (done): approvals backend (requests, approvers, workflow integration,
+events, automation triggers and action, notifications, reminders).</li>
+<li>5b (done): approvals UI.</li>
+<li>5c (done): forms backend (definition, public submission path, limits, event, notification, lifecycle).</li>
+<li>5d (done): forms UI (builder, public form page).</li>
+</ul>
+</div>
+<p class="edit"><a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/docs/enterprise/forms-approvals.md">Source of this page on GitHub</a></p>
+<nav class="pager" aria-label="Pages"><a class="prev" href="workflow.html" rel="prev"><span>Previous</span>Workflow design</a><a class="next" href="automation.html" rel="next"><span>Next</span>Automation design</a></nav>
+</main>
+<nav class="toc-aside" aria-label="On this page"><p class="side-title">On this page</p><ul>
+<li class="toc-2"><a href="#forms">Forms</a></li>
+<li class="toc-3"><a href="#goals">Goals</a></li>
+<li class="toc-3"><a href="#model">Model</a></li>
+<li class="toc-3"><a href="#behaviour">Behaviour</a></li>
+<li class="toc-3"><a href="#api-apiv2">API (/api/v2)</a></li>
+<li class="toc-3"><a href="#implementation-5c-backend">Implementation (5c, backend)</a></li>
+<li class="toc-3"><a href="#ui">UI</a></li>
+<li class="toc-3"><a href="#ui-status-5d">UI status (5d)</a></li>
+<li class="toc-2"><a href="#approvals">Approvals</a></li>
+<li class="toc-3"><a href="#goals-1">Goals</a></li>
+<li class="toc-3"><a href="#model-1">Model</a></li>
+<li class="toc-3"><a href="#transition-configuration">Transition configuration</a></li>
+<li class="toc-3"><a href="#behaviour-1">Behaviour</a></li>
+<li class="toc-3"><a href="#api-apiv2-2">API (/api/v2)</a></li>
+<li class="toc-3"><a href="#events-automation-notifications-1">Events, automation, notifications</a></li>
+<li class="toc-3"><a href="#ui-1">UI</a></li>
+<li class="toc-3"><a href="#ui-status-5b">UI status (5b)</a></li>
+<li class="toc-2"><a href="#steps">Steps</a></li>
+</ul></nav>
+</div>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-about">
+      <p><strong>vikunja-enterprise</strong> is an independent community fork of Vikunja. It is not affiliated with, endorsed by or supported by the Vikunja project. Almost all of the software is their work.</p>
+      <p>Licensed under AGPL-3.0-or-later, as upstream. This site has no scripts, cookies or trackers.</p>
+    </div>
+    <nav class="footer-nav" aria-label="Footer">
+      <div><p class="footer-title">Project</p><ul>
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="../getting-started.html">Get started</a></li>
+        <li><a href="../roadmap.html">Roadmap and status</a></li>
+        <li><a href="../upstream.html">Relationship to upstream</a></li>
+      </ul></div>
+      <div><p class="footer-title">Reference</p><ul>
+        <li><a href="../modules/index.html">Modules</a></li>
+        <li><a href="../api.html">API</a></li>
+        <li><a href="../architecture.html">Architecture</a></li>
+        <li><a href="../configuration.html">Configuration</a></li>
+      </ul></div>
+      <div><p class="footer-title">Community</p><ul>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise">Repository</a></li>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise/issues">Issues</a></li>
+        <li><a href="../security.html">Security</a></li>
+        <li><a href="../contributing.html">Contributing</a></li>
+        <li><a href="../license.html">License</a></li>
+      </ul></div>
+      <div><p class="footer-title">Upstream Vikunja</p><ul>
+        <li><a href="https://github.com/go-vikunja/vikunja">Source code</a></li>
+        <li><a href="https://vikunja.io/docs/">Documentation</a></li>
+        <li><a href="https://vikunja.io/support/">Support upstream</a></li>
+      </ul></div>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>

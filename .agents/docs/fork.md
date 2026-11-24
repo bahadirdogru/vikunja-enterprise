@@ -37,3 +37,13 @@ The fork must always be able to merge `upstream/main`. Every change is judged by
 ## How a change gets into `main`
 
 Use the `fork-change` skill. In short: implement in a worktree with a failing test first, have the change reviewed by someone who has not seen the author's reasoning, fix, run the full suites on SQLite, PostgreSQL and MySQL on the final tree, then fast-forward `main`.
+
+## Website
+
+The site <https://vikunja.bahadirdogru.com> is generated into `docs/` from the repository's Markdown (README, `ARCHITECTURE.md`, `DESIGN.md`, `API.md`, `docs/modules/`, `docs/enterprise/`) and the hand-written pages in `site/pages/`. The generator, `site/build.py`, is Python 3 standard library only. After changing any of those documents, run:
+
+```bash
+python3 site/build.py
+```
+
+and commit the result in `docs/`. It fails on a broken internal link or anchor, and on any page with inline styles, scripts or external resources (the site runs under a strict Content-Security-Policy). `python3 site/build.py --check` verifies that `docs/` is up to date without writing. Details are in `site/README.md`. Do not edit the generated `docs/*.html` by hand.

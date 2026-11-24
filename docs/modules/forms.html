@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Forms - vikunja-enterprise</title>
+<meta name="description" content="Form builder and public forms whose submissions become tasks.">
+<link rel="canonical" href="https://vikunja.bahadirdogru.com/modules/forms.html">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1020" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+<link rel="manifest" href="../site.webmanifest">
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="../assets/docs.css">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="vikunja-enterprise">
+<meta property="og:title" content="Forms - vikunja-enterprise">
+<meta property="og:description" content="Form builder and public forms whose submissions become tasks.">
+<meta property="og:url" content="https://vikunja.bahadirdogru.com/modules/forms.html">
+<meta property="og:image" content="https://vikunja.bahadirdogru.com/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="vikunja-enterprise, an independent community fork of Vikunja">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Forms - vikunja-enterprise">
+<meta name="twitter:description" content="Form builder and public forms whose submissions become tasks.">
+<meta name="twitter:image" content="https://vikunja.bahadirdogru.com/assets/og.png">
+</head>
+<body class="docs">
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="../index.html" aria-label="vikunja-enterprise home"><img src="../assets/favicon.svg" alt="" width="30" height="30">vikunja-enterprise</a>
+    <nav class="top-nav" aria-label="Main">
+      <ul>
+<li><a href="index.html">Modules</a></li>
+<li><a href="../getting-started.html">Get started</a></li>
+<li><a href="../api.html">API</a></li>
+<li><a href="../architecture.html">Architecture</a></li>
+<li><a href="../roadmap.html">Roadmap</a></li>
+<li><a href="../upstream.html">Upstream</a></li>
+        <li><a class="gh" href="https://github.com/bahadirdogru/vikunja-enterprise">GitHub</a></li>
+      </ul>
+    </nav>
+    <details class="menu">
+      <summary><span class="menu-icon" aria-hidden="true"></span>Menu</summary>
+      <nav class="menu-panel" aria-label="Site">
+        <div class="menu-group"><p class="menu-title">Site</p><ul>
+<li><a href="../index.html">Home</a></li>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise">GitHub repository</a></li>
+        </ul></div>
+<div class="menu-group"><p class="menu-title">Start</p><ul>
+<li><a href="../getting-started.html">Getting started</a></li>
+<li><a href="../configuration.html">Configuration</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Modules</p><ul>
+<li><a href="index.html">Overview</a></li>
+<li><a href="custom-fields.html">Custom fields</a></li>
+<li><a href="workflows.html">Workflows</a></li>
+<li><a href="approvals.html">Approvals</a></li>
+<li><a href="automation.html">Automation</a></li>
+<li><a href="dashboards-reports.html">Dashboards and reports</a></li>
+<li><a href="forms.html" aria-current="page">Forms</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Reference</p><ul>
+<li><a href="../api.html">API reference</a></li>
+<li><a href="../architecture.html">Architecture</a></li>
+<li><a href="../design.html">Design</a></li>
+<li><a href="../roadmap.html">Roadmap and status</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Project</p><ul>
+<li><a href="../upstream.html">Relationship to upstream</a></li>
+<li><a href="../security.html">Security</a></li>
+<li><a href="../contributing.html">Contributing</a></li>
+<li><a href="../license.html">License</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Design history</p><ul>
+<li><a href="../enterprise/index.html">Overview</a></li>
+<li><a href="../enterprise/custom-fields.html">Custom fields design</a></li>
+<li><a href="../enterprise/workflow.html">Workflow design</a></li>
+<li><a href="../enterprise/forms-approvals.html">Forms and approvals design</a></li>
+<li><a href="../enterprise/automation.html">Automation design</a></li>
+<li><a href="../enterprise/dashboards.html">Dashboards design</a></li>
+</ul></div>
+      </nav>
+    </details>
+  </div>
+</header>
+<div class="docs-layout">
+<nav class="sidebar" aria-label="Documentation">
+<p class="side-title">Start</p><ul>
+<li><a href="../getting-started.html">Getting started</a></li>
+<li><a href="../configuration.html">Configuration</a></li>
+</ul>
+<p class="side-title">Modules</p><ul>
+<li><a href="index.html">Overview</a></li>
+<li><a href="custom-fields.html">Custom fields</a></li>
+<li><a href="workflows.html">Workflows</a></li>
+<li><a href="approvals.html">Approvals</a></li>
+<li><a href="automation.html">Automation</a></li>
+<li><a href="dashboards-reports.html">Dashboards and reports</a></li>
+<li><a href="forms.html" aria-current="page">Forms</a></li>
+</ul>
+<p class="side-title">Reference</p><ul>
+<li><a href="../api.html">API reference</a></li>
+<li><a href="../architecture.html">Architecture</a></li>
+<li><a href="../design.html">Design</a></li>
+<li><a href="../roadmap.html">Roadmap and status</a></li>
+</ul>
+<p class="side-title">Project</p><ul>
+<li><a href="../upstream.html">Relationship to upstream</a></li>
+<li><a href="../security.html">Security</a></li>
+<li><a href="../contributing.html">Contributing</a></li>
+<li><a href="../license.html">License</a></li>
+</ul>
+<p class="side-title">Design history</p><ul>
+<li><a href="../enterprise/index.html">Overview</a></li>
+<li><a href="../enterprise/custom-fields.html">Custom fields design</a></li>
+<li><a href="../enterprise/workflow.html">Workflow design</a></li>
+<li><a href="../enterprise/forms-approvals.html">Forms and approvals design</a></li>
+<li><a href="../enterprise/automation.html">Automation design</a></li>
+<li><a href="../enterprise/dashboards.html">Dashboards design</a></li>
+</ul>
+</nav>
+<main id="main" class="doc">
+<nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="../index.html">Home</a></li><li>Modules</li><li aria-current="page">Forms</li></ol></nav>
+<h1>Forms</h1>
+<details class="toc-inline"><summary>On this page</summary>
+<nav aria-label="On this page"><ul>
+<li class="toc-2"><a href="#overview">Overview</a></li>
+<li class="toc-2"><a href="#concepts">Concepts</a></li>
+<li class="toc-3"><a href="#behaviour-of-a-submission">Behaviour of a submission</a></li>
+<li class="toc-2"><a href="#data-model">Data model</a></li>
+<li class="toc-2"><a href="#permissions">Permissions</a></li>
+<li class="toc-2"><a href="#api">API</a></li>
+<li class="toc-2"><a href="#configuration-keys">Configuration keys</a></li>
+<li class="toc-2"><a href="#ui">UI</a></li>
+<li class="toc-2"><a href="#events-and-interaction-with-other-modules">Events and interaction with other modules</a></li>
+<li class="toc-2"><a href="#limits-and-safety">Limits and safety</a></li>
+<li class="toc-2"><a href="#known-gaps-and-open-decisions">Known gaps and open decisions</a></li>
+<li class="toc-2"><a href="#where-the-code-lives">Where the code lives</a></li>
+</ul></nav></details>
+<div class="prose">
+<p>Forms whose submissions become tasks: for project members, for signed-in users, or for anyone with a link.</p>
+<p>Design document and history: the &quot;Forms&quot; part of <a href="../enterprise/forms-approvals.html">Forms and approvals design</a>. API conventions: <a href="../api.html">API reference</a>. Module index: <a href="index.html">Modules</a>.</p>
+<h2 id="overview">Overview <a class="anchor" href="#overview" aria-label="Link to this section: Overview">#</a></h2>
+<p>A team wants to publish a request form (&quot;New cover request&quot;, &quot;Purchase request&quot;, &quot;Bug report&quot;) and get a task, with the answers in the task's fields, without giving the requester an account or access to the project. A form is a view of the project's own fields: the builder picks which task fields and custom fields to ask for. There is no second field system. Because the task is created through the normal create path, the workflow's initial status, custom field validation and automation all apply.</p>
+<p>Audience: project admins build forms; requesters fill them; operators decide whether public forms and public attachments are allowed and tune the limits.</p>
+<h2 id="concepts">Concepts <a class="anchor" href="#concepts" aria-label="Link to this section: Concepts">#</a></h2>
+<ul>
+<li><strong>Form</strong> (<code>forms</code>): a project, a title, a description (rich text shown above the form), an unguessable <strong>token</strong> (the public address is <code>/forms/&lt;token&gt;</code>), an <strong>access</strong> mode, <code>enabled</code>, an <strong>owner</strong>, an ordered <code>fields</code> list, <code>settings</code>, branding, and counters.</li>
+<li><strong>Access modes</strong>: <code>members</code> (signed-in users who can read the project), <code>users</code> (any signed-in user), <code>public</code> (anyone with the link). Link shares are not users: <code>403</code> for <code>users</code> and <code>members</code>, treated as anonymous for <code>public</code>.</li>
+<li><strong>Fields</strong> (at most 50): <code>{target, label, help, required, default, hidden, options}</code>. <code>target</code> is <code>title</code>, <code>description</code>, <code>due_date</code>, <code>priority</code>, <code>labels</code>, <code>attachments</code> or <code>cf_&lt;id&gt;</code>. <code>title</code> is mandatory: asked, or built from a template such as <code>Request from {{submitter.name}}</code>. <code>hidden</code> fields are not shown and always take their default, which is how a status, label or custom field is pre-set. <code>options</code> (only for a shown <code>labels</code> field) lists the label ids the submitter may pick; not allowed on public forms.</li>
+<li><strong>Settings</strong>: <code>initial_status_id</code>, <code>default_assignee_ids</code>, <code>success_message</code>, <code>redirect_url</code>, <code>submit_another</code>, <code>close_date</code>, <code>max_submissions</code>, <code>notify_user_ids</code>, <code>collect_name</code>, <code>name_required</code>, <code>collect_email</code>, <code>email_required</code>.</li>
+<li><strong>Branding</strong>: <code>brand_name</code> (at most 100 characters), <code>accent_color</code> (<code>#rrggbb</code>), <code>hide_footer</code>, and a logo (PNG, JPEG, GIF or WebP, no SVG, at most 1 MiB; decoded, scaled down to at most 512 pixels and stored as PNG; served without authentication whatever the access mode).</li>
+<li><strong>Owner</strong>: the user who last saved the form. Submissions create tasks as the owner. If the owner loses write access to the project, or is deleted, the form is disabled with a reason.</li>
+<li><strong>Placeholders</strong> in title and description defaults and text custom fields: <code>{{submitter.name}}</code>, <code>{{submitter.email}}</code>, <code>{{form.title}}</code>, <code>{{date}}</code>. Plain substitution; answers are never substituted.</li>
+<li><strong>Disabled reasons</strong>: <code>owner_not_writer</code>, <code>owner_unavailable</code>, <code>custom_field_deleted</code>, <code>status_deleted</code>, <code>label_deleted</code>, <code>duplicated</code>, <code>duplicated_unmapped_reference</code>. Saving the form clears the reason; send <code>enabled: true</code> to turn it on again.</li>
+</ul>
+<h3 id="behaviour-of-a-submission">Behaviour of a submission <a class="anchor" href="#behaviour-of-a-submission" aria-label="Link to this section: Behaviour of a submission">#</a></h3>
+<p>One transaction: lock the form row; check availability and access; the honeypot; the rate limits; load the owner and check that they can still write to the project (otherwise the form is disabled, that change is committed, nothing else is created, and the answer is <code>410</code> <code>disabled</code>); validate every visible field; count the submission; create the task with <code>Task.Create</code> as the owner (workflow initial status, <code>task.created</code> and the automation outbox apply); write custom field values, labels, default assignees, the initial status override (a system transition without checks) and the attachments; record the submission; and dispatch <code>form.submitted</code> on commit.</p>
+<ul>
+<li>Hidden targets cannot be supplied by the client. A shown field missing from <code>values</code> takes its default.</li>
+<li>Values are validated with the field's own rules; errors are <code>422</code> / <code>25006</code> with one entry per field: <code>required</code>, <code>invalid</code>, <code>too_long</code>, <code>too_many</code>, <code>unknown_field</code> (also for hidden targets), <code>file_too_large</code>, <code>file_type_not_allowed</code>, <code>attachments_disabled</code>; submitter details are <code>submitter.name</code> and <code>submitter.email</code>.</li>
+<li>Rich text is HTML sanitized by an allow-list (basic formatting, links with http, https and mailto, no images, styles or handlers); text that is not HTML is escaped into paragraphs. Titles and custom field text are stored as plain text without control characters. A &quot;Submitted by name &lt;email&gt;&quot; paragraph is added to the description when a name or an e-mail address is known. <code>submitter.name</code> and <code>submitter.email</code> are only taken when the form collects them; otherwise they are ignored and a signed-in submitter is recorded with the account name.</li>
+<li>Value caps (fixed): title 250 characters, text, url and email 10000, long text 50000.</li>
+<li>Attachments travel in <strong>one multipart request</strong> (<code>POST /forms/{token}/submissions/multipart</code>): the part <code>data</code> holds the JSON and the parts <code>files</code> the files, in one transaction, so a rejected file creates nothing. The JSON endpoint cannot carry files; a form that asks for attachments requires the multipart one. Files are sniffed by content (not only by extension); executable, script, HTML and SVG types are rejected.</li>
+<li>The response contains <code>message</code>, <code>redirect_url</code> and <code>submit_another</code>. <code>task_id</code> is added only for signed-in submitters who can read the project, never for public submissions. A honeypot hit (a non-empty <code>honeypot</code>) is answered like a success and creates nothing.</li>
+</ul>
+<h2 id="data-model">Data model <a class="anchor" href="#data-model" aria-label="Link to this section: Data model">#</a></h2>
+<figure class="diagram"><figcaption>Diagram, shown as its Mermaid source. This site has no scripts, so it cannot draw it. <a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/docs/modules/forms.md#L37">View the rendered diagram on GitHub</a>.</figcaption><pre><code class="language-mermaid">erDiagram
+    projects ||--o{ forms : &quot;has&quot;
+    forms ||--o{ form_submissions : &quot;receives&quot;
+    tasks ||--o{ form_submissions : &quot;created&quot;
+    forms {
+        bigint id PK
+        bigint project_id
+        string title
+        longtext description
+        string token UK
+        string access
+        bool enabled
+        string disabled_reason
+        bigint owner_id
+        json fields
+        json settings
+        bigint max_submissions
+        bigint submission_count
+        string brand_name
+        bigint brand_logo_file_id
+        string accent_color
+        bool hide_footer
+    }
+    form_submissions {
+        bigint id PK
+        bigint form_id
+        bigint task_id
+        bigint submitter_id
+        string submitter_name
+        string submitter_email
+        string ip_hash
+        datetime created
+    }</code></pre></figure>
+<p>Created by <code>pkg/migration/20261125100000.go</code>; the branding columns are added by <code>pkg/migration/20261126100000.go</code> with <code>partialSync</code>. <code>forms.max_submissions</code> is a copy of <code>settings.max_submissions</code> so the maximum can be enforced with one conditional <code>UPDATE</code>. <code>form_submissions.created</code> is set by the code, not by xorm, so the rate limits can be tested with a clock. <code>ip_hash</code> is stored only as <code>HMAC-SHA256(key derived from service.secret, ip)</code> and is indexed for rate limiting; it is never returned.</p>
+<p>Lifecycle: purging a project deletes its forms and submissions; deleting a form keeps the tasks it created; duplicating a project copies forms <strong>disabled</strong> with a new token and remapped custom field, option and status ids; deleting a custom field, a workflow status or a label that a form uses disables the form; deleting the owner disables their forms.</p>
+<h2 id="permissions">Permissions <a class="anchor" href="#permissions" aria-label="Link to this section: Permissions">#</a></h2>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Action</th><th scope="col">Needs</th></tr></thead><tbody>
+<tr><td>Builder: list, read, create, update, delete, regenerate the token, upload or remove the logo, list submissions, read the options</td><td>admin on the project; never for link shares</td></tr>
+<tr><td>Public read of the definition and the logo</td><td>the token; the access mode is checked for <code>users</code> and <code>members</code> forms</td></tr>
+<tr><td>Submit</td><td>per access mode: nothing for <code>public</code>, any signed-in user for <code>users</code>, a signed-in user who can read the project for <code>members</code></td></tr>
+</tbody></table></div>
+<p>The public routes are optional-auth: with no <code>Authorization</code> header the caller is anonymous; with one it is validated like anywhere (an invalid or expired token is <code>401</code> code <code>11</code>). An anonymous request to a non-public form is <code>401</code> / <code>25004</code>. A signed-in user who cannot read the project of a <code>members</code> form, or a link share, gets <code>403</code> / <code>25005</code>. The logo is served to everyone who knows the token, whatever the access mode, because a browser cannot send credentials with an image request. Permission methods are in <code>pkg/models/forms_permissions.go</code>.</p>
+<h2 id="api">API <a class="anchor" href="#api" aria-label="Link to this section: API">#</a></h2>
+<p>All routes are on <code>/api/v2</code>; conventions are in <a href="../api.html">API reference</a>. A <code>PATCH</code> is also available for a form.</p>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Method</th><th scope="col">Path</th><th scope="col">Operation ID</th><th scope="col">Permission</th><th scope="col">Description</th></tr></thead><tbody>
+<tr><td>GET</td><td><code>/projects/{project}/forms/options</code></td><td><code>forms-options</code></td><td>admin on project</td><td>List what a form of the project can ask for</td></tr>
+<tr><td>GET</td><td><code>/projects/{project}/forms</code></td><td><code>forms-list</code></td><td>admin on project</td><td>List the forms of a project</td></tr>
+<tr><td>GET</td><td><code>/projects/{project}/forms/{form}</code></td><td><code>forms-read</code></td><td>admin on project</td><td>Get a form</td></tr>
+<tr><td>POST</td><td><code>/projects/{project}/forms</code></td><td><code>forms-create</code></td><td>admin on project</td><td>Create a form</td></tr>
+<tr><td>PUT</td><td><code>/projects/{project}/forms/{form}</code></td><td><code>forms-update</code></td><td>admin on project</td><td>Update a form</td></tr>
+<tr><td>DELETE</td><td><code>/projects/{project}/forms/{form}</code></td><td><code>forms-delete</code></td><td>admin on project</td><td>Delete a form</td></tr>
+<tr><td>POST</td><td><code>/projects/{project}/forms/{form}/token</code></td><td><code>forms-token</code></td><td>admin on project</td><td>Regenerate the token of a form</td></tr>
+<tr><td>PUT</td><td><code>/projects/{project}/forms/{form}/logo</code></td><td><code>forms-logo-upload</code></td><td>admin on project</td><td>Upload the logo of a form</td></tr>
+<tr><td>DELETE</td><td><code>/projects/{project}/forms/{form}/logo</code></td><td><code>forms-logo-delete</code></td><td>admin on project</td><td>Remove the logo of a form</td></tr>
+<tr><td>GET</td><td><code>/projects/{project}/forms/{form}/submissions</code></td><td><code>form-submissions-list</code></td><td>admin on project</td><td>List the submissions of a form</td></tr>
+<tr><td>GET</td><td><code>/forms/{token}</code></td><td><code>form-public-read</code></td><td>none for public forms, else per access mode</td><td>Get the public definition of a form</td></tr>
+<tr><td>GET</td><td><code>/forms/{token}/logo</code></td><td><code>form-public-logo</code></td><td>none, the token is the credential</td><td>Get the logo of a form</td></tr>
+<tr><td>POST</td><td><code>/forms/{token}/submissions</code></td><td><code>form-public-submit</code></td><td>none for public forms, else per access mode</td><td>Submit a form</td></tr>
+<tr><td>POST</td><td><code>/forms/{token}/submissions/multipart</code></td><td><code>form-public-submit-multipart</code></td><td>none for public forms, else per access mode</td><td>Submit a form with files</td></tr>
+</tbody></table></div>
+<p>The public definition (<code>GET /forms/{token}</code>) exposes only what a submitter needs: title, description, the shown fields in order with label, help, requiredness, <code>kind</code>, <code>config</code>, options, a <code>max_length</code> where it applies and the prefill <code>default</code> (omitted when it contains a placeholder), the success behaviour, which details of the submitter are asked, the branding (<code>branding: {name, accent_color, has_logo, hide_footer}</code>) and, when attachments are asked, <code>attachments: {max_files, max_file_size}</code>. It names no project, owner, count, hidden field or default, and no user or label list (labels only on non-public forms). Definition errors on save are <code>400</code> / <code>25002</code> with <code>details.issues[] = {path, message}</code> (for example <code>fields[2].target</code>). Worked requests and responses are in <a href="../api.html#examples">API.md</a>.</p>
+<p>Error codes: <code>25001</code> unknown token or form (404), <code>25002</code> invalid definition (400), <code>25003</code> form takes no submissions (410; <code>details.reason</code> is <code>disabled</code>, <code>closed</code> or <code>full</code>), <code>25004</code> login required (401), <code>25005</code> not allowed (403), <code>25006</code> invalid answers (422), <code>25007</code> rate limited (429 with <code>Retry-After</code>), <code>25008</code> forms disabled on the instance (403, on saving), <code>25009</code> invalid logo (400).</p>
+<h2 id="configuration-keys">Configuration keys <a class="anchor" href="#configuration-keys" aria-label="Link to this section: Configuration keys">#</a></h2>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Key</th><th scope="col">Default</th><th scope="col">Meaning</th></tr></thead><tbody>
+<tr><td><code>forms.enabled</code></td><td><code>true</code></td><td>Kill switch for the whole instance. When false no form takes submissions: the public endpoints answer 410 (disabled) for every existing form.</td></tr>
+<tr><td><code>forms.maxbodysize</code></td><td><code>262144</code></td><td>The maximum size of the JSON body of a submission, in bytes. Larger requests are rejected with 413.</td></tr>
+<tr><td><code>forms.maxattachments</code></td><td><code>5</code></td><td>The maximum number of files a single submission may attach.</td></tr>
+<tr><td><code>forms.maxattachmentsize</code></td><td><code>10MB</code></td><td>The maximum size of one attached file. The smaller of this and files.maxsize applies.</td></tr>
+<tr><td><code>forms.public.enabled</code></td><td><code>true</code></td><td>Whether forms with public access exist. When false, a form with public access cannot be saved and existing ones answer 410 (disabled).</td></tr>
+<tr><td><code>forms.public.attachments</code></td><td><code>false</code></td><td>Whether public forms may ask for file attachments. Off by default: an anonymous upload is the riskiest thing a public form can offer.</td></tr>
+<tr><td><code>forms.public.ratelimit</code></td><td><code>10</code></td><td>The maximum number of submissions per client IP address and hour on public forms. Counted in the database from the stored salted IP hash, so it holds across several replicas.</td></tr>
+<tr><td><code>forms.public.formratelimit</code></td><td><code>300</code></td><td>The maximum number of submissions per public form and hour, whoever sends them. Excess submissions are answered with 429 and a Retry-After header.</td></tr>
+<tr><td><code>forms.public.requestratelimit</code></td><td><code>60</code></td><td>The maximum number of requests per client IP address and minute to the public form endpoints (definition and submissions together), counted by the same limiter store as ratelimit.store. A floor against floods; normal use never reaches it.</td></tr>
+<tr><td><code>service.ipextractionmethod</code></td><td><code>direct</code></td><td>Method for extracting client IP addresses. 'direct' (default) uses the TCP remote address and ignores forwarding headers — use this when Vikunja faces the internet directly.</td></tr>
+<tr><td><code>service.trustedproxies</code></td><td><code>empty</code></td><td>Comma-separated list of CIDR ranges for trusted reverse proxies. Only used when service.ipextractionmethod is 'xff' or 'realip'.</td></tr>
+<tr><td><code>files.maxsize</code></td><td><code>20MB</code></td><td>The maximum size of a file, as a human-readable string. Warning: The max size is limited 2^64-1 bytes due to the underlying datatype</td></tr>
+</tbody></table></div>
+<h2 id="ui">UI <a class="anchor" href="#ui" aria-label="Link to this section: UI">#</a></h2>
+<p>Project settings, Forms (project admins): a list with link copy, an open and closed switch, submission counts, warning badges, duplicate and delete; a builder with Fields, Settings and Share tabs and a live preview; a submissions table. The public form is a standalone page at <code>/forms/&lt;token&gt;</code>, without app chrome or login, with branding, per-field errors and a confirmation screen. Details: <a href="../design.html#forms">DESIGN.md</a>.</p>
+<h2 id="events-and-interaction-with-other-modules">Events and interaction with other modules <a class="anchor" href="#events-and-interaction-with-other-modules" aria-label="Link to this section: Events and interaction with other modules">#</a></h2>
+<ul>
+<li><strong>Event</strong> <code>form.submitted</code> (form id and title, submission id, task, doer = form owner, submitter id, name and e-mail; no token, no IP). Users in <code>settings.notify_user_ids</code> get the in-app (and mail) notification <code>form.submitted</code>, if they can read the project.</li>
+<li><strong>Automation</strong>: <code>form.submitted</code> is a trigger (option <code>form_id</code>) with the condition fields <code>event.new.form_id</code>, <code>form_title</code>, <code>submitter_name</code>, <code>submitter_email</code> and the placeholders <code>{{event.form.title}}</code>, <code>{{event.form.submitter_name}}</code>, <code>{{event.form.submitter_email}}</code>. Its task is the created task; <code>task.created</code> of the same submission is delivered too (<a href="automation.html">automation</a>).</li>
+<li><strong>Custom fields</strong>: a form field can target <code>cf_&lt;id&gt;</code> and reuses the field's validation (<a href="custom-fields.html">custom fields</a>). <strong>Workflows</strong>: new tasks get the initial status, or <code>initial_status_id</code> (<a href="workflows.html">workflows</a>).</li>
+</ul>
+<h2 id="limits-and-safety">Limits and safety <a class="anchor" href="#limits-and-safety" aria-label="Link to this section: Limits and safety">#</a></h2>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Protection</th><th scope="col">Setting</th></tr></thead><tbody>
+<tr><td>Kill switch for all forms (public endpoints answer <code>410</code> <code>disabled</code>)</td><td><code>forms.enabled</code></td></tr>
+<tr><td>Kill switch for public forms (cannot be saved, existing ones answer <code>410</code>)</td><td><code>forms.public.enabled</code></td></tr>
+<tr><td>Submissions per client IP and hour on public forms, counted in the database from the salted hash, so it holds across replicas</td><td><code>forms.public.ratelimit</code></td></tr>
+<tr><td>Submissions per public form and hour</td><td><code>forms.public.formratelimit</code></td></tr>
+<tr><td>Request floor per IP and minute on the public routes (router middleware)</td><td><code>forms.public.requestratelimit</code></td></tr>
+<tr><td>JSON body size, <code>413</code> above (also the <code>data</code> part of the multipart route)</td><td><code>forms.maxbodysize</code></td></tr>
+<tr><td>Attachments on public forms</td><td><code>forms.public.attachments</code> (off)</td></tr>
+<tr><td>Files per submission, size per file (the smaller of it and <code>files.maxsize</code> applies)</td><td><code>forms.maxattachments</code>, <code>forms.maxattachmentsize</code></td></tr>
+<tr><td>Honeypot</td><td>a non-empty <code>honeypot</code> is answered like a success and creates nothing</td></tr>
+<tr><td>Maximum submissions</td><td><code>settings.max_submissions</code>, enforced with <code>UPDATE forms SET submission_count = submission_count + 1 WHERE id = ? AND (max_submissions = 0 OR submission_count &lt; max_submissions)</code> inside the submission transaction, after a lock write on the form row</td></tr>
+<tr><td>Close date, disabled flag</td><td><code>settings.close_date</code>, <code>enabled</code></td></tr>
+</tbody></table></div>
+<p>Rate limits answer <code>429</code> with <code>Retry-After</code>; the hourly window runs on the clock of the server. The client IP is the one the router determines (<code>service.ipextractionmethod</code>, <code>service.trustedproxies</code>). The routes use no cookies and no CSRF token (nothing depends on ambient credentials); the CORS policy is the global one; JSON <code>Content-Type</code> is required, so a cross-site HTML form cannot post to the JSON endpoint.</p>
+<p><strong>Security model.</strong> An anonymous submitter can read the definition of one form and create one task per accepted submission, as the form owner, in the one project of the form, with the fields the form asks for and the presets the admin chose. They cannot choose where the task goes, set hidden fields, see the task or its id, see any other task, project, user or label, or learn how many submissions exist, and they cannot upload unless the instance and the form allow it, and then only limited, non-executable files. Every text they send is escaped, sanitized or stored as plain text. A form silently stops when its owner loses write access.</p>
+<h2 id="known-gaps-and-open-decisions">Known gaps and open decisions <a class="anchor" href="#known-gaps-and-open-decisions" aria-label="Link to this section: Known gaps and open decisions">#</a></h2>
+<p>From the <a href="../roadmap.html">roadmap</a>:</p>
+<ul>
+<li>The e-mail of a signed-in submitter is never recorded although the field documentation says so.</li>
+<li>The title of a closed <code>members</code> form is shown to an anonymous holder of the link; there is no hourly limit on <code>members</code> forms.</li>
+<li>Per-IP limits count full IPv6 addresses; hourly limits are check-then-insert; honeypot hits and validation failures only count against the per-minute request limit.</li>
+<li>Uploads are buffered before the token is looked up.</li>
+<li>The branding UI (brand name, accent colour, footer, logo) was checked in a browser (see the roadmap); the builder's live preview does not use the accent colour; a server-side <code>422</code> was only shown with a mocked response; relative date defaults are not offered; no QR code.</li>
+<li>Not exposed over MCP.</li>
+<li>Which databases the forms tests have been run on is recorded in the roadmap.</li>
+</ul>
+<h2 id="where-the-code-lives">Where the code lives <a class="anchor" href="#where-the-code-lives" aria-label="Link to this section: Where the code lives">#</a></h2>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">What</th><th scope="col">Where</th></tr></thead><tbody>
+<tr><td>Form model, definition validation, options</td><td><code>pkg/models/forms.go</code></td></tr>
+<tr><td>Submission path</td><td><code>pkg/models/forms_submit.go</code></td></tr>
+<tr><td>Branding and logo</td><td><code>pkg/models/forms_branding.go</code></td></tr>
+<tr><td>Lifecycle (duplicate, purge, disable)</td><td><code>pkg/models/forms_lifecycle.go</code></td></tr>
+<tr><td>Permissions, events</td><td><code>pkg/models/forms_permissions.go</code>, <code>pkg/models/form_events.go</code></td></tr>
+<tr><td>Errors</td><td><code>pkg/models/error_forms.go</code> (<code>25001</code> to <code>25009</code>)</td></tr>
+<tr><td>Routes</td><td><code>pkg/routes/api/v2/forms.go</code>, <code>pkg/routes/api/v2/forms_public.go</code>; public path lists and floor in <code>pkg/routes/routes.go</code></td></tr>
+<tr><td>Migrations</td><td><code>pkg/migration/20261125100000.go</code>, <code>pkg/migration/20261126100000.go</code></td></tr>
+<tr><td>Tests</td><td><code>pkg/models/forms_test.go</code>, <code>pkg/models/forms_branding_test.go</code>, <code>pkg/automation/forms_test.go</code>, <code>pkg/webtests/huma_forms_test.go</code></td></tr>
+<tr><td>Frontend</td><td><code>frontend/src/components/forms/</code>, <code>frontend/src/views/forms/PublicFormPage.vue</code>, <code>frontend/src/views/project/settings/ProjectSettingsForms.vue</code>, <code>frontend/src/client/queries/forms.ts</code>, <code>frontend/src/helpers/forms.ts</code>, <code>formsPublic.ts</code></td></tr>
+</tbody></table></div>
+</div>
+<p class="edit"><a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/docs/modules/forms.md">Source of this page on GitHub</a></p>
+<nav class="pager" aria-label="Pages"><a class="prev" href="dashboards-reports.html" rel="prev"><span>Previous</span>Dashboards and reports</a><a class="next" href="../api.html" rel="next"><span>Next</span>API reference</a></nav>
+</main>
+<nav class="toc-aside" aria-label="On this page"><p class="side-title">On this page</p><ul>
+<li class="toc-2"><a href="#overview">Overview</a></li>
+<li class="toc-2"><a href="#concepts">Concepts</a></li>
+<li class="toc-3"><a href="#behaviour-of-a-submission">Behaviour of a submission</a></li>
+<li class="toc-2"><a href="#data-model">Data model</a></li>
+<li class="toc-2"><a href="#permissions">Permissions</a></li>
+<li class="toc-2"><a href="#api">API</a></li>
+<li class="toc-2"><a href="#configuration-keys">Configuration keys</a></li>
+<li class="toc-2"><a href="#ui">UI</a></li>
+<li class="toc-2"><a href="#events-and-interaction-with-other-modules">Events and interaction with other modules</a></li>
+<li class="toc-2"><a href="#limits-and-safety">Limits and safety</a></li>
+<li class="toc-2"><a href="#known-gaps-and-open-decisions">Known gaps and open decisions</a></li>
+<li class="toc-2"><a href="#where-the-code-lives">Where the code lives</a></li>
+</ul></nav>
+</div>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-about">
+      <p><strong>vikunja-enterprise</strong> is an independent community fork of Vikunja. It is not affiliated with, endorsed by or supported by the Vikunja project. Almost all of the software is their work.</p>
+      <p>Licensed under AGPL-3.0-or-later, as upstream. This site has no scripts, cookies or trackers.</p>
+    </div>
+    <nav class="footer-nav" aria-label="Footer">
+      <div><p class="footer-title">Project</p><ul>
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="../getting-started.html">Get started</a></li>
+        <li><a href="../roadmap.html">Roadmap and status</a></li>
+        <li><a href="../upstream.html">Relationship to upstream</a></li>
+      </ul></div>
+      <div><p class="footer-title">Reference</p><ul>
+        <li><a href="index.html">Modules</a></li>
+        <li><a href="../api.html">API</a></li>
+        <li><a href="../architecture.html">Architecture</a></li>
+        <li><a href="../configuration.html">Configuration</a></li>
+      </ul></div>
+      <div><p class="footer-title">Community</p><ul>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise">Repository</a></li>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise/issues">Issues</a></li>
+        <li><a href="../security.html">Security</a></li>
+        <li><a href="../contributing.html">Contributing</a></li>
+        <li><a href="../license.html">License</a></li>
+      </ul></div>
+      <div><p class="footer-title">Upstream Vikunja</p><ul>
+        <li><a href="https://github.com/go-vikunja/vikunja">Source code</a></li>
+        <li><a href="https://vikunja.io/docs/">Documentation</a></li>
+        <li><a href="https://vikunja.io/support/">Support upstream</a></li>
+      </ul></div>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>

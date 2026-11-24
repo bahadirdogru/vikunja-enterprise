@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Roadmap and status - vikunja-enterprise</title>
+<meta name="description" content="What is done, what has been tested on which database, and what is still open.">
+<link rel="canonical" href="https://vikunja.bahadirdogru.com/roadmap.html">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1020" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="assets/docs.css">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="vikunja-enterprise">
+<meta property="og:title" content="Roadmap and status - vikunja-enterprise">
+<meta property="og:description" content="What is done, what has been tested on which database, and what is still open.">
+<meta property="og:url" content="https://vikunja.bahadirdogru.com/roadmap.html">
+<meta property="og:image" content="https://vikunja.bahadirdogru.com/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="vikunja-enterprise, an independent community fork of Vikunja">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Roadmap and status - vikunja-enterprise">
+<meta name="twitter:description" content="What is done, what has been tested on which database, and what is still open.">
+<meta name="twitter:image" content="https://vikunja.bahadirdogru.com/assets/og.png">
+</head>
+<body class="docs">
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="index.html" aria-label="vikunja-enterprise home"><img src="assets/favicon.svg" alt="" width="30" height="30">vikunja-enterprise</a>
+    <nav class="top-nav" aria-label="Main">
+      <ul>
+<li><a href="modules/index.html">Modules</a></li>
+<li><a href="getting-started.html">Get started</a></li>
+<li><a href="api.html">API</a></li>
+<li><a href="architecture.html">Architecture</a></li>
+<li><a href="roadmap.html" aria-current="page">Roadmap</a></li>
+<li><a href="upstream.html">Upstream</a></li>
+        <li><a class="gh" href="https://github.com/bahadirdogru/vikunja-enterprise">GitHub</a></li>
+      </ul>
+    </nav>
+    <details class="menu">
+      <summary><span class="menu-icon" aria-hidden="true"></span>Menu</summary>
+      <nav class="menu-panel" aria-label="Site">
+        <div class="menu-group"><p class="menu-title">Site</p><ul>
+<li><a href="index.html">Home</a></li>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise">GitHub repository</a></li>
+        </ul></div>
+<div class="menu-group"><p class="menu-title">Start</p><ul>
+<li><a href="getting-started.html">Getting started</a></li>
+<li><a href="configuration.html">Configuration</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Modules</p><ul>
+<li><a href="modules/index.html">Overview</a></li>
+<li><a href="modules/custom-fields.html">Custom fields</a></li>
+<li><a href="modules/workflows.html">Workflows</a></li>
+<li><a href="modules/approvals.html">Approvals</a></li>
+<li><a href="modules/automation.html">Automation</a></li>
+<li><a href="modules/dashboards-reports.html">Dashboards and reports</a></li>
+<li><a href="modules/forms.html">Forms</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Reference</p><ul>
+<li><a href="api.html">API reference</a></li>
+<li><a href="architecture.html">Architecture</a></li>
+<li><a href="design.html">Design</a></li>
+<li><a href="roadmap.html" aria-current="page">Roadmap and status</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Project</p><ul>
+<li><a href="upstream.html">Relationship to upstream</a></li>
+<li><a href="security.html">Security</a></li>
+<li><a href="contributing.html">Contributing</a></li>
+<li><a href="license.html">License</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Design history</p><ul>
+<li><a href="enterprise/index.html">Overview</a></li>
+<li><a href="enterprise/custom-fields.html">Custom fields design</a></li>
+<li><a href="enterprise/workflow.html">Workflow design</a></li>
+<li><a href="enterprise/forms-approvals.html">Forms and approvals design</a></li>
+<li><a href="enterprise/automation.html">Automation design</a></li>
+<li><a href="enterprise/dashboards.html">Dashboards design</a></li>
+</ul></div>
+      </nav>
+    </details>
+  </div>
+</header>
+<div class="docs-layout">
+<nav class="sidebar" aria-label="Documentation">
+<p class="side-title">Start</p><ul>
+<li><a href="getting-started.html">Getting started</a></li>
+<li><a href="configuration.html">Configuration</a></li>
+</ul>
+<p class="side-title">Modules</p><ul>
+<li><a href="modules/index.html">Overview</a></li>
+<li><a href="modules/custom-fields.html">Custom fields</a></li>
+<li><a href="modules/workflows.html">Workflows</a></li>
+<li><a href="modules/approvals.html">Approvals</a></li>
+<li><a href="modules/automation.html">Automation</a></li>
+<li><a href="modules/dashboards-reports.html">Dashboards and reports</a></li>
+<li><a href="modules/forms.html">Forms</a></li>
+</ul>
+<p class="side-title">Reference</p><ul>
+<li><a href="api.html">API reference</a></li>
+<li><a href="architecture.html">Architecture</a></li>
+<li><a href="design.html">Design</a></li>
+<li><a href="roadmap.html" aria-current="page">Roadmap and status</a></li>
+</ul>
+<p class="side-title">Project</p><ul>
+<li><a href="upstream.html">Relationship to upstream</a></li>
+<li><a href="security.html">Security</a></li>
+<li><a href="contributing.html">Contributing</a></li>
+<li><a href="license.html">License</a></li>
+</ul>
+<p class="side-title">Design history</p><ul>
+<li><a href="enterprise/index.html">Overview</a></li>
+<li><a href="enterprise/custom-fields.html">Custom fields design</a></li>
+<li><a href="enterprise/workflow.html">Workflow design</a></li>
+<li><a href="enterprise/forms-approvals.html">Forms and approvals design</a></li>
+<li><a href="enterprise/automation.html">Automation design</a></li>
+<li><a href="enterprise/dashboards.html">Dashboards design</a></li>
+</ul>
+</nav>
+<main id="main" class="doc">
+<nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="index.html">Home</a></li><li>Reference</li><li aria-current="page">Roadmap and status</li></ol></nav>
+<h1>vikunja-enterprise roadmap</h1>
+<details class="toc-inline"><summary>On this page</summary>
+<nav aria-label="On this page"><ul>
+<li class="toc-2"><a href="#principles">Principles</a></li>
+<li class="toc-2"><a href="#status">Status</a></li>
+<li class="toc-2"><a href="#log">Log</a></li>
+<li class="toc-2"><a href="#remaining">Remaining</a></li>
+</ul></nav></details>
+<div class="prose">
+<p>vikunja-enterprise is an independent, community fork of <a href="https://github.com/go-vikunja/vikunja">Vikunja</a>
+(AGPL-3.0-or-later). It is not an official Vikunja product.</p>
+<h2 id="principles">Principles <a class="anchor" href="#principles" aria-label="Link to this section: Principles">#</a></h2>
+<ul>
+<li><strong>One image, one process.</strong> A single Docker image (amd64 + arm64). No Redis
+requirement, no separate worker containers. Durable background work uses a
+database outbox.</li>
+<li><strong>Small upstream diff.</strong> New features live in their own files/packages and
+tables; upstream files are touched as little as possible so upstream can be
+merged regularly.</li>
+<li><strong>Everything unlocked.</strong> No license key, no feature gating.</li>
+<li>New API routes go on <code>/api/v2</code>.</li>
+<li>Organisation / multi-tenant hierarchy is deferred until there is a real need.</li>
+</ul>
+<h2 id="status">Status <a class="anchor" href="#status" aria-label="Link to this section: Status">#</a></h2>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">#</th><th scope="col">Milestone</th><th scope="col">Status</th></tr></thead><tbody>
+<tr><td>0a</td><td>All features enabled without a license key</td><td>Done</td></tr>
+<tr><td>0b</td><td>Multi-arch image (amd64 + arm64) published to GHCR</td><td>Done</td></tr>
+<tr><td>1a</td><td>Custom fields: backend (models, migration, <code>/api/v2</code> routes, events)</td><td>Done</td></tr>
+<tr><td>1b</td><td>Custom fields: frontend (project settings page, task detail editors, en + tr)</td><td>Done</td></tr>
+<tr><td>1c</td><td>Custom fields: filter (<code>cf_&lt;id&gt;</code>) and sort in the API, values removed when a task changes project</td><td>Done</td></tr>
+<tr><td>1d</td><td>Custom fields: values in task lists (<code>expand=custom_fields</code>), table columns, kanban card fields</td><td>Done</td></tr>
+<tr><td>1e</td><td>Custom fields: filter UI with field names instead of <code>cf_&lt;id&gt;</code> (stored filters keep <code>cf_&lt;id&gt;</code>)</td><td>Done</td></tr>
+<tr><td>2a</td><td>Workflow backend: statuses, transitions, required fields, teams, history, done sync, <code>/api/v2</code> (<a href="enterprise/workflow.html">Workflow design</a>)</td><td>Done</td></tr>
+<tr><td>2b</td><td>Workflow UI: editor (list + matrix) in project settings, status menu, requirements dialog and history on the task</td><td>Done</td></tr>
+<tr><td>2c</td><td>Workflow in views: kanban status mode (columns = statuses, drag = transition), table column, list/card badges, filter and sort by <code>status</code> / <code>status_category</code></td><td>Done</td></tr>
+<tr><td>3a</td><td>Automation core: transactional outbox, workers, rules, conditions, non-script actions, run history, limits, dry run, catalog (<a href="enterprise/automation.html">Automation design</a>)</td><td>Done</td></tr>
+<tr><td>3b</td><td>Automation scripting: JavaScript action and condition, <code>http.request</code> action, encrypted project secrets, script editor with API reference</td><td>Done</td></tr>
+<tr><td>3c</td><td>Automation UI: rule list, catalog-driven When / If / Then editor, dry run, runs with steps and retry</td><td>Done</td></tr>
+<tr><td>3d</td><td>Automation: schedule / overdue / due soon / manual / incoming webhook triggers, wait / <code>task.create</code> / notify actions, ticker, loop guards, editor support, manual run from a task</td><td>Done (editor, webhook address, dry run, manual run and notify checked in a browser; time triggers and <code>wait</code> not run end to end; no templates gallery for the new types)</td></tr>
+<tr><td>4a</td><td>Dashboards: task aggregation API (<code>POST /api/v2/reports/tasks</code>), options endpoint, dashboards/widgets CRUD (<a href="enterprise/dashboards.html">Dashboards design</a>)</td><td>Done</td></tr>
+<tr><td>4b</td><td>Dashboards UI: SVG charts, dashboard pages with drag/resize grid, widget editor with live preview, drill-down</td><td>Done</td></tr>
+<tr><td>4c</td><td>Dashboards: time in status, workload, time tracking widgets, CSV export, previous-period comparison on number widgets</td><td>Done (checked in a browser; default dashboards for new workflow projects open)</td></tr>
+<tr><td>5a</td><td>Approvals backend: requests and decisions, approval on workflow transitions, ad-hoc approvals, automation triggers/action, notifications (<a href="enterprise/forms-approvals.html">Forms and approvals design</a>)</td><td>Done</td></tr>
+<tr><td>5b</td><td>Approvals UI: transition approval settings, task banner with approve / reject, approvals page with badge, kanban and list markers, notifications</td><td>Done</td></tr>
+<tr><td>5c</td><td>Forms backend: definitions, public and signed-in submission path, limits, attachments, <code>form.submitted</code> trigger</td><td>Done</td></tr>
+<tr><td>5d</td><td>Forms UI: forms list, builder with live preview, submissions, standalone public form page</td><td>Done</td></tr>
+<tr><td>5e</td><td>Forms: brand name, accent colour, footer and logo for public forms (backend + builder settings + public page)</td><td>Done (checked in a browser)</td></tr>
+<tr><td>5f</td><td>Approvals: the <code>409</code> / <code>24007</code> refusal names the target status and a pending request; the UI offers &quot;Request approval&quot;</td><td>Done</td></tr>
+<tr><td>–</td><td>Organisation / tenant layer, AI features</td><td>Deferred</td></tr>
+</tbody></table></div>
+<h2 id="log">Log <a class="anchor" href="#log" aria-label="Link to this section: Log">#</a></h2>
+<ul>
+<li><p>Fork created from upstream <code>main</code> (v2.8.0-187). License gate removed
+(<code>pkg/license</code>), gating tests still pass.</p></li>
+<li><p>Multi-arch image published as <code>ghcr.io/bahadirdogru/vikunja-enterprise:main</code>
+(linux/amd64, linux/arm64). Inherited upstream workflows are disabled on the
+fork; only <code>enterprise-docker.yml</code> runs.</p></li>
+<li><p>Custom fields backend added, see <a href="enterprise/custom-fields.html">Custom fields design</a>.
+Known gaps: not exposed through MCP yet; golangci-lint has
+not been run on the new code.</p></li>
+<li><p>Custom fields UI added: project settings page and per-type editors in the
+task detail view. Checked in a real browser against the API for number,
+select, multi select, rating, checkbox, progress, currency, url, email
+(invalid input rejected), text and long text. Not yet exercised in a
+browser: picking a date, picking a user, hover/focus styling, read-only
+users. Long text shows a single clipped line until focused.</p></li>
+<li><p>Custom field filtering and sorting added to the task list API. Full models
+and webtests suites pass on SQLite; the custom field tests also pass on
+PostgreSQL 17. MySQL not exercised. Date <code>=</code> compares exact instants, use a
+range. Picking a date and a user in the task detail view checked in a
+browser.</p></li>
+<li><p>Custom field values can be embedded in task lists; table view columns and
+kanban card fields added (selection stored in the browser, per project /
+per view). Checked visually.</p></li>
+<li><p>Workflow backend added. Full models suite passes on SQLite and PostgreSQL
+17, full webtests on SQLite; MySQL not exercised, golangci-lint not run,
+not exposed through MCP. Notes: a transition that requires a comment cannot
+be done through the done checkbox; enabling a workflow on an existing
+project assigns statuses in bulk without history rows.</p></li>
+<li><p>Workflow UI added (en + tr). Exercised in a browser: enable default
+workflow, add a transition with required fields and comment, perform it
+through the dialog, history, done button, removing a status with tasks,
+dark mode. Not exercised in a browser: forbidden (403) and team-restricted
+transitions, inline server validation errors. In workflow projects the done
+button posts a status change instead of a task update.</p></li>
+<li><p>Automation core added (backend only, no UI yet). Race-detector runs of the
+engine tests pass on SQLite; engine, models and selected webtests pass on
+PostgreSQL 17; full webtests on SQLite. Not done: MySQL, golangci-lint,
+in-app notification action, overdue and label triggers. Known gaps: code
+paths that commit their own sessions (cron, CalDAV, importers) only log a
+failed outbox insert; a rule enabled on one replica can miss another
+replica's events for up to <code>automation.cachettl</code> (30 s).</p></li>
+<li><p>Workflow views added. Full models and webtests suites pass on SQLite; the
+new model tests pass on PostgreSQL 17. Exercised in a browser: status-mode
+board, allowed drag, drag into a gated column completed through the dialog,
+rejected drop snapping back, create in column, table sort, badges, filter
+suggestions. Not exercised in a browser: forbidden moves, create-in-column
+that needs input, a status board after its workflow is deleted. In status
+mode a column's bucket id is the negated status id.</p></li>
+<li><p>Automation UI added (en + tr); full frontend unit suite passes on main.
+Exercised in a browser: rule from a template, hand-built rule with nested
+conditions, server validation error mapped to its input, dry run, real runs
+with steps, retry, enable switch, 390px width, dark mode. The dry run only
+tests saved rules.</p></li>
+<li><p>Reports API and dashboards backend added. The report reuses the task
+list's own scope and filter builder; a permission matrix test (7 viewers x
+11 filters x 4 scopes) asserts report totals equal task list totals. New
+tests pass on SQLite, PostgreSQL 17 and MySQL 8; full suites on SQLite
+only. Deferred: status time / workload / time tracking data, CSV export,
+number comparison, running open count.</p></li>
+<li><p>Automation scripting added (backend + UI). Engine tests with the race
+detector, full models and webtests pass on SQLite; engine and automation
+model tests pass on PostgreSQL 17; frontend suite passes (3186 tests).
+Exercised in a browser against the real backend: script action writing a
+custom field and a comment, syntax error marked on its line, dry run,
+script condition, SSRF block on <code>http.request</code>, 5 s timeout on an endless
+loop, secrets create/replace/delete and the unreadable state.
+Known limits: no hard memory cap inside the interpreter; a project admin
+who writes scripts can read that project's secrets; the step transaction
+stays open during scripts and HTTP calls; MySQL not exercised;
+<code>vikunja.tasks.find</code> with <code>cf_</code> / status filters not tested.</p></li>
+<li><p>Dashboards UI added (en + tr); full frontend suite passes (3319 tests) with
+caches cleared. Exercised in a browser: default project dashboard, all 7
+offered widget types with live preview, move/resize and persistence,
+drill-down counts matching chart values, read-only second user, rename /
+delete, widget duplicate / remove, Turkish locale, 390px, dark mode.
+Display options (bar direction, stacked, legend) are stored in the browser.
+Note for test runs: delete <code>frontend/node_modules/.vitest-cache</code> after
+translation changes, a stale cache makes new keys render as raw key names.</p></li>
+<li><p>Approvals backend added. Full models and webtests pass on SQLite; approval
+tests incl. concurrency pass on PostgreSQL 17 and MySQL 8; automation tests
+pass with the race detector. A plain <code>done: true</code> update on a task whose
+done transition needs approval is rejected with 409 (24007) and creates no
+request; the status route and kanban moves create it (202).
+Open: one <code>./pkg/models/</code> run failed once and did not reproduce in ten
+further runs (failing test not captured); approvers' Turkish backend
+strings not added; new catalog keys have no UI translations until 5b.</p></li>
+<li><p>Approvals: a decision and a direct status change of the same task
+deadlocked (40P01 on PostgreSQL) because they locked the task row and the
+request row in opposite order. Decisions, cancellations and approver removal
+now lock the task first (<code>lockApprovalRequest</code>). The regression test
+<code>TestApprovals_DecisionAndStatusChangeDoNotDeadlock</code> failed 150 of 150
+rounds before the fix on PostgreSQL 18 (40P01) and on MySQL 8 (1213); after
+it, it passed 5 runs on each. SQLite skips it (no row locks).</p></li>
+<li><p>Approvals UI added (en + tr); frontend suite passes (3374 tests).
+Exercised in a browser with three users: approval settings in the workflow
+editor, request from the status menu and the done button, mode all and any,
+reject with comment and rejected status, cancel, ad-hoc approval, kanban
+marker, approvals page and badge, 390px, dark mode. Not exercised: overdue
+request, reminder notification, table marker. Plain <code>done: true</code> updates
+from the list checkbox still answer 409 and point to the status menu.</p></li>
+<li><p>Forms backend added (no UI yet). Full models, webtests and race-detector
+automation tests pass on SQLite; new tests pass on PostgreSQL 17 and
+MySQL 8. Public routes skip auth only without an Authorization header.
+Known limits: hourly limits are check-then-insert; honeypot hits and
+validation failures only count against the per-minute request limit; not
+exposed through MCP.</p></li>
+<li><p>Forms UI added (en + tr); frontend suite passes (3466 tests). Exercised in
+a browser, logged out: public form with 11 fields submitted and the task
+verified through the API (values, status, hidden defaults, attachment,
+submitter block), client validation, honeypot, full / disabled / closed,
+members form with login and return, 429, link regeneration, 320px, dark
+mode, Turkish. A server-side 422 was only shown with a mocked response. No
+QR code (would need a dependency). Relative date defaults are not offered.</p></li>
+</ul>
+<ul>
+<li><p>Review pass over the fork's code (branch <code>chore/enterprise-overhaul</code>).
+golangci-lint v2.14.0 run for the first time: 240 findings, 12 left, all
+<code>unused</code> in <code>pkg/license</code>. Build the linter with <code>GOTOOLCHAIN=go1.27.0</code>;
+do not run <code>lint:fix</code> blind, its err113 autofix corrupted a test file.
+The intermittent <code>./pkg/models/</code> failure was <code>TestApprovals_Notifications</code>
+asserting the order of two mails (7 failures in 100 runs). Full
+<code>test:feature</code> and <code>test:web</code> passed on SQLite and PostgreSQL 17 at that
+time; an earlier run on PostgreSQL 9.5 passed apart from an unordered
+member list, fixed since. Fixed in the review, each with a test: scripts
+reading any task through an empty update, rules seeing tasks their owner
+lost, duplicate steps and an expiring event lock, idle workers locking
+SQLite on every poll, three issues on the public form path and a 500 on
+malformed form tokens, workflow rules skipped by entering a workflow done,
+done out of sync after a category change, report buckets in time zones
+where daylight saving starts at midnight, duplicate custom field values
+under concurrent writes. Behaviour change: creating a done task in a
+workflow project whose done transition is restricted or needs approval is
+now refused, also through CalDAV. Frontend: eslint, stylelint and vue-tsc
+are clean on the fork's files; the unit suite was not run in this pass.</p></li>
+</ul>
+<ul>
+<li><p>Custom field names in the filter input (1e). The input shows and accepts
+field names and option titles and sends <code>cf_&lt;id&gt;</code> and option ids; saved
+filters keep the id form, so renaming a field breaks nothing.</p></li>
+<li><p>Approvals: the <code>24007</code> refusal of a plain <code>done: true</code> update now carries
+the target status and a pending request in <code>details</code>; the client rolls the
+change back and offers &quot;Request approval&quot; (or opens the task when a request
+is pending).</p></li>
+<li><p>Form branding added (backend + UI): brand name, accent colour, footer and
+a logo (PNG, JPEG, GIF or WebP, no SVG; scaled down, size and pixel
+limits). Checked in a browser, see the browser pass below.</p></li>
+<li><p>Automation 3d added (backend + UI, en + tr). Triggers: schedule (cron, time
+zone of the server), task overdue, due soon, manual, incoming webhook
+(secret URL, optional HMAC signature). Actions: <code>wait</code>, <code>task.create</code>,
+<code>notify</code>. A ticker claims firings in the database so replicas never fire
+twice; arming markers keep tasks that were already overdue from firing;
+loop guards (task origins, depth, a header the API refuses with 508 on
+requests the engine sends). Editor forms, webhook address shown once,
+&quot;Run automation...&quot; on a task, <code>automation.notify</code> notification. Checked
+in a browser, see the browser pass below. (The replay protection of the
+signature came later, see the hardening entry at the end of the log.)</p></li>
+<li><p>PostgreSQL 18 and 19: full <code>test:feature</code> and <code>test:web</code> pass uncached on
+PostgreSQL 18.7 and 19.0 (commit 995b6414f). The fork tests on the newest
+stable PostgreSQL and recommends 18 or newer. The minimum versions in
+<code>.agents/docs/databases.md</code> are upstream's and are left as they are, so
+the fork's SQL stays portable and upstream stays mergeable; they are not
+tested here.</p></li>
+<li><p>Database pass after automation 3d: <code>test:feature</code> passes on SQLite,
+PostgreSQL 17 and MySQL 8, <code>test:web</code> on all three, run uncached after the fixes (the 3d failures on
+PostgreSQL and MySQL were test problems, see below). Go caches test results
+without regard to <code>VIKUNJA_DATABASE_*</code>: run other databases with
+<code>GOFLAGS=-count=1</code> or the result is the previous database's. Found and
+fixed: <code>automation_task_origins</code> was not reset between tests, so rows of
+earlier tests with the same task id made the unique index fail runs and
+suppressed the due and schedule events (the loop guard read the stale
+origin); product bug: <code>recordTaskOrigin</code> now replaces an existing row for
+the task instead of failing on the unique index (ids can be handed out
+again, and cleanup of origins is only daily). The overdue, due soon,
+schedule and webhook triggers themselves behaved correctly on both
+databases. <code>TestClaimDue_ARealInsertErrorIsReturnedNotSwallowed</code> needs a
+SQLite trigger and is skipped elsewhere. The triggers migration test
+inserted an empty json value, rejected by PostgreSQL.</p></li>
+<li><p>Dashboards 4c added (backend + UI): time in status, workload and time
+tracking widgets, CSV export from the widget menu and the drill-down,
+previous-period comparison on number widgets (a partial period is compared
+with the same elapsed share of the previous one). Checked in a browser,
+see the browser pass below. Default dashboards for new projects with a workflow are not created.</p></li>
+<li><p>Browser pass over the three newest UI parts (Playwright through
+<code>mage test:e2e</code>, system Chromium, SQLite; 19 tests in
+<code>frontend/tests/e2e/forms/form-branding.spec.ts</code>,
+<code>dashboards/dashboard-widgets.spec.ts</code> and
+<code>automation/automation-triggers-actions.spec.ts</code>; screenshots are written
+only when <code>E2E_SCREENSHOT_DIR</code> is set; uncaught errors and unexpected 4xx /
+5xx responses fail the specs). Exercised: brand name, accent colour, logo
+upload / replace / refusal / removal and the footer, in the builder and on
+the public page (light, dark, 390 px wide); the three new widget types
+added in the editor and rendered with data and with none, a number widget
+with the previous-period comparison, CSV from the widget menu and from the
+drill-down (header row asserted), dark and 390 px dashboards; the
+schedule editor (bad expressions, presets), overdue, due soon, manual and
+webhook triggers with a save and reload, the webhook address shown once
+with its copy button, the leave confirmation and &quot;create a new address&quot;
+(the old address stops, the new one starts the rule), a dry run with a JSON
+payload, <code>wait</code> / <code>task.create</code> / notify actions, &quot;Run automation...&quot; on a
+task with its toast, and the <code>automation.notify</code> notification in the bell.
+Found and fixed: a pale accent (#ffe066) made links on the public form
+unreadable (1.3:1) and mid blues and greens got white button text below
+4.5:1, so links now get a per-theme shade and the button text is whichever
+of black and white contrasts more; time in status and tracked time showed
+bare seconds on the chart axis and bars (now hours and minutes); picking
+one of the new widget types sent the number widget's request to its
+endpoint, three 422 responses per pick; the accent swatch and its input
+wrapped onto two rows in the builder. Open: the builder's live preview does
+not use the accent colour; the dry-run block of a webhook rule is titled
+&quot;Test with a task&quot;; the accent is rounded to whole hue / saturation /
+lightness steps (a few RGB units off). Not run end to end: the 30 s ticker
+firing schedule, overdue and due soon rules, a <code>wait</code> continuation, the HMAC
+signature header, notify to the doer or assignees, the workload estimate
+field (needs a numeric custom field), a server-side validation error shown
+in the builder, and the Turkish translations of these screens.</p></li>
+<li><p>Automation scripts run in child processes. goja checks its interrupt only
+between instructions, so one native call ran past the timeout. Of 70
+surveyed calls (array built-ins on <code>{length: 2**53 - 1}</code>, also through
+<code>Reflect.apply</code>, bound functions, a Proxy and iterators; typed arrays;
+<code>repeat</code> / <code>padStart</code>; <code>JSON.stringify</code>; <code>eval</code> and <code>new Function</code> of huge
+sources; BigInt) at a 200 ms timeout, 27 still ran after 10 s, 23 hit a
+fatal out-of-memory error (under a 3 GiB cap; in the server that error ends
+the process) and 8 overran by 0.5 to 7 s. Now every script, and the compile
+check on save, runs in the same binary re-executed with an empty
+environment; host calls come back over a pipe and are answered in the
+step's transaction. The process is killed 0.5 s after the timeout, has an
+address-space limit (<code>automation.scripts.maxmemory</code>, 256 MiB) and a CPU
+limit on Linux, and dies with the server; one that finished in time is
+pooled (workers + 1). All 70 now end within timeout + 0.5 s: as a timeout,
+a memory error or the built-in's own exception (4 <code>find*</code> calls on an
+array-like hit a nil-pointer panic in goja, reported as an internal error,
+before and after). Overhead 0.8 ms per script pooled, 25 ms per process
+start (0.2 ms in-process before). Wrapping the built-ins was rejected: the
+class is open-ended. Not closed: the memory limit is only soft on macOS and
+Windows; a script still costs up to one core for its timeout + 0.5 s; idle
+pooled processes take about 13 MB each.</p></li>
+<li><p>Script processes, adversarial review. A pooled process kept the previous
+script's heap: two <code>new Float64Array(20*2**20)</code> in one process, the second
+failed with the memory error and counted against its (maybe another
+project's) rule. Now the heap is collected and returned between scripts
+when more than 8 MiB of garbage is left, <code>MALLOC_ARENA_MAX=1</code> stops glibc
+from reserving 64 MiB of address space per thread, and the child reports
+its spare address space: a process is pooled only after a success or an
+ordinary exception and within 32 MiB of a new one, else retired. The
+CPU rlimit did nothing (Go ignores <code>SIGXCPU</code>); a watchdog goroutine in the
+child exits 1.5 s after the deadline or when stdin closes or the parent
+changes; preemption lets it run inside a native call with <code>GOMAXPROCS=1</code>
+(a child whose parent was SIGKILLed while it spun in <code>indexOf</code>: gone after
+0.04 s, before still running at 30 s). Children are <code>/proc/self/exe</code> on
+Linux and must send a hello with protocol and build within 5 s; started
+from one locked thread (Pdeathsig). Live processes capped at workers + 2
+(dry runs and checks share 2, wait within their timeout, else &quot;busy&quot;).
+Lines over 4 MiB are refused before buffering (was 32 MiB with two
+copies); results, errors and logs are cut in the child; the parent counts
+calls and requests and checks sizes again; sequence numbers; unread output
+kills; the child gets <code>oom_score_adj</code> 1000. Machinery failures (spawn,
+hello, protocol, busy, unexplained death) are temporary and, when the
+retries run out, do not count towards disabling the rule; a SIGKILL not
+sent by the server counts as the script's memory. <code>NaN</code>, <code>Infinity</code> and
+<code>-0</code> from the host reach the script unchanged. The compile check takes
+the request context. Headroom at 256 MiB: 190 MiB in one typed array,
+390000 small objects, 2.1 million short strings (default kept). Overhead
+0.7 ms per pooled script (0.3 ms before with this development build),
+28 ms per process start; idle pooled process 65 MB private with a
+development build. Not closed: host calls do not take the deadline
+(a worker is held for timeout + 0.5 s + the host call in flight); the
+memory limit is soft on macOS, the BSDs and Windows (no Job Objects);
+the child is no sandbox (same uid, reused across projects).</p></li>
+<li><p>Script processes, second review. The server built the whole JSON of the
+start and of every host-call answer (HTML escaped, 6 bytes per <code>&lt;</code>)
+before the child refused it at 64 MiB: <code>tasks.find</code> of 100 tasks with
+1 MiB descriptions took 2.3 GiB in one call, 4 runs on a 20 MiB task
+1.4 GiB, and the child's death was &quot;unavailable&quot;, retried five times and
+never counted. Now both directions are estimated before encoding (8 MiB
+to the child, no HTML escapes): an answer above it is an exception in the
+script, a task above it fails the step for good without blame (anyone
+with write access can make one; fields are not cut, a script writing one
+back would destroy it). Measured after: 0 MiB extra for both repros.
+Blame is default-deny once the start was sent (an exit code, closed
+output or garbage from the child is the script's), except a SIGKILL the
+server did not send: not counted, retried only before an <code>http.fetch</code>
+(else failed, since a retry repeats the request). The hello has its own
+5 s; the compile check never falls back to compiling in the server (it
+refused the save instead; 7.9 s in the server reproduced before). One
+interactive process per project. Lost wake-up of waiters fixed, memory
+message says &quot;hit the memory limit of N MiB&quot;, one error at worker start
+when scripts cannot run, every run of a given-up event fails with its
+own rule's error, the child is started with an argument so an upstream
+binary stops with &quot;unknown command&quot;. Not closed: two projects can still
+hold both extra processes; memory pressure on the server can fail any
+rule's run (not counted); the child is no sandbox.</p></li>
+<li><p>Script processes, third pass: an answer too large for the script that it
+does not catch is not counted either (someone with write access to a task
+the owner can read could otherwise get the rule disabled); payloads nested
+deeper than 1000 levels are refused like oversized ones and keep the
+process; specials count in the size estimate; a save checks only new or
+changed script sources, so a rule can be disabled while checking is
+unavailable.</p></li>
+<li><p>Review-pass operational notes: run code generators with <code>LC_ALL=C</code> on
+machines with a Turkish locale (the dotless <code>i</code> breaks generated
+identifiers). Vitest's on-disk module cache is disabled in
+<code>frontend/vite.config.ts</code> (<code>fsModuleCache: false</code>) because cached
+transforms broke the i18n virtual modules on repeat runs.</p></li>
+</ul>
+<ul>
+<li><p>Automation: cap on rules per project. <code>automation.maxrulesperproject</code>
+(default 100; 0 or less is replaced with the default like
+<code>automation.maxpendingwaits</code>). Creating a rule and duplicating a project
+(copies are refused whole, never half) over the cap answer 409 with code
+22014 (en and tr message, shown at the top of the rule editor). A project
+already above the cap keeps its rules: they run and can be edited,
+disabled and deleted. The count and the insert are not locked together
+(no engine-specific SQL), so concurrent creates can overshoot by about the
+number of requests in flight. Checked with model and <code>/api/v2</code> tests; not
+checked in a browser.</p></li>
+</ul>
+<ul>
+<li>Automation: replay protection for the incoming webhook. A call to a hook
+that names a secret now carries <code>X-Vikunja-Timestamp</code> and
+<code>X-Vikunja-Signature: sha256=</code> + HMAC-SHA256 over <code>timestamp.token.body</code>
+(the token of the hook URL, so a call signed for one hook is refused by a
+sibling hook with the same secret)
+(unreleased trigger, so the body-only signature is refused, not kept).
+Timestamp window <code>automation.webhook.tolerance</code> (default 5m, 0 or less
+becomes the default), up to 1 minute ahead accepted. Accepted signatures
+are kept in the new table <code>automation_webhook_seen</code> (unique on rule and
+signature, migration 20261128100000) because several instances can share
+one database and the keyvalue store is per process unless Redis is
+configured; the row is inserted in the transaction of the queued event, so
+a call refused for its payload or the rate limit does not use its
+signature up, and two identical calls at once race on the unique index
+(6 parallel identical calls: exactly 1 accepted, run on SQLite). The row keeps the
+signed timestamp (<code>signed_at</code>); the 30 s ticker deletes rows older than
+this instance's tolerance plus 2 minutes, which assumes instance clocks
+within that margin and one tolerance for all instances. A replay is
+looked up before the rate limit, so it is a 401 and costs no budget. Bad signature, malformed or missing header,
+stale or future timestamp and replay are one 401 / 22011 answer (reason
+only in the debug log). Hooks WITHOUT a secret stay callable unsigned
+and are not replay protected; this is documented. Verified: unit tests
+(valid, replay, stale, future, body-only signature, tampered body,
+malformed headers, unsigned hook unchanged, expiry cleanup, ticker
+cleanup, concurrent replay), <code>/api/v2</code> tests, the migration test (unique
+index, expiry index), the editor strings (en and tr) in vitest. Not
+checked: two real server processes against one PostgreSQL or MySQL
+(the cross-instance refusal is shown by the memory being a table, in one
+process), the editor text in a browser, a sender in another language.
+A retry of an accepted call is refused like a replay (senders re-sign every
+attempt). <code>automation.webhook.tolerance</code> needs a unit and at least 1s (a
+bare <code>300</code> is nanoseconds and would refuse every call: it falls back to the
+default with a warning). Changing <code>automation.webhook.tolerance</code> upward does not bring back rows
+already deleted: calls captured earlier can be replayed until their new
+window ends.</li>
+<li>Hardening verification (cap on rules per project and replay protection):
+<code>mage test:feature</code> and <code>mage test:web</code> pass uncached (<code>GOFLAGS=-count=1</code>)
+on SQLite, PostgreSQL 18 and MySQL 8, one database at a time. MySQL found
+the first draft of the new table: xorm builds the unique index name from
+the table name and the index name, and 64 characters is the limit there;
+the index is now called <code>rule_sig</code>. <code>mage lint</code> reports only the 12 known
+<code>unused</code> findings in <code>pkg/license/</code>. A review of these changes then found
+and fixed: replay across sibling hooks with one secret, a stale curl
+example in API.md (both examples' signature now checked against the Go
+helper with openssl), clock-skew dependent row expiry, files of a refused
+project duplicate (now refused before anything is written), and a replay
+that was answered 429 instead of 401. Re-verified on SQLite, PostgreSQL 18
+and MySQL 8, see the report of that pass.</li>
+</ul>
+<h2 id="remaining">Remaining <a class="anchor" href="#remaining" aria-label="Link to this section: Remaining">#</a></h2>
+<ul>
+<li>Default dashboards for new projects with a workflow (4c).</li>
+<li>MCP exposure of the fork's endpoints; the new automation routes are not in
+the MCP allow-list.</li>
+<li>The arm64 image has not been started on real ARM hardware. MariaDB and the
+documented minimum database versions are not tested.</li>
+<li>The parts of the newest UI listed as not run end to end in the browser
+pass above (ticker-driven rules, <code>wait</code>, HMAC, workload estimate field,
+Turkish strings).</li>
+<li>Automation: the catalog does not expose <code>automation.waitmax</code> or
+<code>service.timezone</code> to the editor; the stuck-run reaper does not disable
+rules or update metrics; the <code>stop</code> step is still recognised by an output
+prefix; no templates gallery for the 3d types; no e-mail action.</li>
+<li>Reports: the time tracking report builds <code>IN</code> lists from task ids
+(parameter-limit risk); bar and donut widgets with a time range ignore it
+in drill-down and export (only number widgets are fixed).</li>
+</ul>
+<p>Open after the review pass, not fixed because they need a decision:</p>
+<ul>
+<li>Automation: retrying one failed run re-queues the whole event, so rules
+created after the event run for it too.</li>
+<li>Automation: goja's <code>find</code>, <code>findIndex</code>, <code>findLast</code> and <code>findLastIndex</code> on
+an array-like hit a nil-pointer panic (reported as an internal error).</li>
+<li>Approvals: an approved transition is performed for a requester whose
+account was disabled; a request whose only approver was disabled stays
+pending.</li>
+<li>Workflow: removing a status with <code>move_tasks_to</code> writes no history and
+fires no event.</li>
+<li>Reports: the response size is unbounded in groups x children x buckets
+(13 MB measured with two 20-option fields and 366 buckets).</li>
+<li>Custom fields: no cap on fields per project or options per field;
+<code>value_text</code> is 64 KB on MySQL and values are not length-checked.</li>
+<li>Forms: the e-mail of a signed-in submitter is never recorded although the
+field documentation says so; the title of a closed members form is shown
+to an anonymous holder of the link; no hourly limit on members forms;
+per-IP limits count full IPv6 addresses; uploads are buffered before the
+token is looked up.</li>
+<li>SQLite: a transaction that reads and then writes fails at once when
+another connection holds the write lock (<code>_txlock=immediate</code> would change
+that for every transaction).</li>
+</ul>
+</div>
+<p class="edit"><a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/docs/enterprise/ROADMAP.md">Source of this page on GitHub</a></p>
+<nav class="pager" aria-label="Pages"><a class="prev" href="design.html" rel="prev"><span>Previous</span>Design</a><a class="next" href="upstream.html" rel="next"><span>Next</span>Relationship to upstream</a></nav>
+</main>
+<nav class="toc-aside" aria-label="On this page"><p class="side-title">On this page</p><ul>
+<li class="toc-2"><a href="#principles">Principles</a></li>
+<li class="toc-2"><a href="#status">Status</a></li>
+<li class="toc-2"><a href="#log">Log</a></li>
+<li class="toc-2"><a href="#remaining">Remaining</a></li>
+</ul></nav>
+</div>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-about">
+      <p><strong>vikunja-enterprise</strong> is an independent community fork of Vikunja. It is not affiliated with, endorsed by or supported by the Vikunja project. Almost all of the software is their work.</p>
+      <p>Licensed under AGPL-3.0-or-later, as upstream. This site has no scripts, cookies or trackers.</p>
+    </div>
+    <nav class="footer-nav" aria-label="Footer">
+      <div><p class="footer-title">Project</p><ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="getting-started.html">Get started</a></li>
+        <li><a href="roadmap.html">Roadmap and status</a></li>
+        <li><a href="upstream.html">Relationship to upstream</a></li>
+      </ul></div>
+      <div><p class="footer-title">Reference</p><ul>
+        <li><a href="modules/index.html">Modules</a></li>
+        <li><a href="api.html">API</a></li>
+        <li><a href="architecture.html">Architecture</a></li>
+        <li><a href="configuration.html">Configuration</a></li>
+      </ul></div>
+      <div><p class="footer-title">Community</p><ul>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise">Repository</a></li>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise/issues">Issues</a></li>
+        <li><a href="security.html">Security</a></li>
+        <li><a href="contributing.html">Contributing</a></li>
+        <li><a href="license.html">License</a></li>
+      </ul></div>
+      <div><p class="footer-title">Upstream Vikunja</p><ul>
+        <li><a href="https://github.com/go-vikunja/vikunja">Source code</a></li>
+        <li><a href="https://vikunja.io/docs/">Documentation</a></li>
+        <li><a href="https://vikunja.io/support/">Support upstream</a></li>
+      </ul></div>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>

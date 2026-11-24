@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Dashboards and reports - vikunja-enterprise</title>
+<meta name="description" content="The task aggregation API, dashboards of widgets, drill-down and CSV export.">
+<link rel="canonical" href="https://vikunja.bahadirdogru.com/modules/dashboards-reports.html">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1020" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+<link rel="manifest" href="../site.webmanifest">
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="../assets/docs.css">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="vikunja-enterprise">
+<meta property="og:title" content="Dashboards and reports - vikunja-enterprise">
+<meta property="og:description" content="The task aggregation API, dashboards of widgets, drill-down and CSV export.">
+<meta property="og:url" content="https://vikunja.bahadirdogru.com/modules/dashboards-reports.html">
+<meta property="og:image" content="https://vikunja.bahadirdogru.com/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="vikunja-enterprise, an independent community fork of Vikunja">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Dashboards and reports - vikunja-enterprise">
+<meta name="twitter:description" content="The task aggregation API, dashboards of widgets, drill-down and CSV export.">
+<meta name="twitter:image" content="https://vikunja.bahadirdogru.com/assets/og.png">
+</head>
+<body class="docs">
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="../index.html" aria-label="vikunja-enterprise home"><img src="../assets/favicon.svg" alt="" width="30" height="30">vikunja-enterprise</a>
+    <nav class="top-nav" aria-label="Main">
+      <ul>
+<li><a href="index.html">Modules</a></li>
+<li><a href="../getting-started.html">Get started</a></li>
+<li><a href="../api.html">API</a></li>
+<li><a href="../architecture.html">Architecture</a></li>
+<li><a href="../roadmap.html">Roadmap</a></li>
+<li><a href="../upstream.html">Upstream</a></li>
+        <li><a class="gh" href="https://github.com/bahadirdogru/vikunja-enterprise">GitHub</a></li>
+      </ul>
+    </nav>
+    <details class="menu">
+      <summary><span class="menu-icon" aria-hidden="true"></span>Menu</summary>
+      <nav class="menu-panel" aria-label="Site">
+        <div class="menu-group"><p class="menu-title">Site</p><ul>
+<li><a href="../index.html">Home</a></li>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise">GitHub repository</a></li>
+        </ul></div>
+<div class="menu-group"><p class="menu-title">Start</p><ul>
+<li><a href="../getting-started.html">Getting started</a></li>
+<li><a href="../configuration.html">Configuration</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Modules</p><ul>
+<li><a href="index.html">Overview</a></li>
+<li><a href="custom-fields.html">Custom fields</a></li>
+<li><a href="workflows.html">Workflows</a></li>
+<li><a href="approvals.html">Approvals</a></li>
+<li><a href="automation.html">Automation</a></li>
+<li><a href="dashboards-reports.html" aria-current="page">Dashboards and reports</a></li>
+<li><a href="forms.html">Forms</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Reference</p><ul>
+<li><a href="../api.html">API reference</a></li>
+<li><a href="../architecture.html">Architecture</a></li>
+<li><a href="../design.html">Design</a></li>
+<li><a href="../roadmap.html">Roadmap and status</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Project</p><ul>
+<li><a href="../upstream.html">Relationship to upstream</a></li>
+<li><a href="../security.html">Security</a></li>
+<li><a href="../contributing.html">Contributing</a></li>
+<li><a href="../license.html">License</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Design history</p><ul>
+<li><a href="../enterprise/index.html">Overview</a></li>
+<li><a href="../enterprise/custom-fields.html">Custom fields design</a></li>
+<li><a href="../enterprise/workflow.html">Workflow design</a></li>
+<li><a href="../enterprise/forms-approvals.html">Forms and approvals design</a></li>
+<li><a href="../enterprise/automation.html">Automation design</a></li>
+<li><a href="../enterprise/dashboards.html">Dashboards design</a></li>
+</ul></div>
+      </nav>
+    </details>
+  </div>
+</header>
+<div class="docs-layout">
+<nav class="sidebar" aria-label="Documentation">
+<p class="side-title">Start</p><ul>
+<li><a href="../getting-started.html">Getting started</a></li>
+<li><a href="../configuration.html">Configuration</a></li>
+</ul>
+<p class="side-title">Modules</p><ul>
+<li><a href="index.html">Overview</a></li>
+<li><a href="custom-fields.html">Custom fields</a></li>
+<li><a href="workflows.html">Workflows</a></li>
+<li><a href="approvals.html">Approvals</a></li>
+<li><a href="automation.html">Automation</a></li>
+<li><a href="dashboards-reports.html" aria-current="page">Dashboards and reports</a></li>
+<li><a href="forms.html">Forms</a></li>
+</ul>
+<p class="side-title">Reference</p><ul>
+<li><a href="../api.html">API reference</a></li>
+<li><a href="../architecture.html">Architecture</a></li>
+<li><a href="../design.html">Design</a></li>
+<li><a href="../roadmap.html">Roadmap and status</a></li>
+</ul>
+<p class="side-title">Project</p><ul>
+<li><a href="../upstream.html">Relationship to upstream</a></li>
+<li><a href="../security.html">Security</a></li>
+<li><a href="../contributing.html">Contributing</a></li>
+<li><a href="../license.html">License</a></li>
+</ul>
+<p class="side-title">Design history</p><ul>
+<li><a href="../enterprise/index.html">Overview</a></li>
+<li><a href="../enterprise/custom-fields.html">Custom fields design</a></li>
+<li><a href="../enterprise/workflow.html">Workflow design</a></li>
+<li><a href="../enterprise/forms-approvals.html">Forms and approvals design</a></li>
+<li><a href="../enterprise/automation.html">Automation design</a></li>
+<li><a href="../enterprise/dashboards.html">Dashboards design</a></li>
+</ul>
+</nav>
+<main id="main" class="doc">
+<nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="../index.html">Home</a></li><li>Modules</li><li aria-current="page">Dashboards and reports</li></ol></nav>
+<h1>Dashboards and reports</h1>
+<details class="toc-inline"><summary>On this page</summary>
+<nav aria-label="On this page"><ul>
+<li class="toc-2"><a href="#overview">Overview</a></li>
+<li class="toc-2"><a href="#concepts">Concepts</a></li>
+<li class="toc-3"><a href="#report-semantics-worth-knowing">Report semantics worth knowing</a></li>
+<li class="toc-2"><a href="#data-model">Data model</a></li>
+<li class="toc-2"><a href="#widget-types-and-configs">Widget types and configs</a></li>
+<li class="toc-2"><a href="#permissions">Permissions</a></li>
+<li class="toc-2"><a href="#api">API</a></li>
+<li class="toc-2"><a href="#configuration-keys">Configuration keys</a></li>
+<li class="toc-2"><a href="#ui">UI</a></li>
+<li class="toc-2"><a href="#events-and-interaction-with-other-modules">Events and interaction with other modules</a></li>
+<li class="toc-2"><a href="#limits-and-safety">Limits and safety</a></li>
+<li class="toc-2"><a href="#known-gaps-and-open-decisions">Known gaps and open decisions</a></li>
+<li class="toc-2"><a href="#where-the-code-lives">Where the code lives</a></li>
+</ul></nav></details>
+<div class="prose">
+<p>A task aggregation API (reports) and dashboards of widgets over task filters. Every number is computed at request time over the tasks the viewer is allowed to read.</p>
+<p>Design document and history: <a href="../enterprise/dashboards.html">Dashboards design</a>. API conventions: <a href="../api.html">API reference</a>. Module index: <a href="index.html">Modules</a>.</p>
+<h2 id="overview">Overview <a class="anchor" href="#overview" aria-label="Link to this section: Overview">#</a></h2>
+<p>A manager wants one page that shows where work stands: how much is open, what is late, who is loaded, how fast things get done. The module provides the counting (reports) and the page (dashboards). Everything on a dashboard is a <strong>widget over a task filter</strong>, so it uses the vocabulary people already know from views: the same filter syntax, including <code>status</code>, <code>status_category</code> and <code>cf_&lt;id&gt;</code>.</p>
+<p>Audience: project admins build project dashboards; everyone can build personal dashboards; operators tune the bounds that protect the database.</p>
+<p>There are no snapshot tables: aggregates are plain SQL over existing tables, computed per request, with a short in-memory cache.</p>
+<h2 id="concepts">Concepts <a class="anchor" href="#concepts" aria-label="Link to this section: Concepts">#</a></h2>
+<ul>
+<li><strong>Report.</strong> A request that counts tasks, or sums, averages or finds the smallest or largest value of a numeric field, optionally grouped by up to two dimensions and optionally as a time series. <code>POST /reports/tasks</code> is the core; <code>status-time</code>, <code>workload</code> and <code>time-tracking</code> are specialised reports; every report has a CSV export.</li>
+<li><strong>Scope.</strong> <code>project_id</code> selects one project; absent or <code>0</code> means all projects the viewer can read; <code>-1</code> means favorites. Saved filters (project ids below <code>-1</code>) are not a report scope.</li>
+<li><strong>Dimensions</strong> (<code>group_by</code>, <code>then_by</code>): <code>status</code>, <code>status_category</code> (only meaningful where a workflow exists), <code>assignee</code>, <code>label</code>, <code>project</code>, <code>priority</code>, <code>done</code>, <code>created_by</code>, and <code>cf_&lt;id&gt;</code> of a select, multi select, user, checkbox or rating field. Any other field kind is <code>400</code> / <code>23004</code>.</li>
+<li><strong>Measures</strong>: <code>count</code> (default), <code>sum</code>, <code>avg</code>, <code>min</code>, <code>max</code>. <code>field</code> for the numeric measures: <code>percent_done</code>, <code>time_spent</code>, or <code>cf_&lt;id&gt;</code> of a number, currency, rating or progress field.</li>
+<li><strong>Time series</strong>: <code>time: {field, bucket, from, to, timezone}</code> with <code>field</code> one of <code>created</code>, <code>done_at</code>, <code>due_date</code>, <code>status_entered</code>; <code>bucket</code> <code>day</code> (default), <code>week</code> (starts Monday) or <code>month</code>; <code>from</code> and <code>to</code> as RFC 3339, <code>YYYY-MM-DD</code>, <code>now</code> or date math (default <code>now-90d</code> to <code>now</code>); <code>timezone</code> an IANA name (default: the user's time zone setting, else the instance's). <code>compare: previous_period</code> computes the same measure for the period right before, shifted by as many buckets; when <code>to</code> lies inside its last bucket both periods are counted for the same elapsed time.</li>
+<li><strong>Groups.</strong> A task with several values (assignee, label, multi select, user field) counts in each group; <code>multi_valued</code> says so and <code>total</code> stays the number of distinct tasks. Tasks without a value form the <code>none</code> group; the folded rest is one <code>other</code> group. <code>priority</code> 0 counts as no value; <code>done</code> and checkbox fields have no none group.</li>
+<li><strong>Widgets.</strong> <code>number</code>, <code>bar</code>, <code>donut</code>, <code>line</code>, <code>created_vs_done</code>, <code>task_list</code>, <code>workload</code>, <code>status_time</code>, <code>time_tracking</code>, <code>text</code>. Config is decoded strictly per type (unknown keys are an error, path <code>23008</code>). A report inside a config is validated like <code>POST /reports/tasks</code> validates it but is not run on save.</li>
+<li><strong>Dashboards.</strong> Personal (<code>project_id</code> 0: owned by one user, spans all projects the viewer can read) or project (visible to everyone who can read the project). Widgets are part of the dashboard document, on a 12-column grid.</li>
+</ul>
+<h3 id="report-semantics-worth-knowing">Report semantics worth knowing <a class="anchor" href="#report-semantics-worth-knowing" aria-label="Link to this section: Report semantics worth knowing">#</a></h3>
+<ul>
+<li><strong>Permissions.</strong> The set of tasks is built by the code of the task list (<code>TaskCollection.readableTasksQuery</code>, with the filter conversion shared with search), for the requesting auth: project access, shares, teams, favorites, link shares pinned to their project. There is no separate permission logic. Group labels are looked up only for keys that occur on those tasks.</li>
+<li><strong><code>time_spent</code></strong> is the sum of finished time entries (<code>end_time</code> set) per task in seconds; running timers are ignored. It is not available to link shares (<code>403</code> / <code>23005</code>).</li>
+<li><strong>Time series</strong> have empty buckets inside the range with <code>0</code>; the first bucket contains <code>from</code>, the last contains <code>to</code>, the range is half open; tasks whose date is empty are counted in <code>excluded</code>.</li>
+<li><strong>Time in status</strong> uses only history of the statuses of the project's current workflow (archived ones included): a visit lasts until the next history entry; the last one is open only when it is the task's current status; a task without counted history is counted from when it entered its current status; a plain date <code>to</code> includes that day.</li>
+<li><strong>Workload</strong> counts open tasks per assignee split by due date (overdue, this week until Monday, next week, later, none), and optionally adds up a numeric custom field as an estimate; unassigned tasks form their own row.</li>
+<li><strong>Time tracking</strong> adds up finished time entries in a date range by user, project, label or day, for the entries the time entry list shows the caller; it needs the time tracking feature and is not available to link shares.</li>
+<li><strong>Time buckets are computed in Go</strong> in the requested time zone, so daylight saving is exact; the database receives boundaries as a balanced tree of <code>CASE WHEN column &lt; &#x27;boundary&#x27;</code> expressions (see <a href="../architecture.html#reports">ARCHITECTURE.md</a>). The week start is not configurable.</li>
+<li><strong>Statements per request</strong>: without <code>group_by</code>, one for the totals plus one for a time series (plus one to count <code>excluded</code>); each dimension level is one grouped statement. The count never depends on the number of groups or tasks.</li>
+</ul>
+<h2 id="data-model">Data model <a class="anchor" href="#data-model" aria-label="Link to this section: Data model">#</a></h2>
+<figure class="diagram"><figcaption>Diagram, shown as its Mermaid source. This site has no scripts, so it cannot draw it. <a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/docs/modules/dashboards-reports.md#L39">View the rendered diagram on GitHub</a>.</figcaption><pre><code class="language-mermaid">erDiagram
+    users ||--o{ dashboards : &quot;owns&quot;
+    projects ||--o{ dashboards : &quot;has&quot;
+    dashboards ||--o{ dashboard_widgets : &quot;has&quot;
+    dashboards {
+        bigint id PK
+        string title
+        longtext description
+        bigint owner_id
+        bigint project_id
+        double position
+    }
+    dashboard_widgets {
+        bigint id PK
+        bigint dashboard_id
+        string type
+        string title
+        json config
+        bigint x
+        bigint y
+        bigint w
+        bigint h
+    }</code></pre></figure>
+<p>Created by <code>pkg/migration/20261122160000.go</code>. <code>dashboards.project_id</code> is <code>0</code> for a personal dashboard (the column is <code>not null default 0</code>, so the relation to projects applies to project dashboards only). Reports have no tables of their own. Defaults for a new widget are <code>w</code> 4 and <code>h</code> 3. Limits in code: at most 50 widgets per dashboard, 12 grid columns, a widget's <code>y</code> between 0 and 1000, a <code>text</code> widget at most 20000 characters, a <code>task_list</code> at most 100 rows and 30 columns.</p>
+<p>Lifecycle: purging a project deletes its dashboards; deleting a user deletes their personal dashboards (project dashboards they created stay); duplicating a project copies its dashboards (owner = the duplicating user) and remaps <code>cf_&lt;id&gt;</code>, option ids, <code>status</code> ids and <code>project_id</code> in filters and fields (<code>dashboards_lifecycle.go</code>).</p>
+<h2 id="widget-types-and-configs">Widget types and configs <a class="anchor" href="#widget-types-and-configs" aria-label="Link to this section: Widget types and configs">#</a></h2>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Type</th><th scope="col">Shows</th><th scope="col">Config (decoded strictly)</th></tr></thead><tbody>
+<tr><td><code>number</code></td><td>One figure, optionally with the previous period</td><td><code>{request, compare}</code>; the request cannot group</td></tr>
+<tr><td><code>bar</code></td><td>Groups, stacked with <code>then_by</code></td><td><code>{request}</code>; needs <code>group_by</code></td></tr>
+<tr><td><code>donut</code></td><td>Groups</td><td><code>{request}</code>; one level</td></tr>
+<tr><td><code>line</code></td><td>A time series, one line per group</td><td><code>{request}</code>; needs <code>time</code></td></tr>
+<tr><td><code>created_vs_done</code></td><td>Two series: created and completed per bucket</td><td><code>{project_id, filter, bucket, from, to}</code></td></tr>
+<tr><td><code>task_list</code></td><td>The tasks themselves</td><td><code>{project_id, filter, sort_by, order_by, columns, limit}</code> (limit at most 100)</td></tr>
+<tr><td><code>workload</code></td><td>Open tasks per assignee</td><td><code>{project_id, filter, estimate_field}</code></td></tr>
+<tr><td><code>status_time</code></td><td>Time spent in each status</td><td><code>{project_id, filter, group_by (assignee or label), from, to}</code></td></tr>
+<tr><td><code>time_tracking</code></td><td>Tracked time</td><td><code>{project_id, from, to, group_by (user, project, label or day)}</code></td></tr>
+<tr><td><code>text</code></td><td>A note</td><td><code>{text}</code></td></tr>
+</tbody></table></div>
+<p>On a project dashboard every <code>project_id</code> is pinned to the project; another one is an error. Problems are <code>23008</code> with the path (<code>widgets[1].config.request.group_by</code>).</p>
+<h2 id="permissions">Permissions <a class="anchor" href="#permissions" aria-label="Link to this section: Permissions">#</a></h2>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Action</th><th scope="col">Needs</th></tr></thead><tbody>
+<tr><td>Run any report</td><td>a signed-in user; the tasks are limited to what the user can read (and the project, if one is given)</td></tr>
+<tr><td><code>time_spent</code> and the time tracking report</td><td>not available to link shares (<code>403</code> / <code>23005</code>)</td></tr>
+<tr><td>List dashboards</td><td>own personal dashboards plus those of every readable project</td></tr>
+<tr><td>Read a dashboard</td><td>its owner (personal) or read on the project (project; link shares of that project included)</td></tr>
+<tr><td>Create</td><td>any user (personal) or admin on the project (project)</td></tr>
+<tr><td>Update, delete, change the layout</td><td>the owner (personal) or admin on the project (project); link shares never change dashboards</td></tr>
+</tbody></table></div>
+<p><code>max_permission</code> is 2 for those who may change a dashboard. Permission methods are in <code>pkg/models/dashboards_permissions.go</code>.</p>
+<h2 id="api">API <a class="anchor" href="#api" aria-label="Link to this section: API">#</a></h2>
+<p>All routes are on <code>/api/v2</code>; conventions are in <a href="../api.html">API reference</a>. A <code>PATCH</code> is also available for a dashboard.</p>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Method</th><th scope="col">Path</th><th scope="col">Operation ID</th><th scope="col">Permission</th><th scope="col">Description</th></tr></thead><tbody>
+<tr><td>GET</td><td><code>/dashboards</code></td><td><code>dashboards-list</code></td><td>signed-in user (own personal and readable project dashboards)</td><td>List dashboards</td></tr>
+<tr><td>GET</td><td><code>/dashboards/{dashboard}</code></td><td><code>dashboards-read</code></td><td>owner (personal) or read on project</td><td>Get a dashboard</td></tr>
+<tr><td>POST</td><td><code>/dashboards</code></td><td><code>dashboards-create</code></td><td>any user (personal) or admin on project</td><td>Create a dashboard</td></tr>
+<tr><td>PUT</td><td><code>/dashboards/{dashboard}</code></td><td><code>dashboards-update</code></td><td>owner (personal) or admin on project</td><td>Update a dashboard</td></tr>
+<tr><td>DELETE</td><td><code>/dashboards/{dashboard}</code></td><td><code>dashboards-delete</code></td><td>owner (personal) or admin on project</td><td>Delete a dashboard</td></tr>
+<tr><td>PUT</td><td><code>/dashboards/{dashboard}/layout</code></td><td><code>dashboards-layout</code></td><td>owner (personal) or admin on project</td><td>Move and resize widgets</td></tr>
+<tr><td>POST</td><td><code>/reports/tasks</code></td><td><code>reports-tasks</code></td><td>signed-in user, tasks limited to what the user can read</td><td>Aggregate tasks</td></tr>
+<tr><td>POST</td><td><code>/reports/tasks/export</code></td><td><code>reports-tasks-export</code></td><td>as reports-tasks</td><td>Export an aggregate report as CSV</td></tr>
+<tr><td>POST</td><td><code>/reports/tasks/export/rows</code></td><td><code>reports-tasks-export-rows</code></td><td>as reports-tasks</td><td>Export the tasks behind a report as CSV</td></tr>
+<tr><td>POST</td><td><code>/reports/status-time</code></td><td><code>reports-status-time</code></td><td>as reports-tasks</td><td>Time tasks spent in each status</td></tr>
+<tr><td>POST</td><td><code>/reports/status-time/export</code></td><td><code>reports-status-time-export</code></td><td>as reports-tasks</td><td>Export the time in status report as CSV</td></tr>
+<tr><td>POST</td><td><code>/reports/workload</code></td><td><code>reports-workload</code></td><td>as reports-tasks</td><td>Open tasks per assignee</td></tr>
+<tr><td>POST</td><td><code>/reports/workload/export</code></td><td><code>reports-workload-export</code></td><td>as reports-tasks</td><td>Export the workload report as CSV</td></tr>
+<tr><td>POST</td><td><code>/reports/time-tracking</code></td><td><code>reports-time-tracking</code></td><td>signed-in user, not for link shares</td><td>Tracked time per user, project, label or day</td></tr>
+<tr><td>POST</td><td><code>/reports/time-tracking/export</code></td><td><code>reports-time-tracking-export</code></td><td>as reports-time-tracking</td><td>Export the time tracking report as CSV</td></tr>
+<tr><td>GET</td><td><code>/reports/tasks/options</code></td><td><code>reports-tasks-options</code></td><td>signed-in user (read on project for project_id)</td><td>List what a task report can use</td></tr>
+</tbody></table></div>
+<p><code>GET /reports/tasks/options?project_id=</code> lists what a request may use in a scope (dimensions including the <code>cf_&lt;id&gt;</code> fields of that project, measures with their numeric fields, time fields, whether a workflow exists, the limits of this instance); the widget editor is generated from it. The dashboard document carries its widgets: a read includes them, and a <code>PUT</code> with <code>widgets: [...]</code> replaces them as a whole (an id of this dashboard keeps and updates the widget, no id creates, missing ones are deleted; <code>null</code> or no <code>widgets</code> keeps them; an id of another dashboard is <code>404</code> / <code>23007</code>). <code>PUT .../layout</code> with <code>{&quot;items&quot;: [{&quot;id&quot;, &quot;x&quot;, &quot;y&quot;, &quot;w&quot;, &quot;h&quot;}]}</code> only moves and resizes (<code>x + w &lt;= 12</code>).</p>
+<p>A worked report request and response are in <a href="../api.html#examples">API.md</a>. Request problems are <code>400</code> / <code>23001</code> with <code>details.param</code>; enum and range violations of the schema are <code>422</code>. Error codes <code>23001</code> to <code>23010</code> are in <a href="../api.html#errors">API.md</a>.</p>
+<p><strong>CSV export.</strong> <code>POST /reports/tasks/export</code>, <code>/reports/status-time/export</code>, <code>/reports/workload/export</code> and <code>/reports/time-tracking/export</code> return the same report as a CSV file; <code>POST /reports/tasks/export/rows</code> returns the tasks behind a report (what a drill-down lists) with the core columns and one column per custom field. Files are UTF-8 with a byte order mark so Excel reads them correctly, comma separated; cells that start with <code>=</code>, <code>+</code>, <code>-</code> or <code>@</code> are prefixed with a single quote so a spreadsheet does not run them.</p>
+<h2 id="configuration-keys">Configuration keys <a class="anchor" href="#configuration-keys" aria-label="Link to this section: Configuration keys">#</a></h2>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Key</th><th scope="col">Default</th><th scope="col">Meaning</th></tr></thead><tbody>
+<tr><td><code>reports.cachettl</code></td><td><code>30s</code></td><td>How long the result of a report is cached in memory, per user and request. Set to 0 to disable the cache.</td></tr>
+<tr><td><code>reports.maxgroups</code></td><td><code>200</code></td><td>The maximum number of groups a report returns per level. Requests asking for more are rejected; groups beyond a request's limit are folded into one &quot;other&quot; group.</td></tr>
+<tr><td><code>reports.maxbuckets</code></td><td><code>366</code></td><td>The maximum number of time buckets (days, weeks or months) of a time series report.</td></tr>
+<tr><td><code>reports.maxrows</code></td><td><code>50000</code></td><td>The maximum number of rows a report that is computed in memory (time in status, time tracking) or a CSV export of tasks reads. Requests that would read more are rejected.</td></tr>
+<tr><td><code>reports.timeout</code></td><td><code>20s</code></td><td>The maximum duration of the database queries of one report. The queries are cancelled when it is exceeded.</td></tr>
+</tbody></table></div>
+<h2 id="ui">UI <a class="anchor" href="#ui" aria-label="Link to this section: UI">#</a></h2>
+<ul>
+<li><strong>Pages</strong>: <code>/dashboards</code> (personal and project dashboards, create, rename, delete), <code>/dashboards/:id</code> (view and edit), <code>/projects/:id/dashboards</code> and a &quot;Dashboards&quot; sidebar link. A new dashboard starts with open tasks, tasks by status (or by done without a workflow), created vs completed over 30 days, open tasks by assignee and an overdue task list.</li>
+<li><strong>Charts</strong> are hand-written SVG (bar, stacked and grouped bar, donut, line, number tile) with tooltips, hidden data tables, empty, loading and error states.</li>
+<li><strong>Grid</strong>: 12 columns, one column at 768 px and below; edit mode with drag, resize, keyboard control, compaction, a visible save state and undo.</li>
+<li><strong>Widget editor</strong>: type gallery, a form built from the report options, the view filter editor, relative period presets and a live preview of the unsaved configuration.</li>
+<li><strong>Drill-down</strong> lists exactly the tasks behind a mark; marks that cannot be expressed in the filter syntax are inert and say why. <strong>CSV export</strong> from the widget menu and the drill-down; number widgets can compare with the previous period.</li>
+<li>Bar direction, stacking and legend are per-viewer browser settings.</li>
+</ul>
+<p>Details: <a href="../design.html#dashboards-and-reports">DESIGN.md</a>.</p>
+<h2 id="events-and-interaction-with-other-modules">Events and interaction with other modules <a class="anchor" href="#events-and-interaction-with-other-modules" aria-label="Link to this section: Events and interaction with other modules">#</a></h2>
+<ul>
+<li>Reports read tasks, statuses and status history (<a href="workflows.html">workflows</a>), custom fields (<a href="custom-fields.html">custom fields</a>), labels, assignees and time entries. Nothing is written by reports.</li>
+<li>Dashboards dispatch no events and are not an automation trigger. Scheduled e-mail of a dashboard is listed in the design document as a possible later automation action.</li>
+<li>The report scope code is shared with the task list, so any change to what the task list may show is a change to what reports may count.</li>
+</ul>
+<h2 id="limits-and-safety">Limits and safety <a class="anchor" href="#limits-and-safety" aria-label="Link to this section: Limits and safety">#</a></h2>
+<ul>
+<li>At most two dimensions plus time.</li>
+<li><code>reports.maxbuckets</code> time buckets (<code>23002</code>), <code>reports.maxgroups</code> groups per level (<code>23003</code> for a request that asks for more; groups beyond a request's <code>limit</code>, default 20, fold into <code>other</code>).</li>
+<li><code>reports.maxrows</code> rows for reports computed in memory (time in status, time tracking) and CSV exports (<code>23010</code>). The rows read (history, current statuses, assignees or labels) are bounded by it.</li>
+<li><code>reports.timeout</code> for the database queries of one report; exceeded queries are cancelled (<code>503</code> / <code>23009</code>).</li>
+<li>A cache per authenticated identity and normalized request for <code>reports.cachettl</code>, at most 256 entries, no invalidation; <code>0</code> disables it. In a multi-instance deployment each process has its own cache.</li>
+<li>Bucket boundaries are second precision; there is one time zone per request.</li>
+</ul>
+<h2 id="known-gaps-and-open-decisions">Known gaps and open decisions <a class="anchor" href="#known-gaps-and-open-decisions" aria-label="Link to this section: Known gaps and open decisions">#</a></h2>
+<p>From the <a href="../roadmap.html">roadmap</a>:</p>
+<ul>
+<li>Default dashboards for new projects with a workflow are not created.</li>
+<li>The response size is unbounded in groups x children x buckets (13 MB measured with two 20-option fields and 366 buckets).</li>
+<li>The time tracking report builds <code>IN</code> lists from task ids (parameter-limit risk).</li>
+<li>Bar and donut widgets with a time range ignore it in drill-down and export; only number widgets are fixed.</li>
+<li><code>created_vs_done</code> has no server-side running open count (the client combines two reports); a <code>text</code> widget stores the editor's HTML, sanitized on render; the <code>line</code> chart does not offer a second dimension.</li>
+<li>The new widgets (time in status, workload, time tracking), CSV export and the previous-period comparison were checked in a browser (see the roadmap); the workload estimate field was not.</li>
+<li>Not exposed over MCP.</li>
+<li>Which databases the reports tests have been run on is recorded in the roadmap.</li>
+</ul>
+<h2 id="where-the-code-lives">Where the code lives <a class="anchor" href="#where-the-code-lives" aria-label="Link to this section: Where the code lives">#</a></h2>
+<div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">What</th><th scope="col">Where</th></tr></thead><tbody>
+<tr><td>Report request, dimensions, measures</td><td><code>pkg/models/reports.go</code>, <code>pkg/models/reports_dimensions.go</code>, <code>pkg/models/reports_options.go</code></td></tr>
+<tr><td>Time buckets and time zones</td><td><code>pkg/models/reports_time.go</code></td></tr>
+<tr><td>Specialised reports</td><td><code>pkg/models/reports_status_time.go</code>, <code>pkg/models/reports_workload.go</code>, <code>pkg/models/reports_time_tracking.go</code></td></tr>
+<tr><td>Cache</td><td><code>pkg/models/reports_cache.go</code></td></tr>
+<tr><td>CSV export</td><td><code>pkg/models/reports_export.go</code>, <code>pkg/models/csv_export.go</code></td></tr>
+<tr><td>Dashboards and widgets</td><td><code>pkg/models/dashboards.go</code>, <code>pkg/models/dashboards_widgets.go</code>, <code>pkg/models/dashboards_lifecycle.go</code>, <code>pkg/models/dashboards_permissions.go</code></td></tr>
+<tr><td>Errors</td><td><code>pkg/models/error_reports.go</code> (<code>23001</code> to <code>23010</code>)</td></tr>
+<tr><td>Routes</td><td><code>pkg/routes/api/v2/reports.go</code>, <code>pkg/routes/api/v2/dashboards.go</code></td></tr>
+<tr><td>Task list scope</td><td><code>pkg/models/task_collection.go</code> (<code>readableTasksQuery</code>)</td></tr>
+<tr><td>Migration</td><td><code>pkg/migration/20261122160000.go</code></td></tr>
+<tr><td>Tests</td><td><code>pkg/models/reports_test.go</code>, <code>pkg/models/reports_extra_test.go</code>, <code>pkg/models/dashboards_test.go</code>, <code>pkg/webtests/huma_reports_test.go</code>, <code>pkg/webtests/huma_reports_export_test.go</code></td></tr>
+<tr><td>Frontend</td><td><code>frontend/src/components/dashboards/</code>, <code>frontend/src/components/charts/</code>, <code>frontend/src/views/dashboards/</code>, <code>frontend/src/client/queries/dashboards.ts</code>, <code>reports.ts</code>, <code>reportWidgets.ts</code>, <code>frontend/src/helpers/dashboard*.ts</code></td></tr>
+</tbody></table></div>
+</div>
+<p class="edit"><a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/docs/modules/dashboards-reports.md">Source of this page on GitHub</a></p>
+<nav class="pager" aria-label="Pages"><a class="prev" href="automation.html" rel="prev"><span>Previous</span>Automation</a><a class="next" href="forms.html" rel="next"><span>Next</span>Forms</a></nav>
+</main>
+<nav class="toc-aside" aria-label="On this page"><p class="side-title">On this page</p><ul>
+<li class="toc-2"><a href="#overview">Overview</a></li>
+<li class="toc-2"><a href="#concepts">Concepts</a></li>
+<li class="toc-3"><a href="#report-semantics-worth-knowing">Report semantics worth knowing</a></li>
+<li class="toc-2"><a href="#data-model">Data model</a></li>
+<li class="toc-2"><a href="#widget-types-and-configs">Widget types and configs</a></li>
+<li class="toc-2"><a href="#permissions">Permissions</a></li>
+<li class="toc-2"><a href="#api">API</a></li>
+<li class="toc-2"><a href="#configuration-keys">Configuration keys</a></li>
+<li class="toc-2"><a href="#ui">UI</a></li>
+<li class="toc-2"><a href="#events-and-interaction-with-other-modules">Events and interaction with other modules</a></li>
+<li class="toc-2"><a href="#limits-and-safety">Limits and safety</a></li>
+<li class="toc-2"><a href="#known-gaps-and-open-decisions">Known gaps and open decisions</a></li>
+<li class="toc-2"><a href="#where-the-code-lives">Where the code lives</a></li>
+</ul></nav>
+</div>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-about">
+      <p><strong>vikunja-enterprise</strong> is an independent community fork of Vikunja. It is not affiliated with, endorsed by or supported by the Vikunja project. Almost all of the software is their work.</p>
+      <p>Licensed under AGPL-3.0-or-later, as upstream. This site has no scripts, cookies or trackers.</p>
+    </div>
+    <nav class="footer-nav" aria-label="Footer">
+      <div><p class="footer-title">Project</p><ul>
+        <li><a href="../index.html">Home</a></li>
+        <li><a href="../getting-started.html">Get started</a></li>
+        <li><a href="../roadmap.html">Roadmap and status</a></li>
+        <li><a href="../upstream.html">Relationship to upstream</a></li>
+      </ul></div>
+      <div><p class="footer-title">Reference</p><ul>
+        <li><a href="index.html">Modules</a></li>
+        <li><a href="../api.html">API</a></li>
+        <li><a href="../architecture.html">Architecture</a></li>
+        <li><a href="../configuration.html">Configuration</a></li>
+      </ul></div>
+      <div><p class="footer-title">Community</p><ul>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise">Repository</a></li>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise/issues">Issues</a></li>
+        <li><a href="../security.html">Security</a></li>
+        <li><a href="../contributing.html">Contributing</a></li>
+        <li><a href="../license.html">License</a></li>
+      </ul></div>
+      <div><p class="footer-title">Upstream Vikunja</p><ul>
+        <li><a href="https://github.com/go-vikunja/vikunja">Source code</a></li>
+        <li><a href="https://vikunja.io/docs/">Documentation</a></li>
+        <li><a href="https://vikunja.io/support/">Support upstream</a></li>
+      </ul></div>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>

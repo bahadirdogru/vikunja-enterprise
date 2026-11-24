@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Relationship to upstream - vikunja-enterprise</title>
+<meta name="description" content="How vikunja-enterprise relates to Vikunja: what the fork is and is not, credit, and when to use upstream instead.">
+<link rel="canonical" href="https://vikunja.bahadirdogru.com/upstream.html">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1020" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="assets/docs.css">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="vikunja-enterprise">
+<meta property="og:title" content="Relationship to upstream - vikunja-enterprise">
+<meta property="og:description" content="How vikunja-enterprise relates to Vikunja: what the fork is and is not, credit, and when to use upstream instead.">
+<meta property="og:url" content="https://vikunja.bahadirdogru.com/upstream.html">
+<meta property="og:image" content="https://vikunja.bahadirdogru.com/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="vikunja-enterprise, an independent community fork of Vikunja">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Relationship to upstream - vikunja-enterprise">
+<meta name="twitter:description" content="How vikunja-enterprise relates to Vikunja: what the fork is and is not, credit, and when to use upstream instead.">
+<meta name="twitter:image" content="https://vikunja.bahadirdogru.com/assets/og.png">
+</head>
+<body class="docs">
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="index.html" aria-label="vikunja-enterprise home"><img src="assets/favicon.svg" alt="" width="30" height="30">vikunja-enterprise</a>
+    <nav class="top-nav" aria-label="Main">
+      <ul>
+<li><a href="modules/index.html">Modules</a></li>
+<li><a href="getting-started.html">Get started</a></li>
+<li><a href="api.html">API</a></li>
+<li><a href="architecture.html">Architecture</a></li>
+<li><a href="roadmap.html">Roadmap</a></li>
+<li><a href="upstream.html" aria-current="page">Upstream</a></li>
+        <li><a class="gh" href="https://github.com/bahadirdogru/vikunja-enterprise">GitHub</a></li>
+      </ul>
+    </nav>
+    <details class="menu">
+      <summary><span class="menu-icon" aria-hidden="true"></span>Menu</summary>
+      <nav class="menu-panel" aria-label="Site">
+        <div class="menu-group"><p class="menu-title">Site</p><ul>
+<li><a href="index.html">Home</a></li>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise">GitHub repository</a></li>
+        </ul></div>
+<div class="menu-group"><p class="menu-title">Start</p><ul>
+<li><a href="getting-started.html">Getting started</a></li>
+<li><a href="configuration.html">Configuration</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Modules</p><ul>
+<li><a href="modules/index.html">Overview</a></li>
+<li><a href="modules/custom-fields.html">Custom fields</a></li>
+<li><a href="modules/workflows.html">Workflows</a></li>
+<li><a href="modules/approvals.html">Approvals</a></li>
+<li><a href="modules/automation.html">Automation</a></li>
+<li><a href="modules/dashboards-reports.html">Dashboards and reports</a></li>
+<li><a href="modules/forms.html">Forms</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Reference</p><ul>
+<li><a href="api.html">API reference</a></li>
+<li><a href="architecture.html">Architecture</a></li>
+<li><a href="design.html">Design</a></li>
+<li><a href="roadmap.html">Roadmap and status</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Project</p><ul>
+<li><a href="upstream.html" aria-current="page">Relationship to upstream</a></li>
+<li><a href="security.html">Security</a></li>
+<li><a href="contributing.html">Contributing</a></li>
+<li><a href="license.html">License</a></li>
+</ul></div>
+<div class="menu-group"><p class="menu-title">Design history</p><ul>
+<li><a href="enterprise/index.html">Overview</a></li>
+<li><a href="enterprise/custom-fields.html">Custom fields design</a></li>
+<li><a href="enterprise/workflow.html">Workflow design</a></li>
+<li><a href="enterprise/forms-approvals.html">Forms and approvals design</a></li>
+<li><a href="enterprise/automation.html">Automation design</a></li>
+<li><a href="enterprise/dashboards.html">Dashboards design</a></li>
+</ul></div>
+      </nav>
+    </details>
+  </div>
+</header>
+<div class="docs-layout">
+<nav class="sidebar" aria-label="Documentation">
+<p class="side-title">Start</p><ul>
+<li><a href="getting-started.html">Getting started</a></li>
+<li><a href="configuration.html">Configuration</a></li>
+</ul>
+<p class="side-title">Modules</p><ul>
+<li><a href="modules/index.html">Overview</a></li>
+<li><a href="modules/custom-fields.html">Custom fields</a></li>
+<li><a href="modules/workflows.html">Workflows</a></li>
+<li><a href="modules/approvals.html">Approvals</a></li>
+<li><a href="modules/automation.html">Automation</a></li>
+<li><a href="modules/dashboards-reports.html">Dashboards and reports</a></li>
+<li><a href="modules/forms.html">Forms</a></li>
+</ul>
+<p class="side-title">Reference</p><ul>
+<li><a href="api.html">API reference</a></li>
+<li><a href="architecture.html">Architecture</a></li>
+<li><a href="design.html">Design</a></li>
+<li><a href="roadmap.html">Roadmap and status</a></li>
+</ul>
+<p class="side-title">Project</p><ul>
+<li><a href="upstream.html" aria-current="page">Relationship to upstream</a></li>
+<li><a href="security.html">Security</a></li>
+<li><a href="contributing.html">Contributing</a></li>
+<li><a href="license.html">License</a></li>
+</ul>
+<p class="side-title">Design history</p><ul>
+<li><a href="enterprise/index.html">Overview</a></li>
+<li><a href="enterprise/custom-fields.html">Custom fields design</a></li>
+<li><a href="enterprise/workflow.html">Workflow design</a></li>
+<li><a href="enterprise/forms-approvals.html">Forms and approvals design</a></li>
+<li><a href="enterprise/automation.html">Automation design</a></li>
+<li><a href="enterprise/dashboards.html">Dashboards design</a></li>
+</ul>
+</nav>
+<main id="main" class="doc">
+<nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="index.html">Home</a></li><li>Project</li><li aria-current="page">Relationship to upstream</li></ol></nav>
+<h1>Relationship to upstream</h1>
+<details class="toc-inline"><summary>On this page</summary>
+<nav aria-label="On this page"><ul>
+<li class="toc-2"><a href="#what-the-fork-is">What the fork is</a></li>
+<li class="toc-2"><a href="#what-the-fork-is-not">What the fork is not</a></li>
+<li class="toc-2"><a href="#where-upstreams-documentation-applies">Where upstream&#x27;s documentation applies</a></li>
+<li class="toc-2"><a href="#when-to-use-upstream-instead">When to use upstream instead</a></li>
+<li class="toc-2"><a href="#changes-that-belong-upstream">Changes that belong upstream</a></li>
+</ul></nav></details>
+<div class="prose">
+<p><a href="https://github.com/go-vikunja/vikunja">Vikunja</a> is an open-source, self-hosted to-do and project app written by the Vikunja maintainers and contributors. vikunja-enterprise is a fork of it. Almost everything you see in the application is their work, and this site would have nothing to describe without it.</p>
+<aside class="admonition admonition-important" role="note"><p class="admonition-title">Important</p>
+<p>vikunja-enterprise is an independent community fork. It is not affiliated with, endorsed by or supported by the Vikunja project or its maintainers. Please do not ask them for help with this fork, and do not send them its bug reports. If Vikunja is useful to you, <a href="https://vikunja.io/support/">support the upstream project</a>.</p>
+</aside>
+<h2 id="what-the-fork-is">What the fork is <a class="anchor" href="#what-the-fork-is" aria-label="Link to this section: What the fork is">#</a></h2>
+<ul>
+<li>The same Go API, Vue 3 frontend, database layer and single-binary deployment, plus six modules that live in their own packages, files and tables: <a href="modules/custom-fields.html">custom fields</a>, <a href="modules/workflows.html">workflows</a>, <a href="modules/approvals.html">approvals</a>, <a href="modules/automation.html">automation</a>, <a href="modules/dashboards-reports.html">dashboards and reports</a> and <a href="modules/forms.html">forms</a>.</li>
+<li>A development project. The aim in the name is to offer a copy of Vikunja that is complete and properly built in every respect up to enterprise level. It is an aim, not a claim; the <a href="roadmap.html">roadmap</a> says what is done, what was tested on which database, and what is open.</li>
+<li>Licensed under AGPL-3.0-or-later, as upstream, with the same terms for anyone who runs it as a service.</li>
+</ul>
+<h2 id="what-the-fork-is-not">What the fork is not <a class="anchor" href="#what-the-fork-is-not" aria-label="Link to this section: What the fork is not">#</a></h2>
+<ul>
+<li>Not an official or supported distribution of Vikunja, and not a commercial offering.</li>
+<li>Not production-ready by virtue of its name. &quot;Enterprise&quot; describes the direction of the work.</li>
+<li>Not a replacement for upstream's own documentation. Everything the fork does not change, upstream documents.</li>
+<li>Not a drop-in for upstream's releases. Its database has extra tables, and moving an instance between the two in either direction has not been tested.</li>
+</ul>
+<ul>
+<li>The fork was created from upstream <code>main</code> (v2.8.0-187). The repository has an <code>upstream</code> remote next to <code>origin</code>, and the aim is to keep the difference small so that upstream can be merged. There is no promised sync schedule.</li>
+<li><code>/api/v1</code> is frozen and only gets bug fixes and ports to v2. Everything the fork adds is on <code>/api/v2</code>.</li>
+<li>Upstream's documentation (installation, configuration, user guide, webhooks, CalDAV) applies to everything these pages do not cover.</li>
+<li>Upstream's GitHub workflows inherited by the fork are disabled; only <code>enterprise-docker.yml</code> builds the image.</li>
+<li>Changes that belong in Vikunja itself are better sent upstream.</li>
+</ul>
+<h2 id="where-upstreams-documentation-applies">Where upstream's documentation applies <a class="anchor" href="#where-upstreams-documentation-applies" aria-label="Link to this section: Where upstream&#x27;s documentation applies">#</a></h2>
+<p>For these topics the fork changes nothing, so upstream's pages are the reference. They are upstream's and describe upstream's releases:</p>
+<ul>
+<li><a href="https://vikunja.io/docs/installing/">Installing</a> and <a href="https://vikunja.io/docs/config-options/">configuration options</a></li>
+<li><a href="https://vikunja.io/docs/">User guide</a> for projects, tasks, kanban, sharing, filters</li>
+<li>Mail, authentication providers (OpenID Connect, LDAP), CalDAV, migration from other tools and the <a href="https://vikunja.io/docs/webhooks/">webhooks</a> of upstream</li>
+</ul>
+<p>Where the fork adds to one of these, for example the automation module's own incoming webhooks, the fork's <a href="modules/index.html">module pages</a> say so.</p>
+<h2 id="when-to-use-upstream-instead">When to use upstream instead <a class="anchor" href="#when-to-use-upstream-instead" aria-label="Link to this section: When to use upstream instead">#</a></h2>
+<p>Use Vikunja itself, not this fork, if:</p>
+<ul>
+<li>you only need what Vikunja already does, since upstream is the better tested and more widely used choice for that;</li>
+<li>you need support from the people who build it, official releases and packages, or the hosted service;</li>
+<li>you want to run something you can rely on in production today, and you do not want to read a roadmap first;</li>
+<li>you use the official desktop or mobile apps and want the combination upstream tests.</li>
+</ul>
+<p>Use the fork if you need custom fields, status workflows, approvals, rule-based automation, dashboards or forms, and you accept that it is a development fork you run at your own risk.</p>
+<h2 id="changes-that-belong-upstream">Changes that belong upstream <a class="anchor" href="#changes-that-belong-upstream" aria-label="Link to this section: Changes that belong upstream">#</a></h2>
+<p>If a bug or an improvement is not specific to the fork's modules, it is better reported to or contributed to <a href="https://github.com/go-vikunja/vikunja">Vikunja</a> so that everyone benefits. The fork keeps its own difference small so that such fixes can be merged in both directions.</p>
+</div>
+<p class="edit"><a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/site/pages/upstream.md">Source of this page on GitHub</a></p>
+<nav class="pager" aria-label="Pages"><a class="prev" href="roadmap.html" rel="prev"><span>Previous</span>Roadmap and status</a><a class="next" href="security.html" rel="next"><span>Next</span>Security</a></nav>
+</main>
+<nav class="toc-aside" aria-label="On this page"><p class="side-title">On this page</p><ul>
+<li class="toc-2"><a href="#what-the-fork-is">What the fork is</a></li>
+<li class="toc-2"><a href="#what-the-fork-is-not">What the fork is not</a></li>
+<li class="toc-2"><a href="#where-upstreams-documentation-applies">Where upstream&#x27;s documentation applies</a></li>
+<li class="toc-2"><a href="#when-to-use-upstream-instead">When to use upstream instead</a></li>
+<li class="toc-2"><a href="#changes-that-belong-upstream">Changes that belong upstream</a></li>
+</ul></nav>
+</div>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-about">
+      <p><strong>vikunja-enterprise</strong> is an independent community fork of Vikunja. It is not affiliated with, endorsed by or supported by the Vikunja project. Almost all of the software is their work.</p>
+      <p>Licensed under AGPL-3.0-or-later, as upstream. This site has no scripts, cookies or trackers.</p>
+    </div>
+    <nav class="footer-nav" aria-label="Footer">
+      <div><p class="footer-title">Project</p><ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="getting-started.html">Get started</a></li>
+        <li><a href="roadmap.html">Roadmap and status</a></li>
+        <li><a href="upstream.html">Relationship to upstream</a></li>
+      </ul></div>
+      <div><p class="footer-title">Reference</p><ul>
+        <li><a href="modules/index.html">Modules</a></li>
+        <li><a href="api.html">API</a></li>
+        <li><a href="architecture.html">Architecture</a></li>
+        <li><a href="configuration.html">Configuration</a></li>
+      </ul></div>
+      <div><p class="footer-title">Community</p><ul>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise">Repository</a></li>
+        <li><a href="https://github.com/bahadirdogru/vikunja-enterprise/issues">Issues</a></li>
+        <li><a href="security.html">Security</a></li>
+        <li><a href="contributing.html">Contributing</a></li>
+        <li><a href="license.html">License</a></li>
+      </ul></div>
+      <div><p class="footer-title">Upstream Vikunja</p><ul>
+        <li><a href="https://github.com/go-vikunja/vikunja">Source code</a></li>
+        <li><a href="https://vikunja.io/docs/">Documentation</a></li>
+        <li><a href="https://vikunja.io/support/">Support upstream</a></li>
+      </ul></div>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>
