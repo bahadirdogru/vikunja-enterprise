@@ -1873,6 +1873,7 @@
     "22011": "The signature of the request is not valid.",
     "22012": "Too many calls to this webhook. Try again later.",
     "22013": "The body of the request has to be a JSON object.",
+    "22014": "This project has reached the maximum number of automation rules. Delete a rule you do not need, or ask an administrator to raise automation.maxrulesperproject.",
     "23001": "A report setting is not valid.",
     "23002": "This chart would have too many time buckets. Choose a shorter period or larger steps.",
     "23003": "This chart would have too many groups. Show fewer groups.",

@@ -129,3 +129,11 @@ describe('getErrorText', () => {
 		expect(getErrorText(new ApiError({status: 502, detail: 'Bad Gateway'}))).toBe('Bad Gateway')
 	})
 })
+
+describe('getErrorText for the automation rule limit', () => {
+	it('shows the translated message of code 22014 instead of the English detail', () => {
+		const text = getErrorText({status: 409, code: 22014, detail: 'This project has reached the limit of 100 automation rules.'})
+		expect(text).toContain('maximum number of automation rules')
+		expect(text).not.toBe('error.22014')
+	})
+})

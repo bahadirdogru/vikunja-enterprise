@@ -1870,6 +1870,7 @@
 		"22011": "İsteğin imzası geçerli değil.",
 		"22012": "Bu webhook'a çok fazla çağrı yapıldı. Daha sonra yeniden dene.",
 		"22013": "İsteğin gövdesi bir JSON nesnesi olmalı.",
+		"22014": "Bu proje otomasyon kuralı sınırına ulaştı. İhtiyacın olmayan bir kuralı sil ya da bir yöneticiden automation.maxrulesperproject değerini yükseltmesini iste.",
 		"23001": "Rapor ayarlarından biri geçerli değil.",
 		"23002": "Bu grafik çok fazla zaman aralığına sahip olurdu. Daha kısa bir dönem veya daha büyük adımlar seç.",
 		"23003": "Bu grafik çok fazla gruba sahip olurdu. Daha az grup göster.",
