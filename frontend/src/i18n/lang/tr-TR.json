@@ -56,7 +56,7 @@
 		"cancel": {
 			"action": "Talebi iptal et",
 			"title": "Talebi iptal et",
-			"text": "“{title}” talebi iptal edilsin mi? Onaylayanlara artık sorulmayacak.",
+			"text": "\"{title}\" talebi iptal edilsin mi? Onaylayanlara artık sorulmayacak.",
 			"keep": "Talebi koru",
 			"confirm": "Talebi iptal et",
 			"success": "Talep iptal edildi"
@@ -1872,7 +1872,7 @@
 		"22013": "İsteğin gövdesi bir JSON nesnesi olmalı.",
 		"22014": "Bu proje otomasyon kuralı sınırına ulaştı. İhtiyacın olmayan bir kuralı sil ya da bir yöneticiden automation.maxrulesperproject değerini yükseltmesini iste.",
 		"23001": "Rapor ayarlarından biri geçerli değil.",
-		"23002": "Bu grafik çok fazla zaman aralığına sahip olurdu. Daha kısa bir dönem veya daha büyük adımlar seç.",
+		"23002": "Bu grafikte çok fazla gün, hafta veya ay olurdu. Daha kısa bir dönem seç ya da zamanı daha büyük bir birimle grupla.",
 		"23003": "Bu grafikte çok fazla grup olurdu. Daha az grup göster.",
 		"23004": "Bu alan görevleri gruplamak için kullanılamaz.",
 		"23005": "Bu ayar, paylaşım bağlantısı üzerinden raporlanamaz.",
@@ -2288,7 +2288,7 @@
 			"noOptions": {
 				"user": "Seçilebilecek proje üyesi yok.",
 				"team": "Proje hiçbir ekiple paylaşılmamış.",
-				"custom_field": "Projede kişi türünde özel alan yok."
+				"custom_field": "Projede Kullanıcı türünde özel alan yok."
 			},
 			"rejectedStatus": "Reddedilirse taşınacağı durum",
 			"rejectedStay": "Mevcut durumda kalsın",
@@ -2307,7 +2307,7 @@
 		"empty": {
 			"title": "Bu projede henüz iş akışı yok",
 			"text": "İş akışı, görevlere Yapılacak, Devam ediyor ve Tamamlandı gibi gerçek durumlar ve bu durumlar arasındaki geçişler için kurallar verir: geçişi kimin yapabileceği, hangi alanların doldurulması gerektiği ve yorumun zorunlu olup olmadığı.",
-			"kanban": "Durum görevin kendisine aittir ve her görünümde aynıdır. Yalnızca tek bir görünümde görevleri gruplayan kanban sütunlarından bağımsızdır.",
+			"kanban": "Durum görevin kendisine aittir ve her görünümde aynıdır. Yalnızca tek bir görünümde görevleri gruplayan Kanban sütunlarından bağımsızdır.",
 			"enable": "İş akışını etkinleştir",
 			"draftHint": "Bu bir başlangıç taslağı. Durumları ve kuralları düzenle, ardından iş akışını etkinleştirmek için kaydet."
 		},
@@ -2335,7 +2335,7 @@
 			"moveUp": "\"{title}\" durumunu yukarı taşı",
 			"moveDown": "\"{title}\" durumunu aşağı taşı",
 			"remove": "\"{title}\" durumunu kaldır",
-			"removeHint": "Yeni görevler başlangıç durumunda açılır. Daha önce kullanılmış bir durum kaldırılırsa arşivlenir, geçmişi okunabilir kalır.",
+			"removeHint": "Yeni görevler başlangıç durumunda açılır. Daha önce kullanılmış bir durum kaldırılırsa arşivlenir; geçmişi okunabilir kalır.",
 			"archived": "{count} arşivlenmiş durum | {count} arşivlenmiş durum",
 			"archivedHint": "Arşivlenmiş durumlar seçicilerde görünmez ama geçmişleri korunur."
 		},
@@ -2635,7 +2635,7 @@
 			"empty": "Bu dönemde süre kaydedilmedi.",
 			"total": "{count} kayıtta {time} | {count} kayıtta {time}",
 			"running": "çalışan sayaç yok | {count} çalışan sayaç hesaba katılmıyor | {count} çalışan sayaç hesaba katılmıyor",
-			"truncated": "Yalnızca en çok zamana sahip gruplar gösteriliyor, kalanı \"Diğer\" altında toplanır.",
+			"truncated": "Yalnızca en çok süre kaydedilen gruplar gösteriliyor; kalanı \"Diğer\" altında toplanıyor.",
 			"unavailable": "Zaman takibi bu sunucuda kullanılamıyor."
 		},
 		"drilldown": {
@@ -2646,7 +2646,7 @@
 			"previous": "Önceki",
 			"next": "Sonraki",
 			"blocked": {
-				"other": "Katlanmış \"diğer\" grubu listelenemez: \"ilk gruplardan biri olmayan\" için bir filtre yok.",
+				"other": "\"Diğer\" grubu listelenemez: \"ilk gruplardan biri değil\" diye bir filtre yok.",
 				"null_filter": "\"Değer yok\" bu filtreyle birlikte listelenemez: değeri olmayan görevleri de dâhil eden seçenek gerekir ve bu seçenek diğer koşulları da değiştirir.",
 				"include_nulls": "Bu bileşenin filtresi değeri olmayan görevleri de içerdiği için tek bir grup listelenemez.",
 				"status_entered": "Görevin duruma giriş zamanı bir filtre alanı olmadığı için bu dönemin görevleri listelenemiyor.",
@@ -2724,7 +2724,7 @@
 			"horizontal": "Yatay",
 			"stacked": "İkinci özelliği üst üste yığ",
 			"showLegend": "Göstergeyi göster",
-			"displayHint": "Görünüm seçenekleri bu tarayıcıda saklanır, panonun parçası değildir.",
+			"displayHint": "Gösterim seçenekleri bu tarayıcıda saklanır ve panonun parçası değildir.",
 			"compare": "Önceki dönemle karşılaştır",
 			"compareHint": "Sayının, aşağıda seçilen dönemden hemen önceki aynı uzunluktaki döneme göre nasıl değiştiğini gösterir.",
 			"splitBy": "Ayırma ölçütü",
@@ -3289,7 +3289,7 @@
 			"deleted": "Gizli anahtar silindi.",
 			"deleteConfirm": {
 				"title": "Bu gizli anahtar silinsin mi?",
-				"text": "“{name}” gizli anahtarını kullanan kuralların tanımı korunur, ancak onu gerektiren adımda hata verirler."
+				"text": "\"{name}\" gizli anahtarını kullanan kurallar tanımlarını korur, ancak ona ihtiyaç duyan adımda hata verir."
 			}
 		},
 		"cron": {
@@ -3307,7 +3307,7 @@
 				"label": "Görevdeki düğmenin metni. Boş bırakılırsa kuralın başlığı kullanılır."
 			},
 			"schedule": {
-				"scope": "Koşullara uyan her görev, her zamanlamada ayrı bir çalıştırma başlatır. Proje, bir kez seçeneği görevsiz tek bir çalıştırma başlatır: önce bir Görev oluştur eylemi ekle."
+				"scope": "\"Koşullara uyan her görev\" seçeneğinde, zamanlama her geldiğinde koşullara uyan her görev için ayrı bir çalıştırma başlar. \"Proje, bir kez\" seçeneği görevsiz tek bir çalıştırma başlatır: önce bir \"Görev oluştur\" eylemi ekle."
 			},
 			"task_due_soon": {
 				"offset": "Örneğin 24h veya 2d. En az 1 dakika."
@@ -3328,7 +3328,7 @@
 			}
 		},
 		"triggerHint": {
-			"manual": "Kural, görevi düzenleyebilen kişiler için görevin eylemler menüsünde Otomasyonu çalıştır olarak görünür. Eylemler kural sahibinin yetkileriyle çalışır.",
+			"manual": "Kural, görevi düzenleyebilen kişiler için görevin işlemler menüsünde \"Otomasyonu çalıştır…\" olarak görünür. Eylemler kural sahibinin yetkileriyle çalışır.",
 			"schedule": "Zamanlamalar senin değil, sunucunun saat diliminde çalışır. Kuralı kaydetmek geçmişi yeniden çalıştırmaz: son kayıttan itibaren sayılır.",
 			"task_overdue": "Kural etkinken süresi geçen her görev için bir kez tetiklenir. Kural oluşturulduğunda ya da etkinleştirildiğinde süresi zaten geçmiş olan görevler tetiklenmez. Bitiş tarihi değişen görev yeniden tetiklenebilir olur.",
 			"task_due_soon": "Kural etkinken bitiş tarihinden önceki aralığa giren her görev için bir kez tetiklenir. Kural oluşturulduğunda ya da etkinleştirildiğinde zaten bu aralıkta olan görevler tetiklenmez. Bitiş tarihi değişen görev yeniden tetiklenebilir olur.",
@@ -3359,7 +3359,7 @@
 			"title": "Otomasyonu çalıştır",
 			"intro": "Bu görev için çalıştırılacak kuralı seç. Kural arka planda, kural sahibinin yetkileriyle çalışır.",
 			"action": "Otomasyonu çalıştır…",
-			"queued": "“{title}” otomasyonu başlatıldı."
+			"queued": "\"{title}\" otomasyonu başlatıldı."
 		}
 	},
 	"forms": {

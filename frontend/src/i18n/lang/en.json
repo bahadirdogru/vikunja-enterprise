@@ -56,7 +56,7 @@
     "cancel": {
       "action": "Cancel request",
       "title": "Cancel request",
-      "text": "Cancel the request “{title}”? The approvers will not be asked any more.",
+      "text": "Cancel the request \"{title}\"? The approvers will not be asked any more.",
       "keep": "Keep request",
       "confirm": "Cancel request",
       "success": "Request cancelled"
@@ -1875,7 +1875,7 @@
     "22013": "The body of the request has to be a JSON object.",
     "22014": "This project has reached the maximum number of automation rules. Delete a rule you do not need, or ask an administrator to raise automation.maxrulesperproject.",
     "23001": "A report setting is not valid.",
-    "23002": "This chart would have too many time buckets. Choose a shorter period or larger steps.",
+    "23002": "This chart would have too many days, weeks or months. Choose a shorter period or group time by a larger unit.",
     "23003": "This chart would have too many groups. Show fewer groups.",
     "23004": "This field cannot be used to group tasks.",
     "23005": "Reports are not available through a share link for this setting.",
@@ -2288,7 +2288,7 @@
       "noOptions": {
         "user": "The project has no members to choose from.",
         "team": "The project is not shared with a team.",
-        "custom_field": "The project has no custom field of the type person."
+        "custom_field": "The project has no custom field of the type User."
       },
       "rejectedStatus": "When rejected, move to",
       "rejectedStay": "Stay in the current status",
@@ -2307,7 +2307,7 @@
     "empty": {
       "title": "This project has no workflow yet",
       "text": "A workflow gives tasks real statuses, such as To do, In progress and Done, and rules for moving between them: who may do it, which fields must be filled in and whether a comment is needed.",
-      "kanban": "A status belongs to the task and is the same in every view. It is independent of the kanban columns, which only group tasks inside one view.",
+      "kanban": "A status belongs to the task and is the same in every view. It is independent of the Kanban columns, which only group tasks inside one view.",
       "enable": "Enable workflow",
       "draftHint": "This is a starting point. Adjust the statuses and rules, then save to turn the workflow on."
     },
@@ -2335,7 +2335,7 @@
       "moveUp": "Move \"{title}\" up",
       "moveDown": "Move \"{title}\" down",
       "remove": "Remove the status \"{title}\"",
-      "removeHint": "New tasks start in the initial status. A removed status that was used before is archived, its history stays readable.",
+      "removeHint": "New tasks start in the initial status. A removed status that was used before is archived; its history stays readable.",
       "archived": "{count} archived status | {count} archived statuses",
       "archivedHint": "Archived statuses are hidden from pickers but keep their history."
     },
@@ -2635,7 +2635,7 @@
       "empty": "No time was tracked in this period.",
       "total": "{time} in {count} entry | {time} in {count} entries",
       "running": "no running timers | {count} running timer is not counted | {count} running timers are not counted",
-      "truncated": "Only the groups with the most time are shown, the rest is folded into \"Other\".",
+      "truncated": "Only the groups with the most time are shown; the rest is folded into \"Other\".",
       "unavailable": "Time tracking is not available on this server."
     },
     "drilldown": {
@@ -2646,7 +2646,7 @@
       "previous": "Previous",
       "next": "Next",
       "blocked": {
-        "other": "The folded \"other\" group cannot be listed: there is no filter for \"not one of the first groups\".",
+        "other": "The \"Other\" group cannot be listed: there is no filter for \"not one of the first groups\".",
         "null_filter": "\"No value\" cannot be listed together with this filter: it needs the option to include tasks without a value, which would also change the other conditions.",
         "include_nulls": "This widget includes tasks without a value in its filter, so a single group cannot be listed.",
         "status_entered": "The time a task entered its status is not a filter field, so the tasks of this period cannot be listed.",
@@ -2724,7 +2724,7 @@
       "horizontal": "Horizontal",
       "stacked": "Stack the second property",
       "showLegend": "Show the legend",
-      "displayHint": "Display options are kept in this browser, they are not part of the dashboard.",
+      "displayHint": "Display options are kept in this browser and are not part of the dashboard.",
       "compare": "Compare with the previous period",
       "compareHint": "Shows how the number changed against the period of the same length right before the one chosen below.",
       "splitBy": "Split by",
@@ -3289,7 +3289,7 @@
       "deleted": "The secret was deleted.",
       "deleteConfirm": {
         "title": "Delete this secret?",
-        "text": "Rules that use “{name}” keep their definition and fail at the step that needs it."
+        "text": "Rules that use \"{name}\" keep their definition and fail at the step that needs it."
       }
     },
     "cron": {
@@ -3307,7 +3307,7 @@
         "label": "The text of the button on the task. Without it the title of the rule is used."
       },
       "schedule": {
-        "scope": "Each matching task starts one run per occurrence. The project, once starts one run without a task: put a Create a task action first."
+        "scope": "With \"Each matching task\", every matching task starts one run per occurrence. \"The project, once\" starts one run without a task: put a \"Create a task\" action first."
       },
       "task_due_soon": {
         "offset": "For example 24h or 2d. At least 1 minute."
@@ -3328,7 +3328,7 @@
       }
     },
     "triggerHint": {
-      "manual": "The rule shows up as Run automation in the actions menu of a task, for people who can edit the task. The actions run with the permissions of the owner of the rule.",
+      "manual": "The rule shows up as \"Run automation…\" in the actions menu of a task, for people who can edit the task. The actions run with the permissions of the owner of the rule.",
       "schedule": "Schedules run in the time zone of the server, not in yours. Saving the rule does not replay the past: it counts from the last save.",
       "task_overdue": "Fires once for each task that crosses its due date while the rule is enabled. Tasks that are already overdue when the rule is created or enabled do not fire. A changed due date arms the task again.",
       "task_due_soon": "Fires once for each task that enters the window before its due date while the rule is enabled. Tasks that are already inside the window when the rule is created or enabled do not fire. A changed due date arms the task again.",
@@ -3359,7 +3359,7 @@
       "title": "Run automation",
       "intro": "Choose the rule to run for this task. It runs in the background with the permissions of the rule owner.",
       "action": "Run automation…",
-      "queued": "The automation “{title}” was started."
+      "queued": "The automation \"{title}\" was started."
     }
   },
   "forms": {
