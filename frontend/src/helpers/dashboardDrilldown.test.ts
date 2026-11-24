@@ -157,3 +157,23 @@ describe('isNullSafeFilter', () => {
 		expect(isNullSafeFilter('status = 1')).toBe(false)
 	})
 })
+
+describe('the tasks behind a bar or donut with a time range', () => {
+	const range = reportRangePoint({from: '2026-01-01T00:00:00Z', to: '2026-03-11T00:00:00Z'})
+	const request = {group_by: 'priority', filter: 'done = false', time: {field: 'created', bucket: 'month', from: '2026-01-01', to: '2026-03-10'}}
+	const group = {key: 3, label: 'High', value: 4}
+
+	it.each(['bar', 'donut'])('adds the range to the group of a %s', type => {
+		const r = ok(drilldownFilter(drilldownInputFor({type, config: {request}}, {group, point: range})))
+		expect(r.filter).toBe('done = false && priority = 3 && created >= "2026-01-01T00:00:00Z" && created < "2026-03-11T00:00:00Z"')
+	})
+
+	it.each(['bar', 'donut'])('waits for the range of a %s instead of listing the group of every period', type => {
+		expect(drilldownFilter(drilldownInputFor({type, config: {request}}, {group}))).toMatchObject({ok: false, reason: 'unknown_dimension'})
+	})
+
+	it('keeps a bar without a time range as it was', () => {
+		const r = ok(drilldownFilter(drilldownInputFor({type: 'bar', config: {request: {group_by: 'priority', filter: 'done = false'}}}, {group})))
+		expect(r.filter).toBe('done = false && priority = 3')
+	})
+})

@@ -76,12 +76,22 @@ const fieldTypes = computed(() => Object.fromEntries(
 // the panel opens.
 const hardBlocks: DrilldownBlock[] = ['other', 'null_filter', 'include_nulls', 'status_entered', 'unknown_dimension']
 
+// A bar or donut with a time range counts the tasks of that range only: a click carries the range the server
+// resolved next to the group.
+function withRange(selection: ChartSelection): ChartSelection {
+	if ((props.type !== 'bar' && props.type !== 'donut') || !request.value.time?.field || selection.point) {
+		return selection
+	}
+	const point = reportRangePoint(report.value?.time)
+	return point ? {...selection, point} : selection
+}
+
 function reasonFor(selection: ChartSelection): string | null {
 	if (!props.canDrill) {
 		return null
 	}
 	const result = drilldownFilter({
-		...drilldownInputFor({type: props.type, config: props.config}, selection),
+		...drilldownInputFor({type: props.type, config: props.config}, withRange(selection)),
 		fieldTypes: fieldTypes.value,
 		assumeResolvable: true,
 	})
@@ -90,7 +100,7 @@ function reasonFor(selection: ChartSelection): string | null {
 
 function select(selection: ChartSelection) {
 	if (props.canDrill) {
-		emit('drill', {selection})
+		emit('drill', {selection: withRange(selection)})
 	}
 }
 

@@ -142,7 +142,7 @@ A worked report request and response are in [API.md](../../API.md#examples). Req
 - **Charts** are hand-written SVG (bar, stacked and grouped bar, donut, line, number tile) with tooltips, hidden data tables, empty, loading and error states.
 - **Grid**: 12 columns, one column at 768 px and below; edit mode with drag, resize, keyboard control, compaction, a visible save state and undo.
 - **Widget editor**: type gallery, a form built from the report options, the view filter editor, relative period presets and a live preview of the unsaved configuration.
-- **Drill-down** lists exactly the tasks behind a mark; marks that cannot be expressed in the filter syntax are inert and say why. **CSV export** from the widget menu and the drill-down; number widgets can compare with the previous period.
+- **Drill-down** lists exactly the tasks behind a mark; marks that cannot be expressed in the filter syntax are inert and say why. A number, bar, donut or line widget with a time range lists (and exports) only the tasks of that range; created vs completed lists the tasks created in the range of the first series or done in the range of the second. **CSV export** from the widget menu and the drill-down; number widgets can compare with the previous period.
 - Bar direction, stacking and legend are per-viewer browser settings.
 
 Details: [DESIGN.md](../../DESIGN.md#dashboards-and-reports).
@@ -159,6 +159,7 @@ Details: [DESIGN.md](../../DESIGN.md#dashboards-and-reports).
 - `reports.maxbuckets` time buckets (`23002`), `reports.maxgroups` groups per level (`23003` for a request that asks for more; groups beyond a request's `limit`, default 20, fold into `other`).
 - `reports.maxcells` result cells (`23011`) for a task report. The default `50000` is about 4 MB of JSON; the widgets the editor offers stay far below it (a line chart of 20 groups over 366 daily buckets is about 7,300 cells, a grouped bar chart of two dimensions over 30 days with 5 x 5 groups is under 1,000). The two-dimension case with 20 x 20 groups over 366 buckets (about 160,000 cells, 13 MB) is what it exists to refuse.
 - `reports.maxrows` rows for reports computed in memory (time in status, time tracking) and CSV exports (`23010`). The rows read (history, current statuses, assignees or labels) are bounded by it.
+- Names of groups (users, projects, labels, statuses, field options) are looked up in chunks of 500 ids, so a report over more distinct values than a database accepts parameters in one statement still runs. The task ids of the time tracking report are a subquery, never a list.
 - `reports.timeout` for the database queries of one report; exceeded queries are cancelled (`503` / `23009`).
 - A cache per authenticated identity and normalized request for `reports.cachettl`, at most 256 entries, no invalidation; `0` disables it. In a multi-instance deployment each process has its own cache.
 - Bucket boundaries are second precision; there is one time zone per request.
@@ -168,8 +169,6 @@ Details: [DESIGN.md](../../DESIGN.md#dashboards-and-reports).
 From the [roadmap](../enterprise/ROADMAP.md):
 
 - Default dashboards for new projects with a workflow are not created.
-- The time tracking report builds `IN` lists from task ids (parameter-limit risk).
-- Bar and donut widgets with a time range ignore it in drill-down and export; only number widgets are fixed.
 - `created_vs_done` has no server-side running open count (the client combines two reports); a `text` widget stores the editor's HTML, sanitized on render; the `line` chart does not offer a second dimension.
 - The new widgets (time in status, workload, time tracking), CSV export and the previous-period comparison were checked in a browser (see the roadmap); the workload estimate field was not.
 - Not exposed over MCP.

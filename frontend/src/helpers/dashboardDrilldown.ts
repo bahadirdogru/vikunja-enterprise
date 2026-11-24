@@ -29,7 +29,7 @@ export type DrilldownInput = {
 	cfOptionIds?: Record<string, number[]>
 	// cf_<id> -> custom field type, from the report options.
 	fieldTypes?: Record<string, string>
-	// The range of a number widget is one point that has to be there before the tasks can be listed.
+	// The range of a number, bar or donut widget is one point that has to be there before the tasks can be listed.
 	requirePoint?: boolean
 	// Only asks whether a filter can exist at all, before the lookups of usernames and options ran.
 	assumeResolvable?: boolean
@@ -235,8 +235,9 @@ export function drilldownInputFor(
 		input.group = selection.group
 		input.child = selection.child
 	}
-	if (widget.type === 'number' && request.time?.field) {
-		// The number only counts the tasks of its time range.
+	if ((widget.type === 'number' || widget.type === 'bar' || widget.type === 'donut') && request.time?.field) {
+		// A number, a bar or a donut with a time range only counts the tasks of that range, so the tasks behind a
+		// mark are limited to it too. The range is the one point the server resolved.
 		input.timeField = request.time.field
 		input.point = selection.point
 		input.requirePoint = true
