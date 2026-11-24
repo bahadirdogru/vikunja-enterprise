@@ -87,6 +87,21 @@ func TestI18nParamsContract(t *testing.T) {
 			expectedCode: user.ErrorCodeInvalidTimezone,
 		},
 		{
+			name:         "ErrCustomFieldLimitReached",
+			err:          models.ErrCustomFieldLimitReached{ProjectID: 1, Limit: 100},
+			expectedCode: models.ErrCodeCustomFieldLimitReached,
+		},
+		{
+			name:         "ErrCustomFieldOptionLimitReached",
+			err:          models.ErrCustomFieldOptionLimitReached{CustomFieldID: 1, Limit: 200},
+			expectedCode: models.ErrCodeCustomFieldOptionLimitReached,
+		},
+		{
+			name:         "ErrCustomFieldValueTooLong",
+			err:          models.ErrCustomFieldValueTooLong{CustomFieldID: 1, Limit: 65535},
+			expectedCode: models.ErrCodeCustomFieldValueTooLong,
+		},
+		{
 			name:         "migration.ErrCSVDuplicateColumnMapping",
 			err:          &migration.ErrCSVDuplicateColumnMapping{Column: 1},
 			expectedCode: migration.ErrCodeCSVDuplicateColumnMapping,
