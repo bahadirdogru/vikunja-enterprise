@@ -2,6 +2,10 @@
 
 Vikunja: self-hosted to-do app. Go API in `pkg/`, Vue 3 + TypeScript frontend in `frontend/` (pnpm). `veans/` is a separate Go module with its own `AGENTS.md`.
 
+## Fork
+
+This repository is vikunja-enterprise, a fork of go-vikunja/vikunja. Read [Working in this fork](.agents/docs/fork.md) before changing anything: it says how to stay mergeable with upstream and where the fork's rules differ from the ones below (translations, lint, commits). Fork skills: `fork-change`, `fork-db-matrix`, `fork-merge-upstream`, `fork-i18n`.
+
 ## Commands
 
 Go tasks run through `mage` (`mage -l`). Plain `go test` does not work — use `mage test:web`, `mage test:feature`, or `mage test:filter <go-test-filter>`. Save test output to a file (`2>&1 | tee /tmp/out.log`) and read the file; never re-run a test just to grep it differently.
