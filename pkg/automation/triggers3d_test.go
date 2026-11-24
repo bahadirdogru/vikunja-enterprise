@@ -496,7 +496,7 @@ func TestWebhook_ReplayProtection(t *testing.T) {
 		require.NoError(t, err)
 		for i := 0; i < 3; i++ {
 			_, err = ReceiveWebhook(first)
-			assert.NoError(t, err, "a replay is not a 429 and not a 401: %v", err)
+			require.NoError(t, err, "a replay is not a 429 and not a 401: %v", err)
 		}
 		assert.EqualValues(t, 1, webhookEventCount(t, limitedRule.ID), "only the first call was queued")
 		_, err = ReceiveWebhook(signedCall(limitedToken, []byte(`{"rl":2}`), at()))
@@ -552,7 +552,7 @@ func TestWebhook_ReplayProtection(t *testing.T) {
 		require.NoError(t, err)
 		db.AssertExists(t, "automation_webhook_seen", map[string]interface{}{"signature": strings.TrimPrefix(call.Signature, "sha256=")}, false)
 		again, err := ReceiveWebhook(call)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Nil(t, again)
 	})
 
@@ -574,7 +574,7 @@ func TestWebhook_ReplayProtection(t *testing.T) {
 		queuedByCall := 0
 		for i := 0; i < 6; i++ {
 			r := <-results
-			assert.NoError(t, r.err)
+			require.NoError(t, r.err)
 			if r.row != nil {
 				queuedByCall++
 			}

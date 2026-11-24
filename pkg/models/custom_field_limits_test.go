@@ -90,7 +90,7 @@ func TestCustomField_FieldsPerProjectLimit(t *testing.T) {
 		assert.Equal(t, 20006, customFieldErrorCode(t, err))
 
 		existing := &CustomField{ID: 1, ProjectID: 1, Title: "renamed", Type: CustomFieldTypeText}
-		stored := readCustomField(t, 1, 1)
+		stored := readCustomField(t, 1)
 		existing.Type = stored.Type
 		existing.Options = stored.Options
 		require.NoError(t, updateCustomFieldAs(t, existing), "editing a field of a project over the limit still works")
@@ -106,11 +106,11 @@ func TestCustomField_FieldsPerProjectLimit(t *testing.T) {
 	})
 }
 
-func readCustomField(t *testing.T, projectID, id int64) *CustomField {
+func readCustomField(t *testing.T, id int64) *CustomField {
 	t.Helper()
 	s := db.NewSession()
 	defer s.Close()
-	f, err := getCustomFieldInProject(s, id, projectID)
+	f, err := getCustomFieldInProject(s, id, 1)
 	require.NoError(t, err)
 	require.NoError(t, loadCustomFieldRelations(s, f))
 	return f
@@ -131,7 +131,7 @@ func TestCustomField_OptionsPerFieldLimit(t *testing.T) {
 		f.Options = append(f.Options, &CustomFieldOption{Title: "one too many"})
 		err = updateCustomFieldAs(t, f)
 		assert.Equal(t, 20007, customFieldErrorCode(t, err))
-		assert.Len(t, readCustomField(t, 1, f.ID).Options, 5, "nothing was written")
+		assert.Len(t, readCustomField(t, f.ID).Options, 5, "nothing was written")
 	})
 
 	t.Run("a field above the limit can be edited and shrunk but not grown", func(t *testing.T) {
@@ -142,18 +142,18 @@ func TestCustomField_OptionsPerFieldLimit(t *testing.T) {
 		config.CustomFieldsMaxOptionsPerField.Set(5)
 		t.Cleanup(func() { config.CustomFieldsMaxOptionsPerField.Set(200) })
 
-		stored := readCustomField(t, 1, f.ID)
+		stored := readCustomField(t, f.ID)
 		stored.Title = "legacy renamed"
 		require.NoError(t, updateCustomFieldAs(t, stored), "unchanged options of a field over the limit")
 
-		stored = readCustomField(t, 1, f.ID)
+		stored = readCustomField(t, f.ID)
 		stored.Options = append(stored.Options, &CustomFieldOption{Title: "new"})
 		assert.Equal(t, 20007, customFieldErrorCode(t, updateCustomFieldAs(t, stored)))
 
-		stored = readCustomField(t, 1, f.ID)
+		stored = readCustomField(t, f.ID)
 		stored.Options = stored.Options[:7]
 		require.NoError(t, updateCustomFieldAs(t, stored), "shrinking is allowed, also while still above the limit")
-		assert.Len(t, readCustomField(t, 1, f.ID).Options, 7)
+		assert.Len(t, readCustomField(t, f.ID).Options, 7)
 	})
 }
 
