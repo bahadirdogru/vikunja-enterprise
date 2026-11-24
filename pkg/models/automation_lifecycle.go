@@ -109,6 +109,19 @@ func disableAutomationRulesForStatuses(s *xorm.Session, projectID int64, statusI
 	})
 }
 
+// checkAutomationRulesCanBeDuplicated refuses a duplicate of a project that has more rules than a project may have,
+// so the copy is not half made.
+func checkAutomationRulesCanBeDuplicated(s *xorm.Session, sourceProjectID int64) error {
+	count, err := s.Where("project_id = ?", sourceProjectID).Count(&AutomationRule{})
+	if err != nil {
+		return err
+	}
+	if limit := int64(config.AutomationMaxRulesPerProject.GetInt()); limit > 0 && count > limit {
+		return ErrAutomationRuleLimitReached{ProjectID: sourceProjectID, Limit: limit}
+	}
+	return nil
+}
+
 // duplicateAutomationRulesForProject copies the rules of one project into its duplicate. The copies are disabled:
 // they run as the user who duplicated the project and must be looked at before they act. Ids of custom fields,
 // options and statuses are replaced with the ones of the copies; a rule that refers to something without a copy

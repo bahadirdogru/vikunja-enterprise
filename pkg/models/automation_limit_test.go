@@ -137,8 +137,38 @@ func TestAutomationRule_LimitWhenDuplicatingAProject(t *testing.T) {
 
 	t.Run("a project over the limit cannot be duplicated, nothing is half copied", func(t *testing.T) {
 		setRuleLimit(t, int(rules)-1)
-		dup := &ProjectDuplicate{ProjectID: 1}
+		counts := func() map[string]int64 {
+			s := db.NewSession()
+			defer s.Close()
+			out := map[string]int64{}
+			for _, table := range []string{"projects", "tasks", "files", "task_attachments", "automation_rules"} {
+				n, err := s.Table(table).Count()
+				require.NoError(t, err)
+				out[table] = n
+			}
+			return out
+		}
+		before := counts()
+		var maxFile int64
 		s := db.NewSession()
+		_, err := s.Table("files").Select("MAX(id)").Get(&maxFile)
+		require.NoError(t, err)
+		s.Close()
+
+		// Other tests of the package may have left blobs of their own behind: compare, do not expect none.
+		blobsAbove := func(id int64) []int64 {
+			found := []int64{}
+			for i := id + 1; i <= id+50; i++ {
+				if _, statErr := files.FileStat(&files.File{ID: i}); statErr == nil {
+					found = append(found, i)
+				}
+			}
+			return found
+		}
+		blobs := blobsAbove(maxFile)
+
+		dup := &ProjectDuplicate{ProjectID: 1}
+		s = db.NewSession()
 		defer s.Close()
 		can, err := dup.CanCreate(s, autoUser1)
 		require.NoError(t, err)
@@ -147,6 +177,9 @@ func TestAutomationRule_LimitWhenDuplicatingAProject(t *testing.T) {
 		_ = s.Rollback()
 		require.Error(t, err)
 		assert.True(t, IsErrAutomationRuleLimitReached(err), "got %T: %v", err, err)
+
+		assert.Equal(t, before, counts(), "no project, task, file or rule row was added")
+		assert.Equal(t, blobs, blobsAbove(maxFile), "no blob was written")
 	})
 
 	t.Run("a project within the limit is duplicated with all rules", func(t *testing.T) {

@@ -83,6 +83,12 @@ func (pd *ProjectDuplicate) Create(s *xorm.Session, doer web.Auth) (err error) {
 
 	log.Debugf("Duplicating project %d", pd.ProjectID)
 
+	// Before anything is created: files of attachments are written outside the transaction and would stay behind
+	// when the duplicate is refused later.
+	if err = checkAutomationRulesCanBeDuplicated(s, pd.ProjectID); err != nil {
+		return err
+	}
+
 	wasArchived := pd.Project.IsArchived
 	pd.Project.IsArchived = false
 	pd.Project.ID = 0
