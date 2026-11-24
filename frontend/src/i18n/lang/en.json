@@ -80,6 +80,7 @@
       "requester_lost_access": "The requester lost access to the task.",
       "requester_not_in_team": "The requester is no longer in a team the change is limited to.",
       "requester_deleted": "The requester no longer exists.",
+      "requester_disabled": "The requester's account is disabled, so the approved change was not made.",
       "no_approvers": "Nobody who can read the task was left to decide.",
       "unknown": "The request was cancelled."
     },

@@ -107,6 +107,11 @@ func ChangeUserStatus(s *xorm.Session, doer *user.User, target *user.User, statu
 			return err
 		}
 	}
+	if status == user.StatusDisabled {
+		if err := removeDisabledUserFromApprovals(s, target.ID); err != nil {
+			return err
+		}
+	}
 
 	events.DispatchOnCommit(s, &AdminUserStatusChangedEvent{
 		User:      target,

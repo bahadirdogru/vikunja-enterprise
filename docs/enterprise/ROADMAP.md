@@ -406,6 +406,19 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   project duplicate (now refused before anything is written), and a replay
   that was answered 429 instead of 401. Re-verified on SQLite, PostgreSQL 18
   and MySQL 8, see the report of that pass.
+- Approvals and disabled accounts (fixed). Disabling an account
+  (`ChangeUserStatus`, the one function behind the admin routes and the
+  CLI) now drops it from the undecided slots of every pending request in the
+  same transaction, with the code path of a deleted user: a request that
+  waited only for it ends as `no_approvers`, one where everybody who is left
+  approved is approved. An approved transition for a requester whose
+  account is disabled is not performed: the request ends `cancelled` with
+  the new reason `requester_disabled` (decisions stay, no history row, the
+  usual resolved event and notification). A disabled approver could
+  already not decide and was already not asked. Verified: the new tests in
+  `approvals_disabled_test.go` failed before the change and pass after it;
+  `TestApprovals*`, `TestAdmin*` and `TestUser*` pass on SQLite; the frontend
+  cancel-reason test passes.
 
 ## Remaining
 
@@ -431,9 +444,6 @@ Open after the review pass, not fixed because they need a decision:
   created after the event run for it too.
 - Automation: goja's `find`, `findIndex`, `findLast` and `findLastIndex` on
   an array-like hit a nil-pointer panic (reported as an internal error).
-- Approvals: an approved transition is performed for a requester whose
-  account was disabled; a request whose only approver was disabled stays
-  pending.
 - Workflow: removing a status with `move_tasks_to` writes no history and
   fires no event.
 - Reports: the response size is unbounded in groups x children x buckets

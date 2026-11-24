@@ -99,3 +99,11 @@ func removeUserFromApprovals(s *xorm.Session, userID int64) error {
 	_, err := s.Where("user_id = ?", userID).Delete(&ApprovalApprover{})
 	return err
 }
+
+// removeDisabledUserFromApprovals is part of disabling an account: it is dropped from the undecided slots of the
+// pending requests like a deleted user, so a request that was waiting only for them ends as no_approvers instead
+// of staying pending. The requests they made are left alone: the account may be enabled again, and a transition
+// that is approved while the requester is disabled ends as requester_disabled (see executeApprovedTransition).
+func removeDisabledUserFromApprovals(s *xorm.Session, userID int64) error {
+	return dropApproverFromPendingApprovals(s, userID, nil, true)
+}

@@ -252,6 +252,10 @@ func executeApprovedTransition(s *xorm.Session, req *ApprovalRequest, task *Task
 		if user.IsErrUserDoesNotExist(err) {
 			return ApprovalCancelRequesterDeleted, "", nil
 		}
+		if user.IsErrAccountDisabled(err) {
+			// The decision stands, but a disabled account must not be the one the change is attributed to.
+			return ApprovalCancelRequesterDisabled, "", nil
+		}
 		if !user.IsErrUserStatusError(err) {
 			return "", "", err
 		}

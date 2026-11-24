@@ -19,6 +19,7 @@ func init() {
 		"ApprovalCancelByRequester":                        reflect.ValueOf(constant.MakeFromLiteral("\"cancelled_by_requester\"", token.STRING, 0)),
 		"ApprovalCancelNoApprovers":                        reflect.ValueOf(constant.MakeFromLiteral("\"no_approvers\"", token.STRING, 0)),
 		"ApprovalCancelRequesterDeleted":                   reflect.ValueOf(constant.MakeFromLiteral("\"requester_deleted\"", token.STRING, 0)),
+		"ApprovalCancelRequesterDisabled":                  reflect.ValueOf(constant.MakeFromLiteral("\"requester_disabled\"", token.STRING, 0)),
 		"ApprovalCancelRequesterNoAccess":                  reflect.ValueOf(constant.MakeFromLiteral("\"requester_lost_access\"", token.STRING, 0)),
 		"ApprovalCancelRequesterNotInTeam":                 reflect.ValueOf(constant.MakeFromLiteral("\"requester_not_in_team\"", token.STRING, 0)),
 		"ApprovalCancelRequirementsNotMet":                 reflect.ValueOf(constant.MakeFromLiteral("\"requirements_not_met\"", token.STRING, 0)),

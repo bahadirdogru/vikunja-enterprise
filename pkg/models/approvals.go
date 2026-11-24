@@ -80,6 +80,7 @@ const (
 	ApprovalCancelRequesterNoAccess  = "requester_lost_access"
 	ApprovalCancelRequesterNotInTeam = "requester_not_in_team"
 	ApprovalCancelRequesterDeleted   = "requester_deleted"
+	ApprovalCancelRequesterDisabled  = "requester_disabled"
 	ApprovalCancelNoApprovers        = "no_approvers"
 )
 
@@ -98,6 +99,7 @@ var approvalCancelMessages = map[string]string{
 	ApprovalCancelRequesterNoAccess:  "The requester may no longer perform this transition.",
 	ApprovalCancelRequesterNotInTeam: "The requester is no longer in a team that may perform this transition.",
 	ApprovalCancelRequesterDeleted:   "The requester no longer exists.",
+	ApprovalCancelRequesterDisabled:  "The requester's account is disabled.",
 	ApprovalCancelNoApprovers:        "Nobody who may read the task is left to decide.",
 }
 
@@ -166,7 +168,7 @@ type ApprovalRequest struct {
 	Due              *time.Time     `xorm:"DATETIME null" json:"due" doc:"When the approvers should have decided. Optional."`
 	RemindedAt       *time.Time     `xorm:"DATETIME null" json:"-"`
 	ResolvedByID     int64          `xorm:"bigint not null default 0" json:"-"`
-	CancelReason     string         `xorm:"varchar(50) null" json:"cancel_reason" readOnly:"true" doc:"Why the request was cancelled, machine readable: cancelled_by_requester, task_deleted, task_moved, workflow_removed, status_removed, transition_removed, approval_disabled, status_changed, target_archived, requirements_not_met, requester_lost_access, requester_not_in_team, requester_deleted or no_approvers. Empty unless cancelled."`
+	CancelReason     string         `xorm:"varchar(50) null" json:"cancel_reason" readOnly:"true" doc:"Why the request was cancelled, machine readable: cancelled_by_requester, task_deleted, task_moved, workflow_removed, status_removed, transition_removed, approval_disabled, status_changed, target_archived, requirements_not_met, requester_lost_access, requester_not_in_team, requester_deleted, requester_disabled or no_approvers. Empty unless cancelled."`
 	CancelMessage    string         `xorm:"text null" json:"cancel_message" readOnly:"true" doc:"A human readable text for cancel_reason, with the details of a failed re-check."`
 	Created          time.Time      `xorm:"created not null" json:"created" readOnly:"true" doc:"When the request was made."`
 	Updated          time.Time      `xorm:"updated not null" json:"updated" readOnly:"true" doc:"When the request was last changed."`

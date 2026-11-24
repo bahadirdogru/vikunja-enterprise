@@ -80,6 +80,7 @@
 			"requester_lost_access": "Talep edenin göreve erişimi kalmadı.",
 			"requester_not_in_team": "Talep eden artık değişikliğin sınırlı olduğu bir ekipte değil.",
 			"requester_deleted": "Talep eden artık yok.",
+			"requester_disabled": "Talep edenin hesabı devre dışı, bu yüzden onaylanan değişiklik yapılmadı.",
 			"no_approvers": "Göreve erişimi olan ve karar verebilecek kimse kalmadı.",
 			"unknown": "Talep iptal edildi."
 		},

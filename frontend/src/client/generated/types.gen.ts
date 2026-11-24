@@ -343,7 +343,7 @@ export type ApprovalRequest = {
      */
     readonly cancel_message?: string;
     /**
-     * Why the request was cancelled, machine readable: cancelled_by_requester, task_deleted, task_moved, workflow_removed, status_removed, transition_removed, approval_disabled, status_changed, target_archived, requirements_not_met, requester_lost_access, requester_not_in_team, requester_deleted or no_approvers. Empty unless cancelled.
+     * Why the request was cancelled, machine readable: cancelled_by_requester, task_deleted, task_moved, workflow_removed, status_removed, transition_removed, approval_disabled, status_changed, target_archived, requirements_not_met, requester_lost_access, requester_not_in_team, requester_deleted, requester_disabled or no_approvers. Empty unless cancelled.
      */
     readonly cancel_reason?: string;
     /**

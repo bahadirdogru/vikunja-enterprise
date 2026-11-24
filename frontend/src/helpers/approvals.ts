@@ -42,6 +42,7 @@ export const APPROVAL_CANCEL_REASONS = [
 	'requester_lost_access',
 	'requester_not_in_team',
 	'requester_deleted',
+	'requester_disabled',
 	'no_approvers',
 ] as const
 

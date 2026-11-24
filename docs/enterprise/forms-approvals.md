@@ -388,7 +388,7 @@ not copied.
   `transition_removed`, `target_archived`, `status_changed` (the task is no
   longer in the `from` status), `requirements_not_met` (a required field or the
   comment is gone; the message lists them), `requester_lost_access`,
-  `requester_not_in_team` or `requester_deleted`. The response to the decision
+  `requester_not_in_team`, `requester_deleted` or `requester_disabled`. The response to the decision
   is still `200`; the request in it says what happened.
 - **Rejected.** The task stays, or moves to `rejected_status_id` as a system
   transition (rules bypassed; the history names the rejecting approver and the
