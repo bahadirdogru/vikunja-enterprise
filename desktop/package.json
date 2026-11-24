@@ -10,7 +10,7 @@
     "email": "maintainers@vikunja.io",
     "name": "Vikunja Team"
   },
-  "homepage": "https://vikunja.io",
+  "homepage": "https://vikunja.bahadirdogru.com",
   "scripts": {
     "build:frontend": "cd ../frontend && pnpm run build && cd ../desktop && rm -rf frontend && cp -r ../frontend/dist frontend",
     "start": "electron .",

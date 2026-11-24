@@ -1,7 +1,7 @@
 publiccode-yml-version: '0.2'
 name: 'Vikunja'
-url: 'https://code.vikunja.io/vikunja'
-landingURL: 'https://vikunja.io'
+url: 'https://github.com/bahadirdogru/vikunja-enterprise'
+landingURL: 'https://vikunja.bahadirdogru.com'
 isBasedOn: 'https://go.dev/'
 softwareVersion: 'v2.8.0'
 releaseDate: '2026-11-05'
@@ -23,7 +23,7 @@ categories:
   - 'workflow-management'
 usedBy:
   - 'City of Treuchtlingen'
-roadmap: 'https://my.vikunja.cloud/projects/16/list#share-auth-token=QFyzYEmEYfSyQfTOmIRSwLUpkFjboaBqQCnaPmWd'
+roadmap: 'https://vikunja.bahadirdogru.com/roadmap.html'
 developmentStatus: 'stable'
 softwareType: 'standalone/web'
 intendedAudience:
@@ -31,8 +31,8 @@ intendedAudience:
     - 'Providers of standard based workflow management services who wish or are required to use Open Source solutions'
 description:
   en: ' The open-source, self-hostable to-do app. Organize everything, on all platforms.'
-documentation: 'https://vikunja.io/docs/'
-apiDocumentation: 'https://vikunja.io/docs/api-documentation/'
+documentation: 'https://vikunja.bahadirdogru.com/getting-started.html'
+apiDocumentation: 'https://vikunja.bahadirdogru.com/api.html'
 features:
   - 'workflow management'
   - 'CalDAV provider'

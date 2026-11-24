@@ -36,7 +36,7 @@ alpine areas of the Andes and a relative of the llama.
 
 Vikunja is a self-hosted To-Do list application with a web app and mobile apps for all platforms. It is licensed under the AGPL-3.0-or-later.
 
-Find out more at vikunja.io.`,
+Find out more at vikunja.bahadirdogru.com.`,
 	PreRun: webCmd.PreRun,
 	Run:    webCmd.Run,
 }

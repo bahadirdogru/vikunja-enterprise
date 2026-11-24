@@ -39,10 +39,10 @@ RUN mkdir -p /tmp && chmod 1777 /tmp
 # The actual image
 FROM scratch
 
-LABEL org.opencontainers.image.authors='maintainers@vikunja.io'
-LABEL org.opencontainers.image.url='https://vikunja.io'
-LABEL org.opencontainers.image.documentation='https://vikunja.io/docs'
-LABEL org.opencontainers.image.source='https://code.vikunja.io/vikunja'
+LABEL org.opencontainers.image.authors='https://github.com/bahadirdogru'
+LABEL org.opencontainers.image.url='https://vikunja.bahadirdogru.com'
+LABEL org.opencontainers.image.documentation='https://vikunja.bahadirdogru.com/getting-started.html'
+LABEL org.opencontainers.image.source='https://github.com/bahadirdogru/vikunja-enterprise'
 LABEL org.opencontainers.image.licenses='AGPLv3'
 LABEL org.opencontainers.image.title='Vikunja'
 

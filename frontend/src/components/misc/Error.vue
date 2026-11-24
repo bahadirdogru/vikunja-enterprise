@@ -7,7 +7,7 @@
 			<ButtonLink @click="reload">
 				{{ $t('loadingError.tryAgain') }}
 			</ButtonLink>
-			<ButtonLink href="https://vikunja.io/contact/">
+			<ButtonLink :href="FORK_ISSUES">
 				{{ $t('loadingError.contact') }}
 			</ButtonLink>
 		</i18n-t>
@@ -17,6 +17,7 @@
 <script lang="ts" setup>
 import Message from '@/components/misc/Message.vue'
 import ButtonLink from '@/components/misc/ButtonLink.vue'
+import {FORK_ISSUES} from '@/urls'
 
 defineOptions({
 	inheritAttrs: false,

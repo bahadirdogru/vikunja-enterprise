@@ -39,9 +39,8 @@
 // @license.url https://code.vikunja.io/api/src/branch/main/LICENSE
 // @license.name AGPL-3.0-or-later
 
-// @contact.url https://vikunja.io/contact/
-// @contact.name General Vikunja contact
-// @contact.email hello@vikunja.io
+// @contact.url https://github.com/bahadirdogru/vikunja-enterprise/issues
+// @contact.name vikunja-enterprise issue tracker
 
 // @securityDefinitions.basic BasicAuth
 
