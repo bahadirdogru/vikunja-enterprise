@@ -1867,7 +1867,7 @@
 		"22008": "Gizli anahtarın şifresi artık çözülemiyor. Yeniden gir.",
 		"22009": "Bu otomasyon çalıştırılamaz: kapalı ya da elle tetikleyicisi yok.",
 		"22010": "Bu webhook adresi mevcut değil.",
-		"22011": "İsteğin imzası geçerli değil.",
+		"22011": "İsteğin imzası geçerli değil. Gizli anahtarı ve zaman damgasını kontrol et (gönderenin saati birkaç dakikadan fazla sapmış olabilir) ve her çağrıyı yeniden imzaladığından emin ol.",
 		"22012": "Bu webhook'a çok fazla çağrı yapıldı. Daha sonra yeniden dene.",
 		"22013": "İsteğin gövdesi bir JSON nesnesi olmalı.",
 		"22014": "Bu proje otomasyon kuralı sınırına ulaştı. İhtiyacın olmayan bir kuralı sil ya da bir yöneticiden automation.maxrulesperproject değerini yükseltmesini iste.",
@@ -3313,7 +3313,7 @@
 				"offset": "Örneğin 24h veya 2d. En az 1 dakika."
 			},
 			"webhook_incoming": {
-				"secret": "Seçilirse her çağrı iki başlık taşımalıdır: X-Vikunja-Timestamp (Unix zamanı, saniye cinsinden) ve X-Vikunja-Signature: sha256=HEX; HEX, zaman damgasının, bir noktanın ve istek gövdesinin bu anahtarla hesaplanan HMAC-SHA256 değeridir. Geçerli imzası olmayan, zaman damgası eski olan ya da iki kez gönderilen çağrılar reddedilir."
+				"secret": "Seçilirse her çağrı iki başlık taşımalıdır: X-Vikunja-Timestamp (Unix zamanı, saniye cinsinden) ve X-Vikunja-Signature: sha256=HEX; HEX, zaman damgasının, bir noktanın, bu webhook'un adresindeki jetonun, bir noktanın ve istek gövdesinin bu anahtarla hesaplanan HMAC-SHA256 değeridir. Geçerli imzası olmayan, zaman damgası eski olan ya da iki kez gönderilen çağrılar reddedilir."
 			},
 			"wait": {
 				"duration": "1 dakikadan yöneticinin belirlediği üst sınıra kadar (varsayılan 30 gün), örneğin 30m, 12h, 3d veya 2w. Bu eylemden sonraki eylemler daha sonra çalışır; koşullar yeniden denetlenmez."
@@ -3348,8 +3348,8 @@
 			"rotateUncertain": "Yeni adres oluşturma isteği tamamlanmadı. Adres şimdiden değişmiş olabilir; bu yüzden daha önce gösterilen adres artık güvenilir değil ve kaldırıldı. Yeni bir adres daha oluştur.",
 			"saveFirst": "Önce değişikliklerini kaydet.",
 			"usage": "Gövdesi bir JSON nesnesi olan bir POST isteği gönder (boş gövde için {'{}'} kullan). İstek hemen yanıtlanır ve kural arka planda çalışır.",
-			"signature": "Bir imza anahtarı seçildiyse çağrılar X-Vikunja-Timestamp (Unix zamanı, saniye cinsinden) ve X-Vikunja-Signature: sha256=HEX başlıklarını taşımalıdır (HEX, zaman damgasının, bir noktanın ve ham gövdenin anahtarla hesaplanan HMAC-SHA256 değeridir).",
-			"replay": "İmzalı çağrılar tekrar oynatmaya (replay) karşı korunur: zaman damgası birkaç dakikadan (varsayılan 5) eski olan çağrı ve aynı imzayla gelen ikinci çağrı reddedilir. Her çağrıda yeni bir zaman damgası ve imza gönder. İmza anahtarı olmayan bir webhook imzalı değildir ve korunmaz: adresi bilen herkes onu çağırabilir.",
+			"signature": "Bir imza anahtarı seçildiyse çağrılar X-Vikunja-Timestamp (Unix zamanı, saniye cinsinden) ve X-Vikunja-Signature: sha256=HEX başlıklarını taşımalıdır (HEX, zaman damgasının, bir noktanın, bu webhook'un adresindeki jetonun, bir noktanın ve ham gövdenin anahtarla hesaplanan HMAC-SHA256 değeridir). Başka bir webhook için yapılmış imza burada kabul edilmez.",
+			"replay": "İmzalı çağrılar tekrar oynatmaya (replay) karşı korunur: zaman damgası birkaç dakikadan (varsayılan 5) eski olan çağrı ve aynı imzayla gelen ikinci çağrı (kabul edilmiş bir çağrının yeniden denemesi de) reddedilir. Her çağrıda yeni bir zaman damgası ve imza gönder. İmza anahtarı olmayan bir webhook imzalı değildir ve korunmaz: adresi bilen herkes onu çağırabilir.",
 			"rotateConfirm": {
 				"title": "Yeni webhook adresi oluşturulsun mu?",
 				"text": "Geçerli adres hemen çalışmaz olur. Onu kullanan her hizmete yeni adres verilmelidir."

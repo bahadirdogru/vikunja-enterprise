@@ -1870,7 +1870,7 @@
     "22008": "The secret cannot be decrypted any more. Set it again.",
     "22009": "This automation cannot be run: it is turned off or has no manual trigger.",
     "22010": "This webhook address does not exist.",
-    "22011": "The signature of the request is not valid.",
+    "22011": "The signature of the request is not valid. Check the secret, the timestamp (the clock of the sender may be off by more than a few minutes) and that every call is signed anew.",
     "22012": "Too many calls to this webhook. Try again later.",
     "22013": "The body of the request has to be a JSON object.",
     "22014": "This project has reached the maximum number of automation rules. Delete a rule you do not need, or ask an administrator to raise automation.maxrulesperproject.",
@@ -3313,7 +3313,7 @@
         "offset": "For example 24h or 2d. At least 1 minute."
       },
       "webhook_incoming": {
-        "secret": "When set, every call has to carry two headers: X-Vikunja-Timestamp (the Unix time in seconds) and X-Vikunja-Signature: sha256=HEX, where HEX is the HMAC-SHA256 of the timestamp, a dot and the request body, keyed with this secret. Calls without a valid signature, with an old timestamp or sent twice are refused."
+        "secret": "When set, every call has to carry two headers: X-Vikunja-Timestamp (the Unix time in seconds) and X-Vikunja-Signature: sha256=HEX, where HEX is the HMAC-SHA256 of the timestamp, a dot, the token from the address of this webhook, a dot and the request body, keyed with this secret. Calls without a valid signature, with an old timestamp or sent twice are refused."
       },
       "wait": {
         "duration": "From 1 minute up to the maximum set by the administrator (30 days by default), for example 30m, 12h, 3d or 2w. The actions after this one run later; the conditions are not checked again."
@@ -3348,8 +3348,8 @@
       "rotateUncertain": "The request to create a new address did not finish. The address may have changed already, so the one shown before is no longer reliable and was removed. Create a new address again.",
       "saveFirst": "Save your changes first.",
       "usage": "Send a POST request with a JSON object as the body (use {'{}'} for none). The request is answered at once and the rule runs in the background.",
-      "signature": "With a signing secret chosen, calls must carry the headers X-Vikunja-Timestamp (the Unix time in seconds) and X-Vikunja-Signature: sha256=HEX (the HMAC-SHA256 of the timestamp, a dot and the raw body, keyed with the secret).",
-      "replay": "Signed calls are protected against replays: a call whose timestamp is more than a few minutes old (5 by default) is refused, and so is a second call with the same signature. Send a new timestamp and signature with every call. A webhook without a signing secret is not signed and not protected: anyone who has the address can call it.",
+      "signature": "With a signing secret chosen, calls must carry the headers X-Vikunja-Timestamp (the Unix time in seconds) and X-Vikunja-Signature: sha256=HEX (the HMAC-SHA256 of the timestamp, a dot, the token from the address of this webhook, a dot and the raw body, keyed with the secret). A signature made for another webhook is not accepted here.",
+      "replay": "Signed calls are protected against replays: a call whose timestamp is more than a few minutes old (5 by default) is refused, and so is a second call with the same signature, also a retry of a call that was accepted. Send a new timestamp and signature with every call. A webhook without a signing secret is not signed and not protected: anyone who has the address can call it.",
       "rotateConfirm": {
         "title": "Create a new webhook address?",
         "text": "The current address stops working at once. Every service that uses it has to be given the new one."
