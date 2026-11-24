@@ -12,6 +12,13 @@
 			"requested": "Birisi hesabının e-posta adresini %[1]s olarak değiştirmek istedi. Sen yeni adresi onaylayana kadar mevcut adresin geçerli kalmaya devam edecek.",
 			"warning": "Bu talebi sen oluşturmadıysan vakit kaybetmeden şifreni değiştir ve hesap ayarlarından bekleyen bu işlemi iptal et."
 		},
+		"identity": {
+			"linked": {
+				"subject": "%[1]s hesabı Vikunja hesabına bağlandı",
+				"message": "%[1]s hesabın, %[2]s tarihinde Vikunja hesabına bağlandı. Artık onunla giriş yapabilirsin.",
+				"warning": "Bunu sen yapmadıysan şifreni hemen değiştir, ardından hesap ayarlarından bağlantıyı kaldır."
+			}
+		},
 		"password": {
 			"changed": {
 				"subject": "Vikunja şifren değiştirildi",
@@ -43,6 +50,9 @@
 				"message": "Birisi hesabına art arda 3 kez yanlış şifreyle giriş yapmayı denedi.",
 				"warning": "Bu denemeleri sen yapmadıysan bir başkası hesabına sızmaya çalışıyor olabilir.",
 				"enhance_security": "Hesap güvenliğini artırmak için daha güçlü bir şifre seçebilir ya da ayarlardan iki adımlı doğrulamayı (TOTP) etkinleştirebilirsin:"
+			},
+			"account_locked": {
+				"message": "Birisi hesabına art arda çok fazla kez yanlış şifreyle giriş yapmayı denedi."
 			}
 		},
 		"account": {
@@ -114,6 +124,36 @@
 		"project": {
 			"created": "%[1]s, \"%[2]s\" projesini oluşturdu"
 		},
+		"form": {
+			"submitted": {
+				"subject": "Yeni form yanıtı: \"%[1]s\" formu \"%[2]s\" görevini oluşturdu (%[3]s)",
+				"message": "\"%[1]s\" formu gönderildi ve \"%[2]s\" görevini oluşturdu (%[3]s)."
+			}
+		},
+		"approval": {
+			"outcome": {
+				"approved": "onaylandı",
+				"rejected": "reddedildi",
+				"cancelled": "iptal edildi",
+				"pending": "beklemede"
+			},
+			"requested": {
+				"subject": "Onay istendi: \"%[1]s\", \"%[2]s\" görevinde (%[3]s)",
+				"message": "%[1]s onayını istiyor: \"%[2]s\", \"%[3]s\" görevinde (%[4]s).",
+				"due": "Lütfen %[1]s tarihine kadar karar ver."
+			},
+			"resolved": {
+				"subject": "\"%[1]s\" onayı, \"%[2]s\" görevinde (%[3]s) %[4]s",
+				"message_requester": "\"%[2]s\" görevindeki (%[3]s) \"%[1]s\" onay talebin %[4]s.",
+				"message_others": "\"%[2]s\" görevindeki (%[3]s) \"%[1]s\" onay talebi %[5]s tarafından %[4]s. Artık karar vermen gerekmiyor.",
+				"message_others_system": "\"%[2]s\" görevindeki (%[3]s) \"%[1]s\" onay talebi %[4]s. Artık karar vermen gerekmiyor.",
+				"reason": "Gerekçe: %[1]s"
+			},
+			"reminder": {
+				"subject": "Hatırlatma: \"%[2]s\" görevindeki (%[3]s) \"%[1]s\" onayına karar ver",
+				"message": "%[2]s tarafından istenen \"%[1]s\" onay talebi, \"%[3]s\" görevinde (%[4]s) %[5]s tarihine kadar karara bağlanmalıydı ve hâlâ kararını bekliyor."
+			}
+		},
 		"team": {
 			"member_added": {
 				"subject": "%[1]s seni Vikunja'daki \"%[2]s\" ekibine ekledi",
@@ -176,6 +216,9 @@
 				"mentioned_you_new_task": "%[1]s yeni bir görevde senden bahsetti"
 			}
 		}
+	},
+	"forms": {
+		"submitted_by": "Gönderen"
 	},
 	"time": {
 		"since_years": "bir yıl|%[1]d yıl",
