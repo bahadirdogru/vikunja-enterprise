@@ -149,7 +149,9 @@ func TestRunaway_MemoryLimit(t *testing.T) {
 	t.Run("a normal script fits", func(t *testing.T) {
 		in := runawayInput(`var a = []; for (var i = 0; i < 10000; i++) { a.push({i: i, s: "x" + i}) } return a.length`)
 		in.Limits.Timeout = 5 * time.Second
-		in.Limits.MaxMemory = 64 << 20
+		// 64 MiB is too tight to be reliable: the Go runtime takes part of the limit for a new heap arena (64 MiB of
+		// address space) and thread stacks, depending on timing.
+		in.Limits.MaxMemory = 128 << 20
 		res, err := Run(context.Background(), in)
 		require.NoError(t, err)
 		assert.Equal(t, "10000", res.Value)

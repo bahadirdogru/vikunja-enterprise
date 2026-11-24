@@ -681,7 +681,7 @@ func runIn(ctx, runCtx, killCtx context.Context, c *child, in *Input, deadline t
 		// script is blamed.
 		return nil, true, &UnavailableError{Msg: "the script process ended unexpectedly: " + fmt.Sprint(waitErr)}
 	}
-	return exitOutcome(in, c, p, waitErr, pumpErr, stderr)
+	return exitOutcome(in, c, p, waitErr, pumpErr, stderr, mayRetry)
 }
 
 func timeoutError(in *Input) *Error {
@@ -689,7 +689,7 @@ func timeoutError(in *Input) *Error {
 }
 
 // exitOutcome explains a child that ended without reporting, after it got the script (see runIn for the blame).
-func exitOutcome(in *Input, c *child, p *parent, waitErr, pumpErr error, stderr string) (*doneMessage, bool, error) {
+func exitOutcome(in *Input, c *child, p *parent, waitErr, pumpErr error, stderr string, pooled bool) (*doneMessage, bool, error) {
 	fail := func(e *Error) (*doneMessage, bool, error) { return &doneMessage{Error: e}, false, nil }
 	low := strings.ToLower(stderr)
 	state := c.cmd.ProcessState
@@ -702,6 +702,14 @@ func exitOutcome(in *Input, c *child, p *parent, waitErr, pumpErr error, stderr 
 		return fail(timeoutError(in))
 	case strings.Contains(low, "out of memory"), strings.Contains(low, "cannot allocate memory"),
 		strings.Contains(low, "failed to create new os thread"), strings.Contains(low, "pthread_create failed"):
+		if pooled {
+			// A pooled process gives about the room of a new one, not exactly (the heap of the previous script
+			// may be fragmented): only a new process decides that the script itself is too large.
+			if p.external {
+				return fail(&Error{Kind: ErrUnattributed, Message: memoryError(in).Message + " (in a reused script process; not retried after a request)"})
+			}
+			return nil, true, &UnavailableError{Msg: "the reused script process ran out of memory"}
+		}
 		return fail(memoryError(in))
 	case strings.Contains(low, "stack overflow"), strings.Contains(low, "stack exceeds"):
 		return fail(&Error{Kind: ErrStackOverflow, Message: "the script nested too deeply for the interpreter and was stopped"})
