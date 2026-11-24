@@ -147,8 +147,9 @@ const (
 	ErrBadResult ErrorKind = "bad_result"
 	// ErrInternal is a bug, or a script process that ended or broke the protocol after it got the script.
 	ErrInternal ErrorKind = "internal"
-	// ErrInputTooLarge is a task or event too large to be passed to a script. Not the script's doing (anyone who
-	// can write the task can make it that large), and running it again fails the same way.
+	// ErrInputTooLarge is a task or event too large (or too deeply nested) to be passed to a script, or an answer
+	// of a host call too large for it that the script did not catch. Not the script's doing (anyone who can write
+	// the task can make it that large), and running it again fails the same way.
 	ErrInputTooLarge ErrorKind = "input_too_large"
 	// ErrUnattributed is a script process killed by someone else after the script made a request that must not
 	// be repeated: the run fails, but nobody is blamed.

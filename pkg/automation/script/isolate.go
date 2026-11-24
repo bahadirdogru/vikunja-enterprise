@@ -647,11 +647,16 @@ func runIn(ctx, runCtx, killCtx context.Context, c *child, in *Input, deadline t
 	fail := func(e *Error) (*doneMessage, bool, error) { return &doneMessage{Error: e}, false, nil }
 	switch {
 	case done != nil:
+		if p.oversized != "" && done.Error != nil && done.Error.Kind == ErrThrown && strings.Contains(done.Error.Message, p.oversized) {
+			// The script let the answer that was too large for it end the run: that is the data's doing, as a
+			// task too large for the start is (anyone who can write a task the owner can read can inflate it).
+			done.Error.Kind = ErrInputTooLarge
+		}
 		return done, false, nil
 	case ctx.Err() != nil:
 		return nil, false, ctx.Err()
 	case p.inputTooLarge:
-		return fail(&Error{Kind: ErrInputTooLarge, Message: fmt.Sprintf("the task or the event is too large to be passed to a script (more than %d MiB)", inputLimit(in.Limits)>>20)})
+		return fail(&Error{Kind: ErrInputTooLarge, Message: fmt.Sprintf("the task or the event is too large or too deeply nested to be passed to a script (more than %d MiB or %d levels)", inputLimit(in.Limits)>>20, maxWireDepth)})
 	case !p.started:
 		// The process was gone before it got the script.
 		return nil, mayRetry, &UnavailableError{Msg: "the script process ended before it got the script: " + fmt.Sprint(pumpErr)}
@@ -737,6 +742,8 @@ type parent struct {
 	inputTooLarge bool
 	// external is set once a host call with an effect outside the transaction (http.fetch) was made.
 	external bool
+	// oversized is the message of an answer that was too large for the script, if there was one.
+	oversized string
 	// stale is set when the first thing the process sent belongs to its previous script.
 	stale  bool
 	calls  int
@@ -771,6 +778,8 @@ func (p *parent) pump(r *bufio.Reader, budget time.Duration) (done *doneMessage,
 		return nil, false, err
 	}
 	if err := writeMessage(p.w, &message{Start: start}); err != nil {
+		// Nothing was written when the start itself cannot be encoded: it is the input's, not the process's.
+		p.inputTooLarge = errors.Is(err, errUnencodable)
 		return nil, false, err
 	}
 	p.started = true
@@ -933,7 +942,8 @@ func (p *parent) answer(c *callMessage) *replyMessage {
 		limit := inputLimit(p.in.Limits)
 		w, specials, _, err := wireValueLimited(v, limit-(4<<10))
 		if err != nil {
-			return failed(fmt.Errorf("the answer of the server is larger than %d MiB and cannot be passed to the script", limit>>20))
+			p.oversized = fmt.Sprintf("the answer of the server is larger than %d MiB and cannot be passed to the script", limit>>20)
+			return failed(errors.New(p.oversized))
 		}
 		return &replyMessage{Value: w, Specials: specials}
 	}
@@ -1014,7 +1024,8 @@ func (p *parent) fetch(c *callMessage) *replyMessage {
 			size += jsonLen(k) + jsonLen(v) + 2
 		}
 		if limit := inputLimit(p.in.Limits); size > limit {
-			return failed(fmt.Errorf("the response is larger than %d MiB and cannot be passed to the script", limit>>20))
+			p.oversized = fmt.Sprintf("the response is larger than %d MiB and cannot be passed to the script", limit>>20)
+			return failed(errors.New(p.oversized))
 		}
 	}
 	return &replyMessage{Fetch: resp}

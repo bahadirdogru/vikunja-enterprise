@@ -169,14 +169,36 @@ func readMessage(r *bufio.Reader, limit int, useNumber bool) (*message, error) {
 }
 
 // writeMessage encodes m as one line without HTML escapes (which turn every <, > and & into six bytes) and
-// without a copy of the encoding.
+// without a copy of the encoding. When the value cannot be encoded nothing is written and the error is
+// errUnencodable.
 func writeMessage(w io.Writer, m *message) error {
-	enc := json.NewEncoder(w)
+	cw := &writeCounter{w: w}
+	enc := json.NewEncoder(cw)
 	enc.SetEscapeHTML(false)
-	return enc.Encode(m)
+	err := enc.Encode(m)
+	if err != nil && !cw.wrote {
+		return fmt.Errorf("%w: %w", errUnencodable, err)
+	}
+	return err
+}
+
+var errUnencodable = errors.New("the message cannot be encoded")
+
+type writeCounter struct {
+	w     io.Writer
+	wrote bool
+}
+
+func (c *writeCounter) Write(p []byte) (int, error) {
+	c.wrote = true
+	return c.w.Write(p)
 }
 
 var errInputTooLarge = errors.New("too large")
+
+// maxWireDepth bounds the nesting of a value the server sends, well below the 10000 levels of the JSON decoder
+// and encoder.
+const maxWireDepth = 1000
 
 // inputLimit is the largest message the server sends to the child for these limits.
 func inputLimit(l Limits) int {
@@ -249,6 +271,11 @@ func (w *wireWalker) at(key any, v any) any {
 	if w.over {
 		return nil
 	}
+	if len(w.path) >= maxWireDepth {
+		// Deeper than the decoder of the child and the encoder accept (an incoming webhook can send that).
+		w.over = true
+		return nil
+	}
 	w.path = append(w.path, key)
 	out := w.walk(v)
 	w.path = w.path[:len(w.path)-1]
@@ -283,6 +310,15 @@ func (w *wireWalker) walk(v any) any {
 		return int64(val)
 	case float64:
 		if math.IsNaN(val) || math.IsInf(val, 0) {
+			// The special repeats its path: counted, so the estimate stays an upper bound.
+			for _, k := range w.path {
+				if ks, ok := k.(string); ok {
+					w.add(jsonLen(ks) + 1)
+				} else {
+					w.add(24)
+				}
+			}
+			w.add(32)
 			w.specials = append(w.specials, special{Path: append([]any{}, w.path...), Value: fmt.Sprint(val)})
 			return nil
 		}
