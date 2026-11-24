@@ -479,6 +479,48 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   frontend areas (1460 tests) pass; `pnpm lint` reports one error in
   `TaskStatus.vue` (unused `WorkflowStatusResponse`) that these changes do not
   touch. Not run: the UI in a browser, the e2e tests.
+- Known defects pass (reports, forms, automation), SQLite only so far. Reports:
+  `reports.maxcells` (default 50000, 0 turns it off) refuses a task report with
+  more cells (groups, child groups, time points of leaf groups) with `400` /
+  `23011`; the count is exact for the kept groups and checked before the
+  series statement runs, and widgets show the translated message (en and tr).
+  The time tracking report already read its task ids through a subquery; what
+  could exceed the parameter limit were the id lists that name users,
+  projects, labels, statuses and options: they are chunked (500) now, shown by
+  a test with 33000 ids (fails with "too many SQL variables" on SQLite before).
+  Number, bar, donut and line widgets limit drill-down and task export to
+  their time range, created vs completed exports the union of both ranges.
+  Forms: the address of a signed-in submitter was empty because the claims of
+  a token carry none and `GetUserByID` leaves it out (the old test compared
+  two empty strings); it is stored on the submission of members and users
+  forms only, not on public forms, and kept out of the task, the placeholders
+  and the `form.submitted` event. A closed members or users form answers an
+  anonymous caller like an unknown token (404 / 25001) and a signed-in caller
+  who may not submit with 403; an open one still answers 401. New
+  `forms.users.ratelimit` (60 per user, form and hour). IPv6 clients are
+  counted by /64 in the hourly per-IP limit and in the per-minute floor, which
+  is the same limiter as the one of the incoming webhooks (`hooks`), so that
+  one is keyed by /64 now too. The submission routes look the form up before
+  Huma reads the body (a test counts the bytes read: none for an unknown
+  token, a closed form, a non-member; the form that takes the submission
+  reads it). Automation: retrying a run queues the event a `wait` writes
+  (names the run and its rule) instead of resetting the original event; a
+  test shows that a rule created, and one enabled, after the event do not run
+  and the original event stays as it was. Each new regression test was run
+  against the unfixed code and failed (the cap, id lookups, drill-down and
+  export, closed forms, body reads, retry; the per-user limit and the key
+  helpers are new code, their tests did not compile before; the IPv6 test of
+  the hourly limit was not run against the unfixed code). Verified on
+  SQLite (`GOFLAGS=-count=1`): `mage test:feature` and `mage test:web` pass,
+  `mage lint` reports only the 12 known `unused` findings of
+  `pkg/license/`, `pnpm lint` only the known error in `TaskStatus.vue`,
+  `vue-tsc --noEmit` is clean, vitest of helpers, dashboards and client
+  passes (127 files, 1880 tests). Not run: PostgreSQL and MySQL, a browser
+  (the translated 23011 text in a widget was not looked at), IPv6 through a
+  real proxy. Still open from these areas: a reachable form that does not ask
+  for files still reads an upload before the 422; the per-user limit is per
+  form, not across forms; the account address is stored in plain text like
+  the one a form collects.
 
 ## Remaining
 
@@ -494,23 +536,11 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   `service.timezone` to the editor; the stuck-run reaper does not disable
   rules or update metrics; the `stop` step is still recognised by an output
   prefix; no templates gallery for the 3d types; no e-mail action.
-- Reports: the time tracking report builds `IN` lists from task ids
-  (parameter-limit risk); bar and donut widgets with a time range ignore it
-  in drill-down and export (only number widgets are fixed).
 
 Open after the review pass, not fixed because they need a decision:
 
-- Automation: retrying one failed run re-queues the whole event, so rules
-  created after the event run for it too.
 - Automation: goja's `find`, `findIndex`, `findLast` and `findLastIndex` on
   an array-like hit a nil-pointer panic (reported as an internal error).
-- Reports: the response size is unbounded in groups x children x buckets
-  (13 MB measured with two 20-option fields and 366 buckets).
-- Forms: the e-mail of a signed-in submitter is never recorded although the
-  field documentation says so; the title of a closed members form is shown
-  to an anonymous holder of the link; no hourly limit on members forms;
-  per-IP limits count full IPv6 addresses; uploads are buffered before the
-  token is looked up.
 - SQLite: a transaction that reads and then writes fails at once when
   another connection holds the write lock (`_txlock=immediate` would change
   that for every transaction).
