@@ -28,12 +28,17 @@ When a key is renamed or removed, search the code for the old key (`grep -rn "ol
 
 ## Writing the Turkish
 
-- Proper orthography: ç, ğ, ı, İ, ö, ş, ü. Never ASCII substitutes.
-- Register: informal "sen" in the application ("sil", "kaydet", "seç"); formal "siz" on the public form page, which strangers see ("gönderin", "doldurun").
-- Terms used so far, keep them: dashboard → pano, widget → bileşen, submission → yanıt, dry run → deneme, action → eylem, rule → kural, trigger → tetikleyici, approval → onay, custom field → özel alan, workflow → iş akışı, status → durum.
-- Translate the meaning, not the words. Error messages say what happened and what to do next, as the English ones do.
-- Do not translate identifiers shown to the user as something to type or copy: header names, config keys, code, `{placeholders}`.
-- Check an existing Turkish string for the same concept before inventing a wording.
+The rules are in [the Turkish localisation standard](../../docs/turkish-style.md). Read it before writing Turkish. The essentials:
+
+- Register: *sen* in the application, *siz* for outsiders (`forms.public.*`, e-mails to form submitters). Buttons and menu commands are bare imperatives everywhere (*Kaydet*, *Gönder*). Status messages are impersonal (*Kural kaydedildi.*, *Kaydediliyor…*).
+- Sentence case in every string, also where the English uses Title Case. No period after labels and buttons; full sentences end with one. `…` for an ellipsis, straight `'` and `"`.
+- No suffix on a placeholder: *{name} öğesini sil*, *"{title}" kuralı*, *{date} tarihine kadar*, *Paylaşan: {user}*.
+- No plural after a number: *{count} görev*. Keep the number of `|` slots of the English.
+- Abbreviations take the suffix of their Turkish reading: *API'si*, *URL'yi*, *CSV'den*, *JSON'u*; product names an apostrophe: *Vikunja'da*.
+- Use the glossary (section 11 of the standard). Before inventing a term, search both `tr-TR.json` files for the English word.
+- Translate the meaning, not the words. Error messages say what failed and what to do.
+- Never alter placeholders, markup, key names, header names, config keys, code or URLs.
+- In upstream keys change the Turkish only to fix an error (section 15 of the standard); style-only rewording there costs merge conflicts.
 
 ## After an upstream merge
 
