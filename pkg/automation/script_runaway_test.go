@@ -17,6 +17,7 @@ package automation
 
 import (
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -160,7 +161,7 @@ func TestScript_ATaskTooLargeForAScriptFailsTheRunWithoutBlame(t *testing.T) {
 	runs := allRuns(t, r.ID)
 	require.Len(t, runs, 1)
 	assert.Equal(t, models.AutomationRunFailed, runs[0].Status)
-	assert.Contains(t, runs[0].Error, "too large to be passed to a script")
+	assert.Contains(t, runs[0].Error, "too large or too deeply nested to be passed to a script")
 	stored := getRule(t, r.ID)
 	assert.Zero(t, stored.ConsecutiveFailures)
 	assert.True(t, stored.Enabled)
@@ -195,4 +196,58 @@ func TestWorker_AGivenUpEventFailsEachRunWithTheErrorOfItsOwnRule(t *testing.T) 
 	assert.Equal(t, models.AutomationRunFailed, own.Status)
 	assert.Contains(t, own.Error, "500")
 	assert.EqualValues(t, 1, getRule(t, failing.ID).ConsecutiveFailures, "its own failure counts")
+}
+
+// TestScript_AnAnswerTooLargeForTheScriptIsNotTheRulesFault: a task the owner can read, inflated by anyone with
+// write access to it, must not get the rule disabled. Caught, the script goes on.
+func TestScript_AnAnswerTooLargeForTheScriptIsNotTheRulesFault(t *testing.T) {
+	reset(t)
+	config.AutomationMaxConsecutiveFails.Set(1)
+	big := &models.Task{Title: "inflated", Description: strings.Repeat("<", 9<<20), ProjectID: projectOwned}
+	mustCommit(t, func(s *xorm.Session) error { return big.Create(s, user1) })
+	id := strconv.FormatInt(big.ID, 10)
+
+	t.Run("uncaught", func(t *testing.T) {
+		_, run, _ := runScript(t, `vikunja.tasks.get(`+id+`)`)
+		assert.Equal(t, models.AutomationRunFailed, run.Status)
+		assert.Contains(t, run.Error, "larger than 8 MiB")
+		stored := getRule(t, run.RuleID)
+		assert.Zero(t, stored.ConsecutiveFailures)
+		assert.True(t, stored.Enabled)
+		events := allEvents(t)
+		assert.Equal(t, models.AutomationEventDone, events[len(events)-1].Status, "not retried")
+	})
+	t.Run("caught", func(t *testing.T) {
+		_, run, steps := runScript(t, `try { vikunja.tasks.get(`+id+`) } catch (e) { return "caught" }`)
+		assert.Equal(t, models.AutomationRunSuccess, run.Status, run.Error)
+		assert.Contains(t, stepOutput(steps), `"caught"`)
+	})
+}
+
+// TestScript_ARuleCanBeDisabledWhileScriptsCannotBeChecked: sources that are stored passed the check already.
+func TestScript_ARuleCanBeDisabledWhileScriptsCannotBeChecked(t *testing.T) {
+	reset(t)
+	r := addRule(t, projectOwned, user1, rule(spec.TriggerTaskCreated, nil, &spec.Condition{Script: "return true"}, scriptAction(`return 1`)))
+	t.Cleanup(script.SetTestExecutable(filepath.Join(t.TempDir(), "missing")))
+	update := func(mutate func(*models.AutomationRule)) error {
+		stored := getRule(t, r.ID)
+		mutate(stored)
+		return commit(t, func(s *xorm.Session) error { return stored.Update(s, user1) })
+	}
+
+	require.NoError(t, update(func(r *models.AutomationRule) { r.Enabled = false }), "disabling always works")
+	assert.False(t, getRule(t, r.ID).Enabled)
+	require.NoError(t, update(func(r *models.AutomationRule) { r.Title = "renamed" }), "so does editing what is not a script")
+
+	err := update(func(r *models.AutomationRule) { r.Actions[0].Params["source"] = "return 2" })
+	issues := ruleIssues(t, err)
+	require.Len(t, issues, 1)
+	assert.Contains(t, issues[0].Message, "the script could not be checked")
+
+	fresh := rule(spec.TriggerTaskCreated, nil, nil, scriptAction(`return 1`))
+	fresh.ProjectID = projectOwned
+	err = saveRule(t, fresh)
+	issues = ruleIssues(t, err)
+	require.Len(t, issues, 1)
+	assert.Contains(t, issues[0].Message, "the script could not be checked", "a new rule is still checked")
 }

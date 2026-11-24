@@ -113,6 +113,9 @@ type AutomationRule struct {
 
 	// requestCtx bounds the compile check of the scripts when the rule is saved.
 	requestCtx context.Context
+	// checkedSources are the script sources of the stored rule: they passed the check when they were saved, and
+	// are not checked again, so a rule can be disabled or edited while no script process is available.
+	checkedSources map[string]bool
 }
 
 // SetRequestContext makes the compile check of a save end with the request.
@@ -221,7 +224,7 @@ func (r *AutomationRule) Validate(s *xorm.Session, a web.Auth) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	if issues, err := validateAutomationScripts(ctx, s, r.ProjectID, r.Doc()); err != nil {
+	if issues, err := validateAutomationScripts(ctx, s, r.ProjectID, r.Doc(), r.checkedSources); err != nil {
 		return err
 	} else if len(issues) > 0 {
 		return ErrAutomationRuleInvalid{AutomationRuleInvalidDetails{Issues: issues}}
@@ -243,7 +246,7 @@ func (r *AutomationRule) Validate(s *xorm.Session, a web.Auth) error {
 
 // validateAutomationScripts checks the scripts (kill switch, size, syntax) and that the secrets the rule names
 // exist. A syntax error is reported with the path of the script and the line and column of the error.
-func validateAutomationScripts(ctx context.Context, s *xorm.Session, projectID int64, doc *spec.Doc) ([]spec.Issue, error) {
+func validateAutomationScripts(ctx context.Context, s *xorm.Session, projectID int64, doc *spec.Doc, checked map[string]bool) ([]spec.Issue, error) {
 	scripts := spec.Scripts(doc)
 	issues := []spec.Issue{}
 	if len(scripts) > 0 {
@@ -254,6 +257,9 @@ func validateAutomationScripts(ctx context.Context, s *xorm.Session, projectID i
 		for _, sc := range scripts {
 			if maxSource > 0 && len(sc.Source) > maxSource {
 				issues = append(issues, spec.Issue{Path: sc.Path, Message: fmt.Sprintf("the script is %d bytes long, at most %d are allowed", len(sc.Source), maxSource)})
+				continue
+			}
+			if checked[sc.Source] {
 				continue
 			}
 			synErr, err := script.Check(ctx, projectID, sc.Source)
@@ -500,6 +506,10 @@ func (r *AutomationRule) Update(s *xorm.Session, a web.Auth) error {
 	existing, err := getAutomationRuleInProject(s, r.ID, r.ProjectID)
 	if err != nil {
 		return err
+	}
+	r.checkedSources = map[string]bool{}
+	for _, sc := range spec.Scripts(existing.Doc()) {
+		r.checkedSources[sc.Source] = true
 	}
 	if err = r.Validate(s, a); err != nil {
 		return err
