@@ -174,8 +174,8 @@ func normalizeHost(h string) string {
 }
 
 // Sign returns the value of the signature header: sha256= followed by the hex HMAC-SHA256 of the body, keyed with
-// the secret. It is the algorithm of the webhook signature (X-Vikunja-Signature carries the hex HMAC-SHA256 of the
-// exact payload there too); the "sha256=" prefix names the algorithm.
+// the secret. It signs the body alone. The signature of the incoming webhook trigger (timestamp, hook token and
+// body) is a different construction, so a rule cannot call a signed incoming hook of another instance directly.
 func Sign(secret string, body []byte) string {
 	mac := hmac.New(sha256.New, []byte(secret))
 	mac.Write(body)
