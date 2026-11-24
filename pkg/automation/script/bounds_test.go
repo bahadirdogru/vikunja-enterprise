@@ -225,3 +225,24 @@ func TestProjects_OneInteractiveRunPerProject(t *testing.T) {
 	assert.Empty(t, procs.projects, "no slot is left behind")
 	procs.mu.Unlock()
 }
+
+// TestRetry_AMemoryErrorOfAReusedProcessGetsAWholeTimeoutInANewOne: the retry reused the first deadline, so a
+// script that ran out of memory near its timeout in a reused process came back as "busy": retried by the runner,
+// never blamed.
+func TestRetry_AMemoryErrorOfAReusedProcessGetsAWholeTimeoutInANewOne(t *testing.T) {
+	if goruntime.GOOS != "linux" {
+		t.Skip("the hard memory limit is only enforced on Linux")
+	}
+	for i := 0; i < 3; i++ {
+		drainPool()
+		_, pid := runPID(t, `return 1`)
+		require.NotZero(t, pid)
+		// Fills the memory inside one native call and gets there after its timeout of 200 ms.
+		in := runawayInput(`String.raw({raw: {length: 2**53 - 1}})`)
+		done, err := runInProcess(context.Background(), in, false)
+		require.NoError(t, err, "not busy, not unavailable")
+		require.NotNil(t, done.Error)
+		assert.Contains(t, []ErrorKind{ErrMemory, ErrTimeout}, done.Error.Kind, done.Error.Message)
+		assert.True(t, done.Error.Blamed())
+	}
+}

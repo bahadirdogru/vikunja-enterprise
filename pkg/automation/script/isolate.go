@@ -460,14 +460,22 @@ func (p *processPool) put(c *child) {
 }
 
 // acquire returns an idle process or starts one, waiting for a free slot until deadline.
-func acquire(ctx context.Context, deadline time.Time, maxMemory int64) (c *child, pooled bool, err error) {
+func acquire(ctx context.Context, deadline time.Time, maxMemory int64, fresh bool) (c *child, pooled bool, err error) {
 	timer := time.NewTimer(time.Until(deadline))
 	defer timer.Stop()
 	for {
 		// Taken before looking, so a change in between is not missed.
 		changed := procs.waitChange()
 		if c := pool.get(maxMemory); c != nil {
-			return c, true, nil
+			if !fresh {
+				return c, true, nil
+			}
+			// A retry needs a new process: an idle one is ended to make room when every slot is taken.
+			if len(procs.live) == cap(procs.live) {
+				c.close()
+			} else {
+				pool.put(c)
+			}
 		}
 		select {
 		case procs.live <- struct{}{}:
@@ -549,13 +557,11 @@ func runInProcess(ctx context.Context, in *Input, check bool) (*doneMessage, err
 	procs.init()
 	// The deadline holds from here: waiting for a process and starting it count against the script's time.
 	deadline := time.Now().Add(in.Limits.Timeout)
-	runCtx, cancel := context.WithDeadline(ctx, deadline)
-	defer cancel()
-	killCtx, cancelKill := context.WithDeadline(ctx, deadline.Add(killGrace))
-	defer cancelKill()
 
 	if in.Interactive {
-		release, ok := procs.enterProject(in.ProjectID, runCtx.Done())
+		waitCtx, cancel := context.WithDeadline(ctx, deadline)
+		defer cancel()
+		release, ok := procs.enterProject(in.ProjectID, waitCtx.Done())
 		if !ok {
 			if ctx.Err() != nil {
 				return nil, ctx.Err()
@@ -568,28 +574,39 @@ func runInProcess(ctx context.Context, in *Input, check bool) (*doneMessage, err
 			defer func() { <-procs.extra }()
 		case <-ctx.Done():
 			return nil, ctx.Err()
-		case <-runCtx.Done():
+		case <-waitCtx.Done():
 			return nil, errBusy
 		}
 	}
 
 	for attempt := 0; ; attempt++ {
-		c, pooled, err := acquire(ctx, deadline, in.Limits.MaxMemory)
-		if err != nil {
-			return nil, err
+		done, retry, err := runAttempt(ctx, in, check, deadline, attempt)
+		if !retry {
+			return done, err
 		}
-		if time.Until(deadline) <= 0 {
-			pool.put(c)
-			return nil, errBusy
-		}
-		done, retry, err := runIn(ctx, runCtx, killCtx, c, in, deadline, check, pooled && attempt == 0)
-		if retry {
-			// An idle process that died while it waited, before it read anything of this script: nothing of the
-			// script ran, so a fresh process can run it.
-			continue
-		}
-		return done, err
+		// The pooled process failed in a way that is its own (it died while it waited, or ran out of memory
+		// where a new one might not): the script runs again in a new process, with its whole timeout. Reusing the
+		// first deadline made a memory error that took the timeout come back as "busy": retried, never blamed.
+		deadline = time.Now().Add(in.Limits.Timeout)
 	}
+}
+
+// runAttempt is one attempt of runInProcess until deadline; the first may take a pooled process, a retry gets a
+// new one.
+func runAttempt(ctx context.Context, in *Input, check bool, deadline time.Time, attempt int) (*doneMessage, bool, error) {
+	runCtx, cancel := context.WithDeadline(ctx, deadline)
+	defer cancel()
+	killCtx, cancelKill := context.WithDeadline(ctx, deadline.Add(killGrace))
+	defer cancelKill()
+	c, pooled, err := acquire(ctx, deadline, in.Limits.MaxMemory, attempt > 0)
+	if err != nil {
+		return nil, false, err
+	}
+	if time.Until(deadline) <= 0 {
+		pool.put(c)
+		return nil, false, errBusy
+	}
+	return runIn(ctx, runCtx, killCtx, c, in, deadline, check, pooled && attempt == 0)
 }
 
 // reusable reports whether a process may serve another script after this outcome: only after a success or an

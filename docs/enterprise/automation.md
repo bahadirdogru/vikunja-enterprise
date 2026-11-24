@@ -634,7 +634,7 @@ retried only when the script had not called `http.fetch`; after a request the ru
 fails for good without counting, since a retry would send the request again (writes
 to the database are rolled back with the step and are safe to retry); (c) a task too
 large to be passed to a script; (d) a memory error in a reused process, which runs
-again in a new one (after an `http.fetch` it fails without counting instead), because
+again in a new one with a whole new timeout (so a worker is held up to twice as long) (after an `http.fetch` it fails without counting instead), because
 a reused process gives about, not exactly, the room of a new one. When an event gives up, each of its runs fails with
 the error of its own rule. So the shared processes do not let one project's scripts get
 another project's rules disabled; memory pressure on the server can still fail any
