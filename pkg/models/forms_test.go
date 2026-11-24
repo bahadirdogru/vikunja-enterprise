@@ -1730,3 +1730,31 @@ func TestFormSubmit_RateLimitPerSignedInUser(t *testing.T) {
 		assert.True(t, IsErrFormRateLimited(err))
 	})
 }
+
+func TestFormSubmit_RateLimitCountsIPv6ByPrefix(t *testing.T) {
+	formsReset(t)
+	config.FormsPublicRateLimit.Set(2)
+	defer config.FormsPublicRateLimit.Set(10)
+	f := createForm(t, baseForm(FormAccessPublic))
+
+	for _, ip := range []string{"2001:db8:1:2::1", "2001:db8:1:2:aaaa:bbbb:cccc:dddd"} {
+		_, err := submit(t, f, map[string]any{"title": "x"}, fromIP(ip))
+		require.NoError(t, err)
+	}
+	_, err := submit(t, f, map[string]any{"title": "x"}, fromIP("2001:db8:1:2:1:2:3:4"))
+	assert.True(t, IsErrFormRateLimited(err), "a third address of the same /64 is the same client")
+
+	_, err = submit(t, f, map[string]any{"title": "x"}, fromIP("2001:db8:1:3::1"))
+	require.NoError(t, err, "another /64 is another client")
+
+	t.Run("IPv4 stays per address", func(t *testing.T) {
+		for i := 0; i < 2; i++ {
+			_, err := submit(t, f, map[string]any{"title": "x"}, fromIP("198.51.100.1"))
+			require.NoError(t, err)
+		}
+		_, err := submit(t, f, map[string]any{"title": "x"}, fromIP("198.51.100.1"))
+		assert.True(t, IsErrFormRateLimited(err))
+		_, err = submit(t, f, map[string]any{"title": "x"}, fromIP("198.51.100.2"))
+		require.NoError(t, err)
+	})
+}

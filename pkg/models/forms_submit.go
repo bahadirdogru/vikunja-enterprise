@@ -39,6 +39,7 @@ import (
 	"code.vikunja.io/api/pkg/i18n"
 	"code.vikunja.io/api/pkg/log"
 	"code.vikunja.io/api/pkg/user"
+	"code.vikunja.io/api/pkg/utils"
 	"code.vikunja.io/api/pkg/web"
 
 	"github.com/c2h5oh/datasize"
@@ -524,7 +525,8 @@ func submitForm(s *xorm.Session, req *FormSubmitRequest) (*FormSubmitResult, err
 	now := formClock().UTC()
 	ipHash := ""
 	if req.IP != "" {
-		ipHash = formIPHash(req.IP)
+		// An IPv6 client is one identity per /64, not per address.
+		ipHash = formIPHash(utils.ClientRateLimitKey(req.IP))
 	}
 	if form.Access == FormAccessPublic {
 		if err = checkFormRateLimits(s, form, ipHash, now); err != nil {

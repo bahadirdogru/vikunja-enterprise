@@ -497,9 +497,9 @@ func registerAPIRoutesV2(e *echo.Echo, a *echo.Group, noAuthRateLimit, refreshRa
 	a.Use(pathScoped(v2SessionRenewalPaths.has, refreshRateLimit))
 	a.Use(pathScoped(v2CredentialPaths.has, noAuthRateLimit))
 	// A floor against floods on the public form endpoints; the per IP and per form submission limits are in the database.
-	a.Use(pathScoped(func(p string) bool { return optionalAuthAPIPaths[p] }, perMinuteIPRateLimit("forms", config.FormsPublicRequestRateLimit.GetInt64())))
+	a.Use(pathScoped(func(p string) bool { return optionalAuthAPIPaths[p] }, perMinuteClientRateLimit("forms", config.FormsPublicRequestRateLimit.GetInt64())))
 	// The same floor for the incoming automation webhooks; the limit per rule is in the database.
-	a.Use(pathScoped(func(p string) bool { return p == automationHookPath }, perMinuteIPRateLimit("hooks", config.FormsPublicRequestRateLimit.GetInt64())))
+	a.Use(pathScoped(func(p string) bool { return p == automationHookPath }, perMinuteClientRateLimit("hooks", config.FormsPublicRequestRateLimit.GetInt64())))
 	// Match the authenticated v1 group: rate limiting and route metrics
 	// apply to v2 resource endpoints too.
 	setupRateLimit(a, config.RateLimitKind.GetString())

@@ -26,6 +26,7 @@ import (
 	"code.vikunja.io/api/pkg/log"
 	auth2 "code.vikunja.io/api/pkg/modules/auth"
 	"code.vikunja.io/api/pkg/red"
+	"code.vikunja.io/api/pkg/utils"
 	"github.com/labstack/echo/v5"
 	"github.com/ulule/limiter/v3"
 	"github.com/ulule/limiter/v3/drivers/store/memory"
@@ -40,6 +41,8 @@ func RateLimit(rateLimiter *limiter.Limiter, rateLimitKind string) echo.Middlewa
 			switch rateLimitKind {
 			case "ip":
 				rateLimitKey = c.RealIP()
+			case "ip64":
+				rateLimitKey = utils.ClientRateLimitKey(c.RealIP())
 			case "user":
 				// Unauthenticated requests hit this middleware because v2 rate limits
 				// one group covering its public routes as well - key those by IP.

@@ -1153,7 +1153,7 @@
                         {
                             "key": "ratelimit",
                             "default_value": "10",
-                            "comment": "The maximum number of submissions per client IP address and hour on public forms. Counted in the database from the stored salted IP hash, so it holds across several replicas. The address is taken as service.ipextractionmethod and service.trustedproxies say. Excess submissions are answered with 429 and a Retry-After header."
+                            "comment": "The maximum number of submissions per client IP address and hour on public forms. An IPv6 client is counted by its /64 prefix, not by its full address. Counted in the database from the stored salted IP hash, so it holds across several replicas. The address is taken as service.ipextractionmethod and service.trustedproxies say. Excess submissions are answered with 429 and a Retry-After header."
                         },
                         {
                             "key": "formratelimit",
@@ -1163,7 +1163,7 @@
                         {
                             "key": "requestratelimit",
                             "default_value": "60",
-                            "comment": "The maximum number of requests per client IP address and minute to the public form endpoints (definition and submissions together), counted by the same limiter store as ratelimit.store. A floor against floods; normal use never reaches it."
+                            "comment": "The maximum number of requests per client IP address and minute to the public form endpoints (definition and submissions together) and to the incoming automation webhooks, counted by the same limiter store as ratelimit.store. An IPv6 client is counted by its /64 prefix. A floor against floods; normal use never reaches it."
                         }
                     ]
                 }
