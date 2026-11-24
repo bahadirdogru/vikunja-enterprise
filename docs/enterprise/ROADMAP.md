@@ -360,7 +360,9 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
 
 - Automation: replay protection for the incoming webhook. A call to a hook
   that names a secret now carries `X-Vikunja-Timestamp` and
-  `X-Vikunja-Signature: sha256=` + HMAC-SHA256 over `timestamp.body`
+  `X-Vikunja-Signature: sha256=` + HMAC-SHA256 over `timestamp.token.body`
+  (the token of the hook URL, so a call signed for one hook is refused by a
+  sibling hook with the same secret)
   (unreleased trigger, so the body-only signature is refused, not kept).
   Timestamp window `automation.webhook.tolerance` (default 5m, 0 or less
   becomes the default), up to 1 minute ahead accepted. Accepted signatures
@@ -370,8 +372,11 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   configured; the row is inserted in the transaction of the queued event, so
   a call refused for its payload or the rate limit does not use its
   signature up, and two identical calls at once race on the unique index
-  (6 parallel identical calls: exactly 1 accepted, run on SQLite). The 30 s
-  ticker deletes expired rows. Bad signature, malformed or missing header,
+  (6 parallel identical calls: exactly 1 accepted, run on SQLite). The row keeps the
+  signed timestamp (`signed_at`); the 30 s ticker deletes rows older than
+  this instance's tolerance plus 2 minutes, which assumes instance clocks
+  within that margin and one tolerance for all instances. A replay is
+  looked up before the rate limit, so it is a 401 and costs no budget. Bad signature, malformed or missing header,
   stale or future timestamp and replay are one 401 / 22011 answer (reason
   only in the debug log). Hooks WITHOUT a secret stay callable unsigned
   and are not replay protected; this is documented. Verified: unit tests
@@ -382,7 +387,10 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   checked: two real server processes against one PostgreSQL or MySQL
   (the cross-instance refusal is shown by the memory being a table, in one
   process), the editor text in a browser, a sender in another language.
-  Changing `automation.webhook.tolerance` upward does not bring back rows
+  A retry of an accepted call is refused like a replay (senders re-sign every
+  attempt). `automation.webhook.tolerance` needs a unit and at least 1s (a
+  bare `300` is nanoseconds and would refuse every call: it falls back to the
+  default with a warning). Changing `automation.webhook.tolerance` upward does not bring back rows
   already deleted: calls captured earlier can be replayed until their new
   window ends.
 - Hardening verification (cap on rules per project and replay protection):
@@ -391,7 +399,13 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   the first draft of the new table: xorm builds the unique index name from
   the table name and the index name, and 64 characters is the limit there;
   the index is now called `rule_sig`. `mage lint` reports only the 12 known
-  `unused` findings in `pkg/license/`.
+  `unused` findings in `pkg/license/`. A review of these changes then found
+  and fixed: replay across sibling hooks with one secret, a stale curl
+  example in API.md (both examples' signature now checked against the Go
+  helper with openssl), clock-skew dependent row expiry, files of a refused
+  project duplicate (now refused before anything is written), and a replay
+  that was answered 429 instead of 401. Re-verified on SQLite, PostgreSQL 18
+  and MySQL 8, see the report of that pass.
 
 ## Remaining
 

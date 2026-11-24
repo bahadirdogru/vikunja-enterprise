@@ -234,12 +234,12 @@ The form routes are *optional-auth*: with no `Authorization` header the caller i
 
 ```text
 X-Vikunja-Timestamp: <Unix time in seconds, digits only>
-X-Vikunja-Signature: sha256=<64 hex digits: HMAC-SHA256 of the timestamp, a dot and the raw body, keyed with the secret>
+X-Vikunja-Signature: sha256=<64 hex digits: HMAC-SHA256 of timestamp + "." + token + "." + raw body, keyed with the secret>
 ```
 
-for example `ts=$(date +%s); sig=$(printf '%s.%s' "$ts" "$body" | openssl dgst -sha256 -hmac "$secret" -hex | sed 's/^.* //')`, then `-H "X-Vikunja-Timestamp: $ts" -H "X-Vikunja-Signature: sha256=$sig"`. The headers are parsed strictly: the timestamp is 1 to 11 ASCII digits (no sign, space or fraction), the signature is exactly `sha256=` and 64 hex digits, anything else is refused without being decoded. The MAC is compared in constant time, and the whole check runs before the rate limit counts.
+`token` is the token of the hook as it appears in its URL (base64url: it never contains a dot), so the signed string is unambiguous and a call signed for one hook is refused by every other hook, also one that uses the same secret. For example `ts=$(date +%s); sig=$(printf '%s.%s.%s' "$ts" "$token" "$body" | openssl dgst -sha256 -hmac "$secret" -hex | sed 's/^.* //')`, then `-H "X-Vikunja-Timestamp: $ts" -H "X-Vikunja-Signature: sha256=$sig"`. The headers are parsed strictly: the timestamp is 1 to 11 ASCII digits (no sign, space or fraction), the signature is exactly `sha256=` and 64 hex digits, anything else is refused without being decoded. The MAC is compared in constant time, and the whole check runs before the rate limit counts.
 
-**Replay protection.** A signed call is accepted once. The timestamp may be at most `automation.webhook.tolerance` (default 5 minutes) in the past and at most one minute in the future (clock skew of the sender); the signature covers the timestamp, so it cannot be changed. Within the window, an exact repeat of an accepted call is refused: the accepted signatures are kept in the table `automation_webhook_seen` (unique on rule and signature), so every instance that shares the database refuses them, and the ticker deletes them once their timestamp is out of the window. A call that is refused for another reason after the signature checked out (a body that is not a JSON object, the rate limit) does not use its signature up. Send a new timestamp, and so a new signature, with every call, also for retries.
+**Replay protection.** A signed call is accepted once. The timestamp may be at most `automation.webhook.tolerance` (default 5 minutes) in the past and at most one minute in the future (clock skew of the sender); the signature covers the timestamp, so it cannot be changed. Within the window, an exact repeat of an accepted call is refused: the accepted signatures are kept in the table `automation_webhook_seen` (unique on rule and signature), so every instance that shares the database refuses them, and the ticker deletes them once their timestamp is older than the tolerance plus a margin of two minutes. This assumes that the clocks of the instances differ by less than that margin and that all instances use the same tolerance. A replay is answered before the rate limit is applied, so it is the same 401 and does not use the sender's budget. A call that is refused for another reason after the signature checked out (a body that is not a JSON object, the rate limit) does not use its signature up. Send a new timestamp, and so a new signature, with every call. A retry of a request that was already accepted gets the same 401 as a replay (a sender cannot tell "accepted but the answer was lost" from a replay): this is deliberate, so a sender that retries has to re-sign with a fresh timestamp, and has to expect that the first attempt may have run.
 
 A wrong or malformed signature, a missing, stale or future timestamp, a signature over the body alone (the scheme before this change) and a replay are all the same `401` with code 22011 and the same body, so a caller learns nothing about which part failed (the reason is logged at debug level on the server). When a correct sender is refused, check its clock and that it signs every call anew.
 
@@ -476,16 +476,17 @@ The answer is `201` with the rule, including `revision`, `owner_id` (you), `enab
 
 ```bash
 body='{"id": 77, "customer": {"name": "Ada"}}'
-sig="sha256=$(printf '%s' "$body" | openssl dgst -sha256 -hmac "$SECRET" -hex | sed 's/^.* //')"
+ts=$(date +%s)
+sig="sha256=$(printf '%s.%s.%s' "$ts" "$WEBHOOK_TOKEN" "$body" | openssl dgst -sha256 -hmac "$SECRET" -hex | sed 's/^.* //')"
 curl -sS -X POST "$BASE/automation/hooks/$WEBHOOK_TOKEN" \
-  -H 'Content-Type: application/json' -H "X-Vikunja-Signature: $sig" -d "$body"
+  -H 'Content-Type: application/json' -H "X-Vikunja-Timestamp: $ts" -H "X-Vikunja-Signature: $sig" -d "$body"
 ```
 
 ```json
 {"queued": true}
 ```
 
-Without a secret on the rule, omit the signature header. A rule action can then use `{{event.payload.customer.name}}`.
+Without a secret on the rule, omit both headers. Sign every call anew, also a retry. A rule action can then use `{{event.payload.customer.name}}`.
 
 ### Run a report
 
