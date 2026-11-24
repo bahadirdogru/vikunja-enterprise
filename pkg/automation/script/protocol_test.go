@@ -92,19 +92,15 @@ func TestHello_AProcessThatDoesNotIdentifyItselfGetsNoScript(t *testing.T) {
 			require.ErrorIs(t, err, ErrUnavailable)
 			var unavailable *UnavailableError
 			require.ErrorAs(t, err, &unavailable)
-			assert.True(t, unavailable.Start)
+			assert.Equal(t, script == "", unavailable.Start, "only a binary that cannot be executed is a failure to start")
 			var se *Error
 			assert.NotErrorAs(t, err, &se, "not the script's fault")
 			assert.Less(t, time.Since(started), 3*time.Second)
 			waitForNoProcesses(t)
 
-			// The compile check falls back to compiling here.
-			synErr, err := Check(context.Background(), "var a = 1;\nreturn a +")
-			require.NoError(t, err)
-			require.NotNil(t, synErr)
-			assert.Equal(t, 2, synErr.Line)
-			synErr, err = Check(context.Background(), "return 1")
-			require.NoError(t, err)
+			// The compile check is refused, never done in the server instead.
+			synErr, err := Check(context.Background(), 0, "var a = 1;\nreturn a +")
+			require.ErrorIs(t, err, ErrUnavailable)
 			assert.Nil(t, synErr)
 		})
 	}
@@ -281,8 +277,11 @@ func TestProtocol_AProcessWithUnreadOutputIsNotReused(t *testing.T) {
 	_, err = run(t, nil, `return 1`)
 	require.NoError(t, err)
 	time.Sleep(400 * time.Millisecond)
+	// The leftover is the previous script's: this one runs again in a fresh process (the same fake), whose late
+	// done is ignored because the run already ended.
 	_, err = run(t, nil, `return 1`)
-	require.ErrorIs(t, err, ErrUnavailable)
+	require.NoError(t, err)
+	drainPool()
 	waitForNoProcesses(t)
 }
 
@@ -333,6 +332,7 @@ func TestLimits_AProcessCannotHoldMoreThanItsShare(t *testing.T) {
 			go func() {
 				_, err := run(t, nil, `Array.prototype.indexOf.call({length: 2**53 - 1}, 1)`, func(in *Input) {
 					in.Interactive = true
+					in.ProjectID = int64(100 + i)
 					in.Limits.Timeout = 1500 * time.Millisecond
 				})
 				blockers <- err
@@ -342,6 +342,7 @@ func TestLimits_AProcessCannotHoldMoreThanItsShare(t *testing.T) {
 		started := time.Now()
 		_, err := run(t, nil, `return 1`, func(in *Input) {
 			in.Interactive = true
+			in.ProjectID = 200
 			in.Limits.Timeout = 300 * time.Millisecond
 		})
 		var unavailable *UnavailableError
@@ -390,7 +391,7 @@ func startBare(t *testing.T, src string, budget time.Duration) *child {
 	t.Helper()
 	procs.init()
 	procs.live <- struct{}{}
-	c, err := startChild(0, time.Now().Add(10*time.Second))
+	c, err := startChild(0)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = c.kill() })
 	start := &startMessage{Seq: 1, Source: src, Limits: ActionLimits(), Budget: budget}

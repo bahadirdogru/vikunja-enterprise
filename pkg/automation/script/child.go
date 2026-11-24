@@ -18,8 +18,8 @@ package script
 
 import (
 	"bufio"
+	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -289,15 +289,16 @@ type proxyHost struct {
 
 func (h *proxyHost) call(c *callMessage) (*replyMessage, error) {
 	c.Seq = h.seq
-	b, err := json.Marshal(&message{Call: c})
-	if err != nil {
+	var buf bytes.Buffer
+	if err := writeMessage(&buf, &message{Call: c}); err != nil {
 		// Nothing was sent: a number that is not finite has no JSON form.
 		return nil, fmt.Errorf("the value cannot be passed to the host: %w", err)
 	}
-	if len(b) >= maxMessageBytes {
+	if buf.Len() > maxMessageBytes {
 		return nil, fmt.Errorf("the arguments of the call are larger than %d MiB", maxMessageBytes>>20)
 	}
-	if _, err = h.out.Write(append(b, '\n')); err == nil {
+	_, err := h.out.Write(buf.Bytes())
+	if err == nil {
 		err = h.out.Flush()
 	}
 	if err != nil {

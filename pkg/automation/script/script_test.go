@@ -653,7 +653,7 @@ func TestRun_Async(t *testing.T) {
 // check is Check that must not fail for want of a script process.
 func check(t *testing.T, source string) *SyntaxError {
 	t.Helper()
-	synErr, err := Check(context.Background(), source)
+	synErr, err := Check(context.Background(), 0, source)
 	require.NoError(t, err)
 	return synErr
 }

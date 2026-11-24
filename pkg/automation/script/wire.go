@@ -25,6 +25,7 @@ import (
 	"io"
 	"math"
 	"time"
+	"unicode/utf8"
 )
 
 // The parent and the script process talk in JSON, one message per line: the child sends hello, the parent sends
@@ -39,8 +40,13 @@ const (
 	// messages below it (results, errors and logs are cut off, a host call that would be larger throws), so a
 	// larger one means the child is not ours to trust and it is killed.
 	maxMessageBytes = 4 << 20
-	// maxReplyBytes bounds what the child reads; the parent is trusted, this only keeps a broken parent from
-	// growing the child without end.
+	// maxInputBytes bounds one message of the server to the child (the start with the task, the reply of a host
+	// call), estimated before it is encoded so the server never builds a larger one: in-process the script got the
+	// server's own values for free, here every value is copied into JSON. 8 MiB is twice the limit of the other
+	// direction and holds a find of 200 tasks with 40 KiB descriptions; a fetch body (maxresponsesize) is allowed
+	// six times its size in escapes.
+	maxInputBytes = 8 << 20
+	// maxReplyBytes bounds what the child reads.
 	maxReplyBytes = 64 << 20
 	// maxResultBytes is how much of the return value, the error message and the stack is kept. The runner keeps
 	// 16 KiB of the output of a step anyway.
@@ -162,13 +168,40 @@ func readMessage(r *bufio.Reader, limit int, useNumber bool) (*message, error) {
 	return m, nil
 }
 
+// writeMessage encodes m as one line without HTML escapes (which turn every <, > and & into six bytes) and
+// without a copy of the encoding.
 func writeMessage(w io.Writer, m *message) error {
-	b, err := json.Marshal(m)
-	if err != nil {
-		return err
+	enc := json.NewEncoder(w)
+	enc.SetEscapeHTML(false)
+	return enc.Encode(m)
+}
+
+var errInputTooLarge = errors.New("too large")
+
+// inputLimit is the largest message the server sends to the child for these limits.
+func inputLimit(l Limits) int {
+	return min(max(maxInputBytes, 6*l.MaxValueBytes+(1<<20)), maxReplyBytes-(64<<10))
+}
+
+// jsonLen is an upper bound of the length of s encoded as a JSON string without HTML escapes.
+func jsonLen(s string) int {
+	n := len(s) + 2
+	valid := utf8.ValidString(s)
+	for i := 0; i < len(s); i++ {
+		switch c := s[i]; {
+		case c < 0x20:
+			n += 5
+		case c == '"' || c == '\\':
+			n++
+		case c >= 0x80 && !valid:
+			// Every byte of invalid UTF-8 may become \ufffd.
+			n += 5
+		case c == 0xE2 && i+2 < len(s) && s[i+1] == 0x80 && (s[i+2] == 0xA8 || s[i+2] == 0xA9):
+			// U+2028 and U+2029 are escaped: three bytes become six.
+			n += 3
+		}
 	}
-	_, err = w.Write(append(b, '\n'))
-	return err
+	return n
 }
 
 // special is a number JSON cannot hold (NaN, Infinity, -Infinity) at a path of a value: the value has null there
@@ -178,20 +211,44 @@ type special struct {
 	Value string `json:"value"`
 }
 
-// wireValue turns a value of the host into a tree that survives JSON and gives the script exactly what toJS
-// would have built from the original: it mirrors the cases of toJS. Numbers that are not finite become null in
-// the tree and are listed in specials.
-func wireValue(v any) (any, []special) {
-	w := &wireWalker{}
-	return w.walk(v), w.specials
+// wireValueLimited turns a value of the host into a tree that survives JSON and gives the script exactly what
+// toJS would have built from the original: it mirrors the cases of toJS. Numbers that are not finite become null
+// in the tree and are listed in specials. It gives up (errInputTooLarge) as soon as the JSON of the value could be
+// longer than limit bytes, before anything of that size was built.
+func wireValueLimited(v any, limit int) (any, []special, int, error) {
+	w := &wireWalker{limit: limit}
+	out := w.walk(v)
+	if w.over {
+		return nil, nil, w.size, errInputTooLarge
+	}
+	return out, w.specials, w.size, nil
 }
 
 type wireWalker struct {
 	path     []any
 	specials []special
+	// size is an upper bound of the JSON of what was walked; limit (if set) ends the walk.
+	size  int
+	limit int
+	over  bool
+}
+
+func (w *wireWalker) add(n int) {
+	w.size += n
+	if w.limit > 0 && w.size > w.limit {
+		w.over = true
+	}
 }
 
 func (w *wireWalker) at(key any, v any) any {
+	if k, ok := key.(string); ok {
+		w.add(jsonLen(k) + 2)
+	} else {
+		w.add(1)
+	}
+	if w.over {
+		return nil
+	}
 	w.path = append(w.path, key)
 	out := w.walk(v)
 	w.path = w.path[:len(w.path)-1]
@@ -199,6 +256,24 @@ func (w *wireWalker) at(key any, v any) any {
 }
 
 func (w *wireWalker) walk(v any) any {
+	if w.over {
+		return nil
+	}
+	switch val := v.(type) {
+	case nil, bool, int64, int, float64:
+		w.add(24)
+	case string:
+		w.add(jsonLen(val))
+	case time.Time:
+		w.add(40)
+	case []any, []int64, []string, []map[string]any, map[string]any:
+		w.add(2)
+	default:
+		w.add(jsonLen(fmt.Sprint(v)))
+	}
+	if w.over {
+		return nil
+	}
 	switch val := v.(type) {
 	case nil:
 		return nil
@@ -226,12 +301,14 @@ func (w *wireWalker) walk(v any) any {
 	case []int64:
 		out := make([]any, len(val))
 		for i, item := range val {
+			w.add(24)
 			out[i] = item
 		}
 		return out
 	case []string:
 		out := make([]any, len(val))
 		for i, item := range val {
+			w.add(jsonLen(item) + 1)
 			out[i] = item
 		}
 		return out
@@ -252,8 +329,9 @@ func (w *wireWalker) walk(v any) any {
 }
 
 // wireInput is wireValue of the three maps of a start message; the specials are rooted at "event", "task" and
-// "project".
-func wireInput(in *Input, start *startMessage) {
+// "project". It fails with errInputTooLarge when the message could be longer than limit.
+func wireInput(in *Input, start *startMessage, limit int) error {
+	budget := limit - jsonLen(start.Source) - (4 << 10)
 	for _, part := range []struct {
 		name string
 		src  map[string]any
@@ -266,13 +344,18 @@ func wireInput(in *Input, start *startMessage) {
 		if part.src == nil {
 			continue
 		}
-		v, specials := wireValue(part.src)
+		v, specials, size, err := wireValueLimited(part.src, budget)
+		if err != nil {
+			return err
+		}
+		budget -= size
 		*part.dst, _ = v.(map[string]any)
 		for _, s := range specials {
 			s.Path = append([]any{part.name}, s.Path...)
 			start.Specials = append(start.Specials, s)
 		}
 	}
+	return nil
 }
 
 // fromWire turns a tree decoded with UseNumber back into what toJS expects: integers become int64 (as the host

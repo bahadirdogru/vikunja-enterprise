@@ -99,6 +99,9 @@ type UnavailableError struct {
 func (e *UnavailableError) Error() string        { return e.Msg }
 func (e *UnavailableError) Is(target error) bool { return target == ErrUnavailable }
 
+// childArg is the argument of the script process; this binary ignores it (the script process starts in init).
+const childArg = "__vikunja-script-process"
+
 var (
 	// helloTimeout is how long a new process may take to identify itself.
 	helloTimeout = 5 * time.Second
@@ -117,7 +120,10 @@ func SetTestExecutable(path string) (restore func()) {
 	}
 }
 
-var errBusy = &UnavailableError{Msg: "the server is busy running other scripts; try again in a moment", Busy: true}
+var (
+	errBusy        = &UnavailableError{Msg: "the server is busy running other scripts; try again in a moment", Busy: true}
+	errProjectBusy = &UnavailableError{Msg: "another test run or check of a script of this project is still running; try again in a moment", Busy: true}
+)
 
 func buildVersion() string { return version.Version }
 
@@ -155,9 +161,63 @@ type processes struct {
 	live chan struct{}
 	// extra holds a token for every interactive run (dry runs, checks).
 	extra chan struct{}
-	// freed is signalled when a process went back to the pool.
-	freed chan struct{}
 	count atomic.Int64
+
+	// changed is closed (and replaced) whenever a process went back to the pool or ended, so every waiter looks
+	// again; a channel of one signal lost wake-ups when two waited.
+	mu      sync.Mutex
+	changed chan struct{}
+	// projects holds the interactive run of each project: one at a time, so one project cannot hold both
+	// extra processes.
+	projects map[int64]*projectSlot
+}
+
+type projectSlot struct {
+	ch    chan struct{}
+	users int
+}
+
+func (p *processes) waitChange() <-chan struct{} {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.changed
+}
+
+func (p *processes) notify() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	close(p.changed)
+	p.changed = make(chan struct{})
+}
+
+// enterProject waits until the project has no other interactive run, at most until done; release ends it.
+func (p *processes) enterProject(projectID int64, done <-chan struct{}) (release func(), ok bool) {
+	p.mu.Lock()
+	slot := p.projects[projectID]
+	if slot == nil {
+		slot = &projectSlot{ch: make(chan struct{}, 1)}
+		p.projects[projectID] = slot
+	}
+	slot.users++
+	p.mu.Unlock()
+	leave := func() {
+		p.mu.Lock()
+		defer p.mu.Unlock()
+		slot.users--
+		if slot.users == 0 {
+			delete(p.projects, projectID)
+		}
+	}
+	select {
+	case slot.ch <- struct{}{}:
+		return func() {
+			<-slot.ch
+			leave()
+		}, true
+	case <-done:
+		leave()
+		return nil, false
+	}
 }
 
 var procs = &processes{}
@@ -170,7 +230,8 @@ func (p *processes) init() {
 		}
 		p.live = make(chan struct{}, workers+extraProcesses)
 		p.extra = make(chan struct{}, extraProcesses)
-		p.freed = make(chan struct{}, 1)
+		p.changed = make(chan struct{})
+		p.projects = map[int64]*projectSlot{}
 	})
 }
 
@@ -217,11 +278,28 @@ type child struct {
 	idle      *time.Timer
 	waitOnce  sync.Once
 	waitErr   error
+	// killedHere is set when the server sent the SIGKILL (a broken conversation, the deadline).
+	killedHere atomic.Bool
+	exited     atomic.Bool
+}
+
+// exitWithin waits up to d for the process to end by itself, so a process that died (and closed its pipes) is
+// reaped before the server kills it and its own signal is seen.
+func (c *child) exitWithin(d time.Duration) {
+	ended := make(chan struct{})
+	go func() {
+		_ = c.wait()
+		close(ended)
+	}()
+	select {
+	case <-ended:
+	case <-time.After(d):
+	}
 }
 
 // startChild starts a process and waits for its hello, at most until deadline. The caller holds a token of
 // procs.live for it; the process gives it back when it ends.
-func startChild(maxMemory int64, deadline time.Time) (*child, error) {
+func startChild(maxMemory int64) (*child, error) {
 	unavailable := func(format string, args ...any) error {
 		return &UnavailableError{Msg: "cannot start the script process: " + fmt.Sprintf(format, args...), Start: true}
 	}
@@ -235,7 +313,9 @@ func startChild(maxMemory int64, deadline time.Time) (*child, error) {
 		return nil, unavailable("%v", err)
 	}
 	// Not bound to a context: the process outlives the run that started it and is killed explicitly.
-	cmd := exec.Command(exe) //nolint:noctx // see above
+	// The argument makes a binary without the script process (an older or an upstream build at the same path,
+	// outside Linux) stop with "unknown command" instead of starting a server.
+	cmd := exec.Command(exe, childArg) //nolint:noctx // see above
 	cmd.Env = childEnviron()
 	c := &child{cmd: cmd, stderr: &cappedBuffer{max: maxStderrBytes}, maxMemory: maxMemory}
 	cmd.Stderr = c.stderr
@@ -257,10 +337,7 @@ func startChild(maxMemory int64, deadline time.Time) (*child, error) {
 	c.pid = cmd.Process.Pid
 	c.stdout = bufio.NewReaderSize(stdout, 64<<10)
 
-	wait := time.Until(deadline)
-	if wait > helloTimeout {
-		wait = helloTimeout
-	}
+	wait := helloTimeout
 	timer := time.AfterFunc(wait, func() { _ = cmd.Process.Kill() })
 	m, err := readMessage(c.stdout, maxMessageBytes, false)
 	timer.Stop()
@@ -268,11 +345,11 @@ func startChild(maxMemory int64, deadline time.Time) (*child, error) {
 	case err != nil || m.Hello == nil:
 		_ = c.kill()
 		log.Errorf("automation: the script process (%s) did not identify itself within %s (%v): %s", exe, wait, err, c.stderr.logLine())
-		return nil, unavailable("the process did not identify itself")
+		return nil, &UnavailableError{Msg: "cannot start the script process: the process did not identify itself"}
 	case m.Hello.Protocol != protocolVersion || m.Hello.Build != thisBuild():
 		_ = c.kill()
 		log.Errorf("automation: the script process (%s) is of another build (%q, protocol %d), this server is %q (protocol %d): the binary was replaced; restart Vikunja", exe, m.Hello.Build, m.Hello.Protocol, thisBuild(), protocolVersion)
-		return nil, unavailable("the binary of the script process is of another build; Vikunja has to be restarted")
+		return nil, &UnavailableError{Msg: "cannot start the script process: the binary is of another build; Vikunja has to be restarted"}
 	}
 	return c, nil
 }
@@ -280,15 +357,25 @@ func startChild(maxMemory int64, deadline time.Time) (*child, error) {
 func (c *child) wait() error {
 	c.waitOnce.Do(func() {
 		c.waitErr = c.cmd.Wait()
+		c.exited.Store(true)
 		procs.count.Add(-1)
 		<-procs.live
+		procs.notify()
 	})
 	return c.waitErr
 }
 
+// killedByOthers reports whether the process ended by a SIGKILL the server did not send.
+func (c *child) killedByOthers() bool {
+	return killedBySignal(c.cmd.ProcessState) && !c.killedHere.Load()
+}
+
 // kill ends the process at once and reaps it.
 func (c *child) kill() error {
-	_ = c.cmd.Process.Kill()
+	if !c.exited.Load() {
+		c.killedHere.Store(true)
+		_ = c.cmd.Process.Kill()
+	}
 	return c.wait()
 }
 
@@ -369,10 +456,7 @@ func (p *processPool) put(c *child) {
 		c.close()
 	})
 	p.idle = append(p.idle, c)
-	select {
-	case procs.freed <- struct{}{}:
-	default:
-	}
+	procs.notify()
 }
 
 // acquire returns an idle process or starts one, waiting for a free slot until deadline.
@@ -380,14 +464,22 @@ func acquire(ctx context.Context, deadline time.Time, maxMemory int64) (c *child
 	timer := time.NewTimer(time.Until(deadline))
 	defer timer.Stop()
 	for {
+		// Taken before looking, so a change in between is not missed.
+		changed := procs.waitChange()
 		if c := pool.get(maxMemory); c != nil {
 			return c, true, nil
 		}
 		select {
 		case procs.live <- struct{}{}:
-			c, err := startChild(maxMemory, deadline)
+			if time.Until(deadline) <= 0 {
+				<-procs.live
+				return nil, false, errBusy
+			}
+			// The hello has a window of its own, not what is left of the caller's time: a process that is slow to
+			// start must not look like one that cannot start.
+			c, err := startChild(maxMemory)
 			return c, false, err
-		case <-procs.freed:
+		case <-changed:
 		case <-ctx.Done():
 			return nil, false, ctx.Err()
 		case <-timer.C:
@@ -413,19 +505,14 @@ func Run(ctx context.Context, in *Input) (*Result, error) {
 	return res, nil
 }
 
-// Check compiles a source without running it. Compiling takes more than linear time for some sources, so it
-// happens in a script process as well, with the timeout of a script action. The error is ErrUnavailable (busy, or
-// the process broke) or the context's.
-func Check(ctx context.Context, source string) (*SyntaxError, error) {
-	in := &Input{Source: source, Limits: ActionLimits(), Interactive: true}
+// Check compiles a source of a project without running it. Compiling takes more than linear time for some sources,
+// so it happens in a script process as well, with the timeout of a script action, and never in the server: when no
+// script process is available the error is ErrUnavailable and the save is refused. Otherwise the error is the
+// context's.
+func Check(ctx context.Context, projectID int64, source string) (*SyntaxError, error) {
+	in := &Input{Source: source, Limits: ActionLimits(), Interactive: true, ProjectID: projectID}
 	done, err := runInProcess(ctx, in, true)
-	var unavailable *UnavailableError
 	switch {
-	case errors.As(err, &unavailable) && unavailable.Start:
-		// No script process can be started at all; scripts will not run either, but the source can still be
-		// checked here.
-		_, synErr := compile(source)
-		return synErr, nil
 	case err != nil:
 		return nil, err
 	case done.Error == nil:
@@ -434,6 +521,23 @@ func Check(ctx context.Context, source string) (*SyntaxError, error) {
 		return &SyntaxError{Message: fmt.Sprintf("compiling the script took longer than %s; simplify it", in.Limits.Timeout), Line: 1, Column: 1}, nil
 	}
 	return &SyntaxError{Message: "the script cannot be compiled: " + done.Error.Message, Line: 1, Column: 1}, nil
+}
+
+// Preflight starts one script process and reports why scripts cannot run, if they cannot. The process stays in the
+// pool.
+func Preflight() error {
+	procs.init()
+	select {
+	case procs.live <- struct{}{}:
+	default:
+		return nil
+	}
+	c, err := startChild(ActionLimits().MaxMemory)
+	if err != nil {
+		return err
+	}
+	pool.put(c)
+	return nil
 }
 
 // runInProcess runs the script, or only compiles it, in a script process. The error is the parent context's or
@@ -451,6 +555,14 @@ func runInProcess(ctx context.Context, in *Input, check bool) (*doneMessage, err
 	defer cancelKill()
 
 	if in.Interactive {
+		release, ok := procs.enterProject(in.ProjectID, runCtx.Done())
+		if !ok {
+			if ctx.Err() != nil {
+				return nil, ctx.Err()
+			}
+			return nil, errProjectBusy
+		}
+		defer release()
 		select {
 		case procs.extra <- struct{}{}:
 			defer func() { <-procs.extra }()
@@ -470,8 +582,8 @@ func runInProcess(ctx context.Context, in *Input, check bool) (*doneMessage, err
 			pool.put(c)
 			return nil, errBusy
 		}
-		done, retry, err := runIn(ctx, runCtx, killCtx, c, in, deadline, check)
-		if retry && pooled && attempt == 0 {
+		done, retry, err := runIn(ctx, runCtx, killCtx, c, in, deadline, check, pooled && attempt == 0)
+		if retry {
 			// An idle process that died while it waited, before it read anything of this script: nothing of the
 			// script ran, so a fresh process can run it.
 			continue
@@ -489,9 +601,15 @@ func reusable(done *doneMessage, maxMemory int64) bool {
 	return maxMemory <= 0 || done.Spare < 0 || done.Spare >= maxMemory-poolMargin
 }
 
-// runIn runs the script in the process c, which it returns to the pool or kills. retry is set when the process
-// was gone before it answered anything and nothing points at the script.
-func runIn(ctx, runCtx, killCtx context.Context, c *child, in *Input, deadline time.Time, check bool) (outcome *doneMessage, retry bool, err error) {
+// runIn runs the script in the process c, which it returns to the pool or kills. retry is set when a pooled
+// process was gone before it answered anything, so a fresh one can run the script.
+//
+// Blame is default-deny: once the start message was sent, whatever ends the run and is not positively the
+// machinery's is the script's fault. The only exception is a SIGKILL the server did not send: with oom_score_adj
+// 1000 the kernel kills a script process for memory pressure that anyone may have caused, while a script's own
+// excess shows up as the address-space limit and the Go runtime's out-of-memory error. Such a run is not blamed;
+// it is retried only when no host call with an effect outside the transaction (http.fetch) was made.
+func runIn(ctx, runCtx, killCtx context.Context, c *child, in *Input, deadline time.Time, check, mayRetry bool) (outcome *doneMessage, retry bool, err error) {
 	c.runs++
 	c.seq++
 	c.stderr.reset()
@@ -500,6 +618,7 @@ func runIn(ctx, runCtx, killCtx context.Context, c *child, in *Input, deadline t
 	go func() {
 		select {
 		case <-killCtx.Done():
+			c.killedHere.Store(true)
 			_ = c.cmd.Process.Kill()
 			killed <- true
 		case <-finished:
@@ -512,9 +631,16 @@ func runIn(ctx, runCtx, killCtx context.Context, c *child, in *Input, deadline t
 	close(finished)
 	wasKilled := <-killed
 
-	if done != nil && !wasKilled && reusable(done, in.Limits.MaxMemory) && c.stdout.Buffered() == 0 {
+	switch {
+	case p.inputTooLarge && !wasKilled:
+		// Nothing was sent; the process is as it was.
 		pool.put(c)
-	} else {
+	case done != nil && !wasKilled && reusable(done, in.Limits.MaxMemory) && c.stdout.Buffered() == 0:
+		pool.put(c)
+	default:
+		if done == nil && !wasKilled {
+			c.exitWithin(100 * time.Millisecond)
+		}
 		_ = c.kill()
 	}
 
@@ -524,57 +650,74 @@ func runIn(ctx, runCtx, killCtx context.Context, c *child, in *Input, deadline t
 		return done, false, nil
 	case ctx.Err() != nil:
 		return nil, false, ctx.Err()
+	case p.inputTooLarge:
+		return fail(&Error{Kind: ErrInputTooLarge, Message: fmt.Sprintf("the task or the event is too large to be passed to a script (more than %d MiB)", inputLimit(in.Limits)>>20)})
+	case !p.started:
+		// The process was gone before it got the script.
+		return nil, mayRetry, &UnavailableError{Msg: "the script process ended before it got the script: " + fmt.Sprint(pumpErr)}
 	case p.violation != nil:
 		return fail(p.violation)
 	case wasKilled || killCtx.Err() != nil:
 		return fail(timeoutError(in))
 	case errors.Is(pumpErr, errMessageTooLarge):
 		return fail(&Error{Kind: ErrThrown, Message: fmt.Sprintf("the script passed more than %d MiB to the server at once", maxMessageBytes>>20)})
+	case p.stale:
+		log.Errorf("automation: the script process %d sent a message of its previous script (%v); it was killed", c.pid, p.broken)
+		return nil, mayRetry, &UnavailableError{Msg: "the script process broke the protocol: " + p.broken.Error()}
 	case p.broken != nil:
 		log.Errorf("automation: the script process %d broke the protocol (%v); it was killed: %s", c.pid, p.broken, c.stderr.logLine())
-		return nil, false, &UnavailableError{Msg: "the script process broke the protocol: " + p.broken.Error()}
+		return fail(&Error{Kind: ErrInternal, Message: "the script process broke the protocol: " + p.broken.Error()})
 	}
 	waitErr := c.wait()
 	stderr := c.stderr.String()
-	if !answered && stderr == "" && !killedBySignal(c.cmd.ProcessState) {
+	if mayRetry && !answered && stderr == "" && !c.killedByOthers() {
+		// A pooled process that ended silently: it may have died while it waited, before it read the script.
+		// Nothing of the script was answered, so a fresh process runs it; if that one dies the same way, the
+		// script is blamed.
 		return nil, true, &UnavailableError{Msg: "the script process ended unexpectedly: " + fmt.Sprint(waitErr)}
 	}
-	return exitOutcome(in, c, waitErr, pumpErr, stderr)
+	return exitOutcome(in, c, p, waitErr, pumpErr, stderr)
 }
 
 func timeoutError(in *Input) *Error {
 	return &Error{Kind: ErrTimeout, Message: fmt.Sprintf("the script ran longer than %s and was stopped", in.Limits.Timeout)}
 }
 
-// exitOutcome explains a child that ended without reporting. The script is blamed only for what its own limits
-// explain: the watchdog (its timeout), the Go runtime running out of memory or stack (the address-space limit of
-// a fresh process, or of a pooled one that was cleaned: see reusable), or a SIGKILL nobody here sent (the
-// kernel's OOM killer, which prefers script processes). Anything else is the machinery's: temporary, logged.
-func exitOutcome(in *Input, c *child, waitErr, pumpErr error, stderr string) (*doneMessage, bool, error) {
+// exitOutcome explains a child that ended without reporting, after it got the script (see runIn for the blame).
+func exitOutcome(in *Input, c *child, p *parent, waitErr, pumpErr error, stderr string) (*doneMessage, bool, error) {
 	fail := func(e *Error) (*doneMessage, bool, error) { return &doneMessage{Error: e}, false, nil }
 	low := strings.ToLower(stderr)
-	memoryLimit := "the memory limit"
-	if in.Limits.MaxMemory > 0 {
-		memoryLimit = fmt.Sprintf("%d MiB of memory", in.Limits.MaxMemory>>20)
-	}
 	state := c.cmd.ProcessState
+	detail := fmt.Sprint(waitErr)
+	if pumpErr != nil && !errors.Is(pumpErr, io.EOF) {
+		detail += ", " + pumpErr.Error()
+	}
 	switch {
 	case state != nil && state.ExitCode() == exitOverdue:
 		return fail(timeoutError(in))
 	case strings.Contains(low, "out of memory"), strings.Contains(low, "cannot allocate memory"),
 		strings.Contains(low, "failed to create new os thread"), strings.Contains(low, "pthread_create failed"):
-		return fail(&Error{Kind: ErrMemory, Message: fmt.Sprintf("the script used more than %s and was stopped", memoryLimit)})
+		return fail(memoryError(in))
 	case strings.Contains(low, "stack overflow"), strings.Contains(low, "stack exceeds"):
 		return fail(&Error{Kind: ErrStackOverflow, Message: "the script nested too deeply for the interpreter and was stopped"})
-	case killedBySignal(state):
-		return fail(&Error{Kind: ErrMemory, Message: "the script process was killed by the operating system, most likely because memory ran out"})
-	}
-	detail := fmt.Sprint(waitErr)
-	if pumpErr != nil && !errors.Is(pumpErr, io.EOF) {
-		detail += ", " + pumpErr.Error()
+	case c.killedByOthers():
+		log.Warningf("automation: the script process %d was killed by a signal the server did not send (the kernel's OOM killer?)", c.pid)
+		const msg = "the script process was killed by the operating system (most likely memory ran out on the server)"
+		if p.external {
+			// Running it again would repeat its requests.
+			return fail(&Error{Kind: ErrUnattributed, Message: msg})
+		}
+		return nil, false, &UnavailableError{Msg: msg}
 	}
 	log.Errorf("automation: the script process %d ended unexpectedly (%s): %s", c.pid, detail, c.stderr.logLine())
-	return nil, false, &UnavailableError{Msg: "the script process ended unexpectedly: " + detail}
+	return fail(&Error{Kind: ErrInternal, Message: "the script process ended unexpectedly: " + detail})
+}
+
+func memoryError(in *Input) *Error {
+	if in.Limits.MaxMemory > 0 {
+		return &Error{Kind: ErrMemory, Message: fmt.Sprintf("the script hit the memory limit of %d MiB and was stopped", in.Limits.MaxMemory>>20)}
+	}
+	return &Error{Kind: ErrMemory, Message: "the script ran out of memory and was stopped"}
 }
 
 // parent is the side of the run in this process: it sends the input and answers the host calls.
@@ -589,8 +732,27 @@ type parent struct {
 	violation *Error
 	// broken is a message that does not belong to the protocol.
 	broken error
+	// started is set once the start message was sent, inputTooLarge when it could not be because of its size.
+	started       bool
+	inputTooLarge bool
+	// external is set once a host call with an effect outside the transaction (http.fetch) was made.
+	external bool
+	// stale is set when the first thing the process sent belongs to its previous script.
+	stale  bool
+	calls  int
 	api    int
 	fetchs int
+}
+
+// mismatch records a message of another run. Left over from the previous script of a pooled process before this
+// script made any call, it is that one's doing and this script runs again in a fresh process; anything else is a
+// broken protocol.
+func (p *parent) mismatch(seq uint64, what string) {
+	err := fmt.Errorf("%s of run %d in run %d", what, seq, p.seq)
+	if seq < p.seq && p.calls == 0 {
+		p.stale = true
+	}
+	p.broken = err
 }
 
 // pump runs the conversation until the child reports its outcome or the pipe breaks. answered says whether the
@@ -604,10 +766,14 @@ func (p *parent) pump(r *bufio.Reader, budget time.Duration) (done *doneMessage,
 		Condition: p.in.Condition,
 		Check:     p.check,
 	}
-	wireInput(p.in, start)
+	if err := wireInput(p.in, start, inputLimit(p.in.Limits)); err != nil {
+		p.inputTooLarge = true
+		return nil, false, err
+	}
 	if err := writeMessage(p.w, &message{Start: start}); err != nil {
 		return nil, false, err
 	}
+	p.started = true
 	for {
 		m, err := readMessage(r, maxMessageBytes, false)
 		if err != nil {
@@ -620,7 +786,7 @@ func (p *parent) pump(r *bufio.Reader, budget time.Duration) (done *doneMessage,
 		switch {
 		case m.Done != nil:
 			if m.Done.Seq != p.seq {
-				p.broken = fmt.Errorf("done of run %d in run %d", m.Done.Seq, p.seq)
+				p.mismatch(m.Done.Seq, "done")
 				return nil, true, nil
 			}
 			if m.Done.Error == nil && m.Done.Result == nil && !p.check {
@@ -630,16 +796,20 @@ func (p *parent) pump(r *bufio.Reader, budget time.Duration) (done *doneMessage,
 			return m.Done, true, nil
 		case m.Call != nil:
 			if m.Call.Seq != p.seq {
-				p.broken = fmt.Errorf("call of run %d in run %d", m.Call.Seq, p.seq)
+				p.mismatch(m.Call.Seq, "call")
 				return nil, true, nil
 			}
 			var reply *replyMessage
+			p.calls++
 			if p.ctx.Err() != nil {
 				// No new host call after the deadline: the kill follows.
 				reply = failed(errors.New("the script ran out of time"))
 			} else {
 				if p.violation = p.enforce(m.Call); p.violation != nil {
 					return nil, true, nil //nolint:nilerr // the violation is the outcome, kept on p
+				}
+				if m.Call.Method == "Fetch" {
+					p.external = true
 				}
 				var panicked string
 				reply, panicked = p.safeAnswer(m.Call)
@@ -760,7 +930,11 @@ func (p *parent) answer(c *callMessage) *replyMessage {
 		if err != nil {
 			return failed(err)
 		}
-		w, specials := wireValue(v)
+		limit := inputLimit(p.in.Limits)
+		w, specials, _, err := wireValueLimited(v, limit-(4<<10))
+		if err != nil {
+			return failed(fmt.Errorf("the answer of the server is larger than %d MiB and cannot be passed to the script", limit>>20))
+		}
 		return &replyMessage{Value: w, Specials: specials}
 	}
 	plain := func(err error) *replyMessage {
@@ -833,6 +1007,15 @@ func (p *parent) fetch(c *callMessage) *replyMessage {
 	resp, err := p.in.Host.Fetch(p.ctx, c.Fetch)
 	if err != nil {
 		return failed(err)
+	}
+	if resp != nil {
+		size := jsonLen(resp.Body) + 64
+		for k, v := range resp.Headers {
+			size += jsonLen(k) + jsonLen(v) + 2
+		}
+		if limit := inputLimit(p.in.Limits); size > limit {
+			return failed(fmt.Errorf("the response is larger than %d MiB and cannot be passed to the script", limit>>20))
+		}
 	}
 	return &replyMessage{Fetch: resp}
 }

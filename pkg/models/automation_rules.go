@@ -256,9 +256,10 @@ func validateAutomationScripts(ctx context.Context, s *xorm.Session, projectID i
 				issues = append(issues, spec.Issue{Path: sc.Path, Message: fmt.Sprintf("the script is %d bytes long, at most %d are allowed", len(sc.Source), maxSource)})
 				continue
 			}
-			synErr, err := script.Check(ctx, sc.Source)
+			synErr, err := script.Check(ctx, projectID, sc.Source)
 			if errors.Is(err, script.ErrUnavailable) {
-				// Not the script's fault (every script process busy, or it broke): the save is refused, not blamed.
+				// Not the script's fault (every script process busy, none can be started): the save is refused. It is
+				// never compiled in the server instead, where a hostile source could take seconds.
 				issues = append(issues, spec.Issue{Path: sc.Path, Message: "the script could not be checked: " + err.Error()})
 				continue
 			}

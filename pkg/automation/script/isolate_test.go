@@ -143,7 +143,7 @@ func TestRunaway_MemoryLimit(t *testing.T) {
 			var se *Error
 			require.ErrorAs(t, o.err, &se)
 			assert.Equal(t, ErrMemory, se.Kind, se.Message)
-			assert.Equal(t, "the script used more than 64 MiB of memory and was stopped", se.Message)
+			assert.Equal(t, "the script hit the memory limit of 64 MiB and was stopped", se.Message)
 		})
 	}
 	t.Run("a normal script fits", func(t *testing.T) {
@@ -360,7 +360,7 @@ func TestCheck_CompilesInTheScriptProcess(t *testing.T) {
 			var synErr *SyntaxError
 			var err error
 			o := runBounded(t, time.Second+killGrace+3*time.Second, func() (*Result, error) {
-				synErr, err = Check(context.Background(), c.src)
+				synErr, err = Check(context.Background(), 0, c.src)
 				return nil, nil
 			})
 			require.NoError(t, err)
@@ -379,7 +379,7 @@ func TestCheck_EndsWithTheRequest(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() { time.Sleep(200 * time.Millisecond); cancel() }()
 	started := time.Now()
-	_, err := Check(ctx, strings.Repeat("1+", 200000)+"1")
+	_, err := Check(ctx, 0, strings.Repeat("1+", 200000)+"1")
 	require.ErrorIs(t, err, context.Canceled)
 	assert.Less(t, time.Since(started), 3*time.Second)
 }

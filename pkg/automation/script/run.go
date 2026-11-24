@@ -145,9 +145,20 @@ const (
 	ErrMemory ErrorKind = "memory"
 	// ErrBadResult is a condition script that did not return a value.
 	ErrBadResult ErrorKind = "bad_result"
-	// ErrInternal is a bug.
+	// ErrInternal is a bug, or a script process that ended or broke the protocol after it got the script.
 	ErrInternal ErrorKind = "internal"
+	// ErrInputTooLarge is a task or event too large to be passed to a script. Not the script's doing (anyone who
+	// can write the task can make it that large), and running it again fails the same way.
+	ErrInputTooLarge ErrorKind = "input_too_large"
+	// ErrUnattributed is a script process killed by someone else after the script made a request that must not
+	// be repeated: the run fails, but nobody is blamed.
+	ErrUnattributed ErrorKind = "unattributed"
 )
+
+// Blamed reports whether the failure counts against the rule.
+func (e *Error) Blamed() bool {
+	return e.Kind != ErrInputTooLarge && e.Kind != ErrUnattributed
+}
 
 // Error is a failed script. It is a failure of the script, not of the infrastructure: running it again fails the
 // same way.
@@ -175,6 +186,8 @@ type Input struct {
 	Limits  Limits
 	// Condition requires the script to return a value and reports it as a boolean.
 	Condition bool
+	// ProjectID is the project of the rule; an interactive run waits for the project's other interactive run.
+	ProjectID int64
 	// Interactive is a dry run or a check: it shares the few script processes beyond the workers' and never
 	// takes one of theirs.
 	Interactive bool
