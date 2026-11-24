@@ -61,7 +61,7 @@
 					"subject": "Lütfen Vikunja hesabının silinmesini onayla",
 					"request": "Hesabının silinmesi yönünde bir talep aldık. İşlemi onaylamak için lütfen aşağıdaki bağlantıya tıkla:",
 					"valid_duration": "Bu bağlantı 24 saat boyunca geçerlidir.",
-					"schedule_info": "Silme işlemini onayladığında hesabın 3 gün sonrasına planlanacak; bu süre zarfında sana durumla ilgili bir e-posta daha göndereceğiz.",
+					"schedule_info": "Silme işlemini onayladığında hesabının silinmesi 3 gün sonrasına planlanacak; bu süre zarfında sana durumla ilgili bir e-posta daha göndereceğiz.",
 					"consequences": "Silme işlemine devam edersen oluşturduğun tüm projeler ve görevler silinir. Başka kullanıcılar veya ekiplerle paylaştığın tüm içeriklerin sahipliği ise onlara devredilir.",
 					"changed_mind": "Böyle bir talepte bulunmadıysan ya da fikrini değiştirdiysen bu e-postayı görmezden gelebilirsin."
 				},
@@ -94,7 +94,7 @@
 				"message_to_assignee": "%[1]s, \"%[2]s\" görevini sana verdi.",
 				"subject_to_others": "\"%[1]s\" (%[2]s) görevi %[3]s kişisine atandı",
 				"message_to_others": "%[1]s bu görevi %[2]s adlı kullanıcıya devretti.",
-				"subject_to_others_self": "\"%[1]s\" (%[2]s) görevini %[3]s kendi üstlendi",
+				"subject_to_others_self": "\"%[1]s\" (%[2]s) görevini %[3]s kendisi üstlendi",
 				"message_to_others_self": "%[1]s bu görevi kendi üzerine aldı."
 			},
 			"deleted": {
@@ -111,13 +111,13 @@
 			},
 			"overdue": {
 				"subject": "\"%[1]s\" görevinin süresi geçti (%[2]s)",
-				"message": "\"%[1]s\" (%[2]s) görevinin teslim tarihi %[3]s doldu ve henüz tamamlanmadı.",
+				"message": "\"%[1]s\" (%[2]s) görevi %[3]s gecikmede ve henüz tamamlanmadı.",
 				"multiple_subject": "Günü geçen görevlerin var",
 				"multiple_message": "Teslim tarihi geçen görevlerin şunlar:",
 				"assigned_heading": "Sana atananlar",
 				"followed_heading": "Takip ettiğin görevler",
-				"overdue_since": "%[1]s süredir gecikmiş",
-				"overdue_now": "az önce süresi doldu",
+				"overdue_since": "%[1]s süredir",
+				"overdue_now": "artık",
 				"overdue": "%[1]s gecikmede"
 			}
 		},
@@ -157,7 +157,7 @@
 		"team": {
 			"member_added": {
 				"subject": "%[1]s seni Vikunja'daki \"%[2]s\" ekibine ekledi",
-				"message": "%[1]s az önce seni Vikunja üzerindeki %[2]s ekibine dahil etti."
+				"message": "%[1]s az önce seni Vikunja üzerindeki %[2]s ekibine dâhil etti."
 			}
 		},
 		"data_export": {
@@ -170,7 +170,7 @@
 		"migration": {
 			"done": {
 				"subject": "%[1]s platformundan Vikunja'ya aktarım tamamlandı",
-				"imported": "Vikunja; %[1]s üzerinde erişebildiğin tüm listeleri, projeleri, görevleri, notları, hatırlatıcıları ve dosyaları başarıyla içeri aktardı.",
+				"imported": "Vikunja; %[1]s üzerinde erişebildiğin tüm listeleri, projeleri, görevleri, notları, hatırlatıcıları ve dosyaları başarıyla içe aktardı.",
 				"have_fun": "Yeni (ama tanıdık) projelerinin keyfini çıkar!"
 			},
 			"failed": {

@@ -175,7 +175,7 @@
 	"demo": {
 		"title": "Bu sistem demo modunda çalışıyor. Lütfen gerçek verilerini buraya girme!",
 		"everythingWillBeDeleted": "Tüm veriler düzenli aralıklarla tamamen silinir!",
-		"accountWillBeDeleted": "Oluşturduğun projeler, görevler ve ekler de dahil olmak üzere hesabın tamamen silinecektir."
+		"accountWillBeDeleted": "Oluşturduğun projeler, görevler ve ekler de dâhil olmak üzere hesabın tamamen silinecektir."
 	},
 	"ready": {
 		"loading": "Vikunja yükleniyor…",
@@ -365,8 +365,8 @@
 				"unlink": "Bağlantıyı kaldır",
 				"unlinkHeader": "{provider} bağlantısını kaldır",
 				"unlinkText": "Bu hesapla artık giriş yapamayacaksın. Onaylamak için şifreni gir.",
-				"linkSuccess": "Hesap başarıyla bağlandı.",
-				"unlinkSuccess": "Hesabın bağlantısı başarıyla kaldırıldı.",
+				"linkSuccess": "Hesap bağlandı.",
+				"unlinkSuccess": "Hesabın bağlantısı kaldırıldı.",
 				"confirmTitle": "{provider} hesabını Vikunja hesabına bağla",
 				"confirmAccount": "Bağlanacak hesap:",
 				"confirmText": "Bu {provider} hesabını Vikunja hesabına bağlamak için şifreni gir. Ardından ikisinden biriyle giriş yapabilirsin.",
@@ -380,7 +380,7 @@
 				"urlLabel": "CalDAV Adresi",
 				"more": "Vikunja'da CalDAV kullanımı hakkında detaylı bilgi",
 				"tokens": "CalDAV Anahtarları",
-				"tokensHowTo": "CalDAV girişi için ister hesap şifreni, istersen de özel bir CalDAV erişim anahtarını kullanabilirsin.",
+				"tokensHowTo": "CalDAV girişi için ister hesap şifreni ister özel bir CalDAV erişim anahtarını kullanabilirsin.",
 				"createToken": "CalDAV anahtarı oluştur",
 				"tokenCreated": "Yeni erişim anahtarın: {token}",
 				"deleteSuccess": "CalDAV anahtarı başarıyla silindi.",
@@ -503,8 +503,8 @@
 					"claudeDesktop": {
 						"open": "Özelleştir → Bağlayıcılar → Özel bağlayıcı ekle yolunu izle. Ekip veya Kurumsal planda yönetici bunu Organizasyon ayarları → Bağlayıcılar altından ekler.",
 						"url": "Bağlayıcıya Vikunja adını ver ve şu adresi gir: {value}",
-						"auth": "Kimlik doğrulamayı 'Giriş yapılmadı' olarak ayarla.",
-						"header": "İstek başlıkları (Request headers) altında 'authorization'ı seç; 'Bearer' ve boşluk dahil şu değerin tamamını yapıştırıp bağlayıcıyı ekle: {value}",
+						"auth": "Kimlik doğrulamayı 'Giriş yok' olarak ayarla.",
+						"header": "İstek başlıkları (Request headers) altında 'authorization' başlığını seç; 'Bearer' ve boşluk dâhil şu değerin tamamını yapıştırıp bağlayıcıyı ekle: {value}",
 						"beta": "İstek başlıkları özelliği bazı organizasyonlar için henüz beta aşamasındadır. Bu bölüm görünmüyorsa hesabın henüz Vikunja bağlantısını desteklemiyor olabilir."
 					},
 					"mistral": {
@@ -541,7 +541,7 @@
 		},
 		"export": {
 			"title": "Vikunja Verilerini Dışa Aktar",
-			"description": "Vikunja'daki tüm verilerinin bir kopyasını talep edebilirsin. Buna projeler, görevler ve bunlarla ilişkili her şey dahildir. Bu verileri daha sonra herhangi bir Vikunja sistemine kolayca geri yükleyebilirsin.",
+			"description": "Vikunja'daki tüm verilerinin bir kopyasını talep edebilirsin. Buna projeler, görevler ve bunlarla ilişkili her şey dâhildir. Bu verileri daha sonra herhangi bir Vikunja sistemine kolayca geri yükleyebilirsin.",
 			"descriptionPasswordRequired": "Devam etmek için lütfen şifreni gir:",
 			"request": "Verilerimin bir kopyasını hazırla",
 			"success": "Veri talebin alındı! İndirmeye hazır olduğunda sana bir e-posta göndereceğiz.",
@@ -568,7 +568,7 @@
 		"unfavorite": "Favorilerden çıkar",
 		"openSettingsMenu": "Proje ayarları menüsünü aç",
 		"description": "Proje açıklaması",
-		"favoriteDescription": "Bu projedeki tüm görevler favori olarak işaretlenir.",
+		"favoriteDescription": "Bu proje, favori olarak işaretlenen tüm görevleri içerir.",
 		"create": {
 			"header": "Yeni proje",
 			"titlePlaceholder": "Projeye bir isim ver…",
@@ -658,12 +658,12 @@
 				"typeTeam": "ekip | ekipler",
 				"shared": "Paylaşılan {type}",
 				"you": "Sen",
-				"notShared": "Henüz hiçbir {type} ile paylaşılmamış.",
+				"notShared": "Henüz {type} ile paylaşılmamış.",
 				"remove": "Bu {type} erişimini kaldır",
 				"sharable": "proje",
 				"removeHeader": "Bir {type} erişimini bu {sharable} üzerinden kaldır",
 				"removeText": "Bu {sharable} erişimini {type} grubundan kaldırmak istediğinden emin misin? Bu işlem geri alınamaz!",
-				"removeCleanupText": "Bu işlem nedeniyle bu projeye (veya alt projelerine) erişimini kaybeden kullanıcıların şunları da silinecektir:",
+				"removeCleanupText": "Bu işlem nedeniyle bu projeye (veya alt projelerine) erişimi kaybeden herkes şunları da kaybeder:",
 				"removeSuccess": "{sharable} üzerinden {type} erişimi başarıyla kaldırıldı.",
 				"addedSuccess": "{type} başarıyla eklendi.",
 				"updatedSuccess": "{type} başarıyla güncellendi.",
@@ -677,7 +677,7 @@
 					"webhooks": "oluşturdukları webhook'lar"
 				},
 				"self": {
-					"assignments": "sana atanan görevler",
+					"assignments": "görev atamaların",
 					"subscriptions": "görev ve proje aboneliklerin",
 					"webhooks": "oluşturduğun webhook'lar"
 				}
@@ -718,7 +718,7 @@
 			"scheduledDates": "Planlanan tarihler",
 			"estimatedDates": "Tahmini tarihler",
 			"resizeStartDate": "{task} görevinin başlangıç tarihini ayarla",
-			"resizeEndDate": "{task} görevinin bitiş tarihini ayarla",
+			"resizeEndDate": "{task} görevinin sonlanma tarihini ayarla",
 			"timelineHeader": "Ay ve günleri gösteren zaman çizelgesi başlığı",
 			"monthsRow": "Aylar satırı",
 			"daysRow": "Günler satırı",
@@ -728,7 +728,7 @@
 			"taskAriaLabel": "Görev: {task}",
 			"taskAriaLabelById": "Görev {id}",
 			"partialDatesStart": "Yalnızca başlangıç tarihi (ucu açık)",
-			"partialDatesEnd": "Yalnızca bitiş tarihi (ucu açık)",
+			"partialDatesEnd": "Yalnızca sonlanma tarihi (ucu açık)",
 			"expandGroup": "Grubu genişlet: {task}",
 			"collapseGroup": "Grubu daralt: {task}",
 			"toggleRelationArrows": "İlişki oklarını göster/gizle"
@@ -808,7 +808,7 @@
 			"deleteSuccess": "Görünüm başarıyla silindi.",
 			"onlyAdminsCanEdit": "Görünümleri yalnızca proje yöneticileri düzenleyebilir.",
 			"updateSuccess": "Görünüm başarıyla güncellendi.",
-			"includeSubprojects": "Alt projeleri dahil et",
+			"includeSubprojects": "Alt projeleri dâhil et",
 			"includeSubprojectsHint": "Bu projenin tüm alt projelerindeki görevleri göster.",
 			"includeSubprojectsFromView": "Bu görünümün ayarlarında etkinleştirilmiş. Kapatmak için oradan değiştir."
 		}
@@ -841,7 +841,7 @@
 			"titlePlaceholder": "Kayıtlı filtre başlığı…",
 			"description": "Açıklama",
 			"descriptionPlaceholder": "Bu filtre için bir açıklama yaz, seçenekler için '/' tuşuna bas…",
-			"includeNulls": "Bir değeri olmayan görevleri de dahil et"
+			"includeNulls": "Bir değeri olmayan görevleri de dâhil et"
 		},
 		"create": {
 			"title": "Yeni Kayıtlı Filtre",
@@ -907,8 +907,8 @@
 					"priorityEqual": "Öncelik seviyesi 4 olan görevleri bulur",
 					"dueDatePast": "Bitiş tarihi geçmiş görevleri bulur",
 					"undoneHighPriority": "Önceliği 3 veya üzeri olan henüz tamamlanmamış görevleri bulur",
-					"assigneesIn": "\"ahmet\" veya \"mehmet\" kullanıcısına atanmış görevleri bulur",
-					"createdByEqual": "\"ahmet\" tarafından oluşturulan görevleri bulur",
+					"assigneesIn": "\"user1\" veya \"user2\" kullanıcısına atanmış görevleri bulur",
+					"createdByEqual": "\"user1\" tarafından oluşturulan görevleri bulur",
 					"priorityOneOrTwoPastDue": "Önceliği 1 veya 2 olan ve bitiş tarihi geçmiş görevleri bulur"
 				}
 			}
@@ -923,12 +923,12 @@
 			"titleDesc": "Başlık (Z–A)",
 			"priorityDesc": "Öncelik (Önce en yüksek)",
 			"priorityAsc": "Öncelik (Önce en düşük)",
-			"dueDateAsc": "Bitiş tarihi (Önce en yakın)",
-			"dueDateDesc": "Bitiş tarihi (Önce en uzak)",
-			"startDateAsc": "Başlangıç tarihi (Önce en yakın)",
-			"startDateDesc": "Başlangıç tarihi (Önce en uzak)",
-			"endDateAsc": "Sonlanma tarihi (Önce en yakın)",
-			"endDateDesc": "Sonlanma tarihi (Önce en uzak)",
+			"dueDateAsc": "Bitiş tarihi (Önce en erken)",
+			"dueDateDesc": "Bitiş tarihi (Önce en geç)",
+			"startDateAsc": "Başlangıç tarihi (Önce en erken)",
+			"startDateDesc": "Başlangıç tarihi (Önce en geç)",
+			"endDateAsc": "Sonlanma tarihi (Önce en erken)",
+			"endDateDesc": "Sonlanma tarihi (Önce en geç)",
 			"percentDoneDesc": "İlerleme (Önce en çok tamamlanan)",
 			"percentDoneAsc": "İlerleme (Önce en az tamamlanan)",
 			"createdDesc": "Oluşturulma (Önce en yeni)",
@@ -941,16 +941,16 @@
 		"title": "Diğer servislerden içe aktar",
 		"titleService": "Verilerini {name} üzerinden Vikunja'ya aktar",
 		"description": "Başlamak için aşağıdaki harici servislerden birinin logosuna tıkla.",
-		"descriptionDo": "Vikunja erişebildiğin tüm listeleri, görevleri, notları, hatırlatıcıları ve ekleri içeri aktaracaktır.",
+		"descriptionDo": "Vikunja erişebildiğin tüm listeleri, görevleri, notları, hatırlatıcıları ve ekleri içe aktaracaktır.",
 		"authorize": "Vikunja'ya {name} hesabına erişim yetkisi vermek için aşağıdaki butona tıkla.",
 		"getStarted": "Başla",
 		"inProgress": "İçe aktarılıyor…",
-		"alreadyMigrated1": "Görünüşe göre {name} üzerindeki verilerini {date} tarihinde zaten içeri aktarmışsın.",
+		"alreadyMigrated1": "Görünüşe göre {name} üzerindeki verilerini {date} tarihinde zaten içe aktarmışsın.",
 		"alreadyMigrated2": "Tekrar aktarabilirsin ancak mükerrer kayıtlar oluşabilir. Devam etmek istiyor musun?",
 		"confirm": "Eminim, aktarımı hemen başlat!",
 		"importUpload": "{name} verilerini Vikunja'ya aktarmak için aşağıdaki butona tıklayıp dosyanı seç.",
 		"upload": "Dosya yükle",
-		"migrationStartedWillReciveEmail": "Vikunja şimdi {service} üzerindeki listelerini, görevlerini, notlarını ve dosyalarını aktarmaya başlıyor. Bu işlem biraz zaman alabileceği için tamamlandığında sana bir e-posta göndereceğiz. Artık bu pencereyi kapatabilirsin.",
+		"migrationStartedWillReciveEmail": "Vikunja şimdi {service} üzerindeki listelerini, görevlerini, notlarını, hatırlatıcılarını ve dosyalarını aktarmaya başlıyor. Bu işlem biraz zaman alabileceği için tamamlandığında sana bir e-posta göndereceğiz. Artık bu pencereyi kapatabilirsin.",
 		"migrationFinished": "{service} servisinden içe aktarma tamamlandı! Aktarılan her şey artık projelerinde seni bekliyor.",
 		"migrationFailed": "{service} üzerinden içe aktarma başarısız oldu: {reason}",
 		"failure": {
@@ -978,14 +978,14 @@
 			"description": "Özel sütun eşleştirmesi ile bir CSV dosyasından görevleri içe aktar.",
 			"uploadDescription": "İçe aktarmak istediğin CSV dosyasını seç. Dosyanın ilk satırında sütun başlıkları bulunmalıdır.",
 			"selectFile": "CSV dosyası seç",
-			"columnMappingDescription": "CSV dosyadaki her bir sütunu bir görev özelliğiyle eşleştir. Vikunja en olası eşleşmeleri otomatik belirledi. Ayarları değiştirdikçe aşağıdaki önizleme güncellenecektir.",
+			"columnMappingDescription": "CSV dosyandaki her bir sütunu bir görev özelliğiyle eşleştir. Vikunja en olası eşleşmeleri otomatik belirledi. Ayarları değiştirdikçe aşağıdaki ön izleme güncellenecektir.",
 			"parsingOptions": "Ayrıştırma Seçenekleri",
 			"delimiter": "Ayırıcı",
 			"dateFormat": "Tarih Biçimi",
 			"skipRows": "Atlanacak Satırlar",
 			"mapColumns": "Sütunları Eşleştir",
 			"example": "ör.",
-			"preview": "Önizleme",
+			"preview": "Ön izleme",
 			"previewDescription": "İçe aktarılacak toplam {count} görevden ilk 5 tanesi gösteriliyor.",
 			"import": "Görevleri İçe Aktar",
 			"untitled": "Başlıksız Görev",
@@ -1076,13 +1076,13 @@
 		"avatarOfUser": "{user} kullanıcısının profil resmi",
 		"closeBanner": "Duyuruyu kapat",
 		"closeDialog": "Pencereyi kapat",
-		"imagePreview": "Görsel önizleme",
+		"imagePreview": "Görsel ön izleme",
 		"zoomIn": "Yakınlaştır",
 		"zoomOut": "Uzaklaştır",
 		"resetZoom": "Yakınlaştırmayı sıfırla",
 		"imageLoadFailed": "Görsel yüklenemedi",
-		"videoPreview": "Video önizleme",
-		"pdfPreview": "PDF önizleme",
+		"videoPreview": "Video ön izleme",
+		"pdfPreview": "PDF ön izleme",
 		"videoLoadFailed": "Bu video tarayıcında oynatılamıyor.",
 		"closeQuickActions": "Hızlı işlemleri kapat",
 		"skipToContent": "Doğrudan içeriğe geç",
@@ -1343,7 +1343,7 @@
 			"overdue": "Gecikmiş",
 			"closeTaskDetail": "Görev detayını kapat",
 			"title": "Görev detayı",
-			"markAsDone": "'{task}' görevini tamamlandı işaretle",
+			"markAsDone": "'{task}' görevini tamamlandı olarak işaretle",
 			"scrollToBottom": "En aşağı kaydır",
 			"moreActions": "Diğer işlemler",
 			"properties": {
@@ -1419,14 +1419,14 @@
 			"playFile": "{file} dosyasını oynat",
 			"audioError": "Bu ses dosyası oynatılamadı.",
 			"viewMode": "Ek görünümü",
-			"viewDetailed": "Büyük önizlemelerle göster",
+			"viewDetailed": "Büyük ön izlemelerle göster",
 			"viewList": "Liste olarak göster",
 			"viewGallery": "Galeri olarak göster"
 		},
 		"comment": {
 			"title": "Yorumlar",
 			"loading": "Yorumlar yükleniyor…",
-			"edited": "{date} tarihinde düzenlendi",
+			"edited": "{date} düzenlendi",
 			"creating": "Yorum gönderiliyor…",
 			"placeholder": "Yorumunu yaz, seçenekler için '/' tuşuna bas…",
 			"comment": "Yorum",
@@ -1438,7 +1438,7 @@
 			"sortNewestFirst": "Önce en yeni",
 			"sortOldestFirst": "Önce en eski",
 			"reply": "Cevapla",
-			"jumpToOriginal": "İlk yoruma git",
+			"jumpToOriginal": "Asıl yoruma git",
 			"deletedComment": "silinmiş yorum"
 		},
 		"mention": {
@@ -1567,12 +1567,12 @@
 			"dateNth": "içinde bulunulan ayın {day}. gününü seçer",
 			"dateTime": "Saat belirlemek için herhangi bir tarih biçimini \"{time}\" (veya {timePM}) ile birleştirebilirsin.",
 			"repeats": "Tekrarlanan görevler",
-			"repeatsDescription": "Görevin belirli aralıklarla tekrarlanması için görev metnine '{suffix}' eklemen yeterlidir. Sayı girmek zorunlu değildir, sadece türü de belirtebilirsin (örneklere bakınız)."
+			"repeatsDescription": "Görevin belirli aralıklarla tekrarlanması için görev metnine '{suffix}' eklemen yeterlidir. Sayı girmek zorunlu değildir, sadece türü de belirtebilirsin (örneklere bak)."
 		}
 	},
 	"team": {
 		"title": "Ekipler",
-		"noTeams": "Şu anda hiçbir ekibe dahil değilsin.",
+		"noTeams": "Şu anda hiçbir ekibe dâhil değilsin.",
 		"create": {
 			"title": "Ekip oluştur",
 			"success": "Ekip başarıyla oluşturuldu."
@@ -1681,9 +1681,9 @@
 			"moveTaskLeft": "Görevi daha erken bir tarihe taşı",
 			"moveTaskRight": "Görevi daha ileri bir tarihe taşı",
 			"expandTaskLeft": "Başlangıç tarihini öne çekerek genişlet",
-			"expandTaskRight": "Bitiş tarihini ileri atarak genişlet",
+			"expandTaskRight": "Sonlanma tarihini ileri atarak genişlet",
 			"shrinkTaskLeft": "Başlangıç tarihini ileri alarak daralt",
-			"shrinkTaskRight": "Bitiş tarihini öne çekerek daralt"
+			"shrinkTaskRight": "Sonlanma tarihini öne çekerek daralt"
 		}
 	},
 	"update": {
@@ -1931,7 +1931,7 @@
 		"14013": "Bu yedek dosyası, içe aktarılamayacak kadar eski bir Vikunja sürümünde oluşturulmuş. Lütfen daha güncel bir sürümle yeni bir yedek al.",
 		"14016": "İçe aktarma yapılandırması çözümlenemedi. Lütfen geçerli bir JSON nesnesi olduğundan emin ol.",
 		"14018": "İçe aktarılan veri, yapılandırılmış en yüksek öğe sayısından fazla öğe içeriyor.",
-		"14019": "Taşıma durumu geçersiz veya süresi dolmuş. Lütfen taşıma işlemini yeniden başlat.",
+		"14019": "İçe aktarma durumu geçersiz veya süresi dolmuş. Lütfen içe aktarmayı yeniden başlat.",
 		"14020": "İçe aktarılan bir projede izin verilenden fazla görünüm var.",
 		"14041": "{column} sütunu birden fazla kez eşlenmiş. Her sütunu yalnızca tek bir özelliğe eşle.",
 		"14042": "CSV dosyasının {row}. satırında {max} etiketten fazla var.",
@@ -1957,7 +1957,7 @@
 	"timeTracking": {
 		"title": "Zaman takibi",
 		"stop": "Zamanlayıcıyı durdur",
-		"running": "Zamanlayıcı çalışıyor",
+		"running": "Sayaç çalışıyor",
 		"logTime": "Süre kaydet",
 		"editEntry": "Kaydı düzenle",
 		"commentLabel": "Yorum",
@@ -1969,7 +1969,7 @@
 			"startTimer": "Zamanlayıcıyı başlat",
 			"update": "Kaydı güncelle",
 			"smartFill": "Son kayıttan doldur",
-			"endsSpanningEntriesAt": "Bu zamanlayıcıyı başlatmak, çakışan zaman kayıtlarını {time} saatinde sonlandırır.",
+			"endsSpanningEntriesAt": "Bu sayacı başlatmak, çakışan zaman kayıtlarını {time} saatinde sonlandırır.",
 			"privateHint": "Proje veya görev olmadan bu kaydı yalnızca sen görebilirsin."
 		},
 		"list": {
@@ -2013,7 +2013,7 @@
 			"licenseValidUntil": "Geçerlilik tarihi",
 			"licenseExpiresIn": "{days} gün içinde",
 			"licenseLastVerified": "Son doğrulama",
-			"licenseNever": "asla",
+			"licenseNever": "hiçbir zaman",
 			"licenseLastCheckFailed": "son kontrol başarısız oldu",
 			"licenseFeatures": "Özellikler",
 			"licenseInstance": "Kurulum Kimliği",
@@ -2046,7 +2046,7 @@
 			"sendResetEmailSuccess": "{username} kullanıcısına şifre sıfırlama e-postası gönderildi.",
 			"editSettings": "Ayarları düzenle",
 			"settingsTitle": "{username} kullanıcısının ayarları",
-			"settingsEditingOther": "Kendi ayarlarını değil, {username} kullanıcısının ayarlarını düzenliyorsun. Değişiklikler onun hesabına uygulanır.",
+			"settingsEditingOther": "Kendi ayarlarını değil, {username} kullanıcısının ayarlarını düzenliyorsun. Değişiklikler bu kullanıcının hesabına uygulanır.",
 			"backToUsers": "Kullanıcılara dön",
 			"createdSuccess": "{username} kullanıcısı oluşturuldu.",
 			"updatedSuccess": "{username} kullanıcısı güncellendi.",
