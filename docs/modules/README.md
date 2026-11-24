@@ -57,6 +57,7 @@ The fork's keys, with their defaults (the meaning of each is on the module page)
 | `automation.ticker.maxscan` | `5000` | [Automation](automation.md) |
 | `automation.waitmax` | `720h` | [Automation](automation.md) |
 | `automation.maxpendingwaits` | `1000` | [Automation](automation.md) |
+| `automation.maxrulesperproject` | `100` | [Automation](automation.md) |
 | `automation.webhook.maxbody` | `65536` | [Automation](automation.md) |
 | `automation.webhook.ratelimit` | `60` | [Automation](automation.md) |
 | `automation.scripts.enabled` | `true` | [Automation](automation.md) |

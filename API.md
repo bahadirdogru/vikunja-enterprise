@@ -154,7 +154,7 @@ Schema violations (an enum, a range, a missing required property) are `422`, and
 |---|---|---|
 | 20001 - 20005 | Custom fields | `pkg/models/error_custom_fields.go` |
 | 21001 - 21010 | Workflows | `pkg/models/error_workflow.go` |
-| 22001 - 22013 | Automation (22005 - 22008 are scripts and secrets) | `pkg/models/error_automation.go`, `pkg/models/error_automation_secrets.go` |
+| 22001 - 22014 | Automation (22005 - 22008 are scripts and secrets) | `pkg/models/error_automation.go`, `pkg/models/error_automation_secrets.go` |
 | 23001 - 23010 | Reports and dashboards | `pkg/models/error_reports.go` |
 | 24001 - 24010 | Approvals | `pkg/models/error_approvals.go` |
 | 25001 - 25009 | Forms | `pkg/models/error_forms.go` |
@@ -184,6 +184,7 @@ Schema violations (an enum, a range, a missing required property) are `422`, and
 | 22011 | 401 | Signature missing or wrong | incoming webhook |
 | 22012 | 429 | Webhook rate limited, with `Retry-After` | incoming webhook |
 | 22013 | 400 | The webhook body is not a JSON object | incoming webhook |
+| 22014 | 409 | The project already has `automation.maxrulesperproject` rules; only adding is refused | rule create, project duplicate |
 | 23001 | 400 | Invalid report parameter, `details.param` names it | reports |
 | 23002 / 23003 | 400 | Too many buckets or groups | reports |
 | 23005 | 403 | Not available through a link share | reports |

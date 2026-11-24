@@ -347,6 +347,17 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   `frontend/vite.config.ts` (`fsModuleCache: false`) because cached
   transforms broke the i18n virtual modules on repeat runs.
 
+- Automation: cap on rules per project. `automation.maxrulesperproject`
+  (default 100; 0 or less is replaced with the default like
+  `automation.maxpendingwaits`). Creating a rule and duplicating a project
+  (copies are refused whole, never half) over the cap answer 409 with code
+  22014 (en and tr message, shown at the top of the rule editor). A project
+  already above the cap keeps its rules: they run and can be edited,
+  disabled and deleted. The count and the insert are not locked together
+  (no engine-specific SQL), so concurrent creates can overshoot by about the
+  number of requests in flight. Checked with model and `/api/v2` tests; not
+  checked in a browser.
+
 ## Remaining
 
 - Default dashboards for new projects with a workflow (4c).
@@ -368,7 +379,7 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
 Open after the review pass, not fixed because they need a decision:
 
 - Automation: retrying one failed run re-queues the whole event, so rules
-  created after the event run for it too. No cap on rules per project.
+  created after the event run for it too.
 - Automation: goja's `find`, `findIndex`, `findLast` and `findLastIndex` on
   an array-like hit a nil-pointer panic (reported as an internal error).
 - Automation: the incoming webhook signature covers the body only, so a
