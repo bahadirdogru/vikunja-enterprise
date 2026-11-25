@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"code.vikunja.io/api/pkg/events"
+	"code.vikunja.io/api/pkg/user"
 	"code.vikunja.io/api/pkg/web"
 
 	"xorm.io/builder"
@@ -73,113 +74,143 @@ func moveTasksBetweenStatuses(s *xorm.Session, a web.Auth, projectID int64, from
 		return ErrWorkflowStatusMoveTooLarge{StatusID: from.ID, Title: from.Title, Tasks: int64(len(taskIDs)), Limit: maxTasksMovedWithAStatus}
 	}
 
-	toFinal := to.Category.isFinal()
-	doneChanges := from.Category.isFinal() != toFinal
-	var manualViews []*ProjectView
-	if doneChanges {
+	m := &forcedStatusMove{
+		s: s, a: a, projectID: projectID, from: from, to: to,
+		toFinal:     to.Category.isFinal(),
+		doneChanges: from.Category.isFinal() != to.Category.isFinal(),
+		doer:        doerFromAuth(s, a),
+	}
+	if m.doneChanges {
 		if err := s.Where(builder.And(
 			builder.Eq{"project_id": projectID},
 			builder.Eq{"view_kind": ProjectViewKindKanban},
 			builder.Eq{"bucket_configuration_mode": BucketConfigurationModeManual},
-		)).Find(&manualViews); err != nil {
+		)).Find(&m.manualViews); err != nil {
 			return err
 		}
 	}
-	var d *workflowDef
-	doer := doerFromAuth(s, a)
-
 	for _, chunk := range chunkInt64s(taskIDs) {
-		// Soft-deleted tasks are not in this list.
-		tasks := []*Task{}
-		if err := s.Where(builder.In("id", chunk)).Find(&tasks); err != nil {
+		if err := m.moveChunk(chunk); err != nil {
 			return err
 		}
-		byID := make(map[int64]*Task, len(tasks))
-		for _, t := range tasks {
-			byID[t.ID] = t
-		}
+	}
+	return nil
+}
 
-		bulk := make([]int64, 0, len(chunk))
-		for _, id := range chunk {
-			t := byID[id]
-			singly := t != nil && ((doneChanges && t.Done != toFinal && len(manualViews) > 0) ||
-				(to.Category == WorkflowCategoryDone && t.isRepeating() && !t.Done))
-			if !singly {
-				bulk = append(bulk, id)
-				continue
-			}
-			if d == nil {
-				var err error
-				if d, err = loadWorkflowDef(s, projectID); err != nil {
-					return err
-				}
-			}
-			if _, err := d.runStatusChange(s, a, &statusChange{Task: t, ToStatusID: to.ID, SkipChecks: true, Cause: historyCauseStatusRemoved}); err != nil {
-				return err
-			}
-		}
-		if len(bulk) == 0 {
+// forcedStatusMove is the state of one moveTasksBetweenStatuses.
+type forcedStatusMove struct {
+	s           *xorm.Session
+	a           web.Auth
+	projectID   int64
+	from, to    *WorkflowStatus
+	toFinal     bool
+	doneChanges bool
+	manualViews []*ProjectView
+	doer        *user.User
+	d           *workflowDef
+}
+
+// needsNormalPath reports whether a task has to go through the normal status change.
+func (m *forcedStatusMove) needsNormalPath(t *Task) bool {
+	if t == nil {
+		return false
+	}
+	return (m.doneChanges && t.Done != m.toFinal && len(m.manualViews) > 0) ||
+		(m.to.Category == WorkflowCategoryDone && t.isRepeating() && !t.Done)
+}
+
+func (m *forcedStatusMove) moveChunk(chunk []int64) error {
+	// Soft-deleted tasks are not in this list.
+	tasks := []*Task{}
+	if err := m.s.Where(builder.In("id", chunk)).Find(&tasks); err != nil {
+		return err
+	}
+	byID := make(map[int64]*Task, len(tasks))
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+
+	bulk := make([]int64, 0, len(chunk))
+	for _, id := range chunk {
+		t := byID[id]
+		if !m.needsNormalPath(t) {
+			bulk = append(bulk, id)
 			continue
 		}
-
-		now := time.Now()
-		if _, err := s.Where(builder.And(builder.In("task_id", bulk), builder.Eq{"status_id": from.ID})).
-			Cols("status_id", "entered").
-			Update(&TaskStatus{StatusID: to.ID, Entered: now}); err != nil {
-			return err
-		}
-		history := make([]*TaskStatusHistory, 0, len(bulk))
-		for _, id := range bulk {
-			h := newHistoryEntry(id, from, to, a, "")
-			h.Comment = historyCauseMarker + historyCauseStatusRemoved
-			history = append(history, h)
-		}
-		if err := insertInChunks(s, history); err != nil {
-			return err
-		}
-
-		// The done flag only where it differs, like syncTaskDoneToStatus; every other task is touched so that
-		// its update time shows the change, like runStatusChange does.
-		flipped := []int64{}
-		touched := []int64{}
-		for _, id := range bulk {
-			if t := byID[id]; doneChanges && (t == nil || t.Done != toFinal) {
-				flipped = append(flipped, id)
-			} else {
-				touched = append(touched, id)
-			}
-		}
-		if len(flipped) > 0 {
-			if err := setDoneOfTasks(s, flipped, toFinal); err != nil {
+		if m.d == nil {
+			var err error
+			if m.d, err = loadWorkflowDef(m.s, m.projectID); err != nil {
 				return err
 			}
 		}
-		if len(touched) > 0 {
-			if _, err := s.Unscoped().Where(builder.In("id", touched)).Cols("updated").Update(&Task{}); err != nil {
-				return err
-			}
+		if _, err := m.d.runStatusChange(m.s, m.a, &statusChange{Task: t, ToStatusID: m.to.ID, SkipChecks: true, Cause: historyCauseStatusRemoved}); err != nil {
+			return err
 		}
+	}
+	if len(bulk) == 0 {
+		return nil
+	}
+	return m.moveInBulk(bulk, byID)
+}
 
-		flippedSet := make(map[int64]bool, len(flipped))
-		for _, id := range flipped {
-			flippedSet[id] = true
+func (m *forcedStatusMove) moveInBulk(bulk []int64, byID map[int64]*Task) error {
+	now := time.Now()
+	if _, err := m.s.Where(builder.And(builder.In("task_id", bulk), builder.Eq{"status_id": m.from.ID})).
+		Cols("status_id", "entered").
+		Update(&TaskStatus{StatusID: m.to.ID, Entered: now}); err != nil {
+		return err
+	}
+	history := make([]*TaskStatusHistory, 0, len(bulk))
+	for _, id := range bulk {
+		h := newHistoryEntry(id, m.from, m.to, m.a, "")
+		h.Comment = historyCauseMarker + historyCauseStatusRemoved
+		history = append(history, h)
+	}
+	if err := insertInChunks(m.s, history); err != nil {
+		return err
+	}
+
+	// The done flag only where it differs, like syncTaskDoneToStatus; every other task is touched so that its
+	// update time shows the change, like runStatusChange does.
+	flipped := []int64{}
+	touched := []int64{}
+	for _, id := range bulk {
+		if t := byID[id]; m.doneChanges && (t == nil || t.Done != m.toFinal) {
+			flipped = append(flipped, id)
+		} else {
+			touched = append(touched, id)
 		}
-		for _, id := range bulk {
-			t := byID[id]
-			if t == nil {
-				continue
+	}
+	if len(flipped) > 0 {
+		if err := setDoneOfTasks(m.s, flipped, m.toFinal); err != nil {
+			return err
+		}
+	}
+	if len(touched) > 0 {
+		if _, err := m.s.Unscoped().Where(builder.In("id", touched)).Cols("updated").Update(&Task{}); err != nil {
+			return err
+		}
+	}
+
+	flippedSet := make(map[int64]bool, len(flipped))
+	for _, id := range flipped {
+		flippedSet[id] = true
+	}
+	for _, id := range bulk {
+		t := byID[id]
+		if t == nil {
+			continue
+		}
+		events.DispatchOnCommit(m.s, &TaskStatusChangedEvent{Task: t, FromStatus: m.from, ToStatus: m.to, Cause: historyCauseStatusRemoved, Doer: m.doer})
+		if flippedSet[id] {
+			old := *t
+			updated := *t
+			updated.Done = m.toFinal
+			updated.DoneAt = time.Time{}
+			if m.toFinal {
+				updated.DoneAt = now
 			}
-			events.DispatchOnCommit(s, &TaskStatusChangedEvent{Task: t, FromStatus: from, ToStatus: to, Cause: historyCauseStatusRemoved, Doer: doer})
-			if flippedSet[id] {
-				old := *t
-				updated := *t
-				updated.Done = toFinal
-				updated.DoneAt = time.Time{}
-				if toFinal {
-					updated.DoneAt = now
-				}
-				events.DispatchOnCommit(s, &TaskUpdatedEvent{Task: &updated, Doer: doer, OldTask: &old})
-			}
+			events.DispatchOnCommit(m.s, &TaskUpdatedEvent{Task: &updated, Doer: m.doer, OldTask: &old})
 		}
 	}
 	return nil
