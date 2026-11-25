@@ -16,7 +16,7 @@ export function translatedReason(params: Record<string, unknown>): Record<string
 // Errors that carry no code of their own and whose English text comes from the web server or the framework: a
 // failed validation of the API (422), a refusal of the gateway, a request that never reached the server.
 // What the web server and the framework write when they have nothing to say: the generic sentence says it better.
-const FRAMEWORK_DETAIL = /^(validation failed|bad request|unauthorized|forbidden|not found|too many requests|internal server error|bad gateway|service unavailable|gateway timeout|\d{3} .*|.*page not found|(missing or malformed|invalid or expired) jwt|rate limit exceeded)\.?$/i
+const FRAMEWORK_DETAIL = /^(validation failed|bad request|unauthorized|forbidden|not found|too many requests|internal server error|bad gateway|service unavailable|gateway timeout|unexpected error occurred|404 page not found|(missing or malformed|invalid or expired) jwt|rate limit exceeded)\.?$/i
 
 function genericErrorText(original: Record<string, unknown>, data: Record<string, unknown>): string {
 	const {t, te} = i18n.global

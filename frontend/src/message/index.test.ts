@@ -183,6 +183,13 @@ describe('getErrorText keeps what a specific server detail says', () => {
 		expect(getErrorText(new ApiError({status: 422, detail: 'something specific'}))).toBe('Some of the values you entered are not valid.\nsomething specific')
 	})
 
+	it('shows the detail of a status without a generic text as it is, and the text of a proxy after the sentence', () => {
+		expect(getErrorText(new ApiError({status: 409, detail: 'The title is taken.'}))).toBe('The title is taken.')
+		expect(getErrorText(new ApiError({status: 502, detail: 'Bad Gateway from a proxy'}))).toBe('The server cannot be reached at the moment. Try again later.\nBad Gateway from a proxy')
+		expect(getErrorText(new ApiError({status: 500, detail: 'unexpected error occurred'}))).toBe('Something went wrong on the server. Try again later.')
+		expect(getErrorText(new ApiError({status: 404, detail: '404 page not found'}))).toBe('The page or item was not found.')
+	})
+
 	it('does not repeat what the framework says by itself', () => {
 		expect(getErrorText(new ApiError({status: 404, detail: 'Not Found'}))).toBe('The page or item was not found.')
 		expect(getErrorText(new ApiError({status: 502, detail: 'Bad Gateway'}))).toBe('The server cannot be reached at the moment. Try again later.')
