@@ -13,7 +13,7 @@ vi.mock('@/message', () => ({error: vi.fn(), success: vi.fn(), getErrorText: () 
 vi.mock('@/i18n', () => ({i18n: {global: {t: (key: string) => key}}}))
 
 import {
-	formKeys, formsQuery, loadPublicForm, normalizeForm, publicFormLogoUrl, regenerateTokenMutationOptions, submitPublicForm,
+	formKeys, formsQuery, loadPublicForm, normalizeForm, publicFormLogoUrl, publicFormQuery, regenerateTokenMutationOptions, submitPublicForm,
 } from './forms'
 import {publicClient} from '@/client/publicClient'
 import {ApiError} from '@/client/problem'
@@ -80,6 +80,25 @@ describe('loadPublicForm', () => {
 		sdk.formPublicRead.mockRejectedValue(cause)
 		await expect(loadPublicForm('tok')).rejects.toBe(cause)
 		expect(sdk.formPublicRead).toHaveBeenCalledTimes(1)
+	})
+})
+
+describe('the error toast of the public form query', () => {
+	const handles = (cause: unknown) => (publicFormQuery('tok').meta!.handlesError as (cause: unknown) => boolean)(cause)
+
+	it.each([
+		['closed, switched off, full or expired', new ApiError({status: 410, code: 25003, detail: 'x', details: {reason: 'full'}})],
+		['missing', new ApiError({status: 404, code: 25001, detail: 'x'})],
+		['private', new ApiError({status: 401, code: 25004, detail: 'x'})],
+	])('is left to the page for a form that is %s', (_, cause) => {
+		expect(handles(cause)).toBe(true)
+	})
+
+	it.each([
+		['a server error', new ApiError({status: 500, detail: 'boom'})],
+		['a network failure', new TypeError('Failed to fetch')],
+	])('is still shown for %s', (_, cause) => {
+		expect(handles(cause)).toBe(false)
 	})
 })
 

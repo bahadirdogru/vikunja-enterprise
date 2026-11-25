@@ -28,7 +28,7 @@ import {
 	type FormAccess,
 	type FormOptionsResponse,
 } from '@/helpers/forms'
-import {normalizeDefinition, type PublicDefinition, type SubmissionBody} from '@/helpers/formsPublic'
+import {classifyPublicProblem, normalizeDefinition, type PublicDefinition, type SubmissionBody} from '@/helpers/formsPublic'
 
 // ---- admin -------------------------------------------------------------------------------------------------------
 
@@ -296,6 +296,9 @@ export function publicFormQuery(token: string) {
 		retry: false,
 		refetchOnWindowFocus: false,
 		refetchOnReconnect: false,
+		// The page explains a form that is closed, switched off, full, missing or private in its own words; a toast
+		// would say the same twice. Only a failure nobody expects (network, 5xx) still gets one.
+		meta: {handlesError: (cause: unknown) => !['network', 'other'].includes(classifyPublicProblem(cause).kind)},
 		enabled: token !== '',
 	})
 }

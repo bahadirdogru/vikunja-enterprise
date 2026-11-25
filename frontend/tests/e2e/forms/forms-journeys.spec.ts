@@ -193,7 +193,9 @@ test.describe('Forms: closing', () => {
 		const closed = await createForm(api, project.id, {title: 'Over', settings: {close_date: new Date(Date.now() - 86400_000).toISOString()}})
 
 		const anon = await visitor(browser)
+		// The 410 and 404 of the closed forms are expected; the page explains them, a toast would say it twice.
 		const anonWatcher = watchBrowser(anon, [/\/forms\//])
+		const noToast = anon.locator('.vue-notification')
 
 		// Switch the form off in the list, as an admin.
 		await page.goto(`/projects/${project.id}/settings/forms`)
@@ -206,6 +208,7 @@ test.describe('Forms: closing', () => {
 		await anon.goto(`/forms/${open.token}`)
 		await expect(anon.getByText('This form is switched off at the moment.')).toBeVisible()
 		await expect(anon.getByRole('button', {name: 'Send'})).toHaveCount(0)
+		await expect(noToast).toHaveCount(0)
 
 		// Switch it back on: the page works again.
 		const back = page.waitForResponse(r => /\/projects\/\d+\/forms\/\d+$/.test(r.url()) && ['PUT', 'PATCH'].includes(r.request().method()))
@@ -217,6 +220,7 @@ test.describe('Forms: closing', () => {
 		// Past its close date.
 		await anon.goto(`/forms/${closed.token}`)
 		await expect(anon.getByText('This form is closed and takes no more answers.')).toBeVisible()
+		await expect(noToast).toHaveCount(0)
 
 		// Full after one submission.
 		await anon.goto(`/forms/${full.token}`)
@@ -225,6 +229,7 @@ test.describe('Forms: closing', () => {
 		await expect(anon.getByText('Thank you, your answer was sent.')).toBeVisible()
 		await anon.goto(`/forms/${full.token}`)
 		await expect(anon.getByText('This form has received the maximum number of answers and takes no more.')).toBeVisible()
+		await expect(noToast).toHaveCount(0)
 		const second = await apiContext.post(`${api.base}/forms/${full.token}/submissions`, {data: {values: {title: 'Too late'}}})
 		expect(second.status()).toBe(410)
 		expect((await listTasks(apiContext, userToken, project.id)).map(t => t.title)).toEqual(['The only one'])
@@ -232,6 +237,7 @@ test.describe('Forms: closing', () => {
 		// A token that does not exist.
 		await anon.goto('/forms/this-token-does-not-exist')
 		await expect(anon.getByRole('heading', {name: 'This form does not exist'})).toBeVisible()
+		await expect(noToast).toHaveCount(0)
 		anonWatcher.finish()
 		watcher.finish()
 		await anon.context().close()
