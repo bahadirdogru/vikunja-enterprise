@@ -202,6 +202,12 @@ describe('server errors and failures', () => {
 		expect(serverErrorsFrom(problem, t)).toEqual({cf_1: 'forms.public.errors.server.invalid', title: 'The English text'})
 	})
 
+	it('says too many files, with the limit, when the answer of the files has too many values', () => {
+		const problem = new ApiError({status: 422, detail: 'x', code: 25006, details: {errors: [{field: 'attachments', code: 'too_many', message: 'Too many values.'}]}})
+		expect(serverErrorsFrom(problem, t, 3)).toEqual({attachments: 'forms.public.errors.tooManyFiles {"max":3}'})
+		expect(serverErrorsFrom(problem, t)).toEqual({attachments: 'forms.public.errors.server.too_many_files'})
+	})
+
 	it('tells apart what the page has to show', () => {
 		const make = (status: number, extra: object = {}) => new ApiError({status, detail: 'x', ...extra})
 		expect(classifyPublicProblem(make(404, {code: 25001}))).toEqual({kind: 'notFound'})

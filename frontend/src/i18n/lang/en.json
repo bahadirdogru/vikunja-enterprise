@@ -3920,7 +3920,8 @@
           "unknown_field": "This form does not ask for this.",
           "file_too_large": "This file is too large.",
           "file_type_not_allowed": "This type of file is not accepted.",
-          "attachments_disabled": "This form does not take files."
+          "attachments_disabled": "This form does not take files.",
+          "too_many_files": "Too many files were added."
         }
       },
       "loading": "Loading the form",

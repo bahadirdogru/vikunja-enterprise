@@ -3920,7 +3920,8 @@
 					"unknown_field": "Bu form bunu sormuyor.",
 					"file_too_large": "Bu dosya çok büyük.",
 					"file_type_not_allowed": "Bu dosya türü kabul edilmiyor.",
-					"attachments_disabled": "Bu form dosya kabul etmiyor."
+					"attachments_disabled": "Bu form dosya kabul etmiyor.",
+					"too_many_files": "Çok fazla dosya eklenmiş."
 				}
 			},
 			"loading": "Form yükleniyor",

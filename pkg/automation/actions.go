@@ -136,13 +136,13 @@ type Plan struct {
 
 // say sets the summary of the plan in English and as a code with values.
 func (pl *Plan) say(code string, params P, format string, args ...any) {
-	pl.Summary = fmt.Sprintf(format, args...)
+	pl.Summary = oneLine(fmt.Sprintf(format, args...))
 	pl.Msg = say(code, params)
 }
 
 // warn adds a warning in English and as a code with values.
 func (pl *Plan) warn(code string, params P, format string, args ...any) {
-	pl.Warnings = append(pl.Warnings, fmt.Sprintf(format, args...))
+	pl.Warnings = append(pl.Warnings, oneLine(fmt.Sprintf(format, args...)))
 	pl.WarnMsgs = append(pl.WarnMsgs, say(code, params))
 }
 
@@ -155,14 +155,27 @@ func (pl *Plan) nothingToDo(tail string) {
 }
 
 // outputMessages is what the output of the step says in codes: the lines the server wrote.
+//
+// The sentences are the leading lines of the output, one line each (the interface shows them and then the rest of the
+// output as it is): a sentence is one line, and the warnings of a step whose output is data come before the data.
 func (pl *Plan) outputMessages() []*models.AutomationMessage {
-	if pl.Lines != nil {
-		return pl.Lines
+	if pl.rawOutput {
+		return pl.WarnMsgs
 	}
-	if pl.rawOutput || pl.Msg == nil {
-		return nil
+	head := pl.Lines
+	if head == nil {
+		if pl.Msg == nil {
+			return nil
+		}
+		head = []*models.AutomationMessage{pl.Msg}
 	}
-	return append([]*models.AutomationMessage{pl.Msg}, pl.WarnMsgs...)
+	return append(append([]*models.AutomationMessage{}, head...), pl.WarnMsgs...)
+}
+
+// oneLine makes a sentence of the output a single line: a value with a line break in it (a custom field of long text)
+// must not push the lines after it out of step with the sentences.
+func oneLine(text string) string {
+	return strings.NewReplacer("\r\n", " ", "\n", " ", "\r", " ").Replace(text)
 }
 
 type action struct {

@@ -338,7 +338,7 @@ export const SERVER_ANSWER_CODES = ['required', 'invalid', 'too_long', 'too_many
 
 // Server errors name the field by target; submitter details and attachments use their own keys. With `t` the text is
 // the one of the code in the language of the page; the English text of the server is for codes this page does not know.
-export function serverErrorsFrom(problem: unknown, t?: Translate): AnswerErrors | null {
+export function serverErrorsFrom(problem: unknown, t?: Translate, maxFiles?: number): AnswerErrors | null {
 	if (!problem || typeof problem !== 'object') return null
 	const details = (problem as {details?: unknown}).details
 	const list = details && typeof details === 'object' ? (details as {errors?: unknown}).errors : undefined
@@ -348,6 +348,11 @@ export function serverErrorsFrom(problem: unknown, t?: Translate): AnswerErrors 
 		if (!item || typeof item !== 'object') continue
 		const {field, message, code} = item as {field?: unknown, message?: unknown, code?: unknown}
 		if (typeof field !== 'string' || typeof message !== 'string' || field in out) continue
+		if (t && code === 'too_many' && field === 'attachments') {
+			// Too many values for the files are too many files, and the page knows the limit.
+			out[field] = maxFiles ? t('forms.public.errors.tooManyFiles', {max: maxFiles}) : t('forms.public.errors.server.too_many_files')
+			continue
+		}
 		out[field] = t && typeof code === 'string' && SERVER_ANSWER_CODES.includes(code) ? t(`forms.public.errors.server.${code}`) : message
 	}
 	return Object.keys(out).length > 0 ? out : null

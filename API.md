@@ -510,11 +510,11 @@ This response was recorded on the test fixtures:
 ```json
 {
   "groups": [
-    {"key": false, "label": "Open", "color": "#94a3b8", "value": 19,
+    {"key": false, "label": "Open", "label_code": "done.false", "color": "#94a3b8", "value": 19,
      "series": [
        {"bucket": "2018-11-01", "start": "2018-11-01T00:00:00+03:00", "end": "2018-12-01T00:00:00+03:00", "value": 0},
        {"bucket": "2018-12-01", "start": "2018-12-01T00:00:00+03:00", "end": "2019-01-01T00:00:00+03:00", "value": 19}]},
-    {"key": true, "label": "Done", "color": "#22c55e", "value": 1, "series": ["..."]}
+    {"key": true, "label": "Done", "label_code": "done.true", "color": "#22c55e", "value": 1, "series": ["..."]}
   ],
   "total": 20, "value": 20, "measure": "count", "unit": "tasks", "multi_valued": false,
   "time": {"field": "created", "bucket": "month", "from": "2018-11-01T00:00:00+03:00",

@@ -96,7 +96,7 @@ async function onSubmit(payload: {body: SubmissionBody, files: File[]}) {
 		resultBox.value?.focus()
 		startRedirect()
 	} catch (cause) {
-		const answers = (cause as {code?: number} | null)?.code === FORM_ERROR.INVALID_ANSWERS ? serverErrorsFrom(cause, t) : null
+		const answers = (cause as {code?: number} | null)?.code === FORM_ERROR.INVALID_ANSWERS ? serverErrorsFrom(cause, t, definition.value?.attachments?.max_files) : null
 		if (answers) {
 			serverErrors.value = answers
 			return

@@ -364,3 +364,26 @@ func TestALimitInTheWaitIsSentInSecondsNotAsAGoDuration(t *testing.T) {
 	_, err := strconv.ParseInt(steps[0].ErrorParams["max"], 10, 64)
 	assert.NoError(t, err, "the limit is a number of seconds, the interface formats it: %q", steps[0].ErrorParams["max"])
 }
+
+func TestSentencesStayTheLeadingLinesOfTheOutput(t *testing.T) {
+	t.Run("a summary is one line, whatever the value", func(t *testing.T) {
+		plan := &Plan{}
+		plan.say("set_custom_field", P{"field": 1, "value": "a\nb"}, "set custom field %d to %v", 1, "a\nb\r\nc")
+		assert.NotContains(t, plan.Summary, "\n")
+		assert.NotContains(t, plan.Summary, "\r")
+		assert.Equal(t, "a\nb", plan.Msg.Params["value"], "the value of the code is the value itself")
+	})
+
+	t.Run("the warnings of an HTTP step come before the answer, so the sentences are its leading lines", func(t *testing.T) {
+		reset(t)
+		allowLoopback(t)
+		srv := countingServer(t, 200, "line one\nline two")
+		run, steps := runHTTP(t, map[string]any{"url": srv.url + "/x", "headers": map[string]any{"X-Note": "{{no.such.value}}"}})
+		require.Equal(t, models.AutomationRunSuccess, run.Status, run.Error)
+		require.Len(t, steps[0].OutputMessages, 1)
+		assert.Equal(t, "unknown_placeholder", steps[0].OutputMessages[0].Code)
+		lines := strings.Split(steps[0].Output, "\n")
+		assert.True(t, strings.HasPrefix(lines[0], "warning: unknown placeholder"), lines[0])
+		assert.Contains(t, steps[0].Output, "line two")
+	})
+}

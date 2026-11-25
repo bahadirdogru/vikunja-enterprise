@@ -301,8 +301,8 @@ const totalPages = computed(() => runs.data.value?.total_pages ?? 1)
 						</p>
 						<template v-if="step.output">
 							<p
-								v-for="sentence in automationOutput(step.output, step.output_messages).sentences"
-								:key="sentence"
+								v-for="(sentence, sentenceIndex) in automationOutput(step.output, step.output_messages).sentences"
+								:key="sentenceIndex"
 								class="help"
 							>
 								{{ sentence }}

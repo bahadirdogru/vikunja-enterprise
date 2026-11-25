@@ -632,8 +632,17 @@ func (rc *runContext) applyStep(ctx context.Context, s *xorm.Session, impl *acti
 			return "", nil, err
 		}
 	}
-	for _, w := range plan.Warnings {
-		output += "\nwarning: " + w
+	if plan.rawOutput {
+		// The output is data (an HTTP answer): the warnings come first, so they stay the leading lines.
+		prefix := ""
+		for _, w := range plan.Warnings {
+			prefix += "warning: " + w + "\n"
+		}
+		output = prefix + output
+	} else {
+		for _, w := range plan.Warnings {
+			output += "\nwarning: " + w
+		}
 	}
 	if plan.Stop {
 		output = stopOutput + output
