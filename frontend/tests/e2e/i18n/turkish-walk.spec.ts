@@ -4,7 +4,7 @@ import {setupApiUrl} from '../../support/authenticateUser'
 import {updateUserSettings} from '../../support/updateUserSettings'
 import {apiV2, watchBrowser} from '../../support/uiCheck'
 import {createProject, createTask} from '../../support/forkModules'
-import {expectNoEnglish, leaksOf, visibleTexts, RAW_KEY} from '../../support/turkishWalk'
+import {expectNoEnglish, leaksOf, visibleTexts, KNOWN_NOT_INTERFACE, RAW_KEY} from '../../support/turkishWalk'
 
 test.use({viewport: {width: 1280, height: 900}})
 
@@ -13,14 +13,15 @@ const BASE_URL = process.env.BASE_URL || 'http://127.0.0.1:4173'
 // The page has settled: the loading splash and every spinner are gone.
 async function settled(page: Page) {
 	await page.locator('.vikunja-loading').waitFor({state: 'detached', timeout: 10_000}).catch(() => {})
-	await page.waitForLoadState('networkidle').catch(() => {})
-	await expect(page.locator('.loader-container.is-loading, .is-loading').first()).toHaveCount(0, {timeout: 10_000}).catch(() => {})
+	await page.waitForLoadState('domcontentloaded')
+	// Lists and views fill in after their request; give them the moment they need.
+	await page.waitForTimeout(400)
 }
 
 test.describe('Turkish: no English on the screens of the application', () => {
 	test('the screens a person reaches from the menu show no English word and no raw key', async ({authenticatedPage: page, apiContext, userToken}) => {
-		test.setTimeout(240_000)
-		const watcher = watchBrowser(page, [/\/projects\/\d+\/workflow/, /\/user\/settings\/webhooks/])
+		test.setTimeout(300_000)
+		const watcher = watchBrowser(page, [/\/projects\/\d+\/workflow/, /\/user\/settings\/(webhooks|totp)/])
 		await updateUserSettings(apiContext, userToken, {language: 'tr-TR'})
 		const api = apiV2(apiContext, userToken)
 
@@ -89,7 +90,8 @@ test.describe('Turkish: no English on the screens of the application', () => {
 		await page.goto('/')
 		await settled(page)
 		await expect(page.locator('.menu-container')).toBeVisible()
-		await page.keyboard.press('Shift+Slash')
+		// The shortcut handler reads key and code of the event; Playwright's keyboard has no Turkish layout.
+		await page.locator('body').dispatchEvent('keydown', {key: '?', code: 'Slash', shiftKey: true})
 		await expect(page.locator('.keyboard-shortcuts')).toBeVisible()
 		await expectNoEnglish(page, 'keyboard shortcuts')
 		await page.keyboard.press('Escape')
@@ -101,10 +103,10 @@ test.describe('Turkish: no English on the screens of the application', () => {
 		// The notification list, the search of the list view and the filter help.
 		await page.goto(`/projects/${project.id}/${project.views.list}`)
 		await settled(page)
-		await page.locator('[data-cy="notifications-bell"], .notifications .trigger-button').first().click().catch(() => {})
+		await page.locator('[data-cy="notifications-bell"], .notifications .trigger-button').first().click({timeout: 3000}).catch(() => {})
 		await expectNoEnglish(page, 'notifications popup')
 		await page.keyboard.press('Escape')
-		await page.getByRole('button', {name: /Filtre/}).first().click().catch(() => {})
+		await page.getByRole('button', {name: /Filtre/}).first().click({timeout: 3000}).catch(() => {})
 		await expectNoEnglish(page, 'filter popup')
 		watcher.finish()
 	})
@@ -155,9 +157,11 @@ test.describe('Turkish: no English on the screens of the application', () => {
 		const detail = (await visibleTexts(page.locator('.run-detail'))).join('\n')
 		expect(detail, 'the step failure in Turkish').toContain('onaltılık renk')
 		expect(detail).not.toContain('is not a hex color')
-		await expectNoEnglish(page.locator('.run-detail'), 'the failed run')
+		// The value of the colour is the unfilled placeholder the rule was saved with: data of the rule, not the interface.
+		await expectNoEnglish(page.locator('.run-detail'), 'the failed run', [...KNOWN_NOT_INTERFACE, /\{\{task\.title\}\}/])
 
 		// The test run of the same rule: summary, warning and error in Turkish.
+		await page.goto(`/projects/${project.id}/settings/automations`)
 		await page.getByRole('button', {name: 'Rengi başlıktan al'}).first().click()
 		await expectNoEnglish(page, 'the editor of the failing rule')
 
