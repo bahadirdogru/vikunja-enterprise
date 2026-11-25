@@ -759,11 +759,22 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
     identifiers (event names, API token permission names, filter field names); the screen-reader description inside
     the logo SVGs (upstream asset). Uncoded details of upstream routes (the MCP, avatar and notification refusals,
     for example) follow the translated sentence in English.
-  - Verified on the final tree: `mage lint` 0 issues; `test:feature` 59 packages ok and `test:web` ok on SQLite and
-    on PostgreSQL 17; vitest 324 files / 4348 tests, `vue-tsc` and `pnpm lint` (0 errors) clean; all 73 fork e2e
-    specs pass; `check_parity.py` ok. The review found that a long Turkish error was cut in the middle of a
-    character (`truncate` cut bytes) and PostgreSQL refused the step row: fixed, with a test that fails without it.
-    Not verified: MySQL and MariaDB; the admin screens in Turkish; a real mail in Turkish.
+  - Second review, fixed: a secret that crossed the 1000-character cut of a script error was left in part in
+    `error_params` (the error was cut before it was masked; now only the code that stores a failure cuts, after
+    `maskErr`, and a test keeps other code from calling the cutting function); the answer of another server was
+    stored as it came, so a Latin-1 page or a body cut inside a character failed the step insert on PostgreSQL
+    after the request was sent, and a failed insert is retried (the request was sent twice); a notification message
+    was cut at a byte; 25010 and 25011 were never shown (the public page has its own sentences, in its register);
+    Huma's default 500 text followed the generic sentence; the scan of error codes is tested on a fixture and walks
+    the whole tree; the notes of a test run are bounded; the encoded size of the sentences of a step is bounded
+    (JSON escaping can make a value six times longer); a created task is said in the past with its number in all
+    three kinds; the step sentences fit both the preview and the history.
+  - Verified on the final tree: `mage lint` 0 issues; `test:feature` 59 packages ok and `test:web` ok, one after the
+    other, on SQLite and on PostgreSQL 17; vitest 324 files / 4353 tests, `vue-tsc` and `pnpm lint` (0 errors) clean;
+    the 73 fork e2e specs pass, with one caveat: between local midnight and 03:00 (UTC+3) `dashboard-time-charts`
+    fails because the browser's day is already the next one while the API's is not (it passes with `TZ=UTC`; the
+    test is older than this pass); `check_parity.py` ok. Not verified: MySQL and MariaDB; the admin screens in
+    Turkish; a real mail in Turkish; the `could_not_check` bound (no test reaches that branch).
 
 ## Remaining
 
