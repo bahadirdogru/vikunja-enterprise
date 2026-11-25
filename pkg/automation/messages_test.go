@@ -81,13 +81,24 @@ func namedCodes(t *testing.T) []string {
 	for _, c := range []string{CodeUnexpected, CodeStepTimeout, CodeTaskGone, CodeScriptUnavailable} {
 		found[c] = true
 	}
-	for _, field := range []string{"due_date", "start_date", "end_date"} {
-		found["set_"+field] = true
-		found["clear_"+field] = true
+	// The codes built from a name are derived from the source that names them, so a new date field or a new kind of
+	// script error without a text fails this test.
+	actions, err := os.ReadFile("actions.go")
+	require.NoError(t, err)
+	dateCase := regexp.MustCompile(`case ((?:"[a-z_]+_date",?\s*)+):`).FindStringSubmatch(string(actions))
+	require.NotNil(t, dateCase, "the case of the date fields of the set field action was not found")
+	dateFields := regexp.MustCompile(`"([a-z_]+)"`).FindAllStringSubmatch(dateCase[1], -1)
+	require.Len(t, dateFields, 3)
+	for _, f := range dateFields {
+		found["set_"+f[1]] = true
+		found["clear_"+f[1]] = true
 	}
-	for _, kind := range []script.ErrorKind{script.ErrThrown, script.ErrTimeout, script.ErrStackOverflow, script.ErrMemory,
-		script.ErrBadResult, script.ErrInternal, script.ErrInputTooLarge, script.ErrUnattributed} {
-		found["script_"+string(kind)] = true
+	scriptSrc, err := os.ReadFile("script/run.go")
+	require.NoError(t, err)
+	kinds := regexp.MustCompile(`\bErr\w+\s+ErrorKind = "([a-z_]+)"`).FindAllStringSubmatch(string(scriptSrc), -1)
+	require.GreaterOrEqual(t, len(kinds), 8)
+	for _, k := range kinds {
+		found["script_"+k[1]] = true
 	}
 	out := make([]string, 0, len(found))
 	for c := range found {
