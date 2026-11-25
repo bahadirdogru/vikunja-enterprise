@@ -35,8 +35,13 @@ func (wf *Workflow) CanRead(s *xorm.Session, a web.Auth) (bool, int, error) {
 	return true, maxPermission, nil
 }
 
-// CanUpdate needs admin access to the project. It also creates a workflow, there is one per project.
+// CanUpdate needs admin access to the project, for a user. It also creates a workflow, there is one per project.
 func (wf *Workflow) CanUpdate(s *xorm.Session, a web.Auth) (bool, error) {
+	// Never a link share, whatever its permission: the definition is for project admins (API.md, which routes accept
+	// which credential).
+	if _, err := ownerOf(a); err != nil {
+		return false, nil //nolint:nilerr // anything but a user is refused, which is an answer and not an error
+	}
 	return (&Project{ID: wf.ProjectID}).IsAdmin(s, a)
 }
 

@@ -606,15 +606,22 @@ func TestWorkflow_Permissions(t *testing.T) {
 		require.Error(t, err)
 		assert.True(t, IsErrWorkflowDoesNotExist(err))
 	})
-	t.Run("link shares follow their permission", func(t *testing.T) {
+	t.Run("link shares read and never change the definition", func(t *testing.T) {
 		db.LoadAndAssertFixtures(t)
 		s2 := db.NewSession()
 		defer s2.Close()
 
+		// API.md: the definition needs a project admin, so a link share never changes it, whatever its permission.
 		admin := &LinkSharing{ID: 99, ProjectID: 11, Permission: PermissionAdmin}
 		can, err := (&Workflow{ProjectID: 11}).CanUpdate(s2, admin)
 		require.NoError(t, err)
-		assert.True(t, can)
+		assert.False(t, can)
+		can, err = (&Workflow{ProjectID: 11}).CanDelete(s2, admin)
+		require.NoError(t, err)
+		assert.False(t, can)
+		can, _, err = (&Workflow{ProjectID: 11}).CanRead(s2, admin)
+		require.NoError(t, err)
+		assert.True(t, can, "an admin share still reads it")
 
 		write := &LinkSharing{ID: 98, ProjectID: 11, Permission: PermissionWrite}
 		can, err = (&Workflow{ProjectID: 11}).CanUpdate(s2, write)
