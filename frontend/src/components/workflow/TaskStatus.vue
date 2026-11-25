@@ -19,7 +19,6 @@ import {
 	needsInput,
 	reopenTargetStatus,
 	type AvailableTransitionResponse,
-	type WorkflowStatusResponse,
 } from '@/helpers/workflow'
 import {describeApprovers} from '@/helpers/approvals'
 
