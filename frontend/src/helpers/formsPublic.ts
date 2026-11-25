@@ -430,7 +430,7 @@ export type PublicProblem =
 	| {kind: 'forbidden'}
 	| {kind: 'rate', retryAfter: number}
 	| {kind: 'network'}
-	| {kind: 'other', message: string}
+	| {kind: 'other', message: string, code?: number}
 
 export function classifyPublicProblem(cause: unknown): PublicProblem {
 	const problem = (cause && typeof cause === 'object' ? cause : {}) as {
@@ -456,7 +456,7 @@ export function classifyPublicProblem(cause: unknown): PublicProblem {
 		const seconds = Number(problem.details?.retry_after)
 		return {kind: 'rate', retryAfter: Number.isFinite(seconds) && seconds > 0 ? seconds : 0}
 	}
-	return {kind: 'other', message: problem.detail || problem.message || ''}
+	return {kind: 'other', message: problem.detail || problem.message || '', code: problem.code}
 }
 
 export function redirectTarget(url: string): URL | null {

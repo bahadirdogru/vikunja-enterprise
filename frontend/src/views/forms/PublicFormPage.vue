@@ -170,6 +170,9 @@ const submitMessage = computed(() => {
 			: t('forms.public.rateLimitedNoTime')
 	}
 	if (found.kind === 'network') return t('forms.public.networkError')
+	// The two errors of the submission itself have a sentence for the visitor, in the register of this page.
+	if (found.kind === 'other' && found.code === FORM_ERROR.DATA_INVALID) return t('forms.public.errors.dataInvalid')
+	if (found.kind === 'other' && found.code === FORM_ERROR.DATA_TOO_LARGE) return t('forms.public.errors.dataTooLarge')
 	return found.kind === 'other' && found.message ? found.message : t('forms.public.failed')
 })
 

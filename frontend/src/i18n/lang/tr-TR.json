@@ -2065,7 +2065,7 @@
 		"1028": "Geçersiz silme anahtarı verildi.",
 		"1029": "Bu silme anahtarı hesabına ait değil.",
 		"22016": "Bu kuralı denemek için bir görev seç.",
-		"25010": "Yanıtlar okunamadı. Sayfayı yenileyip tekrar deneyin.",
+		"25010": "Yanıtlar okunamadı. Sayfayı yenileyip tekrar dene.",
 		"25011": "Yanıtlar gönderilemeyecek kadar büyük."
 	},
 	"about": {
@@ -3922,7 +3922,9 @@
 					"file_type_not_allowed": "Bu dosya türü kabul edilmiyor.",
 					"attachments_disabled": "Bu form dosya kabul etmiyor.",
 					"too_many_files": "Çok fazla dosya eklenmiş."
-				}
+				},
+				"dataInvalid": "Yanıtlarınız okunamadı. Sayfayı yenileyip tekrar deneyin.",
+				"dataTooLarge": "Yanıtlarınız gönderilemeyecek kadar büyük."
 			},
 			"loading": "Form yükleniyor",
 			"notFound": {

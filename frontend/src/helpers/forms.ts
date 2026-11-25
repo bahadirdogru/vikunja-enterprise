@@ -15,6 +15,8 @@ export const FORM_ERROR = {
 	INVALID_ANSWERS: 25006,
 	RATE_LIMITED: 25007,
 	DISABLED: 25008,
+	DATA_INVALID: 25010,
+	DATA_TOO_LARGE: 25011,
 } as const
 
 export type Translate = (key: string, params?: Record<string, unknown>) => string

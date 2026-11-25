@@ -3922,7 +3922,9 @@
           "file_type_not_allowed": "This type of file is not accepted.",
           "attachments_disabled": "This form does not take files.",
           "too_many_files": "Too many files were added."
-        }
+        },
+        "dataInvalid": "The answers could not be read. Reload the page and try again.",
+        "dataTooLarge": "The answers are too large to send."
       },
       "loading": "Loading the form",
       "notFound": {

@@ -297,6 +297,15 @@ describe('PublicFormPage: submitting', () => {
 		expect(wrapper.find('#fs-email-error').exists()).toBe(true)
 	})
 
+	it.each([[25010, 'The answers could not be read. Reload the page and try again.'], [25011, 'The answers are too large to send.']])('says error %i with the sentence of the page, not the English detail of the server', async (code, text) => {
+		const {wrapper} = await loaded()
+		await fillRequired(wrapper)
+		sdk.formPublicSubmit.mockRejectedValue(new ApiError({status: code === 25011 ? 413 : 422, code, detail: 'data is not valid JSON'}))
+		await wrapper.get('form').trigger('submit')
+		await flushPromises()
+		expect(wrapper.get('[role="alert"]').text()).toBe(text)
+	})
+
 	it('disables the button and ignores a second submit while sending', async () => {
 		const {wrapper} = await loaded()
 		await fillRequired(wrapper)

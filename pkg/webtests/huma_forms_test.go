@@ -394,6 +394,16 @@ func TestHumaForms_PublicAttachments(t *testing.T) {
 	require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
 	assert.Empty(t, rec.Header().Values("Set-Cookie"))
 
+	// The data part of the submission: not JSON, and larger than the body limit, each with its own code.
+	body, ct = multipartBody(`{"values": nope`, nil)
+	rec = humaRequest(t, e, http.MethodPost, "/api/v2/forms/"+token+"/submissions/multipart", body, "", ct)
+	require.Equal(t, http.StatusUnprocessableEntity, rec.Code, rec.Body.String())
+	assert.Equal(t, models.ErrCodeFormDataInvalid, decodeProblem(t, rec.Body.Bytes()).Code)
+	body, ct = multipartBody(`{"values":{"title":"`+strings.Repeat("x", config.FormsMaxBodySize.GetInt()+1)+`"}}`, nil)
+	rec = humaRequest(t, e, http.MethodPost, "/api/v2/forms/"+token+"/submissions/multipart", body, "", ct)
+	require.Equal(t, http.StatusRequestEntityTooLarge, rec.Code, rec.Body.String())
+	assert.Equal(t, models.ErrCodeFormDataTooLarge, decodeProblem(t, rec.Body.Bytes()).Code)
+
 	body, ct = multipartBody(`{"values":{"title":"with exe"}}`, map[string]string{"run.exe": "MZ"})
 	rec = humaRequest(t, e, http.MethodPost, "/api/v2/forms/"+token+"/submissions/multipart", body, "", ct)
 	require.Equal(t, http.StatusUnprocessableEntity, rec.Code, rec.Body.String())
