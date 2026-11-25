@@ -596,6 +596,10 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
     is in the approvals module page and tested row by row.
   - Status changes carry `event.new.cause` in the automation payload and the
     catalog.
+  - Verified at commit 868e90bed: `mage test:feature` and `mage test:web` exit 0
+    on SQLite, PostgreSQL 18 and MySQL 8, one at a time, uncached; `mage lint`
+    reports 0 issues; `vue-tsc --noEmit`, vitest of the touched areas and
+    `check_parity.py` pass. Not run: the UI in a browser.
 
 ## Remaining
 
