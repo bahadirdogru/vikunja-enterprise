@@ -143,3 +143,20 @@ func TestFormSubmitted_EventCarriesWhatTheDocsSayAndNothingElse(t *testing.T) {
 	assert.NotContains(t, body, sub.IPHash, "nor the hash of it")
 	assert.NotEmpty(t, sub.IPHash, "the hash is stored for the rate limit")
 }
+
+// The word for the outcome of an approval request has a text in both languages for every status, and not the key.
+func TestApprovalOutcomeWord(t *testing.T) {
+	want := map[ApprovalStatus]string{
+		ApprovalStatusPending: "pending", ApprovalStatusApproved: "approved",
+		ApprovalStatusRejected: "rejected", ApprovalStatusCancelled: "cancelled",
+	}
+	for status, english := range want {
+		en := approvalOutcomeWord("en", status)
+		assert.Equal(t, english, strings.ToLower(en), string(status))
+		tr := approvalOutcomeWord("tr-TR", status)
+		assert.NotEmpty(t, tr)
+		assert.NotContains(t, tr, "notifications.approval.outcome", "a missing translation falls back to the key")
+		assert.NotEqual(t, en, tr, "%s is translated into Turkish", status)
+	}
+	assert.Equal(t, "unheard of", approvalOutcomeWord("en", ApprovalStatus("unheard of")))
+}
