@@ -138,7 +138,7 @@ describe('AdHocApprovalDialog', () => {
 
 	it('refuses a title of more than 250 characters (counted as characters) and more than 50 approvers before sending', async () => {
 		const wrapper = await mountDialog()
-		await typeTitle('\u0130'.repeat(251))
+		await typeTitle('😀'.repeat(251))
 		await tick('anna')
 		await submit()
 		expect(alerts()).toEqual(['The title may have at most 250 characters.'])
@@ -146,7 +146,7 @@ describe('AdHocApprovalDialog', () => {
 		expect(wrapper.emitted('created')).toBeUndefined()
 
 		sdk.taskApprovalsCreate.mockResolvedValue({data: approvalFixture()})
-		await typeTitle('\u0130'.repeat(250))
+		await typeTitle('😀'.repeat(250))
 		await submit()
 		expect(sdk.taskApprovalsCreate).toHaveBeenCalledTimes(1)
 	})
