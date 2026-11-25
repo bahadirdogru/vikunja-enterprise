@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"code.vikunja.io/api/pkg/db"
+	"code.vikunja.io/api/pkg/license"
 	"code.vikunja.io/api/pkg/models"
 	"code.vikunja.io/api/pkg/modules/auth"
 	"code.vikunja.io/api/pkg/user"
@@ -133,6 +134,10 @@ func newMatrixWorld(t *testing.T) *matrixWorld {
 	e, err := setupTestEnv()
 	require.NoError(t, err)
 	w := &matrixWorld{e: e, ids: map[string]string{}}
+
+	// The time tracking report answers 404 while the feature is off, and other tests leave every feature off.
+	license.SetForTests([]license.Feature{license.FeatureTimeTracking})
+	t.Cleanup(license.ResetForTests)
 
 	jwt := func(id int64) string {
 		s := db.NewSession()
