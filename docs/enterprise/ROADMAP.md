@@ -686,6 +686,30 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
     test leaving time tracking switched on; it now switches the feature on
     itself. Not run: the frontend tests, a browser.
 
+- **End-to-end pass over the six modules (2026-11-25).** 48 new Playwright
+  tests (51 with the three existing fork specs) in
+  `frontend/tests/e2e/{custom-fields,workflow,approvals,automation,dashboards,forms,i18n}/`,
+  run through `mage test:e2e` against the real server on its own SQLite.
+  - Found and fixed in the browser: a filter made only of a custom field
+    condition (`Budget > 100`) was sent as search text and returned nothing;
+    one click on "Create" in the dashboard list sent two requests.
+  - Covered: the main journeys of each module, permissions per role in the
+    UI, one screen per module in Turkish without raw keys, and the formal
+    register of the public form page.
+  - Not covered: drag and drop, kanban status mode, script and HTTP actions
+    and the schedule trigger in the automation editor, file answers in
+    forms, the line, created-vs-done and status-time widgets.
+  - Observed, not changed: a closed public form shows its message on the
+    page and again as an error toast.
+  - Verified: the 51 fork tests pass (3 runs by the author, 1 independent
+    run on the merged tree); vitest 323 files / 4296 tests, `vue-tsc` and
+    lint clean. The full upstream e2e suite: 587 pass, 13 fail in upstream
+    specs (admin panel, invite links, OpenID, registration mail, e-mail and
+    linked-account settings, API token scopes, unlicensed time tracking);
+    the same 13 fail without the fork's changes of this pass, cause not
+    established beyond missing mail and OpenID services. PostgreSQL is not
+    used by the e2e run.
+
 ## Remaining
 
 - Workflow: a save that would move or change more than 20000 tasks is

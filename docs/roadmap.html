@@ -501,7 +501,7 @@ number of requests in flight. Checked with model and <code>/api/v2</code> tests;
 checked in a browser.</p></li>
 </ul>
 <ul>
-<li>Automation: replay protection for the incoming webhook. A call to a hook
+<li><p>Automation: replay protection for the incoming webhook. A call to a hook
 that names a secret now carries <code>X-Vikunja-Timestamp</code> and
 <code>X-Vikunja-Signature: sha256=</code> + HMAC-SHA256 over <code>timestamp.token.body</code>
 (the token of the hook URL, so a call signed for one hook is refused by a
@@ -536,8 +536,8 @@ of an accepted call). <code>automation.webhook.tolerance</code> needs a unit and
 bare <code>300</code> is nanoseconds and would refuse every call: it falls back to the
 default with a warning). Changing <code>automation.webhook.tolerance</code> upward does not bring back rows
 already deleted: calls captured earlier can be replayed until their new
-window ends.</li>
-<li>Hardening verification (cap on rules per project and replay protection):
+window ends.</p></li>
+<li><p>Hardening verification (cap on rules per project and replay protection):
 <code>mage test:feature</code> and <code>mage test:web</code> pass uncached (<code>GOFLAGS=-count=1</code>)
 on SQLite, PostgreSQL 18 and MySQL 8, one database at a time. MySQL found
 the first draft of the new table: xorm builds the unique index name from
@@ -549,8 +549,8 @@ example in API.md (both examples' signature now checked against the Go
 helper with openssl), clock-skew dependent row expiry, files of a refused
 project duplicate (now refused before anything is written), and a replay
 that was answered 429 instead of 401. Re-verified on SQLite, PostgreSQL 18
-and MySQL 8, see the report of that pass.</li>
-<li>Approvals and disabled accounts (fixed). Disabling an account
+and MySQL 8, see the report of that pass.</p></li>
+<li><p>Approvals and disabled accounts (fixed). Disabling an account
 (<code>ChangeUserStatus</code>, the one function behind the admin routes and the
 CLI) now drops it from the undecided slots of every pending request in the
 same transaction, with the code path of a deleted user: a request that
@@ -562,8 +562,8 @@ usual resolved event and notification). A disabled approver could
 already not decide and was already not asked. Verified: the new tests in
 <code>approvals_disabled_test.go</code> failed before the change and pass after it;
 <code>TestApprovals*</code>, <code>TestAdmin*</code> and <code>TestUser*</code> pass on SQLite; the frontend
-cancel-reason test passes.</li>
-<li>Workflow, removing a status with <code>move_tasks_to</code> (fixed). Each moved task
+cancel-reason test passes.</p></li>
+<li><p>Workflow, removing a status with <code>move_tasks_to</code> (fixed). Each moved task
 now gets a status history row (comment <code>Moved because the status &quot;&lt;title&gt;&quot;
 was removed from the workflow.</code>, doer is the person who saved the
 workflow) and a <code>task.status.changed</code> event, plus <code>task.updated</code> when the
@@ -572,8 +572,8 @@ transaction of the removal: 4 statements per chunk, 4 * ceil(N/200) for N
 tasks, N to 2N events held until the commit. Verified: the new tests in
 <code>workflow_status_move_test.go</code> failed before the change and pass after
 it; <code>TestWorkflow*</code> and <code>TestApprovals*</code> pass on SQLite. Not measured with
-a large N.</li>
-<li>Custom field limits (fixed). New keys <code>customfields.maxfieldsperproject</code>
+a large N.</p></li>
+<li><p>Custom field limits (fixed). New keys <code>customfields.maxfieldsperproject</code>
 (100) and <code>customfields.maxoptionsperfield</code> (200), error codes 20006 (409),
 20007 (400) and 20008 (400, also an invalid value to code that checks for
 one, so forms need no change). Only adding is refused: a project or field
@@ -589,8 +589,8 @@ wire test <code>huma_custom_field_limits_test.go</code>), the vitest tests of th
 helper and the message table pass; en and tr keys and placeholders are
 identical. Not verified: the editor in a browser; concurrent creates can
 overshoot the field limit by the requests in flight; field descriptions
-are still not length-checked.</li>
-<li>Incoming webhook, retry of an accepted call (fixed). An exact replay of an
+are still not length-checked.</p></li>
+<li><p>Incoming webhook, retry of an accepted call (fixed). An exact replay of an
 accepted signed call (same hook, timestamp, body and signature) now gets
 the answer of the first call, <code>202</code> with <code>{&quot;queued&quot;: true}</code>, and queues
 nothing; two identical calls at once queue one run and both get the <code>202</code>.
@@ -606,8 +606,8 @@ skips the insert), the answer is. Updated: the tests that asserted <code>401</co
 on a replay (<code>TestWebhook_ReplayProtection</code>, the <code>/api/v2</code> trigger test),
 the editor text in both languages, the route description, API.md and the
 automation module page. Verified: the changed tests failed before the
-change and pass after it (<code>TestWebhook*</code>, <code>TestHumaAutomation*</code> on SQLite).</li>
-<li>Verification of the four fixes above (approvals and disabled accounts,
+change and pass after it (<code>TestWebhook*</code>, <code>TestHumaAutomation*</code> on SQLite).</p></li>
+<li><p>Verification of the four fixes above (approvals and disabled accounts,
 status removal, custom field limits, webhook retry): at commit 7d12ae6ed
 <code>mage test:feature</code> and <code>mage test:web</code> pass uncached
 (<code>GOFLAGS=-count=1</code>) on SQLite, PostgreSQL 18 and MySQL 8, one database at
@@ -621,8 +621,8 @@ only the 12 known <code>unused</code> findings in <code>pkg/license/</code>; <co
 check:yaegiSymbols</code> is clean; <code>vue-tsc --noEmit</code> and vitest of the touched
 frontend areas (1460 tests) pass; <code>pnpm lint</code> reports one error in
 <code>TaskStatus.vue</code> (unused <code>WorkflowStatusResponse</code>) that these changes do not
-touch. Not run: the UI in a browser, the e2e tests.</li>
-<li>Known defects pass (reports, forms, automation), SQLite only so far. Reports:
+touch. Not run: the UI in a browser, the e2e tests.</p></li>
+<li><p>Known defects pass (reports, forms, automation), SQLite only so far. Reports:
 <code>reports.maxcells</code> (default 50000, 0 turns it off) refuses a task report with
 more cells (groups, child groups, time points of leaf groups) with <code>400</code> /
 <code>23011</code>; the count is exact for the kept groups and checked before the
@@ -670,8 +670,8 @@ the one a form collects. After the review: the logo of a closed or full
 non-public form answers an anonymous caller like an unknown token; two
 retries of one run at the same time queue one event (the second gets
 22004); a retry whose original event was deleted is refused (22015). These
-follow-up tests were not run against the unfixed code.</li>
-<li>Review round on the four defect fixes (fixed unless listed below):
+follow-up tests were not run against the unfixed code.</p></li>
+<li><p>Review round on the four defect fixes (fixed unless listed below):</p>
 <ul>
 <li>Disabling an account no longer calls into the approvals from upstream
 code. The cleanup of the approver slots hangs on the event hook
@@ -710,7 +710,7 @@ reports 0 issues; <code>vue-tsc --noEmit</code> and vitest of the touched areas 
 The new deadlock test fails with 40P01 on PostgreSQL when the requests are
 walked in request id order again, and passes in task order.</li>
 </ul></li>
-<li>Second review round on the defect fixes:
+<li><p>Second review round on the defect fixes:</p>
 <ul>
 <li>A repeating task in a removed initial status was reopened into the status
 being removed (the flag is cleared only on archiving) and ended on an
@@ -747,7 +747,7 @@ on SQLite, PostgreSQL 18 and MySQL 8, one at a time, uncached; <code>mage lint</
 reports 0 issues; <code>vue-tsc --noEmit</code>, vitest of the touched areas and
 <code>check_parity.py</code> pass. Not run: the UI in a browser.</li>
 </ul></li>
-<li>Test audit of the six modules (branch <code>wt/automation-3d</code>). Scope: Go tests of
+<li><p>Test audit of the six modules (branch <code>wt/automation-3d</code>). Scope: Go tests of
 the fork's own code (models, v2 routes, <code>pkg/automation</code>, migrations); the
 frontend tests were not part of it. Method: statement coverage as a map (one
 run over <code>pkg/models</code>, <code>pkg/automation/...</code> and <code>pkg/webtests</code> with
@@ -756,7 +756,7 @@ error codes, behaviour sentences of the module pages, weak assertions,
 cross-database behaviour, migrations, events and loop guards. Every new test
 was run against code broken on purpose (about 25 mutations: a permission
 check removed, a limit moved by one, a key renamed, a rate limit keyed by the
-full IPv6 address) and failed there.
+full IPv6 address) and failed there.</p>
 <ul>
 <li><strong>Found by the new tests and fixed</strong> (each with its own commit):
 link shares with admin permission could create, change and delete custom
@@ -829,6 +829,33 @@ passes; <code>mage check:translations</code> still exits 1 for the reason above.
 first full run failed once in the new matrix test, which relied on another
 test leaving time tracking switched on; it now switches the feature on
 itself. Not run: the frontend tests, a browser.</li>
+</ul></li>
+</ul>
+<ul>
+<li><strong>End-to-end pass over the six modules (2026-11-25).</strong> 48 new Playwright
+tests (51 with the three existing fork specs) in
+<code>frontend/tests/e2e/{custom-fields,workflow,approvals,automation,dashboards,forms,i18n}/</code>,
+run through <code>mage test:e2e</code> against the real server on its own SQLite.
+<ul>
+<li>Found and fixed in the browser: a filter made only of a custom field
+condition (<code>Budget &gt; 100</code>) was sent as search text and returned nothing;
+one click on &quot;Create&quot; in the dashboard list sent two requests.</li>
+<li>Covered: the main journeys of each module, permissions per role in the
+UI, one screen per module in Turkish without raw keys, and the formal
+register of the public form page.</li>
+<li>Not covered: drag and drop, kanban status mode, script and HTTP actions
+and the schedule trigger in the automation editor, file answers in
+forms, the line, created-vs-done and status-time widgets.</li>
+<li>Observed, not changed: a closed public form shows its message on the
+page and again as an error toast.</li>
+<li>Verified: the 51 fork tests pass (3 runs by the author, 1 independent
+run on the merged tree); vitest 323 files / 4296 tests, <code>vue-tsc</code> and
+lint clean. The full upstream e2e suite: 587 pass, 13 fail in upstream
+specs (admin panel, invite links, OpenID, registration mail, e-mail and
+linked-account settings, API token scopes, unlicensed time tracking);
+the same 13 fail without the fork's changes of this pass, cause not
+established beyond missing mail and OpenID services. PostgreSQL is not
+used by the e2e run.</li>
 </ul></li>
 </ul>
 <h2 id="remaining">Remaining <a class="anchor" href="#remaining" aria-label="Link to this section: Remaining">#</a></h2>
