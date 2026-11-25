@@ -126,7 +126,7 @@ describe('getErrorText', () => {
 	})
 
 	it('reads the detail of an ApiError without a code', () => {
-		expect(getErrorText(new ApiError({status: 502, detail: 'Bad Gateway'}))).toBe('Bad Gateway')
+		expect(getErrorText(new ApiError({status: 409, detail: 'Conflict'}))).toBe('Conflict')
 	})
 })
 
@@ -135,5 +135,40 @@ describe('getErrorText for the automation rule limit', () => {
 		const text = getErrorText({status: 409, code: 22014, detail: 'This project has reached the limit of 100 automation rules.'})
 		expect(text).toContain('maximum number of automation rules')
 		expect(text).not.toBe('error.22014')
+	})
+})
+
+describe('getErrorText without a code', () => {
+	it('says a failed validation of the API in the interface language, with the fields', () => {
+		const text = getErrorText(new ApiError({
+			status: 422, detail: 'validation failed',
+			errors: [{location: 'body.title', message: 'expected length >= 1'}, {location: 'body.due_date', message: 'bad'}],
+		}))
+		expect(text).toContain('\ntitle, due_date')
+		expect(text).not.toContain('validation failed')
+		expect(text).not.toContain('expected length')
+	})
+
+	it('says a validation failure without fields', () => {
+		expect(getErrorText(new ApiError({status: 422, detail: 'validation failed'}))).toBe('Some of the values you entered are not valid.')
+	})
+
+	it.each([401, 403, 404, 429, 500, 502, 503, 504])('says the status %i in the interface language, not the English of the web server', status => {
+		const text = getErrorText(new ApiError({status, detail: 'Bad Gateway from a proxy'}))
+		expect(text).not.toContain('Bad Gateway')
+		expect(text).not.toBe('')
+	})
+
+	it('keeps the detail of a status that has no generic text', () => {
+		expect(getErrorText(new ApiError({status: 409, detail: 'The title is taken.'}))).toBe('The title is taken.')
+	})
+
+	it('says a request that never reached the server', () => {
+		expect(getErrorText(new Error('Network Error'))).toBe('The server could not be reached. Check your connection and try again.')
+		expect(getErrorText(new TypeError('Failed to fetch'))).toBe('The server could not be reached. Check your connection and try again.')
+	})
+
+	it('prefers the text of a known code over the status', () => {
+		expect(getErrorText(new ApiError({status: 404, code: 4002, detail: 'x'}))).toBe('The task does not exist.')
 	})
 })

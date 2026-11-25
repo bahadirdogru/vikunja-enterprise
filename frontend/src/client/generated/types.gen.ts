@@ -797,7 +797,7 @@ export type AutomationRun = {
      */
     readonly error?: string;
     /**
-     * A stable code for why the run failed, e.g. title_empty, script_error or a numeric API error code like 4002. Empty for a run that stored its error before codes existed; use error then.
+     * A stable code for why the run failed, e.g. title_empty, script_thrown or a numeric API error code like 4002. Empty for a run that stored its error before codes existed; use error then.
      */
     readonly error_code?: string;
     /**
@@ -911,7 +911,7 @@ export type AutomationRunStep = {
      */
     readonly error?: string;
     /**
-     * A stable code for why the step failed, e.g. title_empty, script_error or a numeric API error code like 4002. Empty for a step recorded before codes existed; use error then.
+     * A stable code for why the step failed, e.g. title_empty, script_thrown or a numeric API error code like 4002. Empty for a step recorded before codes existed; use error then.
      */
     readonly error_code?: string;
     /**

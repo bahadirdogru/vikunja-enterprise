@@ -104,8 +104,9 @@ describe('translations of the fork modules', () => {
 	it('knows every family of keys the code builds at runtime', () => {
 		// Families with a runtime-only segment that are handled by a test of their own:
 		// the catalog (automationI18n.test.ts), the report options (reportOptionsI18n.test.ts), the error
-		// codes (forkErrorCodes.test.ts) and the widget type names (dashboards.types.<type>).
-		const elsewhere = new Set(['automation.enum', 'automation.hint', 'automation.triggerHint', 'automation.field', 'dashboards.types', 'error'])
+		// codes (forkErrorCodes.test.ts), the sentences of automation runs (pkg/automation/messages_test.go) and the widget
+		// type names (dashboards.types.<type>).
+		const elsewhere = new Set(['automation.enum', 'automation.hint', 'automation.triggerHint', 'automation.field', 'dashboards.types', 'error', 'automation.messages', 'customFields.reasons'])
 		const unknown = [...dynamicPrefixes].filter(prefix => !(prefix in FAMILIES) && !elsewhere.has(prefix))
 		expect(unknown).toEqual([])
 	})

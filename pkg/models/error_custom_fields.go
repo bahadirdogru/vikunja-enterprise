@@ -76,6 +76,8 @@ func (err ErrCustomFieldInvalidDefinition) HTTPError() web.HTTPError {
 		HTTPCode: http.StatusBadRequest,
 		Code:     ErrCodeCustomFieldInvalidDefinition,
 		Message:  "The custom field definition is invalid: " + err.Reason,
+		// The reason as text and as a code, so the interface can say it in the language of the reader.
+		I18nParams: customFieldReasonParams(err.Reason),
 	}
 }
 
@@ -161,6 +163,8 @@ func (err ErrCustomFieldInvalidValue) HTTPError() web.HTTPError {
 		HTTPCode: http.StatusBadRequest,
 		Code:     ErrCodeCustomFieldInvalidValue,
 		Message:  "The value is not valid for this custom field: " + err.Reason,
+		// The reason as text and as a code, so the interface can say it in the language of the reader.
+		I18nParams: customFieldReasonParams(err.Reason),
 	}
 }
 

@@ -22,6 +22,7 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"strings"
 	"testing"
 
 	"code.vikunja.io/api/pkg/models"
@@ -102,6 +103,16 @@ func TestI18nParamsContract(t *testing.T) {
 			expectedCode: models.ErrCodeCustomFieldValueTooLong,
 		},
 		{
+			name:         "ErrCustomFieldInvalidDefinition",
+			err:          models.ErrCustomFieldInvalidDefinition{Reason: "title must not be empty"},
+			expectedCode: models.ErrCodeCustomFieldInvalidDefinition,
+		},
+		{
+			name:         "ErrCustomFieldInvalidValue",
+			err:          models.ErrCustomFieldInvalidValue{Reason: "expected a number"},
+			expectedCode: models.ErrCodeCustomFieldInvalidValue,
+		},
+		{
 			name:         "ErrWorkflowStatusMoveTooLarge",
 			err:          models.ErrWorkflowStatusMoveTooLarge{Tasks: 2, Limit: 1},
 			expectedCode: models.ErrCodeWorkflowStatusMoveTooLarge,
@@ -129,6 +140,11 @@ func TestI18nParamsContract(t *testing.T) {
 			expectedParams := placeholderNames(message)
 			actualParams := map[string]bool{}
 			for key := range httpErr.I18nParams {
+				// reason_* name the reason of an error in code, for the interface to say in its own language: the
+				// placeholder of the message is {reason}, the others are inputs of the text of the reason.
+				if strings.HasPrefix(key, "reason_") {
+					continue
+				}
 				actualParams[key] = true
 			}
 

@@ -20,10 +20,9 @@ const FORK_CODES = [
 	...range(20001, 20008), ...range(21001, 21011), ...range(22001, 22015),
 	...range(23001, 23011), ...range(24001, 24010), ...range(25001, 25009),
 ]
-// These two carry the reason of the failure as free English text from the server; a fixed translation would
-// hide what is wrong, so the interface shows the server's detail.
-const SERVER_REASON = [20002, 20005]
-const TRANSLATED = FORK_CODES.filter(code => !SERVER_REASON.includes(code))
+// These two name the reason of the failure in code (reason_code), which the interface says in its own language.
+const WITH_REASON = [20002, 20005]
+const TRANSLATED = FORK_CODES
 
 const placeholders = (text: string) => [...text.matchAll(/\{([A-Za-z0-9_]+)\}/g)].map(m => m[1]).sort()
 
@@ -54,8 +53,18 @@ describe('error codes of the fork modules', () => {
 		expect(text).toBe(english.replace(/\{\w+\}/g, '7'))
 	})
 
-	it.each(SERVER_REASON)('shows the server reason of %i, which has no fixed translation', code => {
-		expect(getErrorText(new ApiError({status: 400, code, detail: 'The value is not valid: too long'}))).toBe('The value is not valid: too long')
+	it.each(WITH_REASON)('says the reason of %i in the language of the reader', code => {
+		const text = getErrorText(new ApiError({
+			status: 400, code, detail: 'The server wrote this in English',
+			i18n_params: {reason: 'expected a number', reason_code: 'expected_number'},
+		}))
+		expect(text).toContain('a number is expected')
+		expect(text).not.toContain('expected a number')
+	})
+
+	it.each(WITH_REASON)('shows the English reason of %i when the server sent no code for it', code => {
+		const text = getErrorText(new ApiError({status: 400, code, detail: 'x', i18n_params: {reason: 'a reason nobody coded'}}))
+		expect(text).toContain('a reason nobody coded')
 	})
 
 	it('shows the retry error of a run whose event was deleted (22015) in plain words', () => {
