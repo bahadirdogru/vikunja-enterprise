@@ -407,5 +407,5 @@ func TestTruncateCutsOnACharacterBoundary(t *testing.T) {
 		assert.LessOrEqual(t, len(cut), n)
 	}
 	assert.Equal(t, "kısa", truncate("kısa", 4000))
-	assert.Equal(t, "", truncate("ş", 1))
+	assert.Empty(t, truncate("ş", 1))
 }
