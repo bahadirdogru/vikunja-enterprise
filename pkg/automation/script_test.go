@@ -454,13 +454,16 @@ func TestScript_Condition(t *testing.T) {
 		assert.Equal(t, "conditioned", task.Title)
 
 		for name, src := range map[string]string{
-			"create":  `vikunja.tasks.create(1, {title: "x"}); return true`,
-			"comment": `vikunja.tasks.comment(task.id, "x"); return true`,
-			"field":   `vikunja.fields.set(task.id, 3, 1); return true`,
-			"assign":  `vikunja.assignees.add(task.id, 1); return true`,
-			"label":   `vikunja.labels.add(task.id, 1); return true`,
-			"fetch":   `http.fetch("https://example.com/"); return true`,
-			"secret":  `secrets.get("A"); return true`,
+			"create":   `vikunja.tasks.create(1, {title: "x"}); return true`,
+			"comment":  `vikunja.tasks.comment(task.id, "x"); return true`,
+			"field":    `vikunja.fields.set(task.id, 3, 1); return true`,
+			"assign":   `vikunja.assignees.add(task.id, 1); return true`,
+			"label":    `vikunja.labels.add(task.id, 1); return true`,
+			"status":   `vikunja.status.set(task.id, 1, "x"); return true`,
+			"unassign": `vikunja.assignees.remove(task.id, 1); return true`,
+			"unlabel":  `vikunja.labels.remove(task.id, 1); return true`,
+			"fetch":    `http.fetch("https://example.com/"); return true`,
+			"secret":   `secrets.get("A"); return true`,
 		} {
 			run, _ := runWith(t, &spec.Condition{Script: src})
 			assert.Equal(t, models.AutomationRunFailed, run.Status, name)
