@@ -1,6 +1,5 @@
 import {computed, reactive, toRefs} from 'vue'
 import {acceptHMRUpdate, defineStore} from 'pinia'
-import {i18n} from '@/i18n'
 
 import {getApiBaseUrl, getApiRootUrl, InvalidApiUrlProvidedError} from '@/helpers/apiUrl'
 import {canonicalApiBaseUrl} from '@/client/requestContext'
@@ -53,11 +52,11 @@ function legalLinks(legal: VikunjaInfos['legal']): ConfigState['legal']['links']
 	// APIs from before legal.links only send the deprecated urls.
 	const links = legal?.links ?? [
 		{
-			text: i18n.global.t('navigation.imprint'),
+			text: 'Imprint',
 			url: legal?.imprint_url,
 		},
 		{
-			text: i18n.global.t('navigation.privacy'),
+			text: 'Privacy Policy',
 			url: legal?.privacy_policy_url,
 		},
 	]

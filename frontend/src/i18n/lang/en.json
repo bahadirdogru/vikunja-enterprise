@@ -1736,7 +1736,32 @@
     "subscribeFeed": "Subscribe to notifications via Atom feed",
     "clearAll": "Clear notifications",
     "clearAllSuccess": "All notifications have been cleared.",
-    "loadMore": "Load older notifications"
+    "loadMore": "Load older notifications",
+    "text": {
+      "comment": "commented on {task}",
+      "assigned": "assigned {who} to {task}",
+      "assignedYou": "assigned you to {task}",
+      "deleted": "deleted {task}",
+      "created": "created {task}",
+      "projectCreated": "created {project}",
+      "teamAdded": "added {who} to the {team} team",
+      "teamAddedYou": "added you to the {team} team",
+      "reminder": "Reminder for {task} {title} ({project})",
+      "mentioned": "{who} mentioned you on {task}",
+      "formSubmitted": "{submitter} submitted the form “{form}”, creating {task}",
+      "formSubmittedAnonymous": "The form “{form}” was submitted, creating {task}",
+      "automation": "Automation “{rule}” sent a notification",
+      "approvalRequested": "asked for your approval: “{title}” on {task}",
+      "approvalReminder": "asked for your approval (overdue): “{title}” on {task}",
+      "approvalApproved": "approved the approval “{title}” on {task}",
+      "approvalRejected": "rejected the approval “{title}” on {task}",
+      "approvalCancelled": "cancelled the approval “{title}” on {task}",
+      "approvalResolved": "resolved the approval “{title}” on {task}",
+      "approvalSystemApproved": "The approval “{title}” on {task} was approved",
+      "approvalSystemRejected": "The approval “{title}” on {task} was rejected",
+      "approvalSystemCancelled": "The approval “{title}” on {task} was cancelled",
+      "approvalSystemResolved": "The approval “{title}” on {task} was resolved"
+    }
   },
   "quickActions": {
     "title": "Search and quick actions",

@@ -193,7 +193,9 @@ def check(items):
             found["double-space"].append((sid, repr(tr)))
         if (tr != tr.strip()) and (en == en.strip()):
             found["outer-space"].append((sid, repr(tr)))
-        if tr == en and " " in tr.strip() and re.search(r"[a-z]{3}", tr):
+        # A value that is the English one, word or sentence, is a string nobody translated unless it is a name, a
+        # format or a code: those are listed in tr_allow.txt, each with its reason.
+        if tr == en and re.search(r"[A-Za-z]{3}", re.sub(r"\{[^}]*\}|%\[?\d*\]?[sdvqf]|<[^>]*>", "", tr)):
             found["untranslated"].append((sid, tr))
         for term, regex in REJECTED_RE.items():
             if regex.search(low):

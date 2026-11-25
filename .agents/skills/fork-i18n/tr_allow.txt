@@ -18,3 +18,23 @@ title-case frontend:customFields.errors.value.tooLong  # "Latin alfabesi", a pro
 
 # Not words.
 untranslated pkg:notifications.email_confirm.subject_new  # "%[1]s + Vikunja = <3" has nothing to translate
+
+# Identical to the English value on purpose (the check "untranslated" reports every tr-TR value that equals its English one).
+# Names of products, protocols and methods.
+untranslated frontend:user.settings.caldav.title  # product and protocol name
+untranslated frontend:user.settings.avatar.gravatar  # product name
+untranslated frontend:user.settings.quickAddMagic.todoist  # product name
+untranslated frontend:user.settings.quickAddMagic.vikunja  # product name
+untranslated frontend:project.gantt.title  # name of the chart (proper name, section 4)
+untranslated frontend:project.kanban.title  # name of the method (proper name, section 4)
+untranslated frontend:automation.group.http  # protocol name
+untranslated frontend:automation.group.webhook  # untranslated term (section 2)
+untranslated frontend:automation.enum.GET  # HTTP method, a code
+untranslated frontend:automation.enum.POST  # HTTP method, a code
+untranslated frontend:automation.enum.PUT  # HTTP method, a code
+untranslated frontend:automation.enum.PATCH  # HTTP method, a code
+untranslated frontend:automation.enum.DELETE  # HTTP method, a code
+# Words that Turkish spells the same.
+untranslated frontend:user.settings.bots.badge  # "bot" is the Turkish word for a software robot
+untranslated frontend:forms.branding.logo  # "logo" is the Turkish word
+untranslated frontend:forms.public.pageTitle  # "Form" is the Turkish word

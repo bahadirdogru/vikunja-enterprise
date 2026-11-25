@@ -1736,7 +1736,32 @@
 		"subscribeFeed": "Atom akışı ile bildirimlere abone ol",
 		"clearAll": "Bildirimleri temizle",
 		"clearAllSuccess": "Tüm bildirimler temizlendi.",
-		"loadMore": "Daha eski bildirimleri yükle"
+		"loadMore": "Daha eski bildirimleri yükle",
+		"text": {
+			"comment": "{task} görevine yorum yaptı",
+			"assigned": "{who} kişisini {task} görevine atadı",
+			"assignedYou": "seni {task} görevine atadı",
+			"deleted": "{task} görevini sildi",
+			"created": "{task} görevini oluşturdu",
+			"projectCreated": "{project} projesini oluşturdu",
+			"teamAdded": "{who} kişisini {team} ekibine ekledi",
+			"teamAddedYou": "seni {team} ekibine ekledi",
+			"reminder": "Hatırlatıcı: {task} {title} ({project})",
+			"mentioned": "{who}, {task} görevinde senden söz etti",
+			"formSubmitted": "{submitter}, \"{form}\" formunu gönderdi; {task} görevi oluşturuldu",
+			"formSubmittedAnonymous": "\"{form}\" formu gönderildi; {task} görevi oluşturuldu",
+			"automation": "\"{rule}\" otomasyonu bir bildirim gönderdi",
+			"approvalRequested": "{task} görevinde onayını istedi: \"{title}\"",
+			"approvalReminder": "{task} görevinde onayını istedi (gecikti): \"{title}\"",
+			"approvalApproved": "{task} görevindeki \"{title}\" onayını onayladı",
+			"approvalRejected": "{task} görevindeki \"{title}\" onayını reddetti",
+			"approvalCancelled": "{task} görevindeki \"{title}\" onayını iptal etti",
+			"approvalResolved": "{task} görevindeki \"{title}\" onayını sonuçlandırdı",
+			"approvalSystemApproved": "{task} görevindeki \"{title}\" onayı onaylandı",
+			"approvalSystemRejected": "{task} görevindeki \"{title}\" onayı reddedildi",
+			"approvalSystemCancelled": "{task} görevindeki \"{title}\" onayı iptal edildi",
+			"approvalSystemResolved": "{task} görevindeki \"{title}\" onayı sonuçlandı"
+		}
 	},
 	"quickActions": {
 		"title": "Arama ve hızlı işlemler",

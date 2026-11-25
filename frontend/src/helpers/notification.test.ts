@@ -1,4 +1,5 @@
-import {describe, expect, it} from 'vitest'
+import {afterAll, beforeAll, describe, expect, it} from 'vitest'
+import {setLanguage} from '@/i18n'
 import type {DatabaseNotification} from '@/client/generated'
 import {
 	NOTIFICATION_NAMES,
@@ -205,5 +206,41 @@ describe('automation.notify', () => {
 		expect(notificationRoute(notification('automation.notify', {...payload, task: undefined})))
 			.toEqual({name: 'task.index', params: {projectId: 4}})
 		expect(notificationRoute(notification('automation.notify', {message: 'x', project: null}))).toBeNull()
+	})
+})
+
+describe('notificationText in Turkish', () => {
+	beforeAll(async () => { await setLanguage('tr-TR') })
+	afterAll(async () => { await setLanguage('en') })
+
+	it('says every notification in Turkish', () => {
+		const texts = [
+			notificationText(notification(NOTIFICATION_NAMES.TASK_COMMENT, {task: TASK})),
+			notificationText(notification(NOTIFICATION_NAMES.TASK_DELETED, {task: TASK})),
+			notificationText(notification(NOTIFICATION_NAMES.TASK_CREATED, {task: TASK})),
+			notificationText(notification(NOTIFICATION_NAMES.PROJECT_CREATED, {project: PROJECT})),
+			notificationText(notification(NOTIFICATION_NAMES.TASK_REMINDER, {task: TASK, project: PROJECT})),
+			notificationText(notification(NOTIFICATION_NAMES.TASK_ASSIGNED, {task: TASK, assignee: SAM}), {id: 7}),
+			notificationText(notification(NOTIFICATION_NAMES.TEAM_MEMBER_ADDED, {member: SAM, team: TEAM}), {id: 9}),
+			notificationText(notification(NOTIFICATION_NAMES.APPROVAL_REQUESTED, {task: TASK, approval: {title: 'Kapak'}})),
+			notificationText(notification(NOTIFICATION_NAMES.APPROVAL_RESOLVED, {task: TASK, approval: {title: 'Kapak', status: 'rejected'}})),
+			notificationText(notification(NOTIFICATION_NAMES.FORM_SUBMITTED, {task: TASK, form_title: 'Destek'})),
+		]
+		expect(texts).toEqual([
+			'#12 görevine yorum yaptı',
+			'#12 görevini sildi',
+			'#12 görevini oluşturdu',
+			'Docs projesini oluşturdu',
+			'Hatırlatıcı: #12 Write docs (Docs)',
+			'seni #12 görevine atadı',
+			'sam kişisini Design ekibine ekledi',
+			'#12 görevinde onayını istedi: "Kapak"',
+			'#12 görevindeki "Kapak" onayı reddedildi',
+			'"Destek" formu gönderildi; #12 görevi oluşturuldu',
+		])
+	})
+
+	it('shows the message of an automation as the rule wrote it', () => {
+		expect(notificationText(notification(NOTIFICATION_NAMES.AUTOMATION_NOTIFY, {message: ' Görev hazır '}))).toBe('Görev hazır')
 	})
 })
