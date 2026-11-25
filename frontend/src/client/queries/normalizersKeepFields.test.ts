@@ -55,6 +55,9 @@ const CHECKS: Check[] = [
 	{file: 'client/queries/reportWidgets.ts', fn: 'normalizeRow', type: 'WorkloadRow'},
 	{file: 'client/queries/reportWidgets.ts', fn: 'normalizeWorkload', type: 'WorkloadReport', dropped: {multi_valued: 'a table, not a chart with a note', timezone: 'not shown'}},
 	{file: 'client/queries/reportWidgets.ts', fn: 'normalizeTimeTracking', type: 'TimeTrackingReport', dropped: {from: 'the range is the widget config', to: 'the range is the widget config', timezone: 'not shown'}},
+	{file: 'client/queries/reports.ts', fn: 'normalizeOption', type: 'ReportOption'},
+	{file: 'client/queries/reports.ts', fn: 'normalizeReportOptions', type: 'ReportOptions'},
+	{file: 'client/queries/reports.ts', fn: 'normalizePoint', type: 'ReportPoint'},
 	{file: 'helpers/formsPublic.ts', fn: 'normalizeDefinition', type: 'FormPublicDefinition'},
 	{file: 'helpers/forms.ts', fn: 'normalizeOptions', type: 'FormOptions'},
 ]
