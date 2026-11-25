@@ -9,8 +9,7 @@ vi.mock('@/client/generated', () => sdk)
 // the requester is user 1
 const auth = vi.hoisted(() => ({info: {id: 1, username: 'requester'}, isLinkShareAuth: false, settings: {frontend_settings: {}, timezone: 'UTC', language: 'en'}}))
 vi.mock('@/stores/auth', () => ({useAuthStore: () => auth}))
-vi.mock('@/message', () => ({error: vi.fn(), success: vi.fn(), getErrorText: (cause: {detail?: string}) => `generic: ${cause.detail}`}))
-vi.mock('@/i18n', async importOriginal => ({...await importOriginal<typeof import('@/i18n')>(), i18n: {global: {t: (key: string) => key}}}))
+vi.mock('@/message', async importOriginal => ({...await importOriginal<typeof import('@/message')>(), error: vi.fn(), success: vi.fn()}))
 
 import AdHocApprovalDialog from './AdHocApprovalDialog.vue'
 import {approvalFixture} from './testing'
@@ -123,18 +122,33 @@ describe('AdHocApprovalDialog', () => {
 		expect(wrapper.emitted('close')).toBeUndefined()
 	})
 
-	it('shows the reason the server gives for an invalid request, and the generic text for anything else', async () => {
-		sdk.taskApprovalsCreate.mockRejectedValueOnce(new ApiError({status: 400, code: 24009, detail: 'The due date lies in the past.'}))
+	it('shows the translated text of error 24009, never the English reason of the server, and the generic text for anything else', async () => {
+		sdk.taskApprovalsCreate.mockRejectedValueOnce(new ApiError({status: 400, code: 24009, detail: 'every approver must be an active user who can read the task'}))
 		const wrapper = await mountDialog()
 		await typeTitle('Sign off')
 		await tick('anna')
 		await submit()
-		expect(alerts()).toEqual(['The due date lies in the past.'])
+		expect(alerts()).toEqual(['The approval request is not valid.'])
 
 		sdk.taskApprovalsCreate.mockRejectedValueOnce(new ApiError({status: 500, detail: 'boom'}))
 		await submit()
-		expect(alerts()).toEqual(['generic: boom'])
+		expect(alerts()).toEqual(['boom'])
 		expect(wrapper.emitted('close')).toBeUndefined()
+	})
+
+	it('refuses a title of more than 250 characters (counted as characters) and more than 50 approvers before sending', async () => {
+		const wrapper = await mountDialog()
+		await typeTitle('\u0130'.repeat(251))
+		await tick('anna')
+		await submit()
+		expect(alerts()).toEqual(['The title may have at most 250 characters.'])
+		expect(sdk.taskApprovalsCreate).not.toHaveBeenCalled()
+		expect(wrapper.emitted('created')).toBeUndefined()
+
+		sdk.taskApprovalsCreate.mockResolvedValue({data: approvalFixture()})
+		await typeTitle('\u0130'.repeat(250))
+		await submit()
+		expect(sdk.taskApprovalsCreate).toHaveBeenCalledTimes(1)
 	})
 
 	it('closes without creating anything when cancelled', async () => {

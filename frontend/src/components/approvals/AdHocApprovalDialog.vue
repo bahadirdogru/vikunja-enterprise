@@ -42,6 +42,9 @@ const description = ref('')
 const selected = ref<number[]>([])
 const mode = ref<ApprovalMode>('any')
 const due = ref<Date | null>(null)
+// The limits of the server (pkg/models/approvals): a title of 250 characters, 1 to 50 approvers.
+const MAX_TITLE = 250
+const MAX_APPROVERS = 50
 const errors = ref<{title?: string, approvers?: string, general?: string}>({})
 
 function toggle(id: number, on: boolean) {
@@ -52,9 +55,13 @@ async function submit() {
 	errors.value = {}
 	if (title.value.trim() === '') {
 		errors.value.title = t('approvals.adHoc.titleRequired')
+	} else if (Array.from(title.value.trim()).length > MAX_TITLE) {
+		errors.value.title = t('approvals.adHoc.titleTooLong', {max: MAX_TITLE})
 	}
 	if (selected.value.length === 0) {
 		errors.value.approvers = t('approvals.adHoc.approversRequired')
+	} else if (selected.value.length > MAX_APPROVERS) {
+		errors.value.approvers = t('approvals.adHoc.approversTooMany', {max: MAX_APPROVERS})
 	}
 	if (Object.keys(errors.value).length > 0) {
 		return
@@ -75,11 +82,11 @@ async function submit() {
 			return
 		}
 		const problem = readApprovalProblem(cause)
-		errors.value.general = problem.kind === 'invalidRequest' && problem.message
-			? problem.message
-			: problem.kind === 'noApprovers'
-				? t('approvals.adHoc.approversRequired')
-				: getErrorText(cause)
+		// The server's reason for an invalid request is English text, so the translated message of the code is
+		// shown; the limits it names are checked above before anything is sent.
+		errors.value.general = problem.kind === 'noApprovers'
+			? t('approvals.adHoc.approversRequired')
+			: getErrorText(cause)
 	}
 }
 </script>

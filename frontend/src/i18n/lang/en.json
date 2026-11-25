@@ -99,6 +99,8 @@
       "noMembers": "Nobody else has access to this project.",
       "titleRequired": "Say what should be approved.",
       "approversRequired": "Choose at least one person.",
+      "titleTooLong": "The title may have at most {max} characters.",
+      "approversTooMany": "At most {max} people can decide on one request.",
       "due": "Due date (optional)",
       "submit": "Send request"
     },

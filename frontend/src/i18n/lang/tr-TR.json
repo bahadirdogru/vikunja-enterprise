@@ -99,6 +99,8 @@
 			"noMembers": "Bu projeye erişimi olan başka kimse yok.",
 			"titleRequired": "Neyin onaylanacağını yaz.",
 			"approversRequired": "En az bir kişi seç.",
+			"titleTooLong": "Başlık en fazla {max} karakter olabilir.",
+			"approversTooMany": "Bir talepte en fazla {max} kişi karar verebilir.",
 			"due": "Bitiş tarihi (isteğe bağlı)",
 			"submit": "Talebi gönder"
 		},
