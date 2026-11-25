@@ -560,6 +560,11 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
     editor has no component test; `TestI18nParamsContract` still has the cases of
     the new error codes in the upstream-owned test file because its coverage
     check compares one table.
+  - Verified at commit b37f0e3ec: `mage test:feature` and `mage test:web` exit 0
+    on SQLite, PostgreSQL 18 and MySQL 8, one at a time, uncached; `mage lint`
+    reports 0 issues; `vue-tsc --noEmit` and vitest of the touched areas pass.
+    The new deadlock test fails with 40P01 on PostgreSQL when the requests are
+    walked in request id order again, and passes in task order.
 
 ## Remaining
 
