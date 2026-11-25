@@ -56,6 +56,8 @@ export type StatusHistoryResponse = {
 	created: string
 	// Set when the change was made by an approved request.
 	approval_request_id: number | null
+	// Why the system made the change; empty for changes somebody made.
+	cause: 'status_removed' | ''
 }
 
 export function normalizeWorkflowStatus(status: WorkflowStatus): WorkflowStatusResponse {
@@ -129,6 +131,7 @@ function normalizeHistory(entry: TaskStatusHistory): StatusHistoryResponse {
 		comment: entry.comment ?? '',
 		created: entry.created ?? '',
 		approval_request_id: entry.approval_request_id ?? null,
+		cause: entry.cause ?? '',
 	}
 }
 
