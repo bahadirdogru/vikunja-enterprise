@@ -178,6 +178,8 @@ func TestCustomFieldValue_TextLength(t *testing.T) {
 
 			_, err := setCustomFieldValue(t, 1, f.ID, tc.value(limit), cfUser1)
 			require.NoError(t, err)
+			// Read back intact: a database in a lenient mode would cut it off silently.
+			assert.Equal(t, tc.value(limit), readCustomFieldValues(t, 1)[f.ID])
 
 			_, err = setCustomFieldValue(t, 1, f.ID, tc.value(limit+1), cfUser1)
 			assert.Equal(t, 20008, customFieldErrorCode(t, err))
@@ -196,4 +198,17 @@ func TestCustomFieldValue_TextLength(t *testing.T) {
 		assert.Equal(t, 20008, customFieldErrorCode(t, err))
 		assert.Less(t, len([]rune(strings.Repeat("€", 21846))), limit, "fewer characters than bytes")
 	})
+}
+
+func TestCustomFieldValue_NulCharacter(t *testing.T) {
+	db.LoadAndAssertFixtures(t)
+	for _, typ := range []CustomFieldType{CustomFieldTypeText, CustomFieldTypeLongText, CustomFieldTypeURL} {
+		f := createCustomField(t, &CustomField{ProjectID: 1, Title: "nul-" + string(typ), Type: typ})
+		value := "a\x00b"
+		if typ == CustomFieldTypeURL {
+			value = "https://example.com/a\x00b"
+		}
+		_, err := setCustomFieldValue(t, 1, f.ID, value, cfUser1)
+		assert.Equal(t, 20005, customFieldErrorCode(t, err), string(typ))
+	}
 }

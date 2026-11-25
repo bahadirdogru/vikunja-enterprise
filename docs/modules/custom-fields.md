@@ -123,7 +123,7 @@ More in [DESIGN.md](../../DESIGN.md#custom-fields).
 
 - A definition title is at most 250 characters; option titles 250; `precision` 0 to 10; `max_rating` 1 to 10.
 - At most `customfields.maxfieldsperproject` fields per project (default 100) and `customfields.maxoptionsperfield` options per field (default 200); only adding is refused, see [Configuration keys](#configuration-keys).
-- A text, long text, url or email value is at most **65535 bytes** (not characters: a euro sign is three bytes, an emoji four), the size of the `value_text` column on MySQL, so a value that is stored on one database is stored on all three (`20008`). The check runs for every writer of values: the API, forms, automation and scripts. Field descriptions (`text` column as well) are not length-checked.
+- A text, long text, url or email value is at most **65535 bytes** (not characters: a euro sign is three bytes, an emoji four), the size of the `value_text` column on MySQL, so a value that is stored on one database is stored on all three (`20008`). A text value with a NUL character is refused with `20005` on every database, because PostgreSQL cannot store it. The check runs for every writer of values: the API, forms, automation and scripts. Field descriptions (`text` column as well) are not length-checked.
 - Date `=` compares the exact stored instant; use a range for a day.
 
 ## Known gaps and open decisions

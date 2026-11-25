@@ -17,6 +17,8 @@
 package models
 
 import (
+	"strings"
+
 	"code.vikunja.io/api/pkg/config"
 
 	"xorm.io/xorm"
@@ -70,9 +72,14 @@ func checkCustomFieldOptionCount(fieldID int64, submitted int, stored int) error
 	return nil
 }
 
-// checkCustomFieldTextLength refuses a text value longer than the column can hold. The length is in bytes: a
+// checkCustomFieldTextLength refuses a text value that contains a NUL character or is longer than the column can hold. The length is in bytes: a
 // multi-byte character counts with all of its bytes.
 func checkCustomFieldTextLength(f *CustomField, value string) error {
+	// PostgreSQL cannot store a NUL character in a text column (the insert fails with a 500), SQLite and MySQL
+	// would store it: refuse it everywhere so the same value is accepted on all three.
+	if strings.ContainsRune(value, 0) {
+		return invalidValue(f, "the value must not contain a NUL character")
+	}
 	if len(value) > maxCustomFieldTextBytes {
 		return ErrCustomFieldValueTooLong{CustomFieldID: f.ID, Type: f.Type, Length: len(value), Limit: maxCustomFieldTextBytes}
 	}
