@@ -529,3 +529,21 @@ func TestTheNotesOfATestRunAreBounded(t *testing.T) {
 	}
 	assert.LessOrEqual(t, size, maxMessageParamBytes+64)
 }
+
+func TestACreatedTaskIsSaidInThePastWithItsNumberInEveryKind(t *testing.T) {
+	for typ, code := range map[string]string{
+		spec.ActionCreateTask:    "task_created",
+		spec.ActionCreateSubtask: "subtask_created",
+		spec.ActionCreateRelated: "related_task_created",
+	} {
+		t.Run(typ, func(t *testing.T) {
+			reset(t)
+			_, run, steps := runAction(t, projectOwned, user1, user1, act(typ, map[string]any{"title": "Yeni iş"}))
+			require.Equal(t, models.AutomationRunSuccess, run.Status, run.Error)
+			require.NotEmpty(t, steps[0].OutputMessages)
+			assert.Equal(t, code, steps[0].OutputMessages[0].Code)
+			assert.Equal(t, "Yeni iş", steps[0].OutputMessages[0].Params["title"])
+			assert.NotEmpty(t, steps[0].OutputMessages[0].Params["id"])
+		})
+	}
+}

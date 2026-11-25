@@ -94,6 +94,7 @@ func planCreateStandaloneTask(env *Env, p params) (*Plan, error) {
 		if env.Sub == nil || env.Sub.Task == nil {
 			plan.CreatedTaskID = created.ID
 		}
+		plan.Lines = []*models.AutomationMessage{say("task_created", P{"title": title, "id": created.ID})}
 		return fmt.Sprintf("%s (task %d)", plan.Summary, created.ID), nil
 	}
 	return plan, nil

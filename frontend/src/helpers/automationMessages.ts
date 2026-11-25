@@ -62,8 +62,11 @@ export function automationCodeText(code: string | null | undefined, params: Para
 		return lookup(`error.${code}`, translatedReason(values) as Params) ?? fallback
 	}
 	// A sentence that wraps another one: "nothing to do: <what it would have done>".
-	if (code === 'nothing_to_do' || code === 'task_created') {
-		const inner = automationCodeText(values.inner, params, '')
+	if (code === 'nothing_to_do') {
+		// The sentence goes after a colon: it starts with a small letter, in the casing of the language (İ and ı in Turkish).
+		const locale = i18n.global.locale.value
+		const innerText = automationCodeText(values.inner, params, '')
+		const inner = innerText === '' ? '' : innerText.charAt(0).toLocaleLowerCase(locale) + innerText.slice(1)
 		if (inner === '') return fallback
 		return lookup(`automation.messages.${code}`, {...values, action: inner}) ?? fallback
 	}

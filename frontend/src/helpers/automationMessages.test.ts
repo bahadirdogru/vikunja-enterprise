@@ -38,7 +38,7 @@ describe('the sentences of the server about an automation run', () => {
 
 		it('wraps the sentence of an action that had nothing to do', () => {
 			expect(automationCodeText('nothing_to_do', {inner: 'mark_done'}, 'nothing to do: mark the task as done (already so)'))
-				.toBe('Yapılacak bir şey yok, zaten öyle: Görevi tamamlandı olarak işaretle')
+				.toBe('Yapılacak bir şey yok, zaten öyle: görevi tamamlandı olarak işaretle')
 		})
 
 		it('says the error of a failed condition inside the note', () => {
@@ -66,6 +66,15 @@ describe('the sentences of the server about an automation run', () => {
 		it('shows a ratio of progress as a percentage and a limit in seconds as a duration', () => {
 			expect(automationCodeText('set_percent_done', {value: '0.5'})).toBe('İlerlemeyi %50 olarak ayarla')
 			expect(automationCodeText('wait_too_long', {max: '2592000'})).toBe('Bekleme, sunucunun izin verdiği 30 gün süresinden uzun.')
+		})
+
+		it('puts the sentence after the colon in lower case, with the casing of Turkish', () => {
+			expect(automationCodeText('nothing_to_do', {inner: 'set_description'})).toBe('Yapılacak bir şey yok, zaten öyle: açıklamayı ayarla')
+			expect(automationCodeText('nothing_to_do', {inner: 'set_title', title: 'İş'})).toBe('Yapılacak bir şey yok, zaten öyle: başlığı "İş" olarak ayarla')
+		})
+
+		it('says a task that was created in the past tense, with its number', () => {
+			expect(automationCodeText('subtask_created', {title: 'Parça', id: '12'})).toBe('"Parça" alt görevi oluşturuldu (görev 12)')
 		})
 
 		it('shows the English text for a code it does not know', () => {

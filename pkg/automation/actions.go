@@ -826,7 +826,11 @@ func planCreateTask(env *Env, p params, subtask bool) (*Plan, error) {
 			return "", err
 		}
 		out := fmt.Sprintf("%s (task %d)", plan.Summary, created.ID)
-		plan.Lines = []*models.AutomationMessage{say("task_created", P{"inner": plan.Msg.Code, "id": created.ID}.with(plan.Msg.Params))}
+		if subtask {
+			plan.Lines = []*models.AutomationMessage{say("subtask_created", P{"title": title, "id": created.ID})}
+		} else {
+			plan.Lines = []*models.AutomationMessage{say("related_task_created", P{"title": title, "id": created.ID})}
+		}
 		return out, nil
 	}
 	return plan, nil

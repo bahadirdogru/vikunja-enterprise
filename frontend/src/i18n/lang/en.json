@@ -3609,7 +3609,7 @@
       "set_title": "set title to \"{title}\"",
       "status_same": "nothing to do: the task is in status {status} already",
       "step_timeout": "the step ran out of time",
-      "task_created": "{action} (task {id})",
+      "task_created": "created the task \"{title}\" (task {id})",
       "task_gone": "the task does not exist any more",
       "team_not_visible": "the team does not exist or the owner of the rule cannot see it",
       "title_empty": "the title would be empty",
@@ -3630,7 +3630,9 @@
       "wait_too_long": "the wait is longer than the {max} this server allows",
       "wait_too_short": "the wait must be at least 1m",
       "wait_until": "the run continues at {until}",
-      "would_wait": "would wait {duration} (until {until}), then continue with the next actions"
+      "would_wait": "would wait {duration} (until {until}), then continue with the next actions",
+      "subtask_created": "created the subtask \"{title}\" (task {id})",
+      "related_task_created": "created the related task \"{title}\" (task {id})"
     }
   },
   "forms": {
