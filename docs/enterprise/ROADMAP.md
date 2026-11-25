@@ -464,6 +464,21 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   the editor text in both languages, the route description, API.md and the
   automation module page. Verified: the changed tests failed before the
   change and pass after it (`TestWebhook*`, `TestHumaAutomation*` on SQLite).
+- Verification of the four fixes above (approvals and disabled accounts,
+  status removal, custom field limits, webhook retry): at commit 7d12ae6ed
+  `mage test:feature` and `mage test:web` pass uncached
+  (`GOFLAGS=-count=1`) on SQLite, PostgreSQL 18 and MySQL 8, one database at
+  a time; the first SQLite feature run failed once in
+  `TestIdempotency_ConditionsAreNotEvaluatedAgainWhenResuming` (a test that
+  relies on a 1 ms backoff and real time, run while other test suites were
+  running on the machine) and passed on the rerun of the whole suite. An
+  earlier run of the same tree caught the missing `TestI18nParamsContract`
+  cases of the new error codes, fixed in that commit. `mage lint` reports
+  only the 12 known `unused` findings in `pkg/license/`; `mage
+  check:yaegiSymbols` is clean; `vue-tsc --noEmit` and vitest of the touched
+  frontend areas (1460 tests) pass; `pnpm lint` reports one error in
+  `TaskStatus.vue` (unused `WorkflowStatusResponse`) that these changes do not
+  touch. Not run: the UI in a browser, the e2e tests.
 
 ## Remaining
 
