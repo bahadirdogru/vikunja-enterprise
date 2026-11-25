@@ -528,6 +528,38 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   retries of one run at the same time queue one event (the second gets
   22004); a retry whose original event was deleted is refused (22015). These
   follow-up tests were not run against the unfixed code.
+- Review round on the four defect fixes (fixed unless listed below):
+  - Disabling an account no longer calls into the approvals from upstream
+    code. The cleanup of the approver slots hangs on the event hook
+    (`events.OnCommit`, registered in `approvals_accounts.go`), runs in its own
+    transaction after the status change has committed, and a failure is logged,
+    never returned, so it cannot veto the disabling. It covers the admin routes
+    and the CLI (both `ChangeUserStatus`; the CLI does dispatch the event after
+    its commit, an earlier note here said otherwise), a disabled bot, and the
+    bots of a disabled owner. `admin_user_actions.go` is back to upstream; no
+    upstream line remains for this. The requests are walked in task order, which
+    removes a deadlock between two accounts disabled or deleted at once. An
+    approver who is only locked out by failed logins keeps the slot.
+  - The status removal marks its history rows and events with `cause:
+    status_removed` (a reserved marker in the stored comment, no column), the
+    editor shows the sentence in the language of the viewer, the tasks are
+    locked before they are read, repeating tasks and tasks that need a done
+    bucket go through the normal status change, the update time is touched, a
+    category change announces `task.updated`, and a status with more than 20000
+    tasks is refused (`21011`). Measured on SQLite with 5001 tasks: 136
+    statements, 0.42 s, about 12 MB of extra heap without a rule; with one rule
+    on `task.status_changed` 5137 statements, 0.69 s, about 16 MB. Not measured
+    on PostgreSQL or MySQL, or above 5001 tasks.
+  - Text values with a NUL character are refused (PostgreSQL cannot store them).
+  - The flaky `TestIdempotency_ConditionsAreNotEvaluatedAgainWhenResuming` now
+    uses the fake clock.
+  - Not done or not verified: the path of the forced move that handles tasks
+    with manual kanban buckets has no test of its own; the done buckets of manual
+    kanban views are still not updated when a status changes category in the
+    editor (only the done flag and the event are); the history entry in the
+    editor has no component test; `TestI18nParamsContract` still has the cases of
+    the new error codes in the upstream-owned test file because its coverage
+    check compares one table.
 
 ## Remaining
 
