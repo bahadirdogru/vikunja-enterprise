@@ -492,9 +492,12 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   their time range, created vs completed exports the union of both ranges.
   Forms: the address of a signed-in submitter was empty because the claims of
   a token carry none and `GetUserByID` leaves it out (the old test compared
-  two empty strings); it is stored on the submission of members and users
-  forms only, not on public forms, and kept out of the task, the placeholders
-  and the `form.submitted` event. A closed members or users form answers an
+  two empty strings); it is stored on the submission of members forms only,
+  not on users or public forms (a review found that a users form would let
+  anyone collect the account addresses of its submitters), the form page
+  tells the submitter so, the address is cleared when the account is deleted,
+  and it is kept out of the task, the placeholders and the `form.submitted`
+  event. A closed members or users form answers an
   anonymous caller like an unknown token (404 / 25001) and a signed-in caller
   who may not submit with 403; an open one still answers 401. New
   `forms.users.ratelimit` (60 per user, form and hour). IPv6 clients are
@@ -520,7 +523,11 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   real proxy. Still open from these areas: a reachable form that does not ask
   for files still reads an upload before the 422; the per-user limit is per
   form, not across forms; the account address is stored in plain text like
-  the one a form collects.
+  the one a form collects. After the review: the logo of a closed or full
+  non-public form answers an anonymous caller like an unknown token; two
+  retries of one run at the same time queue one event (the second gets
+  22004); a retry whose original event was deleted is refused (22015). These
+  follow-up tests were not run against the unfixed code.
 
 ## Remaining
 
