@@ -609,6 +609,21 @@ describe('hasFilterQuery', () => {
 	})
 
 	it.each([
+		'cf_12 > 100',
+		'cf_4 in 31, 33',
+		'cf_7 = "Acme"',
+	])('treats the custom field filter "%s" as a filter', filter => {
+		expect(hasFilterQuery(filter)).toBe(true)
+	})
+
+	it.each([
+		'cf_ > 1',
+		'cf_x = 1',
+	])('does not take "%s" for a custom field', term => {
+		expect(hasFilterQuery(term)).toBe(false)
+	})
+
+	it.each([
 		'status = 3',
 		'status in 1, 2',
 		'status_category = done',

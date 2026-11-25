@@ -114,6 +114,8 @@ const FILTER_QUERY_REGEX = new RegExp('\\b(' + [
 	...AVAILABLE_FILTER_FIELDS,
 	...AVAILABLE_FILTER_FIELDS.map(f => snakeCase(f)),
 	...API_ONLY_FILTER_FIELDS,
+	// A custom field, as the filter input sends it: cf_<id>.
+	'cf_\\d+',
 ].join('|') + ')\\s*' + FILTER_OPERATORS_REGEX, 'i')
 
 // A bare operator is not enough: search terms like "testing" contain "in".
