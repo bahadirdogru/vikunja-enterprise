@@ -153,7 +153,7 @@ Schema violations (an enum, a range, a missing required property) are `422`, and
 | Range | Module | File |
 |---|---|---|
 | 20001 - 20008 | Custom fields | `pkg/models/error_custom_fields.go` |
-| 21001 - 21010 | Workflows | `pkg/models/error_workflow.go` |
+| 21001 - 21011 | Workflows | `pkg/models/error_workflow.go` |
 | 22001 - 22015 | Automation (22005 - 22008 are scripts and secrets) | `pkg/models/error_automation.go`, `pkg/models/error_automation_secrets.go` |
 | 23001 - 23011 | Reports and dashboards | `pkg/models/error_reports.go` |
 | 24001 - 24010 | Approvals | `pkg/models/error_approvals.go` |
@@ -179,6 +179,7 @@ Schema violations (an enum, a range, a missing required property) are `422`, and
 | 21008 | 409 | Removed statuses still have tasks; send `move_tasks_to` | workflow PUT |
 | 21009 | 400 | A status board needs a workflow | views |
 | 21010 | 400 | Buckets of a status view are managed by the workflow | views |
+| 21011 | 409 | A removed status has more tasks than one request moves (20000); move some of them first | workflow PUT |
 | 22002 | 400 | Invalid rule, with `details.issues[] = {path, message}` and, for scripts, `line` and `column` | automation |
 | 22005 | 400 | Scripts are disabled on this instance | automation |
 | 22008 | 409 | A secret cannot be decrypted (`service.secret` changed) | secrets |
@@ -279,6 +280,8 @@ The tables below list every `/api/v2` operation the fork registers, grouped by m
 | GET | `/tasks/{task}/status` | `task-status-read` | read on task | Get the status of a task |
 | POST | `/tasks/{task}/status` | `task-status-change` | write on task, plus the transition rules | Change the status of a task |
 | GET | `/tasks/{task}/status/history` | `task-status-history-list` | read on task | List the status history of a task |
+
+A history entry has `cause`: empty for a change somebody made, `status_removed` when the status the task was in was removed from the workflow and its tasks moved (`from_title` is the removed status, `comment` is empty, the doer is the person who saved the workflow). The `task.status.changed` event carries the same `cause`.
 
 ### Approvals
 

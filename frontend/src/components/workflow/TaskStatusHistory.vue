@@ -98,7 +98,13 @@ function approvedBy(requestId: number | null): string | null {
 					</BaseButton>
 				</p>
 				<p
-					v-if="entry.comment"
+					v-if="entry.cause === 'status_removed'"
+					class="status-history__comment"
+				>
+					{{ $t('workflow.history.statusRemoved', {title: entry.from_title}) }}
+				</p>
+				<p
+					v-else-if="entry.comment"
 					class="status-history__comment"
 				>
 					{{ entry.comment }}

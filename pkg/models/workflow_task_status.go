@@ -297,6 +297,7 @@ func (h *TaskStatusHistory) ReadAll(s *xorm.Session, a web.Auth, _ string, page 
 	}
 	for _, e := range entries {
 		e.Doer = doers[e.DoerID]
+		e.Cause, e.Comment = splitHistoryCause(e.Comment)
 	}
 	return entries, len(entries), total, nil
 }

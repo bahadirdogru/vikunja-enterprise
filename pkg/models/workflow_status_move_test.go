@@ -18,6 +18,7 @@ package models
 
 import (
 	"testing"
+	"time"
 
 	"code.vikunja.io/api/pkg/db"
 	"code.vikunja.io/api/pkg/events"
@@ -68,7 +69,9 @@ func TestWorkflow_RemovedStatusMoveIsAStatusChange(t *testing.T) {
 			require.NotNil(t, last.FromStatusID)
 			assert.Equal(t, int64(1), *last.FromStatusID)
 			assert.Equal(t, int64(1), last.DoerID)
-			assert.Contains(t, last.Comment, "was removed from the workflow")
+			cause, comment := splitHistoryCause(last.Comment)
+			assert.Equal(t, "status_removed", cause)
+			assert.Empty(t, comment)
 		}
 
 		changed := events.GetDispatchedEvents("task.status.changed")
@@ -80,7 +83,8 @@ func TestWorkflow_RemovedStatusMoveIsAStatusChange(t *testing.T) {
 			require.NotNil(t, ev.FromStatus)
 			assert.Equal(t, "Todo", ev.FromStatus.Title)
 			assert.Equal(t, "Doing", ev.ToStatus.Title)
-			assert.Contains(t, ev.Comment, "was removed from the workflow")
+			assert.Equal(t, "status_removed", ev.Cause)
+			assert.Empty(t, ev.Comment)
 			require.NotNil(t, ev.Doer)
 			assert.Equal(t, int64(1), ev.Doer.ID)
 		}
@@ -124,6 +128,127 @@ func TestWorkflow_RemovedStatusMoveIsAStatusChange(t *testing.T) {
 		_, err := saveWorkflow(t, wf, cfUser1)
 		require.Error(t, err)
 		assert.Zero(t, events.CountDispatchedEvents("task.status.changed"))
-		db.AssertCount(t, "task_status_history", builder.And(builder.Eq{"task_id": ids[1]}, builder.Like{"comment", "%removed from the workflow%"}), 0)
+		db.AssertCount(t, "task_status_history", builder.And(builder.Eq{"task_id": ids[1]}, builder.Like{"comment", "%status_removed%"}), 0)
 	})
+}
+
+func removeTodoMovingTo(t *testing.T, targetTitle string) {
+	t.Helper()
+	wf := readWorkflow(t, 11)
+	wf.Statuses = wf.Statuses[1:]
+	wf.Statuses[0].IsInitial = true
+	wf.Transitions = nil
+	wf.MoveTasksTo = statusIDByTitle(wf, targetTitle)
+	require.NotZero(t, wf.MoveTasksTo)
+	mustSaveWorkflow(t, wf, cfUser1)
+}
+
+func TestWorkflow_RemovedStatusMoveDetails(t *testing.T) {
+	t.Run("more tasks than one chunk are all moved with a history row and an event each", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+		const extra = workflowBulkChunkSize + 5
+		ids := []int64{20}
+		for i := 0; i < extra; i++ {
+			ids = append(ids, createWorkflowTask(t, 11, &Task{Title: "bulk", ProjectID: 11}).ID)
+		}
+		events.ClearDispatchedEvents()
+		removeTodoMovingTo(t, "Doing")
+
+		db.AssertCount(t, "task_statuses", builder.Eq{"status_id": 2}, int64(len(ids)))
+		db.AssertCount(t, "task_status_history", builder.And(builder.In("task_id", ids), builder.Like{"comment", "%status_removed%"}), int64(len(ids)))
+		assert.Equal(t, len(ids), events.CountDispatchedEvents("task.status.changed"))
+	})
+
+	t.Run("a trashed task is moved and gets history but no event", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+		trashed := createWorkflowTask(t, 11, &Task{Title: "trashed", ProjectID: 11})
+		setRaw(t, "tasks", builder.Eq{"id": trashed.ID}, map[string]any{"deleted_at": time.Now().UTC().Format("2006-01-02 15:04:05")})
+		events.ClearDispatchedEvents()
+		removeTodoMovingTo(t, "Doing")
+
+		assert.Equal(t, int64(2), taskStatusOf(t, trashed.ID).StatusID)
+		db.AssertCount(t, "task_status_history", builder.And(builder.Eq{"task_id": trashed.ID}, builder.Like{"comment", "%status_removed%"}), 1)
+		for _, e := range events.GetDispatchedEvents("task.status.changed") {
+			assert.NotEqual(t, trashed.ID, e.(*TaskStatusChangedEvent).Task.ID)
+		}
+		assert.Equal(t, 1, events.CountDispatchedEvents("task.status.changed"), "only task 20")
+	})
+
+	t.Run("a repeating task that enters a done status is reopened like a status change does", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+		due := time.Now().Add(24 * time.Hour).UTC().Truncate(time.Second)
+		repeating := createWorkflowTask(t, 11, &Task{Title: "repeats", ProjectID: 11, RepeatAfter: 86400, DueDate: due})
+		removeTodoMovingTo(t, "Done")
+
+		assert.False(t, taskDone(t, repeating.ID), "a repeating task is not done for good")
+		s := db.NewSession()
+		defer s.Close()
+		stored, err := GetTaskByIDSimple(s, repeating.ID)
+		require.NoError(t, err)
+		assert.True(t, stored.DueDate.After(due), "the due date moved on")
+		assert.True(t, taskDone(t, 20), "a plain task is done")
+	})
+
+	t.Run("the update time of a moved task changes also when done does not", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+		setRaw(t, "tasks", builder.Eq{"id": 20}, map[string]any{"updated": "2000-01-01 00:00:00"})
+		removeTodoMovingTo(t, "Doing")
+		s := db.NewSession()
+		defer s.Close()
+		stored, err := GetTaskByIDSimple(s, 20)
+		require.NoError(t, err)
+		assert.Greater(t, stored.Updated.Year(), 2000)
+	})
+
+	t.Run("a comment that starts like the marker cannot fake a cause", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+		_, err := changeTaskStatusAs(t, 20, 2, "\x1estatus_removed", cfUser1)
+		require.NoError(t, err)
+		history := taskHistoryOf(t, 20)
+		cause, comment := splitHistoryCause(history[len(history)-1].Comment)
+		assert.Empty(t, cause)
+		assert.Equal(t, "status_removed", comment)
+	})
+}
+
+func TestWorkflow_CategoryChangeAnnouncesTheDoneFlag(t *testing.T) {
+	db.LoadAndAssertFixtures(t)
+	// Task 20 is in Todo; Todo becomes a done status.
+	wf := readWorkflow(t, 11)
+	wf.Statuses[0].Category = WorkflowCategoryDone
+	wf.Statuses[1].IsInitial = true
+	wf.Statuses[0].IsInitial = false
+	events.ClearDispatchedEvents()
+	mustSaveWorkflow(t, wf, cfUser1)
+
+	assert.True(t, taskDone(t, 20))
+	updated := events.GetDispatchedEvents("task.updated")
+	require.Len(t, updated, 1)
+	ev := updated[0].(*TaskUpdatedEvent)
+	assert.EqualValues(t, 20, ev.Task.ID)
+	assert.True(t, ev.Task.Done)
+	assert.False(t, ev.OldTask.Done)
+}
+
+func TestWorkflow_RemovedStatusWithTooManyTasksIsRefused(t *testing.T) {
+	db.LoadAndAssertFixtures(t)
+	for i := 0; i < 3; i++ {
+		createWorkflowTask(t, 11, &Task{Title: "many", ProjectID: 11})
+	}
+	previous := maxTasksMovedWithAStatus
+	maxTasksMovedWithAStatus = 3
+	t.Cleanup(func() { maxTasksMovedWithAStatus = previous })
+
+	wf := readWorkflow(t, 11)
+	wf.Statuses = wf.Statuses[1:]
+	wf.Statuses[0].IsInitial = true
+	wf.Transitions = nil
+	wf.MoveTasksTo = wf.Statuses[0].ID
+	events.ClearDispatchedEvents()
+	_, err := saveWorkflow(t, wf, cfUser1)
+	require.Error(t, err)
+	assert.True(t, IsErrWorkflowStatusMoveTooLarge(err), "%v", err)
+	assert.Equal(t, int64(1), taskStatusOf(t, 20).StatusID, "nothing was moved")
+	assert.Zero(t, events.CountDispatchedEvents("task.status.changed"))
+	db.AssertExists(t, "workflow_statuses", map[string]interface{}{"id": 1}, false)
 }

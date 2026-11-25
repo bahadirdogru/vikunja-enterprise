@@ -58,7 +58,10 @@ type TaskStatusChangedEvent struct {
 	FromStatus *WorkflowStatus `json:"from_status"`
 	ToStatus   *WorkflowStatus `json:"to_status"`
 	Comment    string          `json:"comment"`
-	Doer       *user.User      `json:"doer"`
+	// Cause is set when the change is not one somebody asked for: "status_removed" when the status the task was
+	// in was removed from the workflow and its tasks were moved. Empty for every other change.
+	Cause string     `json:"cause,omitempty"`
+	Doer  *user.User `json:"doer"`
 }
 
 // Name defines the name for TaskStatusChangedEvent

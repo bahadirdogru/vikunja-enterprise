@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"code.vikunja.io/api/pkg/web"
@@ -321,5 +322,42 @@ func (err ErrStatusViewBucketsManaged) HTTPError() web.HTTPError {
 		HTTPCode: http.StatusBadRequest,
 		Code:     ErrCodeStatusViewBucketsManaged,
 		Message:  "The columns of this view are the statuses of the project workflow. Columns, the default column, the done column and limits are changed in the workflow, not in the view.",
+	}
+}
+
+// ErrWorkflowStatusMoveTooLarge represents an error where removing a status would move more tasks at once than a
+// single request moves.
+type ErrWorkflowStatusMoveTooLarge struct {
+	StatusID int64
+	Title    string
+	Tasks    int64
+	Limit    int64
+}
+
+// IsErrWorkflowStatusMoveTooLarge checks if an error is ErrWorkflowStatusMoveTooLarge.
+func IsErrWorkflowStatusMoveTooLarge(err error) bool {
+	_, ok := errors.AsType[ErrWorkflowStatusMoveTooLarge](err)
+	return ok
+}
+
+func (err ErrWorkflowStatusMoveTooLarge) Error() string {
+	return fmt.Sprintf("Too many tasks to move with one removed status [StatusID: %d, Tasks: %d, Limit: %d]", err.StatusID, err.Tasks, err.Limit)
+}
+
+// ErrCodeWorkflowStatusMoveTooLarge holds the unique world-error code of this error
+const ErrCodeWorkflowStatusMoveTooLarge = 21011
+
+// HTTPError holds the http error description. It is a 409: moving some of the tasks to another status first makes
+// the same request work.
+func (err ErrWorkflowStatusMoveTooLarge) HTTPError() web.HTTPError {
+	return web.HTTPError{
+		HTTPCode: http.StatusConflict,
+		Code:     ErrCodeWorkflowStatusMoveTooLarge,
+		Message:  fmt.Sprintf("The status \"%s\" has %d tasks. At most %d tasks can be moved when a status is removed: move some of them to another status first.", err.Title, err.Tasks, err.Limit),
+		I18nParams: map[string]string{
+			"title": err.Title,
+			"tasks": strconv.FormatInt(err.Tasks, 10),
+			"limit": strconv.FormatInt(err.Limit, 10),
+		},
 	}
 }

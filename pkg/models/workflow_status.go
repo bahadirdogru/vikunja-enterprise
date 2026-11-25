@@ -59,6 +59,9 @@ type TaskStatusHistory struct {
 	// ApprovalRequestID is set for changes an approval request made or caused: an approved transition (the doer is
 	// the requester) or the move after a rejection (the doer is the rejecting approver).
 	ApprovalRequestID *int64 `xorm:"bigint null" json:"approval_request_id" readOnly:"true" doc:"The approval request behind the change, null for changes without one."`
+	// Cause is not a column: a change the system made is stored with a marker in the comment (see
+	// historyCauseMarker) and read back as cause with an empty comment.
+	Cause string `xorm:"-" json:"cause" readOnly:"true" enum:"status_removed" doc:"Why the system made the change, empty for changes somebody made. status_removed: the status the task was in was removed from the workflow and its tasks were moved; from_title is the title of the removed status and comment is empty."`
 
 	web.CRUDable    `xorm:"-" json:"-"`
 	web.Permissions `xorm:"-" json:"-"`
@@ -169,13 +172,35 @@ func insertInChunks[T any](s *xorm.Session, rows []*T) error {
 	return nil
 }
 
+// historyCauseMarker starts the stored comment of a change the system made on its own: the marker, then the cause
+// (for example "\x1estatus_removed"). It is a control character (U+001E, record separator) that
+// newHistoryEntry removes from the start of every comment a person sends, so no comment can look like a cause. The
+// API never shows it: the history entry has the field cause and an empty comment instead, and the client writes the
+// sentence in the language of the user. No column was added for this.
+const historyCauseMarker = "\x1e"
+
+// The causes of changes the system made.
+const historyCauseStatusRemoved = "status_removed"
+
+func stripHistoryCauseMarker(comment string) string {
+	return strings.TrimLeft(comment, historyCauseMarker)
+}
+
+// splitHistoryCause returns the cause and the comment of a stored comment.
+func splitHistoryCause(stored string) (cause, comment string) {
+	if rest, ok := strings.CutPrefix(stored, historyCauseMarker); ok {
+		return rest, ""
+	}
+	return "", stored
+}
+
 func newHistoryEntry(taskID int64, from *WorkflowStatus, to *WorkflowStatus, a web.Auth, comment string) *TaskStatusHistory {
 	h := &TaskStatusHistory{
 		TaskID:     taskID,
 		ToStatusID: to.ID,
 		ToTitle:    to.Title,
 		DoerID:     historyDoerID(a),
-		Comment:    comment,
+		Comment:    stripHistoryCauseMarker(comment),
 	}
 	if from != nil {
 		id := from.ID
@@ -364,6 +389,9 @@ type statusChange struct {
 	FailOnApproval bool
 	// ApprovalRequestID is recorded in the history entry.
 	ApprovalRequestID int64
+	// Cause marks a change the system made on its own (historyCause...). It is stored in the history entry and
+	// carried by the event.
+	Cause string
 }
 
 // statusChangeResult is the outcome of changeTaskStatus: the status changed (Changed), the task did not move
@@ -436,6 +464,9 @@ func (d *workflowDef) changeTaskStatus(s *xorm.Session, a web.Auth, c *statusCha
 		return nil, err
 	}
 	entry := newHistoryEntry(t.ID, from, to, a, c.Comment)
+	if c.Cause != "" {
+		entry.Comment = historyCauseMarker + c.Cause
+	}
 	if c.ApprovalRequestID != 0 {
 		id := c.ApprovalRequestID
 		entry.ApprovalRequestID = &id
@@ -460,6 +491,7 @@ func (d *workflowDef) changeTaskStatus(s *xorm.Session, a web.Auth, c *statusCha
 		FromStatus: from,
 		ToStatus:   to,
 		Comment:    c.Comment,
+		Cause:      c.Cause,
 		Doer:       doerFromAuth(s, a),
 	})
 	return result, nil

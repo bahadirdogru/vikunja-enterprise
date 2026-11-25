@@ -5445,6 +5445,10 @@ export type TaskStatusHistory = {
      */
     readonly approval_request_id?: number | null;
     /**
+     * Why the system made the change, empty for changes somebody made. status_removed: the status the task was in was removed from the workflow and its tasks were moved; from_title is the title of the removed status and comment is empty.
+     */
+    readonly cause?: 'status_removed';
+    /**
      * The comment left with the change.
      */
     readonly comment?: string;
