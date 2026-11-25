@@ -603,6 +603,23 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
 
 ## Remaining
 
+- Workflow: a save that would move or change more than 20000 tasks is
+  refused (21011) and there is no tool to get below the limit: no bulk status
+  change exists, the limit is not a config key, and changing the category of
+  a large status, a cheap bulk update before, is refused as well. The way
+  out today is one status change per task through the API.
+- Workflow: on PostgreSQL a task can be left on a removed (archived) status
+  when another request moves it into that status in the instant the save
+  removes it; the save locks the tasks it finds, not the status. Older than
+  the review rounds, not fixed.
+- Approvals and workflow: three paths take several task locks out of task id
+  order (a category flip before the removal lock in one save, the two passes
+  of a user deletion, tasks that arrive in a removed status after the first
+  lock). A deadlock needs a second multi-task locker on the same tasks at the
+  same time; the database then aborts one of them with an error.
+- Upstream test `TestConnectionAuth/closes_the_socket_when_the_token_expires`
+  (`pkg/websocket`, untouched by the fork) failed once on PostgreSQL in a full
+  run and passed six times in a row afterwards; cause not established.
 - Workflow: changing the category of a status in the editor flips the done flag of its tasks (and announces `task.updated`), but does not move them to the done bucket of manual kanban views; tasks moved because their status was removed do.
 - Default dashboards for new projects with a workflow (4c).
 - MCP exposure of the fork's endpoints; the new automation routes are not in

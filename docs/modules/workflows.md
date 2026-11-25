@@ -156,6 +156,7 @@ More in [DESIGN.md](../../DESIGN.md#workflows).
 - Required fields and teams are validated against the project when the workflow is saved (an unknown field, a custom field of another project or an unknown team is `21002`).
 - Status and transition titles are at most 250 characters. There is no cap on the number of statuses or transitions.
 - Creating an approval request takes the lock of the task row, so status changes of one task run one after the other.
+- A save that would move or change more than 20000 tasks (tasks in removed statuses and in statuses whose category changes between done and not done, trashed tasks included) is refused with `21011` before anything is written. The limit is not configurable and there is no bulk status change, so the way out is to move tasks one by one with the task status endpoint, or to remove statuses in several saves.
 
 ## Known gaps and open decisions
 

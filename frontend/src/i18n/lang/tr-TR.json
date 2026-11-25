@@ -3165,7 +3165,7 @@
 			"event_new_approvers": "Onay talebi: onaylayanlar",
 			"event_new_outcome": "Onay talebi: sonuç",
 			"event_new_cancel_reason": "Onay talebi: iptal nedeni",
-			"event_new_cause": "Durum değişikliği: sistem yaptı",
+			"event_new_cause": "Durum değişikliği: nedeni",
 			"event_new_form_id": "Form: kimlik",
 			"event_new_form_title": "Form: başlık",
 			"event_new_submitter_name": "Form: gönderenin adı",
