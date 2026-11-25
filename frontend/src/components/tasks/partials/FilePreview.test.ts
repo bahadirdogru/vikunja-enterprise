@@ -6,6 +6,7 @@ import {
 	afterEach,
 	vi,
 } from 'vitest'
+import {i18n} from '@/i18n'
 import {
 	mount,
 	flushPromises,
@@ -36,7 +37,7 @@ const mountedPreviews: VueWrapper[] = []
 function mountPreview() {
 	const wrapper = mount(FilePreview, {
 		props: {modelValue: attachment()},
-		global: {stubs: {Icon: true}},
+		global: {stubs: {Icon: true}, plugins: [i18n]},
 	})
 	mountedPreviews.push(wrapper)
 	return wrapper

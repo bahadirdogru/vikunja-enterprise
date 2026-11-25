@@ -130,7 +130,7 @@ describe('AdHocApprovalDialog', () => {
 		await submit()
 		expect(alerts()).toEqual(['The approval request is not valid.'])
 
-		sdk.taskApprovalsCreate.mockRejectedValueOnce(new ApiError({status: 500, detail: 'boom'}))
+		sdk.taskApprovalsCreate.mockRejectedValueOnce(new ApiError({status: 409, detail: 'boom'}))
 		await submit()
 		expect(alerts()).toEqual(['boom'])
 		expect(wrapper.emitted('close')).toBeUndefined()

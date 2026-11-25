@@ -1,7 +1,7 @@
 <template>
 	<header
 		:class="{ 'has-background': background, 'menu-active': menuActive }"
-		aria-label="main navigation"
+		:aria-label="$t('navigation.main')"
 		class="navbar d-print-none"
 	>
 		<RouterLink

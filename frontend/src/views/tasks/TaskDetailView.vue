@@ -56,7 +56,7 @@
 					/>
 					<nav
 						v-if="project?.id"
-						aria-label="Breadcrumb"
+						:aria-label="$t('task.detail.breadcrumb')"
 						class="subtitle"
 					>
 						<template

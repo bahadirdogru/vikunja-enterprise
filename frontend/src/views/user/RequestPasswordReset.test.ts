@@ -36,6 +36,6 @@ describe('RequestPasswordReset', () => {
 
 		expect(errors).toEqual([])
 		expect(requestResetPassword).toHaveBeenCalledWith({body: {email: 'user@example.com'}})
-		expect(wrapper.text()).toContain('Failed to fetch')
+		expect(wrapper.text()).toContain('The server could not be reached')
 	})
 })

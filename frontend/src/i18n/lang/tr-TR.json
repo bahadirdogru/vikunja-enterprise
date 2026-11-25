@@ -734,7 +734,8 @@
 			"partialDatesEnd": "Yalnızca sonlanma tarihi (ucu açık)",
 			"expandGroup": "Grubu genişlet: {task}",
 			"collapseGroup": "Grubu daralt: {task}",
-			"toggleRelationArrows": "İlişki oklarını göster/gizle"
+			"toggleRelationArrows": "İlişki oklarını göster/gizle",
+			"reset": "Sıfırla"
 		},
 		"table": {
 			"title": "Tablo",
@@ -1092,7 +1093,9 @@
 		"sortBy": "Sıralama ölçütü",
 		"dateRange": "Tarih aralığı",
 		"notSet": "Belirtilmemiş",
-		"user": "Kullanıcı"
+		"user": "Kullanıcı",
+		"pagination": "Sayfalama",
+		"gotoPage": "{page}. sayfaya git"
 	},
 	"input": {
 		"projectColor": "Proje rengi",
@@ -1363,7 +1366,8 @@
 				"delete": "Sil",
 				"favorite": "Favorilere ekle",
 				"unfavorite": "Favorilerden çıkar"
-			}
+			},
+			"breadcrumb": "Gezinti yolu"
 		},
 		"attributes": {
 			"assignees": "Atananlar",
@@ -1424,7 +1428,8 @@
 			"viewMode": "Ek görünümü",
 			"viewDetailed": "Büyük ön izlemelerle göster",
 			"viewList": "Liste olarak göster",
-			"viewGallery": "Galeri olarak göster"
+			"viewGallery": "Galeri olarak göster",
+			"preview": "Ek ön izlemesi"
 		},
 		"comment": {
 			"title": "Yorumlar",

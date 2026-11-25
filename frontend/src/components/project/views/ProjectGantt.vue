@@ -27,10 +27,10 @@
 						<span
 							class="label"
 							aria-hidden="true"
-						>Reset</span>
+						>{{ $t('project.gantt.reset') }}</span>
 						<div class="control">
 							<XButton @click="setDefaultFilters">
-								Reset
+								{{ $t('project.gantt.reset') }}
 							</XButton>
 						</div>
 					</div>
