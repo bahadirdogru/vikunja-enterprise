@@ -4,7 +4,7 @@ Vikunja: self-hosted to-do app. Go API in `pkg/`, Vue 3 + TypeScript frontend in
 
 ## Fork
 
-This repository is vikunja-enterprise, a fork of go-vikunja/vikunja. Read [Working in this fork](.agents/docs/fork.md) before changing anything: it says how to stay mergeable with upstream and where the fork's rules differ from the ones below (translations, lint, commits). Fork skills: `fork-change`, `fork-db-matrix`, `fork-merge-upstream`, `fork-i18n`.
+This repository is vikunja-enterprise, a fork of go-vikunja/vikunja. Read [Working in this fork](.agents/docs/fork.md) before changing anything: it says how to stay mergeable with upstream and where the fork's rules differ from the ones below (translations, lint, commits). Fork skills: `fork-change`, `fork-db-matrix`, `fork-merge-upstream`, `fork-i18n`, `fork-e2e`, `fork-delegate`, `fork-release-check`.
 
 ## Commands
 
