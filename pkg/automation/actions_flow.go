@@ -166,7 +166,7 @@ func planNotify(env *Env, p params) (*Plan, error) {
 		return nil, actionErr("message_empty", nil, "the message would be empty")
 	}
 	if len(message) > 1000 {
-		message = message[:1000]
+		message = truncate(message, 1000) // on a character boundary
 	}
 
 	ids := []int64{}

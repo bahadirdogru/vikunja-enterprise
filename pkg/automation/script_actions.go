@@ -286,7 +286,9 @@ func planHTTPRequest(env *Env, p params) (*Plan, error) {
 			return "", env.maskErr(httpRequestError(err))
 		}
 		plan.rawOutput = true
-		snippet := strings.TrimSpace(string(resp.Body))
+		// The answer of another server is bytes: text that is not valid UTF-8 (a Latin-1 page, a body cut in the middle of a
+		// character) cannot be stored in PostgreSQL, and a failed insert after the request was sent gets the run retried.
+		snippet := strings.TrimSpace(strings.ToValidUTF8(string(resp.Body), "\uFFFD"))
 		if resp.Truncated {
 			snippet += "\n[answer truncated]"
 		}

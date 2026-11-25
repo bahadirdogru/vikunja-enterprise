@@ -473,3 +473,38 @@ func TestOnlyTheStoringCodeBoundsAnError(t *testing.T) {
 		assert.False(t, call.Match(src), "%s calls errorMessage, which cuts: use errorMessageRaw and let the storing code cut after the mask", f)
 	}
 }
+
+func TestWhatAnotherServerAnswersIsStoredAsValidText(t *testing.T) {
+	cases := map[string]string{
+		"a body cut inside a character": "a" + strings.Repeat("ş", 1500), // 3001 bytes, the limit is 2048
+		"a Latin-1 page":                "caf\xe9 \xe8 d\xe9j\xe0",
+	}
+	for name, body := range cases {
+		for _, status := range []int{200, 404} {
+			t.Run(name+" "+strconv.Itoa(status), func(t *testing.T) {
+				reset(t)
+				allowLoopback(t)
+				srv := countingServer(t, status, body)
+				run, steps := runHTTP(t, map[string]any{"url": srv.url + "/x"})
+				require.Len(t, steps, 1)
+				assert.True(t, utf8.ValidString(steps[0].Output), "output")
+				assert.True(t, utf8.ValidString(steps[0].Error), "error")
+				assert.True(t, utf8.ValidString(run.Error), "run error")
+				for _, p := range []map[string]string{steps[0].ErrorParams, run.ErrorParams} {
+					for k, v := range p {
+						assert.True(t, utf8.ValidString(v), "param %s", k)
+					}
+				}
+				assert.EqualValues(t, 1, srv.count(), "the request is sent once")
+			})
+		}
+	}
+
+	t.Run("a long message of a notification is cut on a character", func(t *testing.T) {
+		reset(t)
+		_, run, steps := runAction(t, projectOwned, user1, user1, notifyAction(map[string]any{"message": "a" + strings.Repeat("ş", 900), "recipients": []any{"task_creator"}}))
+		require.Equal(t, models.AutomationRunSuccess, run.Status, run.Error)
+		assert.True(t, utf8.ValidString(steps[0].Output))
+		assert.True(t, utf8.ValidString(steps[0].OutputMessages[0].Params["message"]))
+	})
+}
