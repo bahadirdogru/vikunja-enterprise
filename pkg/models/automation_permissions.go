@@ -29,6 +29,10 @@ func canAdministerAutomation(s *xorm.Session, a web.Auth, projectID int64) (bool
 		return false, 0, nil //nolint:nilerr // anything but a user is refused, which is an answer and not an error
 	}
 	can, err := (&Project{ID: projectID}).IsAdmin(s, a)
+	if IsErrProjectDoesNotExist(err) {
+		// The same refusal as for a project the caller cannot administer: it must not tell what exists.
+		return false, 0, nil
+	}
 	if err != nil || !can {
 		return false, 0, err
 	}

@@ -210,12 +210,17 @@ type AutomationManualRule struct {
 // ListAutomationManualRules returns the enabled rules with the manual trigger of a project. Needs write access to
 // the project; the rules are only listed by title, never their conditions or actions.
 func ListAutomationManualRules(s *xorm.Session, a web.Auth, projectID int64) ([]*AutomationManualRule, error) {
+	// Link shares have no access to automation, and whoever cannot write in the project gets the same refusal
+	// whether the project exists or not.
+	if _, err := ownerOf(a); err != nil {
+		return nil, ErrGenericForbidden{}
+	}
 	can, err := (&Project{ID: projectID}).CanWrite(s, a)
+	if !can && (err == nil || IsErrProjectDoesNotExist(err) || IsErrProjectIsArchived(err)) {
+		return nil, ErrGenericForbidden{}
+	}
 	if err != nil {
 		return nil, err
-	}
-	if !can {
-		return nil, ErrGenericForbidden{}
 	}
 	// A run is refused while automation is off server-wide (22009), so the button would only ever fail.
 	if !config.AutomationEnabled.GetBool() {

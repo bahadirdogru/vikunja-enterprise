@@ -353,8 +353,11 @@ func TestAutomationRule_Permissions(t *testing.T) {
 	t.Run("a project that does not exist", func(t *testing.T) {
 		s := db.NewSession()
 		defer s.Close()
-		_, err := (&AutomationRule{ProjectID: 99999}).CanCreate(s, autoUser1)
-		assert.Error(t, err)
+		// The same refusal as for a project the caller cannot administer, so it does not tell what exists
+		// (docs/modules/automation.md).
+		can, err := (&AutomationRule{ProjectID: 99999}).CanCreate(s, autoUser1)
+		require.NoError(t, err)
+		assert.False(t, can)
 	})
 }
 
