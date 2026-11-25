@@ -112,6 +112,7 @@ describe('SecretsSection', () => {
 		dialogButton('Do it!').click()
 		await settle()
 		expect(sdk.automationSecretsDelete).toHaveBeenCalledWith({path: {project: 3, name: 'CHAT_TOKEN'}})
-		expect(document.body.textContent).not.toContain('Delete this secret?')
+		// the dialog fades out on a timer; it is marked as closing at once
+		expect(document.body.querySelector('dialog')?.hasAttribute('data-closing')).toBe(true)
 	})
 })
