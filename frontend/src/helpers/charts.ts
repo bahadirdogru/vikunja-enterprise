@@ -216,7 +216,13 @@ const DURATION_UNITS: Record<string, {h: string, min: string, s: string}> = {
 	tr: {h: 'sa', min: 'dk', s: 'sn'},
 }
 
+// A value that is not a number (NaN, Infinity) has no duration to show: empty, like formatNumber.
 export function formatSeconds(seconds: number, locale?: string): string {
+	if (!Number.isFinite(seconds)) {
+		return ''
+	}
+	// -0 would print as "-0 s"
+	seconds = seconds === 0 ? 0 : seconds
 	const abs = Math.abs(seconds)
 	const units = DURATION_UNITS[(locale ?? '').split('-')[0]!.toLowerCase()] ?? {h: 'h', min: 'min', s: 's'}
 	if (abs >= 3600) {

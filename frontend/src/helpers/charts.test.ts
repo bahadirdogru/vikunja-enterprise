@@ -92,6 +92,18 @@ describe('formatting', () => {
 		expect(formatSeconds(seconds, 'en')).toBe(text)
 	})
 
+	it.each([[Number.NaN], [Number.POSITIVE_INFINITY], [Number.NEGATIVE_INFINITY]])('shows no duration for %s', value => {
+		expect(formatSeconds(value, 'en')).toBe('')
+		expect(formatSeconds(value, 'tr-TR')).toBe('')
+	})
+
+	it('keeps the sign of a negative duration and the unit of its size', () => {
+		expect(formatSeconds(-45, 'en')).toBe('-45 s')
+		expect(formatSeconds(-300, 'en')).toBe('-5 min')
+		expect(formatSeconds(-7200, 'tr-TR')).toBe('-2 sa')
+		expect(formatSeconds(-0, 'en')).toBe('0 s')
+	})
+
 	it('writes durations in Turkish with Turkish units and decimal comma', () => {
 		expect(formatSeconds(30, 'tr-TR')).toBe('30 sn')
 		expect(formatSeconds(300, 'tr-TR')).toBe('5 dk')
