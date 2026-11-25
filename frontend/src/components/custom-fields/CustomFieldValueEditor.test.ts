@@ -142,4 +142,104 @@ describe('CustomFieldValueEditor', () => {
 
 		expect(wrapper.emitted('update:modelValue')).toBeUndefined()
 	})
+
+	describe('text values', () => {
+		it('refuses a long text above 65535 bytes and says so on the textarea', async () => {
+			const wrapper = mountEditor(field({type: 'long_text'}))
+			const area = wrapper.get('textarea')
+			// 21846 euro signs are 65538 bytes but only 21846 characters
+			await area.setValue('\u20ac'.repeat(21846))
+			await area.trigger('blur')
+
+			expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+			expect(wrapper.get('[role="alert"]').text()).toContain('customFields.errors.value.tooLong {"max":65535}')
+			expect(area.attributes('aria-invalid')).toBe('true')
+		})
+
+		it('accepts a long text of exactly 65535 bytes and trims it', async () => {
+			const wrapper = mountEditor(field({type: 'long_text'}))
+			const area = wrapper.get('textarea')
+			await area.setValue('\u20ac'.repeat(21845))
+			await area.trigger('blur')
+			expect(wrapper.emitted('update:modelValue')).toEqual([['\u20ac'.repeat(21845)]])
+		})
+
+		it('commits a one-line text with Enter but keeps typing in a long text', async () => {
+			const one = mountEditor(field({type: 'text'}))
+			await one.get('input').setValue('  Ada  ')
+			await one.get('input').trigger('keydown', {key: 'Enter'})
+			expect(one.emitted('update:modelValue')).toEqual([['Ada']])
+
+			const long = mountEditor(field({type: 'long_text'}))
+			await long.get('textarea').setValue('line one')
+			await long.get('textarea').trigger('keydown', {key: 'Enter'})
+			expect(long.emitted('update:modelValue')).toBeUndefined()
+		})
+
+		it('rejects a url that is not http(s) and opens a valid one in a new tab without a referrer', async () => {
+			const wrapper = mountEditor(field({type: 'url'}))
+			const input = wrapper.get('input')
+			await input.setValue('javascript:alert(1)')
+			await input.trigger('blur')
+			expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+			expect(wrapper.text()).toContain('customFields.errors.value.url')
+			expect(wrapper.find('a').exists()).toBe(false)
+
+			await input.setValue('https://example.com/a?b=1')
+			const link = wrapper.get('a')
+			expect(link.attributes('href')).toBe('https://example.com/a?b=1')
+			expect(link.attributes('target')).toBe('_blank')
+			expect(link.attributes('rel')).toBe('noopener noreferrer')
+			await input.trigger('blur')
+			expect(wrapper.emitted('update:modelValue')).toEqual([['https://example.com/a?b=1']])
+		})
+
+		it('does not commit when read-only', async () => {
+			const wrapper = mountEditor(field({type: 'text'}), 'x', true)
+			await wrapper.get('input').trigger('blur')
+			expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+			expect(wrapper.get('input').attributes('readonly')).toBeDefined()
+		})
+	})
+
+	describe('number-like values', () => {
+		it('shows the currency code next to a currency input', () => {
+			const wrapper = mountEditor(field({type: 'currency', config: {currency: 'TRY'}}), 12.5)
+			expect(wrapper.get('.number-value__unit').text()).toBe('TRY')
+			expect((wrapper.get('input').element as HTMLInputElement).value).toBe('12.5')
+		})
+
+		it('shows a percent sign and a bar for progress, and refuses more than 100', async () => {
+			const wrapper = mountEditor(field({type: 'progress'}), 40)
+			expect(wrapper.get('.number-value__unit').text()).toBe('%')
+			expect(wrapper.get('input').attributes('max')).toBe('100')
+			expect(wrapper.find('progress, .progress-bar, [role="progressbar"]').exists()).toBe(true)
+
+			await wrapper.get('input').setValue('101')
+			await wrapper.get('input').trigger('blur')
+			expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+			expect(wrapper.get('[role="alert"]').text()).toContain('customFields.errors.value.progress')
+		})
+
+		it('clears a number when the box is emptied', async () => {
+			const wrapper = mountEditor(field(), 5)
+			await wrapper.get('input').setValue('')
+			await wrapper.get('input').trigger('blur')
+			expect(wrapper.emitted('update:modelValue')).toEqual([[null]])
+		})
+
+		it('rounds to the precision of the field before it validates against the bounds', async () => {
+			const wrapper = mountEditor(field({config: {min: 0, max: 10, precision: 0}}))
+			await wrapper.get('input').setValue('10.4')
+			await wrapper.get('input').trigger('blur')
+			expect(wrapper.emitted('update:modelValue')).toEqual([[10]])
+		})
+	})
+
+	it('toggles a checkbox with true and false', async () => {
+		const wrapper = mountEditor(field({type: 'checkbox'}), false)
+		const box = wrapper.get('input[type="checkbox"]')
+		await box.setValue(true)
+		expect(wrapper.emitted('update:modelValue')).toEqual([[true]])
+	})
 })
