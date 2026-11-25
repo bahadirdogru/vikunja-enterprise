@@ -232,5 +232,12 @@
 		"notifications": {
 			"title": "%[1]s için Vikunja bildirimleri"
 		}
+	},
+	"kanban": {
+		"default_buckets": {
+			"todo": "Yapılacaklar",
+			"doing": "Yapılıyor",
+			"done": "Tamamlandı"
+		}
 	}
 }

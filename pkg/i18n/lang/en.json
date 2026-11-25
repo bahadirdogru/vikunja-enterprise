@@ -220,6 +220,13 @@
     "forms": {
         "submitted_by": "Submitted by"
     },
+    "kanban": {
+        "default_buckets": {
+            "todo": "To-Do",
+            "doing": "Doing",
+            "done": "Done"
+        }
+    },
     "time": {
         "since_years": "one year|%[1]d years",
         "since_weeks": "one week|%[1]d weeks",

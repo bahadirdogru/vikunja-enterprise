@@ -469,7 +469,7 @@ func createProjectView(s *xorm.Session, p *ProjectView, a web.Auth, createBacklo
 func createDefaultKanbanBuckets(s *xorm.Session, a web.Auth, p *ProjectView, addExistingTasksToView bool) (err error) {
 	backlog := &Bucket{
 		ProjectViewID: p.ID,
-		Title:         "To-Do",
+		Title:         defaultKanbanBucketTitle(s, a, "kanban.default_buckets.todo"),
 		Position:      100,
 	}
 	err = backlog.Create(s, a)
@@ -479,7 +479,7 @@ func createDefaultKanbanBuckets(s *xorm.Session, a web.Auth, p *ProjectView, add
 
 	doing := &Bucket{
 		ProjectViewID: p.ID,
-		Title:         "Doing",
+		Title:         defaultKanbanBucketTitle(s, a, "kanban.default_buckets.doing"),
 		Position:      200,
 	}
 	err = doing.Create(s, a)
@@ -489,7 +489,7 @@ func createDefaultKanbanBuckets(s *xorm.Session, a web.Auth, p *ProjectView, add
 
 	done := &Bucket{
 		ProjectViewID: p.ID,
-		Title:         "Done",
+		Title:         defaultKanbanBucketTitle(s, a, "kanban.default_buckets.done"),
 		Position:      300,
 	}
 	err = done.Create(s, a)

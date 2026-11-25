@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"code.vikunja.io/api/pkg/config"
 	"code.vikunja.io/api/pkg/cron"
 	"code.vikunja.io/api/pkg/db"
 	"code.vikunja.io/api/pkg/i18n"
@@ -94,6 +95,18 @@ func (n *ApprovalRequestedNotification) ToTitle(lang string) string {
 	return i18n.T(lang, "notifications.approval.requested.subject", n.Approval.Title, n.Task.Title, n.Task.GetFullIdentifier())
 }
 
+// dueInTimezoneOf writes a moment as the recipient reads the clock: in their time zone (the server's when they have
+// none or it is unknown), with the abbreviation of the zone so that nobody has to guess which clock it is.
+func dueInTimezoneOf(target *user.User, at time.Time) string {
+	loc := config.GetTimeZone()
+	if target != nil && target.Timezone != "" {
+		if l, err := time.LoadLocation(target.Timezone); err == nil {
+			loc = l
+		}
+	}
+	return at.In(loc).Format("2006-01-02 15:04 MST")
+}
+
 // ToMail returns the mail notification for ApprovalRequestedNotification
 func (n *ApprovalRequestedNotification) ToMail(lang string) *notifications.Mail {
 	mail := notifications.NewMail().
@@ -105,7 +118,7 @@ func (n *ApprovalRequestedNotification) ToMail(lang string) *notifications.Mail 
 			notifications.EscapeMarkdown(n.Task.Title),
 			notifications.EscapeMarkdown(n.Task.GetFullIdentifier())))
 	if n.Approval.Due != nil {
-		mail.Line(i18n.T(lang, "notifications.approval.requested.due", n.Approval.Due.Format("2006-01-02 15:04")))
+		mail.Line(i18n.T(lang, "notifications.approval.requested.due", dueInTimezoneOf(n.Target, *n.Approval.Due)))
 	}
 	return mail.
 		Action(i18n.T(lang, "notifications.common.actions.open_task"), n.Task.GetFrontendURL()).
@@ -217,7 +230,7 @@ func (n *ApprovalReminderNotification) ToTitle(lang string) string {
 func (n *ApprovalReminderNotification) ToMail(lang string) *notifications.Mail {
 	due := ""
 	if n.Approval.Due != nil {
-		due = n.Approval.Due.Format("2006-01-02 15:04")
+		due = dueInTimezoneOf(n.Target, *n.Approval.Due)
 	}
 	return notifications.NewMail().
 		Greeting(i18n.T(lang, "notifications.greeting", n.Target.GetName())).
