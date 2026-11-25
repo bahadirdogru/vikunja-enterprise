@@ -696,13 +696,30 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   - Covered: the main journeys of each module, permissions per role in the
     UI, one screen per module in Turkish without raw keys, and the formal
     register of the public form page.
-  - Not covered: drag and drop, kanban status mode, script and HTTP actions
-    and the schedule trigger in the automation editor, file answers in
-    forms, the line, created-vs-done and status-time widgets.
-  - Observed, not changed: a closed public form shows its message on the
-    page and again as an error toast.
+  - Second pass (same day): 18 more tests (69 in all): the status board of
+    a workflow (drops, refusals, requirements dialog, approval request, view
+    settings), the done checkbox through the workflow and approvals, the
+    approval settings of a transition in the editor, the script and HTTP
+    request actions with a script error and the retry of a failed run,
+    priority, label and file answers, the redirect and the `users` access
+    mode of forms, the form builder in Turkish, and the line,
+    created-vs-done and time-in-status widgets against seeded history.
+  - Not covered: a successful outgoing HTTP request (the e2e server keeps
+    the address guard on and has no public network; only the refusal, the
+    dry run and the retry are tested), a file answer on a public form
+    (`forms.public.attachments` is off; the builder's refusal is tested,
+    the upload runs on a `users` form), the schedule trigger firing (the
+    ticker needs minutes; building, saving and reopening are tested) and
+    its next run, which the editor does not show.
+  - Observed, not changed: the error of a run or a step in the history is
+    the server's English text, whatever the language of the user; unticking
+    the done checkbox cannot be tested from the list because the list hides
+    done tasks (the task page is used).
+  - Changed: a closed, switched-off, full, expired, missing or private
+    public form no longer also shows an error toast; a network failure or a
+    server error still does.
   - Verified: the 51 fork tests pass (3 runs by the author, 1 independent
-    run on the merged tree); vitest 323 files / 4296 tests, `vue-tsc` and
+    run on the merged tree), then all 69 twice in a row; vitest 323 files / 4296 tests, `vue-tsc` and
     lint clean. The full upstream e2e suite: 587 pass, 13 fail in upstream
     specs (admin panel, invite links, OpenID, registration mail, e-mail and
     linked-account settings, API token scopes, unlicensed time tracking);
