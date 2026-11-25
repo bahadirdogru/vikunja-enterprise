@@ -3870,7 +3870,17 @@
       "errors": {
         "required": "This field is required.",
         "tooManyFiles": "You can attach at most {max} files.",
-        "fileTooLarge": "{name} is larger than {max}."
+        "fileTooLarge": "{name} is larger than {max}.",
+        "server": {
+          "required": "This field is required.",
+          "invalid": "This answer is not valid.",
+          "too_long": "This answer is too long.",
+          "too_many": "Too many values were chosen.",
+          "unknown_field": "This form does not ask for this.",
+          "file_too_large": "This file is too large.",
+          "file_type_not_allowed": "This type of file is not accepted.",
+          "attachments_disabled": "This form does not take files."
+        }
       },
       "loading": "Loading the form",
       "notFound": {

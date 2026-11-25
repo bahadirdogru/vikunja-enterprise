@@ -194,6 +194,14 @@ describe('server errors and failures', () => {
 		expect(serverErrorsFrom(new ApiError({status: 422, detail: 'x'}))).toBeNull()
 	})
 
+	it('says the answer errors of the server in the language of the page, by their code', () => {
+		const problem = new ApiError({status: 422, detail: 'x', code: 25006, details: {errors: [
+			{field: 'cf_1', code: 'invalid', message: 'Expected a date.'},
+			{field: 'title', code: 'a_code_of_a_newer_server', message: 'The English text'},
+		]}})
+		expect(serverErrorsFrom(problem, t)).toEqual({cf_1: 'forms.public.errors.server.invalid', title: 'The English text'})
+	})
+
 	it('tells apart what the page has to show', () => {
 		const make = (status: number, extra: object = {}) => new ApiError({status, detail: 'x', ...extra})
 		expect(classifyPublicProblem(make(404, {code: 25001}))).toEqual({kind: 'notFound'})

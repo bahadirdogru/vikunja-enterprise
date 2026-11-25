@@ -333,8 +333,12 @@ export function formatBytes(bytes: number): string {
 	return `${bytes} B`
 }
 
-// Server errors name the field by target; submitter details and attachments use their own keys.
-export function serverErrorsFrom(problem: unknown): AnswerErrors | null {
+// The codes of the answer errors the server names (FormFieldError.code); the text next to a code is English.
+export const SERVER_ANSWER_CODES = ['required', 'invalid', 'too_long', 'too_many', 'unknown_field', 'file_too_large', 'file_type_not_allowed', 'attachments_disabled']
+
+// Server errors name the field by target; submitter details and attachments use their own keys. With `t` the text is
+// the one of the code in the language of the page; the English text of the server is for codes this page does not know.
+export function serverErrorsFrom(problem: unknown, t?: Translate): AnswerErrors | null {
 	if (!problem || typeof problem !== 'object') return null
 	const details = (problem as {details?: unknown}).details
 	const list = details && typeof details === 'object' ? (details as {errors?: unknown}).errors : undefined
@@ -342,8 +346,9 @@ export function serverErrorsFrom(problem: unknown): AnswerErrors | null {
 	const out: AnswerErrors = {}
 	for (const item of list) {
 		if (!item || typeof item !== 'object') continue
-		const {field, message} = item as {field?: unknown, message?: unknown}
-		if (typeof field === 'string' && typeof message === 'string' && !(field in out)) out[field] = message
+		const {field, message, code} = item as {field?: unknown, message?: unknown, code?: unknown}
+		if (typeof field !== 'string' || typeof message !== 'string' || field in out) continue
+		out[field] = t && typeof code === 'string' && SERVER_ANSWER_CODES.includes(code) ? t(`forms.public.errors.server.${code}`) : message
 	}
 	return Object.keys(out).length > 0 ? out : null
 }

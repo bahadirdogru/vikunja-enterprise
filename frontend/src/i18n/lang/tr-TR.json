@@ -3870,7 +3870,17 @@
 			"errors": {
 				"required": "Bu alan zorunlu.",
 				"tooManyFiles": "En fazla {max} dosya ekleyebilirsiniz.",
-				"fileTooLarge": "{name} dosyası {max} sınırından büyük."
+				"fileTooLarge": "{name} dosyası {max} sınırından büyük.",
+				"server": {
+					"required": "Bu alan zorunlu.",
+					"invalid": "Bu yanıt geçerli değil.",
+					"too_long": "Bu yanıt çok uzun.",
+					"too_many": "Çok fazla değer seçilmiş.",
+					"unknown_field": "Bu form bunu sormuyor.",
+					"file_too_large": "Bu dosya çok büyük.",
+					"file_type_not_allowed": "Bu dosya türü kabul edilmiyor.",
+					"attachments_disabled": "Bu form dosya kabul etmiyor."
+				}
 			},
 			"loading": "Form yükleniyor",
 			"notFound": {
