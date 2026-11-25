@@ -1875,7 +1875,7 @@
     "22008": "The secret cannot be decrypted any more. Set it again.",
     "22009": "This automation cannot be run: it is turned off or has no manual trigger.",
     "22010": "This webhook address does not exist.",
-    "22011": "The signature of the request is not valid. Check the secret, the timestamp (the clock of the sender may be off by more than a few minutes) and that every new call is signed anew.",
+    "22011": "The signature of the request is not valid. Check the secret, the timestamp (the clock of the sender may be off by more than a few minutes) and that each new call gets its own signature.",
     "22012": "Too many calls to this webhook. Try again later.",
     "22013": "The body of the request has to be a JSON object.",
     "22014": "This project has reached the maximum number of automation rules. Delete a rule you do not need, or ask an administrator to raise automation.maxrulesperproject.",
@@ -3358,7 +3358,7 @@
       "saveFirst": "Save your changes first.",
       "usage": "Send a POST request with a JSON object as the body (use {'{}'} for none). The request is answered at once and the rule runs in the background.",
       "signature": "With a signing secret chosen, calls must carry the headers X-Vikunja-Timestamp (the Unix time in seconds) and X-Vikunja-Signature: sha256=HEX (the HMAC-SHA256 of the timestamp, a dot, the token from the address of this webhook, a dot and the raw body, keyed with the secret). A signature made for another webhook is not accepted here.",
-      "replay": "Signed calls are protected against replays: a call whose timestamp is more than a few minutes old (5 by default) is refused. Sending exactly the same call again (same timestamp and signature) is safe: if it was already accepted you get the same answer and nothing runs twice. Send a new timestamp and signature with every new call. A webhook without a signing secret is not signed and not protected: anyone who has the address can call it.",
+      "replay": "Signed calls are protected against replays: a call whose timestamp is more than a few minutes old (5 by default) is refused. Sending exactly the same call again (same timestamp and signature) is safe: if it was already accepted you get the same answer and nothing runs twice. For every new call, send a new timestamp and signature. A webhook without a signing secret is not signed and not protected: anyone who has the address can call it.",
       "rotateConfirm": {
         "title": "Create a new webhook address?",
         "text": "The current address stops working at once. Every service that uses it has to be given the new one."

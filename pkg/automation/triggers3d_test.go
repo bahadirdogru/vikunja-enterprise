@@ -469,6 +469,33 @@ func TestWebhook_ReplayProtection(t *testing.T) {
 		assert.True(t, invalid(wrong), "a wrong signature is still the uniform refusal: %v", wrong)
 	})
 
+	t.Run("a replay to a rule that was disabled since is the not found of every disabled rule", func(t *testing.T) {
+		offRule, offToken := hookRule(t, map[string]any{"secret": "HOOK_KEY"}, createFromPayload())
+		call := signedCall(offToken, []byte(`{"off":1}`), at())
+		_, err := ReceiveWebhook(call)
+		require.NoError(t, err)
+		offRule.Enabled = false
+		mustCommit(t, func(s *xorm.Session) error { return offRule.Update(s, user1) })
+		_, err = ReceiveWebhook(call)
+		assert.True(t, models.IsErrAutomationHookNotFound(err), "%v", err)
+	})
+
+	t.Run("a replay to a rule whose secret changed is the uniform refusal", func(t *testing.T) {
+		mustCommit(t, func(s *xorm.Session) error {
+			return (&models.AutomationSecret{ProjectID: projectOwned, Name: "OTHER_KEY", NewValue: "first"}).Update(s, user1)
+		})
+		_, secToken := hookRule(t, map[string]any{"secret": "OTHER_KEY"}, createFromPayload())
+		ts, sig := WebhookSignature("first", secToken, at(), []byte(`{"k":1}`))
+		call := &WebhookCall{Token: secToken, Body: []byte(`{"k":1}`), Signature: sig, Timestamp: ts}
+		_, err := ReceiveWebhook(call)
+		require.NoError(t, err)
+		mustCommit(t, func(s *xorm.Session) error {
+			return (&models.AutomationSecret{ProjectID: projectOwned, Name: "OTHER_KEY", NewValue: "second"}).Update(s, user1)
+		})
+		_, err = ReceiveWebhook(call)
+		assert.True(t, invalid(err), "%v", err)
+	})
+
 	t.Run("a call captured for one hook is refused by another hook with the same secret", func(t *testing.T) {
 		captured := signedCall(token, []byte(`{"cap":1}`), at())
 		_, err := ReceiveWebhook(captured)
