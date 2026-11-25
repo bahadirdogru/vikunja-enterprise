@@ -150,7 +150,7 @@ describe('RuleEditor', () => {
 			actions: [{type: 'task.add_comment', params: {text: 'hello'}}],
 		})
 		expect(sdk.automationsCreate.mock.calls[0][0].path).toEqual({project: 3})
-		expect(wrapper.emitted('saved')).toBeTruthy()
+		expect(wrapper.emitted('saved')).toHaveLength(1)
 		expect(wrapper.text()).not.toContain('Unsaved changes')
 		// the second save updates instead of creating
 		sdk.automationsUpdate.mockResolvedValue({data: {...storedRule, id: 31, title: 'Renamed'}})

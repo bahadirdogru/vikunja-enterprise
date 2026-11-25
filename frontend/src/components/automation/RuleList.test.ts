@@ -43,7 +43,7 @@ describe('RuleList', () => {
 		expect(wrapper.text()).toContain('No automations yet')
 		expect(wrapper.text()).toContain('three parts')
 		await wrapper.findAll('button').find(b => b.text().includes('New rule'))!.trigger('click')
-		expect(wrapper.emitted('create')).toBeTruthy()
+		expect(wrapper.emitted('create')).toHaveLength(1)
 		const cards = wrapper.findAll('.template-card')
 		expect(cards.length).toBe(templates.length)
 		await cards[0].trigger('click')

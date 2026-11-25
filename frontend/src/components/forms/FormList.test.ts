@@ -30,7 +30,7 @@ describe('FormList', () => {
 		expect(wrapper.text()).toContain('No forms yet')
 		expect(wrapper.text()).toContain('every answer becomes a task')
 		await wrapper.findAll('button').find(b => b.text().includes('New form'))!.trigger('click')
-		expect(wrapper.emitted('create')).toBeTruthy()
+		expect(wrapper.emitted('create')).toHaveLength(1)
 		const presets = wrapper.findAll('.preset')
 		expect(presets.map(p => p.find('strong').text())).toEqual(['Simple request', 'Request with a due date', 'Bug report'])
 		await presets[2]!.trigger('click')

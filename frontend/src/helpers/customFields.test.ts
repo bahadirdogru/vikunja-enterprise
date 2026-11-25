@@ -145,21 +145,26 @@ describe('custom field drafts', () => {
 
 	it('validates number config', () => {
 		const draft = {...createCustomFieldDraft(), title: 'N', type: 'number' as const}
-		expect(validateCustomFieldDraft({...draft, min: '10', max: '2'}).range).toBeDefined()
-		expect(validateCustomFieldDraft({...draft, min: 'x'}).min).toBeDefined()
-		expect(validateCustomFieldDraft({...draft, precision: '11'}).precision).toBeDefined()
-		expect(validateCustomFieldDraft({...draft, precision: '1.5'}).precision).toBeDefined()
+		expect(validateCustomFieldDraft({...draft, min: '10', max: '2'}).range).toEqual({key: 'customFields.errors.minGreaterThanMax'})
+		expect(validateCustomFieldDraft({...draft, min: 'x'}).min).toEqual({key: 'customFields.errors.notANumber'})
+		expect(validateCustomFieldDraft({...draft, precision: '11'}).precision?.key).toBe('customFields.errors.precision')
+		expect(validateCustomFieldDraft({...draft, precision: '1.5'}).precision?.key).toBe('customFields.errors.precision')
+		expect(validateCustomFieldDraft({...draft, precision: '-1'}).precision?.key).toBe('customFields.errors.precision')
+		expect(validateCustomFieldDraft({...draft, max: 'x'}).max).toEqual({key: 'customFields.errors.notANumber'})
 		expect(hasDraftErrors(validateCustomFieldDraft({...draft, min: '0', max: '9', precision: '2'}))).toBe(false)
 	})
 
 	it('validates the currency code and rating maximum', () => {
 		const currency = {...createCustomFieldDraft(), title: 'C', type: 'currency' as const}
-		expect(validateCustomFieldDraft({...currency, currency: 'TR'}).currency).toBeDefined()
+		expect(validateCustomFieldDraft({...currency, currency: 'TR'}).currency).toEqual({key: 'customFields.errors.currency'})
+		expect(validateCustomFieldDraft({...currency, currency: 'TRYX'}).currency?.key).toBe('customFields.errors.currency')
+		expect(validateCustomFieldDraft({...currency, currency: 'T\u0131L'}).currency?.key).toBe('customFields.errors.currency')
 		expect(validateCustomFieldDraft({...currency, currency: 'try'}).currency).toBeUndefined()
 
 		const rating = {...createCustomFieldDraft(), title: 'R', type: 'rating' as const}
-		expect(validateCustomFieldDraft({...rating, maxRating: 11}).maxRating).toBeDefined()
-		expect(validateCustomFieldDraft({...rating, maxRating: 0}).maxRating).toBeDefined()
+		expect(validateCustomFieldDraft({...rating, maxRating: 11}).maxRating?.key).toBe('customFields.errors.maxRating')
+		expect(validateCustomFieldDraft({...rating, maxRating: 0}).maxRating?.key).toBe('customFields.errors.maxRating')
+		expect(validateCustomFieldDraft({...rating, maxRating: 2.5}).maxRating?.key).toBe('customFields.errors.maxRating')
 		expect(validateCustomFieldDraft({...rating, maxRating: 10}).maxRating).toBeUndefined()
 	})
 
