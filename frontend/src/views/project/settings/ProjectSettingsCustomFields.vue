@@ -7,6 +7,7 @@ import {useQuery} from '@tanstack/vue-query'
 import CreateEdit from '@/components/misc/CreateEdit.vue'
 import CustomFieldForm from '@/components/custom-fields/CustomFieldForm.vue'
 import ErrorMessage from '@/components/misc/Error.vue'
+import Loading from '@/components/misc/Loading.vue'
 import Message from '@/components/misc/Message.vue'
 import XButton from '@/components/input/Button.vue'
 import {
@@ -109,6 +110,7 @@ async function confirmDelete() {
 		:wide="true"
 	>
 		<ErrorMessage v-if="loadError" />
+		<Loading v-else-if="!project" />
 		<Message v-else-if="!isAdmin">
 			{{ $t('customFields.onlyAdminsCanEdit') }}
 		</Message>

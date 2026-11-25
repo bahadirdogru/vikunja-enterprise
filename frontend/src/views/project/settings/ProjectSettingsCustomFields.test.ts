@@ -82,6 +82,16 @@ describe('ProjectSettingsCustomFields', () => {
 		expect(wrapper.find('.form-stub').exists()).toBe(false)
 	})
 
+	it('shows the loading state, not the admin notice, while the project is still loading', async () => {
+		project.value = null
+		const wrapper = mountPage()
+		await settle()
+		expect(wrapper.text()).not.toContain('Only project admins')
+		expect(wrapper.find('table').exists()).toBe(false)
+		expect(wrapper.find('.error-message').exists()).toBe(false)
+		expect(wrapper.findComponent({name: 'Loading'}).exists()).toBe(true)
+	})
+
 	it('shows an empty state with an add button when the project has no fields', async () => {
 		sdk.customFieldsList.mockResolvedValue({data: {items: [], total_pages: 1}})
 		const wrapper = mountPage()
