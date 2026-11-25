@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import {i18n} from '@/i18n'
 import {computed, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 
@@ -23,7 +22,7 @@ const emit = defineEmits<{
 
 type Member = UserWithId & {name: string}
 
-const {t} = useI18n({useScope: 'global'})
+const {t, locale} = useI18n({useScope: 'global'})
 
 const search = ref('')
 // Member lookup is also what turns stored ids back into names, so it runs from the start.
@@ -51,7 +50,7 @@ const results = computed<Member[]>(() => [...known.value.values()]
 	.filter(user => !selectedIds.value.includes(user.id))
 	.filter(user => search.value === ''
 		|| `${user.name} ${user.username ?? ''}`.toLowerCase().includes(search.value.toLowerCase()))
-	.sort((a, b) => a.name.localeCompare(b.name, i18n.global.locale.value)))
+	.sort((a, b) => a.name.localeCompare(b.name, locale.value)))
 
 function update(value: Member | Member[] | null) {
 	const users = Array.isArray(value) ? value : []

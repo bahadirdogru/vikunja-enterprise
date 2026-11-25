@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import {i18n} from '@/i18n'
 import {computed, nextTick, ref} from 'vue'
 import {useQuery} from '@tanstack/vue-query'
 import {useI18n} from 'vue-i18n'
@@ -28,7 +27,7 @@ const props = withDefaults(defineProps<{
 	projectId: 0,
 })
 
-const {t} = useI18n({useScope: 'global'})
+const {t, locale} = useI18n({useScope: 'global'})
 const router = useRouter()
 const projectStore = useProjects()
 const query = useQuery(computed(() => dashboardsQuery(props.projectId)))
@@ -58,7 +57,7 @@ const groups = computed(() => {
 		...(personal.length ? [{key: 'personal', title: t('dashboards.personal'), items: personal}] : []),
 		...[...byProject.entries()]
 			.map(([id, items]) => ({key: `project-${id}`, title: projectTitle(id) || t('dashboards.unknownProject'), items}))
-			.sort((a, b) => a.title.localeCompare(b.title, i18n.global.locale.value)),
+			.sort((a, b) => a.title.localeCompare(b.title, locale.value)),
 	]
 })
 

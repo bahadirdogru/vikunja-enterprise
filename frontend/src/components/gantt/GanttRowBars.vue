@@ -212,7 +212,6 @@
 </template>
 
 <script setup lang="ts">
-import {i18n} from '@/i18n'
 import {computed} from 'vue'
 import dayjs from 'dayjs'
 import {useI18n} from 'vue-i18n'
@@ -253,7 +252,7 @@ const emit = defineEmits<{
 	(e: 'toggleCollapse'): void
 }>()
 
-const {t} = useI18n({useScope: 'global'})
+const {t, locale} = useI18n({useScope: 'global'})
 
 const RESIZE_HANDLE_OFFSET = 3
 const LABEL_PADDING = 8
@@ -430,8 +429,8 @@ function getBarTextColor(bar: GanttBarModel) {
 
 function getBarAriaLabel(bar: GanttBarModel): string {
 	const task = bar.meta?.label || bar.id
-	const startDate = bar.start.toLocaleDateString(i18n.global.locale.value)
-	const endDate = bar.end.toLocaleDateString(i18n.global.locale.value)
+	const startDate = bar.start.toLocaleDateString(locale.value)
+	const endDate = bar.end.toLocaleDateString(locale.value)
 
 	let dateType: string
 	if (bar.meta?.dateType === 'startOnly') {

@@ -54,7 +54,6 @@
 </template>
 
 <script setup lang="ts">
-import {i18n} from '@/i18n'
 import {ref, computed, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import XButton from '@/components/input/Button.vue'
@@ -65,7 +64,7 @@ import type {SortBy} from '@/composables/useTaskList'
 const props = defineProps<{ modelValue: SortBy }>()
 const emit = defineEmits<{ 'update:modelValue': [value: SortBy] }>()
 
-const {t} = useI18n({useScope: 'global'})
+const {t, locale} = useI18n({useScope: 'global'})
 
 const trigger = ref<InstanceType<typeof XButton> | null>(null)
 const triggerEl = computed<HTMLElement | null>(() => trigger.value?.$el ?? null)
@@ -102,7 +101,7 @@ const options = computed(() => {
 		{value: 'created:asc', label: t('sorting.options.createdAsc')},
 		{value: 'updated:desc', label: t('sorting.options.updatedDesc')},
 		{value: 'updated:asc', label: t('sorting.options.updatedAsc')},
-	].sort((a, b) => a.label.localeCompare(b.label, i18n.global.locale.value))
+	].sort((a, b) => a.label.localeCompare(b.label, locale.value))
 
 	return [manual, ...rest]
 })

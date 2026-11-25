@@ -24,7 +24,6 @@
 </template>
 
 <script setup lang="ts">
-import {i18n} from '@/i18n'
 import {computed, useAttrs} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {useGanttBar, type GanttBarModel} from '@/composables/useGanttBar'
@@ -45,7 +44,7 @@ const props = withDefaults(
 	},
 )
 const attrs = useAttrs()
-const {t} = useI18n({useScope: 'global'})
+const {t, locale} = useI18n({useScope: 'global'})
 
 const {
 	dragging,
@@ -64,7 +63,7 @@ const {
 const ariaMin = computed(() => props.timelineStart.valueOf())
 const ariaMax = computed(() => props.timelineEnd.valueOf())
 const ariaNow = computed(() => props.model.start.valueOf())
-const ariaValueText = computed(() => `${props.model.start.toLocaleString(i18n.global.locale.value)} – ${props.model.end.toLocaleString(i18n.global.locale.value)}`)
+const ariaValueText = computed(() => `${props.model.start.toLocaleString(locale.value)} – ${props.model.end.toLocaleString(locale.value)}`)
 const ariaLabel = computed(() =>
 	props.model.meta?.label
 		? t('project.gantt.taskAriaLabel', { task: props.model.meta.label })

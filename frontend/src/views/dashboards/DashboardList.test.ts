@@ -12,7 +12,7 @@ vi.mock('@/composables/useProjects', () => ({
 	}),
 }))
 
-vi.mock('@/i18n', () => ({i18n: {global: {t: (key: string) => key, locale: {value: 'en'}}}}))
+vi.mock('@/i18n', () => ({i18n: {global: {t: (key: string) => key}}}))
 vi.mock('@/message', () => ({error: vi.fn(), success: vi.fn()}))
 
 import DashboardList from './DashboardList.vue'

@@ -34,7 +34,6 @@
 </template>
 
 <script setup lang="ts">
-import {i18n} from '@/i18n'
 import {ref, computed, watch, nextTick} from 'vue'
 import {useI18n} from 'vue-i18n'
 
@@ -72,7 +71,7 @@ const emit = defineEmits<{
 const authStore = useAuthStore()
 const addAssigneeMutation = useAddTaskAssigneeMutation()
 const removeAssigneeMutation = useRemoveTaskAssigneeMutation()
-const {t} = useI18n({useScope: 'global'})
+const {t, locale} = useI18n({useScope: 'global'})
 
 const userSearch = ref('')
 const searchEnabled = ref(false)
@@ -146,7 +145,7 @@ const foundUsers = computed(() => withIds(userResults.value.filter(props.filter)
 	.sort((a, b) => {
 		if (a.id === authStore.info?.id) return -1
 		if (b.id === authStore.info?.id) return 1
-		return a.name.localeCompare(b.name, i18n.global.locale.value)
+		return a.name.localeCompare(b.name, locale.value)
 	}),
 )
 </script>

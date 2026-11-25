@@ -189,7 +189,6 @@
 </template>
 
 <script lang="ts" setup>
-import {i18n} from '@/i18n'
 import {computed, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {useRoute, useRouter} from 'vue-router'
@@ -210,13 +209,13 @@ import type {User as ApiUser, TeamUser, TeamWritable} from '@/client/generated'
 const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
-const {t} = useI18n({useScope: 'global'})
+const {t, locale} = useI18n({useScope: 'global'})
 const teamId = computed(() => Number(route.params.id))
 const {data: team, isFetching} = useTeam(teamId)
 
 const userIsAdmin = computed(() => (team.value?.max_permission ?? PERMISSIONS.READ) === PERMISSIONS.ADMIN)
 const userInfo = computed(() => authStore.info)
-const sortedMembers = computed(() => [...(team.value?.members ?? [])].sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b), i18n.global.locale.value, {sensitivity: 'base'})))
+const sortedMembers = computed(() => [...(team.value?.members ?? [])].sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b), locale.value, {sensitivity: 'base'})))
 const updateMutation = useUpdateTeamMutation()
 const deleteMutation = useDeleteTeamMutation()
 const addMemberMutation = useAddTeamMemberMutation()
