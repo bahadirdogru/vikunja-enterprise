@@ -508,3 +508,24 @@ func TestWhatAnotherServerAnswersIsStoredAsValidText(t *testing.T) {
 		assert.True(t, utf8.ValidString(steps[0].OutputMessages[0].Params["message"]))
 	})
 }
+
+func TestTheNotesOfATestRunAreBounded(t *testing.T) {
+	reset(t)
+	task := newTask(t, projectOwned, "dry", user1)
+	r := addRule(t, projectOwned, user1, rule(spec.TriggerTaskUpdated, nil, &spec.Condition{Script: `throw new Error("ç".repeat(30000))`}, setField("priority", 4)))
+	res, err := DryRun(context.Background(), r, task.ID)
+	require.NoError(t, err)
+	var note *models.AutomationMessage
+	for _, n := range res.NoteMessages {
+		if n.Code == "note_conditions_fail" {
+			note = n
+		}
+	}
+	require.NotNil(t, note)
+	size := 0
+	for _, v := range note.Params {
+		size += len(v)
+		assert.True(t, utf8.ValidString(v))
+	}
+	assert.LessOrEqual(t, size, maxMessageParamBytes+64)
+}

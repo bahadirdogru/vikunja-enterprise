@@ -157,7 +157,7 @@ func DryRunWith(_ context.Context, rule *models.AutomationRule, taskID int64, ho
 				var actionErr *ActionError
 				if !errors.As(err, &actionErr) {
 					step.Error = env.maskOutput("could not be checked: " + err.Error())
-					step.ErrorCode, step.ErrorParams = "could_not_check", map[string]string{"message": env.maskOutput(err.Error())}
+					step.ErrorCode, step.ErrorParams = "could_not_check", boundParams(map[string]string{"message": env.maskOutput(err.Error())}, maxErrorParamsBytes)
 				}
 			}
 			continue
@@ -191,5 +191,6 @@ func DryRunWith(_ context.Context, rule *models.AutomationRule, taskID int64, ho
 			step.Warnings = append(step.Warnings, warnings...)
 		}
 	}
+	result.NoteMessages = boundMessages(result.NoteMessages)
 	return result, nil
 }
