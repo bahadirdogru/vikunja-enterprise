@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -33,7 +34,9 @@ import (
 // A code without a sentence shows the English message of the server, so every code the server can send has one in
 // both files, and the Turkish one is not the English one.
 func TestEveryErrorCodeOfTheServerHasATextInBothLanguages(t *testing.T) {
-	definition := regexp.MustCompile(`(?m)^\s*(?:const )?ErrCode\w+\s+(?:int\s+)?=\s*([0-9]+)`)
+	// Every constant that names a code, whatever its prefix (ErrCode..., ErrorCode...), in every package. A Go literal
+	// with a leading zero is octal: ErrorCodeGenericForbidden = 0001 is the number 1, which is what the JSON carries.
+	definition := regexp.MustCompile(`(?m)^\s*(?:const )?\w*Code\w*\s+(?:int\s+)?=\s*([0-9]+)\s*(?://.*)?$`)
 	codes := map[string]string{}
 	// The packages of pkg/ are at most four levels deep.
 	for _, pattern := range []string{"../*.go", "../*/*.go", "../*/*/*.go", "../*/*/*/*.go"} {
@@ -46,7 +49,9 @@ func TestEveryErrorCodeOfTheServerHasATextInBothLanguages(t *testing.T) {
 			src, err := os.ReadFile(path)
 			require.NoError(t, err)
 			for _, m := range definition.FindAllStringSubmatch(string(src), -1) {
-				codes[m[1]] = path
+				number, err := strconv.ParseInt(m[1], 0, 64)
+				require.NoError(t, err, "%s: %s", path, m[1])
+				codes[strconv.FormatInt(number, 10)] = path
 			}
 		}
 	}
@@ -79,5 +84,20 @@ func TestEveryErrorCodeOfTheServerHasATextInBothLanguages(t *testing.T) {
 		assert.NotEmpty(t, en[code], "en.json has no text for the error code %s (defined in %s)", code, codes[code])
 		assert.NotEmpty(t, tr[code], "tr-TR.json has no text for the error code %s (defined in %s)", code, codes[code])
 		assert.NotEqual(t, en[code], tr[code], "tr-TR.json has the English text for the error code %s", code)
+	}
+}
+
+// The guard has to see the codes it is meant to guard: the generic forbidden error (written 0001, which is 1) and the
+// codes of the user package that are named ErrorCode...
+func TestTheGuardOfErrorCodesSeesEveryPrefix(t *testing.T) {
+	assert.Equal(t, 1, ErrorCodeGenericForbidden, "the literal 0001 is octal: the JSON code is 1, and the interface looks up error.1")
+	raw, err := os.ReadFile("../../frontend/src/i18n/lang/en.json")
+	require.NoError(t, err)
+	var lang struct {
+		Error map[string]string `json:"error"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &lang))
+	for _, code := range []string{"1", "1026", "1027", "1028", "1029"} {
+		assert.NotEmpty(t, lang.Error[code], "error.%s", code)
 	}
 }

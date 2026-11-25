@@ -2058,7 +2058,12 @@
 		"http5xx": "Sunucuda bir sorun oluştu. Biraz sonra tekrar dene.",
 		"http502": "Sunucuya şu anda ulaşılamıyor. Biraz sonra tekrar dene.",
 		"http503": "Sunucuya şu anda ulaşılamıyor. Biraz sonra tekrar dene.",
-		"http504": "Sunucu zamanında yanıt vermedi. Biraz sonra tekrar dene."
+		"http504": "Sunucu zamanında yanıt vermedi. Biraz sonra tekrar dene.",
+		"1": "Bunu yapmaya yetkin yok.",
+		"1026": "Bu kullanıcı adı ayrılmış, kullanılamaz.",
+		"1027": "Kullanıcı bağlamı geçersiz. Anahtarın geçerli olduğundan emin olup tekrar dene.",
+		"1028": "Geçersiz silme anahtarı verildi.",
+		"1029": "Bu silme anahtarı hesabına ait değil."
 	},
 	"about": {
 		"title": "Hakkında",
