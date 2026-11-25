@@ -75,7 +75,7 @@ describe('DashboardList', () => {
 		const wrapper = mountList()
 		await flushPromises()
 		await wrapper.find('[data-test=new-dashboard]').trigger('click')
-		await wrapper.find('[data-test=create-submit]').trigger('click')
+		await wrapper.find('[data-test=create-form]').trigger('submit')
 		expect(wrapper.text()).toContain('Give the dashboard a name.')
 		expect(sdk.dashboardsCreate).not.toHaveBeenCalled()
 	})

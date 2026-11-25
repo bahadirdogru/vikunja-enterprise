@@ -196,7 +196,6 @@ async function confirmDelete() {
 					type="submit"
 					:loading="creator.isPending.value"
 					data-test="create-submit"
-					@click="create"
 				>
 					{{ t('misc.create') }}
 				</XButton>
