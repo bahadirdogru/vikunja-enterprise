@@ -528,7 +528,7 @@ func TestFormDefinition_DoesNotLeak(t *testing.T) {
 	top := marshalKeys(t, def)
 	assert.ElementsMatch(t, []string{"title", "description", "fields", "success", "submitter", "branding"}, keysOf(top))
 	assert.ElementsMatch(t, []string{"message", "redirect_url", "submit_another"}, keysOf(top["success"].(map[string]any)))
-	assert.ElementsMatch(t, []string{"collect_name", "name_required", "collect_email", "email_required"}, keysOf(top["submitter"].(map[string]any)))
+	assert.ElementsMatch(t, []string{"collect_name", "name_required", "collect_email", "email_required", "stores_account"}, keysOf(top["submitter"].(map[string]any)))
 
 	fields := top["fields"].([]any)
 	require.Len(t, fields, 3, "hidden fields are not part of it")
@@ -1580,19 +1580,23 @@ func TestFormSubmit_AccountEmailOfSignedInSubmitter(t *testing.T) {
 		assert.Empty(t, emailOfEvent(t))
 	})
 
-	t.Run("the same for a form of signed-in users", func(t *testing.T) {
+	t.Run("a form for all signed-in users stores no address: its admin could harvest them", func(t *testing.T) {
 		f := createForm(t, baseForm(FormAccessUsers))
 		_, err := submit(t, f, map[string]any{"title": "x"}, asAuth(fU2))
 		require.NoError(t, err)
-		assert.Equal(t, "user2@example.com", submissionOf(t, lastTask(t)).SubmitterEmail)
+		sub := submissionOf(t, lastTask(t))
+		assert.Empty(t, sub.SubmitterEmail)
+		require.NotNil(t, sub.SubmitterID, "the submitter is still identified by the id")
+		assert.EqualValues(t, 2, *sub.SubmitterID)
+		assert.Equal(t, "user2", sub.SubmitterName)
 	})
 
 	t.Run("an address the form asked for wins over the account address", func(t *testing.T) {
 		events.ClearDispatchedEvents()
-		f := baseForm(FormAccessUsers)
+		f := baseForm(FormAccessMembers)
 		f.Settings = &FormSettings{CollectEmail: true}
 		createForm(t, f)
-		_, err := submit(t, f, map[string]any{"title": "x"}, asAuth(fU2), func(r *FormSubmitRequest) { r.SubmitterEmail = "work@example.com" })
+		_, err := submit(t, f, map[string]any{"title": "x"}, asAuth(fU1), func(r *FormSubmitRequest) { r.SubmitterEmail = "work@example.com" })
 		require.NoError(t, err)
 		assert.Equal(t, "work@example.com", submissionOf(t, lastTask(t)).SubmitterEmail)
 		assert.Equal(t, "work@example.com", emailOfEvent(t))
@@ -1636,7 +1640,7 @@ func TestFormDefinition_ClosedFormTellsNothingToAnonymous(t *testing.T) {
 			_, err = submit(t, f, map[string]any{"title": "x"})
 			assert.Equal(t, unkSub, err)
 		})
-		t.Run(string(access)+" a link share learns nothing either", func(t *testing.T) {
+		t.Run(string(access)+" a link share is told it may not submit (403), not that the form is unknown", func(t *testing.T) {
 			_, err := GetFormDefinition(f.Token, &LinkSharing{ID: 1, ProjectID: 1})
 			assert.True(t, IsErrFormNotAllowed(err), "got %v", err)
 		})
@@ -1757,4 +1761,50 @@ func TestFormSubmit_RateLimitCountsIPv6ByPrefix(t *testing.T) {
 		_, err = submit(t, f, map[string]any{"title": "x"}, fromIP("198.51.100.2"))
 		require.NoError(t, err)
 	})
+}
+
+func TestFormSubmit_DeletingTheAccountAnonymisesItsSubmissions(t *testing.T) {
+	formsReset(t)
+	f := createForm(t, baseForm(FormAccessMembers))
+	_, err := submit(t, f, map[string]any{"title": "mine"}, asAuth(fU1))
+	require.NoError(t, err)
+	mine := lastTask(t)
+	g := createForm(t, baseForm(FormAccessUsers))
+	_, err = submit(t, g, map[string]any{"title": "theirs"}, asAuth(fU2))
+	require.NoError(t, err)
+	theirs := lastTask(t)
+
+	s := db.NewSession()
+	require.NoError(t, removeUserFromFormSubmissions(s, 1))
+	require.NoError(t, s.Commit())
+	s.Close()
+
+	get := func(task *Task) *FormSubmission {
+		s := db.NewSession()
+		defer s.Close()
+		sub := &FormSubmission{}
+		has, err := s.Where("task_id = ?", task.ID).Get(sub)
+		require.NoError(t, err)
+		require.True(t, has)
+		return sub
+	}
+	sub := get(mine)
+	assert.Nil(t, sub.SubmitterID)
+	assert.Empty(t, sub.SubmitterEmail)
+	assert.Empty(t, sub.SubmitterName)
+	other := get(theirs)
+	require.NotNil(t, other.SubmitterID, "the submissions of other users are not touched")
+	assert.Equal(t, "user2", other.SubmitterName)
+}
+
+func TestFormSubmit_DisabledAccountIsRefusedNotAnError(t *testing.T) {
+	formsReset(t)
+	f := createForm(t, baseForm(FormAccessUsers))
+	s := db.NewSession()
+	_, err := s.ID(2).Cols("status").Update(&user.User{Status: user.StatusDisabled})
+	require.NoError(t, err)
+	require.NoError(t, s.Commit())
+	s.Close()
+	_, err = submit(t, f, map[string]any{"title": "x"}, asAuth(fU2))
+	assert.True(t, IsErrFormNotAllowed(err), "got %v", err)
 }

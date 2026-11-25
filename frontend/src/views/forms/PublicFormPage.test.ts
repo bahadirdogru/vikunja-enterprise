@@ -151,6 +151,13 @@ describe('PublicFormPage: rendering', () => {
 		expect(wrapper.get('label[for=fs-name-input]').text()).not.toContain('(required)')
 	})
 
+	it('tells the submitter of a members form that name and account address are stored', async () => {
+		const members = await loaded(definition({submitter: {collect_name: false, collect_email: false, stores_account: true}}))
+		expect(members.wrapper.get('[data-test=stores-account]').text()).toContain('e-mail address of your account')
+		const others = await loaded(definition({submitter: {collect_name: false, collect_email: false, stores_account: false}}))
+		expect(others.wrapper.find('[data-test=stores-account]').exists()).toBe(false)
+	})
+
 	it('makes no request but the definition, and shares no credentials', async () => {
 		const {wrapper, queryClient} = await loaded()
 		expect(sdk.formPublicRead).toHaveBeenCalledTimes(1)

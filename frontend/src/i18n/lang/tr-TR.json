@@ -3638,6 +3638,7 @@
 			"removeFile": "{name} dosyasını kaldır",
 			"remove": "Kaldır",
 			"aboutYou": "Hakkınızda",
+			"storesAccount": "Adınız ve hesabınızın e-posta adresi yanıtınızla birlikte saklanır.",
 			"name": "Adınız",
 			"email": "E-posta adresiniz",
 			"honeypot": "Bu alanı boş bırakın",

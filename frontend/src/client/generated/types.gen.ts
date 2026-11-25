@@ -2237,6 +2237,10 @@ export type FormPublicSubmitter = {
      * Whether the name is required.
      */
     name_required?: boolean;
+    /**
+     * True for a form for project members: the name and the e-mail address of the signed-in submitter's account are stored with the response, and the form page says so.
+     */
+    stores_account?: boolean;
 };
 
 export type FormPublicSuccess = {
@@ -2402,7 +2406,7 @@ export type FormSubmission = {
      */
     readonly id?: number;
     /**
-     * The e-mail address the submitter gave, or the one of the signed-in submitter.
+     * The e-mail address the submitter gave, or the account address of the signed-in submitter of a form for project members. Empty on other forms and after the account was deleted.
      */
     readonly submitter_email?: string;
     /**
@@ -2410,7 +2414,7 @@ export type FormSubmission = {
      */
     readonly submitter_id?: number | null;
     /**
-     * The name the submitter gave, or the display name of the signed-in submitter.
+     * The name the submitter gave, or the display name of the signed-in submitter. Empty after the account was deleted.
      */
     readonly submitter_name?: string;
     /**

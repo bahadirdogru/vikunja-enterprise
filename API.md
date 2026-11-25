@@ -228,7 +228,7 @@ Besides the public endpoints of upstream (`/info`, `/health`, the OpenAPI docume
 | Method | Path | Credential |
 |---|---|---|
 | GET | `/api/v2/forms/{token}` | The form token. Public forms need no authentication; forms for signed-in users answer `401` / `25004` without a valid `Authorization` header. |
-| GET | `/api/v2/forms/{token}/logo` | The form token; the logo is served whatever the access mode, because a browser cannot send credentials with an image request. |
+| GET | `/api/v2/forms/{token}/logo` | The form token; the logo is served while the form is open, whatever the access mode, because a browser cannot send credentials with an image request; a closed, full or disabled non-public form answers like an unknown token (404, 25001). |
 | POST | `/api/v2/forms/{token}/submissions` | As above. JSON body. |
 | POST | `/api/v2/forms/{token}/submissions/multipart` | As above. `multipart/form-data` with the JSON in the part `data` and files in the parts `files`. |
 | POST | `/api/v2/automation/hooks/{token}` | The secret token in the URL. |

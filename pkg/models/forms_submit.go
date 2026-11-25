@@ -168,6 +168,7 @@ type FormPublicSubmitter struct {
 	NameRequired  bool `json:"name_required" doc:"Whether the name is required."`
 	CollectEmail  bool `json:"collect_email" doc:"Whether to ask for an e-mail address (submitter.email)."`
 	EmailRequired bool `json:"email_required" doc:"Whether the e-mail address is required."`
+	StoresAccount bool `json:"stores_account" doc:"True for a form for project members: the name and the e-mail address of the signed-in submitter's account are stored with the response, and the form page says so."`
 }
 
 // FormPublicAttachments are the limits of the files a form accepts.
@@ -274,20 +275,29 @@ type formSubmitter struct {
 // formSubmitterDetails resolves the submitter of a request.
 //
 // What the submitter says about themselves only counts when the form asks for it: it is validated only then, and a
-// signed-in submitter is otherwise recorded with what their account knows. The e-mail address of the account is not
-// told to anybody but the people who may read the submissions: it is neither put into the task nor into the event,
-// whose audience is wider (everybody who can read the task, rules and webhooks). A public form is anonymous by
-// nature: a signed-in visitor is not asked whether they want their account address kept, so it is never taken there.
+// signed-in submitter is otherwise recorded with the name of their account. The e-mail address of the account is
+// private in Vikunja, so it is stored only where the submitter is a member of the project, who is shown a notice
+// about it on the form page: on a members form. On a form for all signed-in users the project admin could otherwise
+// collect the address of everybody who follows the link. It is stored on the submission only, never put into the
+// task or the event, whose audience (everybody who can read the task, rules and webhooks) is wider than the project
+// admins who can list the submissions. A signed-in visitor of a public form is anonymous for the same reason.
 func formSubmitterDetails(s *xorm.Session, form *Form, req *FormSubmitRequest) (*formSubmitter, error) {
 	d := &formSubmitter{user: formSubmitterUser(req.Auth)}
 	if d.user != nil {
-		// The claims of a token only carry the id and the username: the name and e-mail address come from the
-		// account. GetUserByID leaves the address out; only this lookup returns it.
-		full, err := user.GetUserWithEmail(s, &user.User{ID: d.user.ID})
+		// The claims of a token only carry the id and the username: the name comes from the account. The address
+		// is loaded only where it is stored.
+		var full *user.User
+		var err error
+		if form.Access == FormAccessMembers {
+			full, err = user.GetUserWithEmail(s, &user.User{ID: d.user.ID})
+		} else {
+			full, err = user.GetUserByID(s, d.user.ID)
+		}
 		switch {
 		case err == nil:
 			d.user = full
-		case user.IsErrUserDoesNotExist(err):
+		case user.IsErrUserDoesNotExist(err), user.IsErrUserStatusError(err):
+			// A deleted, disabled or locked account is no signed-in submitter.
 			return nil, ErrFormNotAllowed{}
 		default:
 			return nil, err
@@ -302,7 +312,7 @@ func formSubmitterDetails(s *xorm.Session, form *Form, req *FormSubmitRequest) (
 	if form.Settings.CollectEmail {
 		d.email = cleanFormText(req.SubmitterEmail, false)
 	}
-	if d.user != nil && form.Access != FormAccessPublic {
+	if d.user != nil && form.Access == FormAccessMembers {
 		d.accountEmail = d.user.Email
 	}
 	return d, nil
@@ -396,6 +406,7 @@ func buildFormDefinition(s *xorm.Session, f *Form) (*FormPublicDefinition, error
 			NameRequired:  f.Settings.CollectName && f.Settings.NameRequired,
 			CollectEmail:  f.Settings.CollectEmail,
 			EmailRequired: f.Settings.CollectEmail && f.Settings.EmailRequired,
+			StoresAccount: f.Access == FormAccessMembers,
 		},
 	}
 	for _, field := range f.Fields {

@@ -3638,6 +3638,7 @@
       "removeFile": "Remove {name}",
       "remove": "Remove",
       "aboutYou": "About you",
+      "storesAccount": "Your name and the e-mail address of your account are stored with your response.",
       "name": "Your name",
       "email": "Your e-mail address",
       "honeypot": "Leave this field empty",

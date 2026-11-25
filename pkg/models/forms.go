@@ -166,8 +166,8 @@ type FormSubmission struct {
 	FormID         int64     `xorm:"bigint not null INDEX" json:"form_id" param:"form" readOnly:"true" doc:"The form. Taken from the URL."`
 	TaskID         int64     `xorm:"bigint not null INDEX" json:"task_id" readOnly:"true" doc:"The task the submission created."`
 	SubmitterID    *int64    `xorm:"bigint null" json:"submitter_id" readOnly:"true" doc:"The user who submitted, null for anonymous submissions."`
-	SubmitterName  string    `xorm:"varchar(250) null" json:"submitter_name" readOnly:"true" doc:"The name the submitter gave, or the display name of the signed-in submitter."`
-	SubmitterEmail string    `xorm:"varchar(250) null" json:"submitter_email" readOnly:"true" doc:"The e-mail address the submitter gave, or the one of the signed-in submitter."`
+	SubmitterName  string    `xorm:"varchar(250) null" json:"submitter_name" readOnly:"true" doc:"The name the submitter gave, or the display name of the signed-in submitter. Empty after the account was deleted."`
+	SubmitterEmail string    `xorm:"varchar(250) null" json:"submitter_email" readOnly:"true" doc:"The e-mail address the submitter gave, or the account address of the signed-in submitter of a form for project members. Empty on other forms and after the account was deleted."`
 	IPHash         string    `xorm:"varchar(64) null INDEX" json:"-"`
 	Created        time.Time `xorm:"DATETIME not null" json:"created" readOnly:"true" doc:"When the form was submitted."`
 

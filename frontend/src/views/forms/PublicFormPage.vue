@@ -40,7 +40,7 @@ const definition = computed(() => {
 	const found = loaded.value
 	if (!found) return null
 	return found.authed
-		? {...found.definition, submitter: {collect_name: false, name_required: false, collect_email: false, email_required: false}}
+		? {...found.definition, submitter: {collect_name: false, name_required: false, collect_email: false, email_required: false, stores_account: found.definition.submitter.stores_account}}
 		: found.definition
 })
 

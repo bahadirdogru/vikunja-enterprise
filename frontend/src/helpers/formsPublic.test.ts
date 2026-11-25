@@ -31,7 +31,7 @@ function definition(...fields: PublicField[]): PublicDefinition {
 	return {
 		title: 'Form', description: '', fields,
 		success: {message: '', redirect_url: '', submit_another: false},
-		submitter: {collect_name: false, name_required: false, collect_email: false, email_required: false},
+		submitter: {collect_name: false, name_required: false, collect_email: false, email_required: false, stores_account: false},
 		attachments: null,
 		branding: {name: '', accent_color: '', has_logo: false, hide_footer: false},
 	}
@@ -109,7 +109,7 @@ describe('value serialization per kind', () => {
 
 	it('builds the submitter block only for what the form collects', () => {
 		const def = definition(field({target: 'title', kind: 'text'}))
-		def.submitter = {collect_name: true, name_required: false, collect_email: false, email_required: false}
+		def.submitter = {collect_name: true, name_required: false, collect_email: false, email_required: false, stores_account: false}
 		const answers = initialAnswers(def)
 		answers.values.title = 'x'
 		answers.name = ' Ada '
@@ -168,7 +168,7 @@ describe('client validation per kind', () => {
 
 	it('checks the submitter block and the files', () => {
 		const def = definition(field({target: 'attachments', kind: 'files'}))
-		def.submitter = {collect_name: true, name_required: true, collect_email: true, email_required: false}
+		def.submitter = {collect_name: true, name_required: true, collect_email: true, email_required: false, stores_account: false}
 		def.attachments = {max_files: 1, max_file_size: 10}
 		const answers = initialAnswers(def)
 		answers.email = 'bad'

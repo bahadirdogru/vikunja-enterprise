@@ -296,6 +296,14 @@ const showSubmitter = computed(() => props.definition.submitter.collect_name || 
 			</div>
 		</fieldset>
 
+		<p
+			v-if="definition.submitter.stores_account"
+			class="fr__help"
+			data-test="stores-account"
+		>
+			{{ $t('forms.public.storesAccount') }}
+		</p>
+
 		<!-- The trap for bots: not focusable, not announced, not visible. -->
 		<div
 			class="fr__trap"
@@ -409,6 +417,12 @@ const showSubmitter = computed(() => props.definition.submitter.collect_name || 
 		font-size: .9rem;
 		font-weight: 600;
 		color: var(--danger);
+	}
+
+	&__help {
+		margin: 0;
+		font-size: .9rem;
+		color: var(--grey-700);
 	}
 
 	&__trap {

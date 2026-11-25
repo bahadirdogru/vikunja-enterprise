@@ -235,3 +235,11 @@ func remapOptionDefault(def any, optionMap map[int64]int64, unmapped func()) any
 	}
 	return def
 }
+
+// removeUserFromFormSubmissions is part of deleting a user: the submissions they made stay (the tasks they created
+// belong to the project), but nothing that identifies the account stays on them: the id, the name and the e-mail
+// address. Plain SQL on purpose, a nil submitter id has to become NULL on every database.
+func removeUserFromFormSubmissions(s *xorm.Session, userID int64) error {
+	_, err := s.Exec("UPDATE form_submissions SET submitter_id = NULL, submitter_name = '', submitter_email = '' WHERE submitter_id = ?", userID)
+	return err
+}

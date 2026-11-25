@@ -33,7 +33,7 @@ export type PublicDefinition = {
 	description: string
 	fields: PublicField[]
 	success: {message: string, redirect_url: string, submit_another: boolean}
-	submitter: {collect_name: boolean, name_required: boolean, collect_email: boolean, email_required: boolean}
+	submitter: {collect_name: boolean, name_required: boolean, collect_email: boolean, email_required: boolean, stores_account: boolean}
 	attachments: {max_files: number, max_file_size: number} | null
 	// All optional: without them the page shows the form title only.
 	branding: {name: string, accent_color: string, has_logo: boolean, hide_footer: boolean}
@@ -64,6 +64,7 @@ export function normalizeDefinition(data: FormPublicDefinition): PublicDefinitio
 			name_required: data.submitter?.name_required ?? false,
 			collect_email: data.submitter?.collect_email ?? false,
 			email_required: data.submitter?.email_required ?? false,
+			stores_account: data.submitter?.stores_account ?? false,
 		},
 		attachments: data.attachments
 			? {max_files: data.attachments.max_files ?? 0, max_file_size: data.attachments.max_file_size ?? 0}
@@ -403,6 +404,7 @@ export function definitionFromDraft(
 			name_required: isPublic && s.name_mode === 'required',
 			collect_email: isPublic && s.email_mode !== 'off',
 			email_required: isPublic && s.email_mode === 'required',
+			stores_account: draft.access === 'members',
 		},
 		attachments: fields.some(field => field.kind === 'files') ? {max_files: 5, max_file_size: 10 * 1024 * 1024} : null,
 		branding: {name: draft.brand_name.trim(), accent_color: draft.accent_color, has_logo: false, hide_footer: draft.hide_footer},
