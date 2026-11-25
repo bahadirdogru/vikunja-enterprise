@@ -372,7 +372,8 @@ func TestCustomField_Permissions(t *testing.T) {
 		{"stranger", 1, cfUser2, false, false},
 		{"read link share", 1, shareRead, true, false},
 		{"write link share cannot manage", 1, shareWrite, true, false},
-		{"admin link share", 1, shareAdmin, true, true},
+		// API.md: definitions need a project admin, so never a link share, whatever its permission.
+		{"admin link share cannot manage", 1, shareAdmin, true, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

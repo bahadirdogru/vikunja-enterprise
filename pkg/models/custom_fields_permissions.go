@@ -36,8 +36,12 @@ func (cf *CustomField) CanRead(s *xorm.Session, a web.Auth) (bool, int, error) {
 	return true, maxPermission, nil
 }
 
-// canAdminProject is the shared gate for changing definitions: admin on the project.
+// canAdminProject is the shared gate for changing definitions: admin on the project, never a link share (a share
+// follows its permission for values only).
 func (cf *CustomField) canAdminProject(s *xorm.Session, a web.Auth) (bool, error) {
+	if _, err := ownerOf(a); err != nil {
+		return false, nil //nolint:nilerr // anything but a user is refused, which is an answer and not an error
+	}
 	return (&Project{ID: cf.ProjectID}).IsAdmin(s, a)
 }
 
