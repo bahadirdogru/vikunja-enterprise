@@ -28,6 +28,7 @@ import (
 	"io"
 	"strings"
 	"testing"
+	"time"
 
 	"code.vikunja.io/api/pkg/config"
 	"code.vikunja.io/api/pkg/db"
@@ -371,5 +372,41 @@ func TestFormLogo_Availability(t *testing.T) {
 		assert.True(t, IsErrFormsDisabled(err), "got %v", err)
 		_, err = DeleteFormLogo(ctx, fU1, 1, f.ID)
 		assert.True(t, IsErrFormsDisabled(err), "got %v", err)
+	})
+}
+
+func TestFormLogo_ClosedNonPublicFormLooksLikeAnUnknownToken(t *testing.T) {
+	formsReset(t)
+	closed := time.Now().Add(-time.Minute)
+	withLogo := func(access FormAccess, settings *FormSettings) *Form {
+		f := baseForm(access)
+		f.Settings = settings
+		createForm(t, f)
+		_, err := UploadFormLogo(context.Background(), fU1, 1, f.ID, bytes.NewReader(logoPNG(t, 20, 20)))
+		require.NoError(t, err)
+		return f
+	}
+	load := func(token string) error {
+		s := db.NewReadSession()
+		defer s.Close()
+		_, err := LoadFormLogo(s, token)
+		return err
+	}
+	unknown := load("does-not-exist")
+	require.True(t, IsErrFormDoesNotExist(unknown))
+
+	for _, access := range []FormAccess{FormAccessMembers, FormAccessUsers} {
+		f := withLogo(access, &FormSettings{CloseDate: &closed})
+		err := load(f.Token)
+		assert.Equal(t, unknown, err, string(access))
+		assert.Equal(t, unknown.(ErrFormDoesNotExist).HTTPError(), err.(ErrFormDoesNotExist).HTTPError())
+	}
+	t.Run("an open form keeps its logo, so does a closed public one", func(t *testing.T) {
+		open := withLogo(FormAccessMembers, &FormSettings{})
+		err := load(open.Token)
+		assert.NoError(t, err)
+		pub := withLogo(FormAccessPublic, &FormSettings{CloseDate: &closed})
+		err = load(pub.Token)
+		assert.NoError(t, err)
 	})
 }

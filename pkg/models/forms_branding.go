@@ -187,7 +187,8 @@ type FormLogo struct {
 
 // LoadFormLogo opens the logo of the form with the token. Anyone who knows the token may load it, whatever the access
 // mode of the form is: a browser cannot send credentials with an image request, and a logo is not project data. A
-// missing token, a form without a logo and a missing file are all the same error.
+// missing token, a form without a logo, a missing file and a closed or full form that is not public are all the same
+// error.
 func LoadFormLogo(s *xorm.Session, token string) (*FormLogo, error) {
 	f, err := GetFormByToken(s, token)
 	if err != nil {
@@ -195,8 +196,15 @@ func LoadFormLogo(s *xorm.Session, token string) (*FormLogo, error) {
 	}
 	normalizeForm(f)
 	// Like the definition, a form that is switched off, by the owner or by the instance, serves nothing. A form that
-	// is closed, full or members-only keeps its logo.
-	if formUnavailableReason(f) == FormUnavailableDisabled {
+	// is members-only and open keeps its logo, so its page can show its branding next to the login prompt.
+	reason := formUnavailableReason(f)
+	if reason == FormUnavailableDisabled {
+		return nil, ErrFormDoesNotExist{}
+	}
+	// The request of an image carries no credentials, so the caller is anonymous: a form that is not public and takes
+	// no submissions (closed, full) is not told about, exactly like the definition does, and answers like an unknown
+	// token. A public form keeps its logo, as it keeps its title.
+	if reason != "" && f.Access != FormAccessPublic {
 		return nil, ErrFormDoesNotExist{}
 	}
 	if f.BrandLogoFileID == 0 {
