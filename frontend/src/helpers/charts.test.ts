@@ -80,6 +80,25 @@ describe('formatting', () => {
 		expect(formatSeconds(5400, 'en')).toBe('1.5 h')
 	})
 
+	it.each([
+		[0, '0 s'],
+		[59, '59 s'],
+		[60, '1 min'],
+		[3599, '60 min'],
+		[3600, '1 h'],
+		[-5400, '-1.5 h'],
+		[360000, '100 h'],
+	])('formats %s seconds as a duration in English', (seconds, text) => {
+		expect(formatSeconds(seconds, 'en')).toBe(text)
+	})
+
+	it('writes durations in Turkish with Turkish units and decimal comma', () => {
+		expect(formatSeconds(30, 'tr-TR')).toBe('30 sn')
+		expect(formatSeconds(300, 'tr-TR')).toBe('5 dk')
+		expect(formatSeconds(5400, 'tr-TR')).toBe('1,5 sa')
+		expect(formatSeconds(3_600_000, 'tr')).toBe('1.000 sa')
+	})
+
 	it('truncates with an ellipsis and never to nothing', () => {
 		expect(truncateLabel('Short', 10)).toBe('Short')
 		expect(truncateLabel('A very long label', 8)).toBe('A very…')

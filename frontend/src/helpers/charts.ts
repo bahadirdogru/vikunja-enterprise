@@ -211,15 +211,21 @@ export function formatAxisNumber(value: number, locale?: string): string {
 	return formatNumber(value, locale, {maximumFractionDigits: 2})
 }
 
+// Abbreviations of hour, minute and second per language; English is the default.
+const DURATION_UNITS: Record<string, {h: string, min: string, s: string}> = {
+	tr: {h: 'sa', min: 'dk', s: 'sn'},
+}
+
 export function formatSeconds(seconds: number, locale?: string): string {
 	const abs = Math.abs(seconds)
+	const units = DURATION_UNITS[(locale ?? '').split('-')[0]!.toLowerCase()] ?? {h: 'h', min: 'min', s: 's'}
 	if (abs >= 3600) {
-		return `${formatNumber(seconds / 3600, locale, {maximumFractionDigits: 1})} h`
+		return `${formatNumber(seconds / 3600, locale, {maximumFractionDigits: 1})} ${units.h}`
 	}
 	if (abs >= 60) {
-		return `${formatNumber(seconds / 60, locale, {maximumFractionDigits: 0})} min`
+		return `${formatNumber(seconds / 60, locale, {maximumFractionDigits: 0})} ${units.min}`
 	}
-	return `${formatNumber(seconds, locale)} s`
+	return `${formatNumber(seconds, locale)} ${units.s}`
 }
 
 // Axis ticks and value labels: durations read as hours and minutes, not as a bare number of seconds.
