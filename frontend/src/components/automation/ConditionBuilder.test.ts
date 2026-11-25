@@ -138,4 +138,16 @@ describe('ConditionBuilder', () => {
 		expect(wrapper.text()).toContain('group problem')
 		expect(wrapper.get('[id$="-value"]').attributes('aria-invalid')).toBe('true')
 	})
+
+	it('lets a rule ask why a status changed: the cause field offers only "status removed"', async () => {
+		const wrapper = mountBuilder({all: [{field: 'event.new.cause', op: '='}]})
+		const field = wrapper.get('select[aria-label="Field"]')
+		expect((field.element as HTMLSelectElement).value).toBe('event.new.cause')
+		expect(field.findAll('option').map(o => o.text())).toContain('Status change: cause')
+		const value = wrapper.get('[id$="-value"]')
+		expect(value.element.tagName).toBe('SELECT')
+		expect(value.findAll('option').map(o => o.text()).slice(1)).toEqual(['The status was removed from the workflow'])
+		await value.setValue('status_removed')
+		expect(wrapper.props('modelValue')).toEqual({all: [{field: 'event.new.cause', op: '=', value: 'status_removed'}]})
+	})
 })
