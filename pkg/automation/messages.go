@@ -68,11 +68,11 @@ const (
 )
 
 // clipRunes cuts text to at most max runes, on a rune boundary, and says so with an ellipsis.
-func clipRunes(text string, max int) string {
-	if utf8.RuneCountInString(text) <= max {
+func clipRunes(text string, limit int) string {
+	if utf8.RuneCountInString(text) <= limit {
 		return text
 	}
-	return string([]rune(text)[:max-1]) + "…"
+	return string([]rune(text)[:limit-1]) + "…"
 }
 
 // boundParams cuts every value to maxParamRunes runes and the values together to totalBytes bytes (the longest
