@@ -565,6 +565,37 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
     reports 0 issues; `vue-tsc --noEmit` and vitest of the touched areas pass.
     The new deadlock test fails with 40P01 on PostgreSQL when the requests are
     walked in request id order again, and passes in task order.
+- Second review round on the defect fixes:
+  - A repeating task in a removed initial status was reopened into the status
+    being removed (the flag is cleared only on archiving) and ended on an
+    archived status. The reopen now ignores the statuses that go away, and the
+    tests assert that no task of the project is left on a removed or archived
+    status.
+  - Lock order of the removal: the save locks, in task order and in chunks, every
+    task in a removed status and every task with a pending request that names one
+    (a locking read, not an `UPDATE ... IN (subquery)`), then cancels the
+    requests, which now takes task, then request, per request in task order.
+    `lockApprovalRequest` uses two lookups by primary key on PostgreSQL and MySQL
+    (no dependent subquery on MySQL before 8.0.21 or MariaDB 10.2); on SQLite
+    it keeps the single `UPDATE` with a subquery as its first statement (one
+    writer, no row locks, the write-first property is kept). Tests for a
+    decision and for the disable cleanup against a status removal run on
+    PostgreSQL and MySQL; both also pass on the code before this change (the
+    window is narrow), so they only guard against a regression.
+  - The size limit is per save: the tasks of all removed statuses and of all
+    statuses whose category changes between done and not done, trashed tasks
+    included, are counted before anything is written; 21011 is refused with no
+    rule disabled and no request cancelled (tested for rules and approvals, not
+    for forms).
+  - Accounts: any status other than active in the admin event drops the slot
+    (disabled, waiting for confirmation, locked by an admin); a lockout by failed
+    logins never does. Whether a stored "locked" came from an admin or from
+    failed logins is not recorded: if the hook was missed for an admin lock, the
+    repair keeps the slot (a gap that needs a stored reason). The approval cron
+    repairs the requests a failed or missed cleanup left behind. The rule table
+    is in the approvals module page and tested row by row.
+  - Status changes carry `event.new.cause` in the automation payload and the
+    catalog.
 
 ## Remaining
 
