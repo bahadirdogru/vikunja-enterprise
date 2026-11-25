@@ -154,10 +154,10 @@ Schema violations (an enum, a range, a missing required property) are `422`, and
 |---|---|---|
 | 20001 - 20008 | Custom fields | `pkg/models/error_custom_fields.go` |
 | 21001 - 21011 | Workflows | `pkg/models/error_workflow.go` |
-| 22001 - 22015 | Automation (22005 - 22008 are scripts and secrets) | `pkg/models/error_automation.go`, `pkg/models/error_automation_secrets.go` |
+| 22001 - 22016 | Automation (22005 - 22008 are scripts and secrets) | `pkg/models/error_automation.go`, `pkg/models/error_automation_secrets.go` |
 | 23001 - 23011 | Reports and dashboards | `pkg/models/error_reports.go` |
 | 24001 - 24010 | Approvals | `pkg/models/error_approvals.go` |
-| 25001 - 25009 | Forms | `pkg/models/error_forms.go` |
+| 25001 - 25011 | Forms | `pkg/models/error_forms.go` |
 
 **Codes a client most needs.**
 
@@ -190,6 +190,7 @@ Schema violations (an enum, a range, a missing required property) are `422`, and
 | 22013 | 400 | The webhook body is not a JSON object | incoming webhook |
 | 22014 | 409 | The project already has `automation.maxrulesperproject` rules; only adding is refused | rule create, project duplicate |
 | 22015 | 409 | The event of the failed run was deleted by the retention job, so the run cannot be retried | run retry |
+| 22016 | 422 | The rule has a trigger with a task and the test names none (`task_id`) | rule test |
 | 23001 | 400 | Invalid report parameter, `details.param` names it | reports |
 | 23002 / 23003 | 400 | Too many buckets or groups | reports |
 | 23005 | 403 | Not available through a link share | reports |

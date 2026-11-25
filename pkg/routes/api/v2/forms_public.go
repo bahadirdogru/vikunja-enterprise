@@ -265,11 +265,11 @@ func formPublicSubmitMultipart(ctx context.Context, in *formMultipartInput) (*fo
 	data := in.RawBody.Data()
 	// The limit of the JSON route: the body limit of this route has to leave room for the files.
 	if len(data.Data) > config.FormsMaxBodySize.GetInt() {
-		return nil, huma.NewError(http.StatusRequestEntityTooLarge, "data is too large")
+		return nil, translateDomainError(models.ErrFormDataTooLarge{})
 	}
 	var body FormSubmitInput
 	if err := json.Unmarshal([]byte(data.Data), &body); err != nil {
-		return nil, huma.Error422UnprocessableEntity("data is not valid JSON")
+		return nil, translateDomainError(models.ErrFormDataInvalid{})
 	}
 	uploads := make([]*models.AttachmentToUpload, 0, len(data.Files))
 	for _, f := range data.Files {

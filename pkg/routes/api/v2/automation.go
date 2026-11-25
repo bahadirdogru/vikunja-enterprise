@@ -372,7 +372,7 @@ func automationsTest(ctx context.Context, in *struct {
 		return nil, translateDomainError(models.ErrGenericForbidden{})
 	}
 	if spec.TriggerHasTask(rule.Trigger) && in.Body.TaskID < 1 {
-		return nil, huma.Error422UnprocessableEntity("task_id is required for this trigger")
+		return nil, translateDomainError(models.ErrAutomationTestNeedsTask{})
 	}
 	result, err := automation.DryRunWith(ctx, rule, in.Body.TaskID, in.Body.Payload)
 	if err != nil {

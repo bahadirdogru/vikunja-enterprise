@@ -154,7 +154,7 @@ describe('getErrorText without a code', () => {
 	})
 
 	it.each([401, 403, 404, 429, 500, 502, 503, 504])('says the status %i in the interface language, not the English of the web server', status => {
-		const text = getErrorText(new ApiError({status, detail: 'Bad Gateway from a proxy'}))
+		const text = getErrorText(new ApiError({status, detail: 'Bad Gateway'}))
 		expect(text).not.toContain('Bad Gateway')
 		expect(text).not.toBe('')
 	})
@@ -170,5 +170,22 @@ describe('getErrorText without a code', () => {
 
 	it('prefers the text of a known code over the status', () => {
 		expect(getErrorText(new ApiError({status: 404, code: 4002, detail: 'x'}))).toBe('The task does not exist.')
+	})
+})
+
+describe('getErrorText keeps what a specific server detail says', () => {
+	it('puts a specific detail after the generic sentence', () => {
+		const text = getErrorText(new ApiError({status: 403, detail: 'API tokens cannot access MCP connection settings'}))
+		expect(text).toBe('You are not allowed to do this.\nAPI tokens cannot access MCP connection settings')
+	})
+
+	it('puts the detail of a 422 without fields after the validation sentence', () => {
+		expect(getErrorText(new ApiError({status: 422, detail: 'something specific'}))).toBe('Some of the values you entered are not valid.\nsomething specific')
+	})
+
+	it('does not repeat what the framework says by itself', () => {
+		expect(getErrorText(new ApiError({status: 404, detail: 'Not Found'}))).toBe('The page or item was not found.')
+		expect(getErrorText(new ApiError({status: 502, detail: 'Bad Gateway'}))).toBe('The server cannot be reached at the moment. Try again later.')
+		expect(getErrorText(new ApiError({status: 401, detail: 'missing or malformed jwt'}))).toBe('You are not signed in or your session has expired. Sign in again.')
 	})
 })

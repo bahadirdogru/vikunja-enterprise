@@ -32,7 +32,7 @@ vi.mock('@/client/generated', async importOriginal => ({
 	...await importOriginal<typeof import('@/client/generated')>(),
 	...sdk,
 	migrationCsvStatus: vi.fn(async () => {
-		throw {status: 409, detail: 'Status unavailable'}
+		throw {status: 500, detail: 'Status unavailable'}
 	}),
 }))
 

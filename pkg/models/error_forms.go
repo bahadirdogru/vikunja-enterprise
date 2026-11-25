@@ -342,3 +342,41 @@ func (err ErrFormLogoInvalid) HTTPError() web.HTTPError {
 		Details:  map[string]any{"reason": err.Reason},
 	}
 }
+
+// ErrFormDataInvalid represents an error where the data part of a multipart submission is not a JSON document.
+type ErrFormDataInvalid struct{}
+
+func (err ErrFormDataInvalid) Error() string {
+	return "Form data is not valid JSON"
+}
+
+// ErrCodeFormDataInvalid holds the unique world-error code of this error
+const ErrCodeFormDataInvalid = 25010
+
+// HTTPError holds the http error description
+func (err ErrFormDataInvalid) HTTPError() web.HTTPError {
+	return web.HTTPError{
+		HTTPCode: http.StatusUnprocessableEntity,
+		Code:     ErrCodeFormDataInvalid,
+		Message:  "data is not valid JSON",
+	}
+}
+
+// ErrFormDataTooLarge represents an error where the data part of a multipart submission is larger than the body limit.
+type ErrFormDataTooLarge struct{}
+
+func (err ErrFormDataTooLarge) Error() string {
+	return "Form data is too large"
+}
+
+// ErrCodeFormDataTooLarge holds the unique world-error code of this error
+const ErrCodeFormDataTooLarge = 25011
+
+// HTTPError holds the http error description
+func (err ErrFormDataTooLarge) HTTPError() web.HTTPError {
+	return web.HTTPError{
+		HTTPCode: http.StatusRequestEntityTooLarge,
+		Code:     ErrCodeFormDataTooLarge,
+		Message:  "data is too large",
+	}
+}

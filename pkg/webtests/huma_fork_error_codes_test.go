@@ -60,6 +60,7 @@ func TestHumaForkErrorCodesReachTheClient(t *testing.T) {
 		{"a rule that does not exist", http.MethodGet, "/projects/" + P + "/automations/99999", "", 404, models.ErrCodeAutomationRuleDoesNotExist},
 		{"a run that does not exist", http.MethodGet, "/projects/" + P + "/automations/" + w.ids["R"] + "/runs/99999", "", 404, models.ErrCodeAutomationRunDoesNotExist},
 		{"a secret that does not exist", http.MethodDelete, "/projects/" + P + "/automation-secrets/NOPE", "", 404, models.ErrCodeAutomationSecretDoesNotExist},
+		{"a test of a rule with a task trigger and no task", http.MethodPost, "/projects/" + P + "/automations/" + w.ids["R"] + "/test", `{}`, 422, models.ErrCodeAutomationTestNeedsTask},
 		{"a form that does not exist", http.MethodGet, "/forms/not-a-form", "", 404, models.ErrCodeFormDoesNotExist},
 		{"an approval request that does not exist", http.MethodGet, "/approvals/99999", "", 404, models.ErrCodeApprovalRequestDoesNotExist},
 	}

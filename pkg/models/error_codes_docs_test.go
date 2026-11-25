@@ -29,7 +29,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// The error codes of the fork's modules (20001 - 25009) as the API answers them. API.md lists the ones a client needs
+// The error codes of the fork's modules (20001 - 25011) as the API answers them. API.md lists the ones a client needs
 // with their HTTP status; this test holds the code, the status and the range of every error to that table, and fails
 // when a code is added to the source without being listed here.
 func TestForkErrorCodesMatchTheDocumentation(t *testing.T) {
@@ -47,7 +47,7 @@ func TestForkErrorCodesMatchTheDocumentation(t *testing.T) {
 		22004: ErrAutomationRunNotRetryable{}, 22005: ErrAutomationScriptsDisabled{}, 22006: ErrAutomationSecretInvalid{},
 		22007: ErrAutomationSecretDoesNotExist{}, 22008: ErrAutomationSecretUnreadable{}, 22009: ErrAutomationRuleNotRunnable{},
 		22010: ErrAutomationHookNotFound{}, 22011: ErrAutomationHookSignatureInvalid{}, 22012: ErrAutomationHookRateLimited{},
-		22013: ErrAutomationHookPayloadInvalid{}, 22014: ErrAutomationRuleLimitReached{}, 22015: ErrAutomationRunEventGone{},
+		22013: ErrAutomationHookPayloadInvalid{}, 22014: ErrAutomationRuleLimitReached{}, 22015: ErrAutomationRunEventGone{}, 22016: ErrAutomationTestNeedsTask{},
 
 		23001: ErrReportInvalidParameter{}, 23002: ErrReportTooManyBuckets{}, 23003: ErrReportTooManyGroups{},
 		23004: ErrReportFieldKindNotSupported{}, 23005: ErrReportNotAvailableForShare{}, 23006: ErrDashboardDoesNotExist{},
@@ -60,7 +60,7 @@ func TestForkErrorCodesMatchTheDocumentation(t *testing.T) {
 
 		25001: ErrFormDoesNotExist{}, 25002: ErrFormInvalid{}, 25003: ErrFormUnavailable{}, 25004: ErrFormLoginRequired{},
 		25005: ErrFormNotAllowed{}, 25006: ErrFormSubmissionInvalid{}, 25007: ErrFormRateLimited{}, 25008: ErrFormsDisabled{},
-		25009: ErrFormLogoInvalid{},
+		25009: ErrFormLogoInvalid{}, 25010: ErrFormDataInvalid{}, 25011: ErrFormDataTooLarge{},
 	}
 
 	t.Run("every error answers with the code it is listed under, in the range of its module", func(t *testing.T) {

@@ -17,8 +17,8 @@ const tr = (load('tr-TR').error as Messages)
 // added there without a translation here fails this test once it is added below.
 const range = (from: number, to: number) => Array.from({length: to - from + 1}, (_, i) => from + i)
 const FORK_CODES = [
-	...range(20001, 20008), ...range(21001, 21011), ...range(22001, 22015),
-	...range(23001, 23011), ...range(24001, 24010), ...range(25001, 25009),
+	...range(20001, 20008), ...range(21001, 21011), ...range(22001, 22016),
+	...range(23001, 23011), ...range(24001, 24010), ...range(25001, 25011),
 ]
 // These two name the reason of the failure in code (reason_code), which the interface says in its own language.
 const WITH_REASON = [20002, 20005]

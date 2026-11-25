@@ -2063,7 +2063,10 @@
     "1026": "This username is reserved and cannot be used.",
     "1027": "Invalid user context. Make sure the token is valid and try again.",
     "1028": "Invalid deletion token provided.",
-    "1029": "This deletion token does not belong to your account."
+    "1029": "This deletion token does not belong to your account.",
+    "22016": "Choose a task to test this rule with.",
+    "25010": "The answers could not be read. Reload the page and try again.",
+    "25011": "The answers are too large to send."
   },
   "about": {
     "title": "About",

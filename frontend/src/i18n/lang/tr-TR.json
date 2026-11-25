@@ -2063,7 +2063,10 @@
 		"1026": "Bu kullanıcı adı ayrılmış, kullanılamaz.",
 		"1027": "Kullanıcı bağlamı geçersiz. Anahtarın geçerli olduğundan emin olup tekrar dene.",
 		"1028": "Geçersiz silme anahtarı verildi.",
-		"1029": "Bu silme anahtarı hesabına ait değil."
+		"1029": "Bu silme anahtarı hesabına ait değil.",
+		"22016": "Bu kuralı denemek için bir görev seç.",
+		"25010": "Yanıtlar okunamadı. Sayfayı yenileyip tekrar deneyin.",
+		"25011": "Yanıtlar gönderilemeyecek kadar büyük."
 	},
 	"about": {
 		"title": "Hakkında",

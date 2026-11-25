@@ -344,3 +344,22 @@ func (err ErrAutomationRuleLimitReached) HTTPError() web.HTTPError {
 		Message:  fmt.Sprintf("This project has reached the limit of %d automation rules.", err.Limit),
 	}
 }
+
+// ErrAutomationTestNeedsTask represents an error where a rule with a task trigger is tested without a task.
+type ErrAutomationTestNeedsTask struct{}
+
+func (err ErrAutomationTestNeedsTask) Error() string {
+	return "Automation test needs a task"
+}
+
+// ErrCodeAutomationTestNeedsTask holds the unique world-error code of this error
+const ErrCodeAutomationTestNeedsTask = 22016
+
+// HTTPError holds the http error description
+func (err ErrAutomationTestNeedsTask) HTTPError() web.HTTPError {
+	return web.HTTPError{
+		HTTPCode: http.StatusUnprocessableEntity,
+		Code:     ErrCodeAutomationTestNeedsTask,
+		Message:  "task_id is required for this trigger",
+	}
+}

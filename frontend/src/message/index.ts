@@ -15,17 +15,23 @@ export function translatedReason(params: Record<string, unknown>): Record<string
 
 // Errors that carry no code of their own and whose English text comes from the web server or the framework: a
 // failed validation of the API (422), a refusal of the gateway, a request that never reached the server.
+// What the web server and the framework write when they have nothing to say: the generic sentence says it better.
+const FRAMEWORK_DETAIL = /^(validation failed|bad request|unauthorized|forbidden|not found|too many requests|internal server error|bad gateway|service unavailable|gateway timeout|\d{3} .*|.*page not found|(missing or malformed|invalid or expired) jwt|rate limit exceeded)\.?$/i
+
 function genericErrorText(original: Record<string, unknown>, data: Record<string, unknown>): string {
 	const {t, te} = i18n.global
 	const status = typeof data.status === 'number' ? data.status : undefined
+	// A specific detail of the server is information the generic sentence does not have: it follows the sentence.
+	const detail = [data.detail, data.message].find((d): d is string => typeof d === 'string' && d.trim() !== '' && !FRAMEWORK_DETAIL.test(d.trim()))
+	const withDetail = (sentence: string) => detail === undefined ? sentence : `${sentence}\n${detail.trim()}`
 	if (status === 422) {
 		const fields = Array.isArray(data.errors)
 			? [...new Set(data.errors.map(e => String(errorRecord(e).location ?? '').replace(/^body\./, '')).filter(Boolean))]
 			: []
-		return fields.length > 0 ? `${t('error.validation')}\n${fields.join(', ')}` : t('error.validation')
+		return fields.length > 0 ? `${t('error.validation')}\n${fields.join(', ')}` : withDetail(t('error.validation'))
 	}
-	if (status !== undefined && te(`error.http${status}`)) return t(`error.http${status}`)
-	if (status !== undefined && status >= 500 && status < 600) return t('error.http5xx')
+	if (status !== undefined && te(`error.http${status}`)) return withDetail(t(`error.http${status}`))
+	if (status !== undefined && status >= 500 && status < 600) return withDetail(t('error.http5xx'))
 	if (status === undefined && (original.message === 'Network Error' || original.message === 'Failed to fetch' || original.message === 'Load failed')) {
 		return t('error.network')
 	}
