@@ -1217,7 +1217,7 @@ func TestReport_ExportIDChunks(t *testing.T) {
 // statuses and options than a database accepts parameters in one statement.
 func TestReport_LookupsOfManyIDs(t *testing.T) {
 	env := setupReportEnv(t)
-	const n = 33000 // above the 32766 parameters of SQLite, the lowest limit of the supported versions after 3.32
+	const n = 70000 // above the 65535 parameters of PostgreSQL and MySQL, and so above the 32766 of SQLite
 
 	keys := make([]reportKey, 0, n)
 	for i := int64(1); i <= n; i++ {
@@ -1239,7 +1239,9 @@ func TestReport_LookupsOfManyIDs(t *testing.T) {
 	}
 
 	t.Run("time tracking by user over many users", func(t *testing.T) {
-		const users = 33000
+		const users = 70000
+		config.ReportsMaxRows.Set(100000)
+		defer config.ReportsMaxRows.Set(50000)
 		batch := make([]*TimeEntry, 0, 500)
 		flush := func() {
 			if len(batch) == 0 {

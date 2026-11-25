@@ -652,10 +652,19 @@ func TestHumaForms_BodyIsReadAfterTheFormIsKnown(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, w.Close())
 
+	type route struct {
+		path, contentType string
+		body              []byte
+	}
+	routes := []route{
+		{"/submissions/multipart", w.FormDataContentType(), buf.Bytes()},
+		{"/submissions", "application/json", []byte(`{"values":{"title":"x"}}`)},
+	}
+	var current route // the subtests run one after the other
 	send := func(path, token string) (*httptest.ResponseRecorder, int) {
-		body := &countingBody{r: bytes.NewReader(buf.Bytes())}
+		body := &countingBody{r: bytes.NewReader(current.body)}
 		req := httptest.NewRequest(http.MethodPost, path, body)
-		req.Header.Set("Content-Type", w.FormDataContentType())
+		req.Header.Set("Content-Type", current.contentType)
 		if token != "" {
 			req.Header.Set("Authorization", "Bearer "+token)
 		}
@@ -663,7 +672,9 @@ func TestHumaForms_BodyIsReadAfterTheFormIsKnown(t *testing.T) {
 		e.ServeHTTP(rec, req)
 		return rec, body.n
 	}
-	for _, route := range []string{"/submissions/multipart"} {
+	for _, rt := range routes {
+		current = rt
+		route := rt.path
 		t.Run("an unknown token", func(t *testing.T) {
 			rec, read := send("/api/v2/forms/does-not-exist"+route, "")
 			assert.Equal(t, http.StatusNotFound, rec.Code, rec.Body.String())

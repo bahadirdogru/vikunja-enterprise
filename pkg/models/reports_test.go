@@ -953,6 +953,24 @@ func TestReport_MaxCells(t *testing.T) {
 		require.NoError(t, err)
 	})
 
+	t.Run("the cap itself is allowed, one cell more is refused", func(t *testing.T) {
+		config.ReportsMaxCells.Set(0)
+		req := ReportRequest{ProjectID: p, GroupBy: "done", Time: timed}
+		rep, err := runReportErr(cfUser1, req)
+		require.NoError(t, err)
+		cells := len(rep.Groups)
+		for _, g := range rep.Groups {
+			cells += len(g.Series)
+		}
+		require.Positive(t, cells)
+		config.ReportsMaxCells.Set(cells)
+		_, err = runReportErr(cfUser1, req)
+		require.NoError(t, err, "cells == limit")
+		config.ReportsMaxCells.Set(cells - 1)
+		_, err = runReportErr(cfUser1, req)
+		assert.True(t, IsErrReportTooLarge(err), "cells == limit + 1: %v", err)
+	})
+
 	t.Run("groups without a time series are counted too", func(t *testing.T) {
 		config.ReportsMaxCells.Set(2)
 		_, err := runReportErr(cfUser1, ReportRequest{ProjectID: p, GroupBy: "done", ThenBy: "priority"})
