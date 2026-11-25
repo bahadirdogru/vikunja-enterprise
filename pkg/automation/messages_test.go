@@ -409,3 +409,67 @@ func TestTruncateCutsOnACharacterBoundary(t *testing.T) {
 	assert.Equal(t, "kısa", truncate("kısa", 4000))
 	assert.Empty(t, truncate("ş", 1))
 }
+
+// A script that reads a secret and throws it as the end of a long text: the secret starts a few characters before the
+// cut at 1000 runes. Masked after the cut, a piece of it would be left; it must not show anywhere, not even in part.
+func TestASecretInAThrownScriptErrorNeverSurvivesTheCut(t *testing.T) {
+	const secret = "S3CR3T-VALUE-XYZ"
+	throwing := `throw new Error("a".repeat(985) + secrets.get("TOKEN") + "b".repeat(40))`
+	noPiece := func(t *testing.T, where string, params map[string]string) {
+		t.Helper()
+		for k, v := range params {
+			assert.NotContains(t, v, "S3C", "%s: %s", where, k)
+		}
+	}
+
+	t.Run("an action of a run", func(t *testing.T) {
+		reset(t)
+		setSecret(t, projectOwned, "TOKEN", secret)
+		_, run, steps := runAction(t, projectOwned, user1, user1, scriptAction(throwing))
+		require.Equal(t, models.AutomationRunFailed, run.Status)
+		assert.Equal(t, "script_thrown", run.ErrorCode)
+		assert.Contains(t, run.ErrorParams["message"], "***", "the secret is masked, not cut")
+		noPiece(t, "run", run.ErrorParams)
+		noPiece(t, "step", steps[0].ErrorParams)
+		assert.NotContains(t, run.Error, "S3C")
+	})
+
+	t.Run("a test run of an action", func(t *testing.T) {
+		reset(t)
+		setSecret(t, projectOwned, "TOKEN", secret)
+		task := newTask(t, projectOwned, "dry", user1)
+		r := addRule(t, projectOwned, user1, rule(spec.TriggerTaskUpdated, nil, nil, scriptAction(throwing)))
+		res, err := DryRun(context.Background(), r, task.ID)
+		require.NoError(t, err)
+		noPiece(t, "dry run step", res.Steps[0].ErrorParams)
+		assert.NotContains(t, res.Steps[0].Error, "S3C")
+	})
+
+	t.Run("the error of a script is mapped whole, the cut comes after the mask", func(t *testing.T) {
+		// A condition cannot read secrets, so this is the path of a secret that reaches a failing script by another way
+		// (a value of the task, say) and is masked by the secrets the step loaded.
+		env := &Env{secrets: &secretStore{loaded: true, accessed: map[string]bool{"TOKEN": true}, values: map[string]*models.AutomationSecretValue{"TOKEN": {Value: secret}}}}
+		thrown := &script.Error{Kind: script.ErrThrown, Message: strings.Repeat("a", 985) + secret + strings.Repeat("b", 40)}
+		_, params := errorMessage(env.maskErr(mapScriptError(thrown)))
+		noPiece(t, "mapped", params)
+		assert.Contains(t, params["message"], "***")
+	})
+}
+
+// errorMessage cuts the values of an error, so it must only be called with an error that was masked first. The places
+// that store or send a failure (the runner and the dry run) get theirs from Env.maskErr or from errors that cannot
+// hold a secret; code that builds or maps an error must use errorMessageRaw. A new caller elsewhere fails here.
+func TestOnlyTheStoringCodeBoundsAnError(t *testing.T) {
+	files, err := filepath.Glob("*.go")
+	require.NoError(t, err)
+	allowed := map[string]bool{"runner.go": true, "dryrun.go": true, "messages.go": true}
+	call := regexp.MustCompile(`\berrorMessage\(`)
+	for _, f := range files {
+		if strings.HasSuffix(f, "_test.go") || allowed[f] {
+			continue
+		}
+		src, err := os.ReadFile(f)
+		require.NoError(t, err)
+		assert.False(t, call.Match(src), "%s calls errorMessage, which cuts: use errorMessageRaw and let the storing code cut after the mask", f)
+	}
+}

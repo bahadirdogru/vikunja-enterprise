@@ -161,8 +161,10 @@ const (
 	CodeScriptUnavailable = "script_unavailable"
 )
 
-// errorMessage gives the code and the bounded values of an error, as they are stored. errorMessageRaw gives them whole,
-// for masking.
+// errorMessage gives the code and the bounded values of an error, as they are stored. The error must have been
+// through Env.maskErr already: the cut comes after the mask, or a cut could split a secret into a piece the masker no
+// longer finds. Only the places that store or send a failure call it (TestOnlyTheStoringCodeBoundsAnError); everything
+// that builds or maps an error uses errorMessageRaw, which gives the values whole.
 func errorMessage(err error) (code string, params map[string]string) {
 	code, params = errorMessageRaw(err)
 	return code, boundParams(params, maxErrorParamsBytes)

@@ -50,7 +50,8 @@ func (e *Env) ctx() context.Context {
 func mapScriptError(err error) error {
 	var scriptErr *script.Error
 	if errors.As(err, &scriptErr) {
-		code, params := errorMessage(scriptErr)
+		// Whole: the caller masks the secrets of the step, and only then are the values cut (errorMessage).
+		code, params := errorMessageRaw(scriptErr)
 		return &ActionError{Msg: scriptErr.Error(), NoBlame: !scriptErr.Blamed(), Code: code, Params: params}
 	}
 	return err
