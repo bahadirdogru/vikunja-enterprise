@@ -111,7 +111,7 @@ describe('DrilldownPanel', () => {
 		sdk.projectTasksList.mockRejectedValueOnce(new Error('down'))
 		const failing = mountPanel({})
 		await settle()
-		expect(failing.get('[role="alert"]').exists()).toBe(true)
+		expect(failing.find('[role="alert"]').exists()).toBe(true)
 	})
 
 	it('pages through the tasks and goes back to page 1 when the selection changes', async () => {

@@ -142,7 +142,7 @@ describe('widget reports', () => {
 		sdk[call].mockResolvedValue({data: {}})
 		const options = make({project_id: 3, filter: ''})
 		expect(options.queryKey).toEqual(make({project_id: 3}).queryKey)
-		await new QueryClient().fetchQuery(options)
+		await new QueryClient().fetchQuery(options as never)
 		expect(sdk[call].mock.calls[0]![0].body).toEqual({project_id: 3})
 		expect(options.meta).toEqual({handlesError: true})
 		expect(make({}, false).enabled).toBe(false)

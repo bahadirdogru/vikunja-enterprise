@@ -15,7 +15,7 @@ import {
 } from './dashboards'
 import {ApiError} from '@/client/problem'
 
-const run = (client: QueryClient, options: Parameters<QueryClient['getMutationCache']['build']>[1], vars: unknown) =>
+const run = (client: QueryClient, options: unknown, vars: unknown) =>
 	client.getMutationCache().build(client, options as never).execute(vars as never)
 
 const stored = (over: Partial<DashboardResponse> = {}): DashboardResponse => ({
