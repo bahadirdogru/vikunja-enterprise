@@ -47,50 +47,58 @@ export function notificationText(n: DatabaseNotification, user: Pick<User, 'id'>
 	const submitter = [payload.submitter_name, payload.submitter_email].find(v => typeof v === 'string' && v !== '')
 	const message = typeof payload.message === 'string' ? payload.message.trim() : ''
 	const ruleTitle = typeof payload.rule_title === 'string' ? payload.rule_title : ''
-	const t = (key: string, params: Record<string, unknown> = {}) => String(i18n.global.t(`notification.text.${key}`, params))
-	const taskName = getTaskIdentifier(task)
+	const t = (key: string, params: Record<string, unknown>) => String(i18n.global.t(`notification.text.${key}`, params))
+	let who: string
 	switch (n.name) {
 		case NOTIFICATION_NAMES.TASK_COMMENT:
-			return t('comment', {task: taskName})
+			return t('comment', {task: getTaskIdentifier(task)})
 		case NOTIFICATION_NAMES.TASK_ASSIGNED:
-			return user !== null && user.id === assignee.id
-				? t('assignedYou', {task: taskName})
-				: t('assigned', {who: getDisplayName(assignee), task: taskName})
+			who = `${getDisplayName(assignee)}`
+
+			if (user !== null && user.id === assignee.id) {
+				return t('assignedYou', {task: getTaskIdentifier(task)})
+			}
+
+			return t('assigned', {who, task: getTaskIdentifier(task)})
 		case NOTIFICATION_NAMES.TASK_DELETED:
-			return t('deleted', {task: taskName})
+			return t('deleted', {task: getTaskIdentifier(task)})
 		case NOTIFICATION_NAMES.TASK_CREATED:
-			return t('created', {task: taskName})
+			return t('created', {task: getTaskIdentifier(task)})
 		case NOTIFICATION_NAMES.PROJECT_CREATED:
 			return t('projectCreated', {project: project.title})
 		case NOTIFICATION_NAMES.TEAM_MEMBER_ADDED:
-			return user !== null && user.id === member.id
-				? t('teamAddedYou', {team: team.name})
-				: t('teamAdded', {who: getDisplayName(member), team: team.name})
+			who = `${getDisplayName(member)}`
+
+			if (user !== null && user.id === member.id) {
+				return t('teamAddedYou', {team: team.name})
+			}
+
+			return t('teamAdded', {who, team: team.name})
 		case NOTIFICATION_NAMES.TASK_REMINDER:
-			return t('reminder', {task: taskName, title: task.title, project: project.title})
+			return t('reminder', {task: getTaskIdentifier(task), title: task.title, project: project.title})
 		case NOTIFICATION_NAMES.TASK_MENTIONED:
-			return t('mentioned', {who: getDisplayName(doer), task: taskName})
+			return t('mentioned', {who: getDisplayName(doer), task: getTaskIdentifier(task)})
 		case NOTIFICATION_NAMES.FORM_SUBMITTED:
 			// The doer is the form owner, who did nothing: the text is about the submitter.
 			return typeof submitter === 'string'
-				? t('formSubmitted', {submitter, form: formTitle, task: taskName})
-				: t('formSubmittedAnonymous', {form: formTitle, task: taskName})
+				? t('formSubmitted', {submitter, form: formTitle, task: getTaskIdentifier(task)})
+				: t('formSubmittedAnonymous', {form: formTitle, task: getTaskIdentifier(task)})
 		case NOTIFICATION_NAMES.AUTOMATION_NOTIFY:
 			// The text is the message of the rule, already filled in by the server.
 			return message !== '' ? message : t('automation', {rule: ruleTitle})
 		case NOTIFICATION_NAMES.APPROVAL_REQUESTED:
-			return t('approvalRequested', {title: approvalTitle, task: taskName})
+			return t('approvalRequested', {title: approvalTitle, task: getTaskIdentifier(task)})
 		case NOTIFICATION_NAMES.APPROVAL_REMINDER:
-			return t('approvalReminder', {title: approvalTitle, task: taskName})
+			return t('approvalReminder', {title: approvalTitle, task: getTaskIdentifier(task)})
 		case NOTIFICATION_NAMES.APPROVAL_RESOLVED: {
 			const outcome = ['approved', 'rejected', 'cancelled'].includes(String(approval.status))
 				? String(approval.status)
 				: 'resolved'
-			const name = outcome.charAt(0).toUpperCase() + outcome.slice(1)
 			// Without a doer the system ended the request (the task moved, a status was removed, ...).
+			const key = outcome.charAt(0).toUpperCase() + outcome.slice(1)
 			return typeof doer.id === 'number'
-				? t(`approval${name}`, {title: approvalTitle, task: taskName})
-				: t(`approvalSystem${name}`, {title: approvalTitle, task: taskName})
+				? t(`approval${key}`, {title: approvalTitle, task: getTaskIdentifier(task)})
+				: t(`approvalSystem${key}`, {title: approvalTitle, task: getTaskIdentifier(task)})
 		}
 	}
 
