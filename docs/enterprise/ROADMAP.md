@@ -600,6 +600,87 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
     on SQLite, PostgreSQL 18 and MySQL 8, one at a time, uncached; `mage lint`
     reports 0 issues; `vue-tsc --noEmit`, vitest of the touched areas and
     `check_parity.py` pass. Not run: the UI in a browser.
+- Test audit of the six modules (branch `wt/automation-3d`). Scope: Go tests of
+  the fork's own code (models, v2 routes, `pkg/automation`, migrations); the
+  frontend tests were not part of it. Method: statement coverage as a map (one
+  run over `pkg/models`, `pkg/automation/...` and `pkg/webtests` with
+  `-coverpkg`), then the risks in the order permissions, documented limits and
+  error codes, behaviour sentences of the module pages, weak assertions,
+  cross-database behaviour, migrations, events and loop guards. Every new test
+  was run against code broken on purpose (about 25 mutations: a permission
+  check removed, a limit moved by one, a key renamed, a rate limit keyed by the
+  full IPv6 address) and failed there.
+  - **Found by the new tests and fixed** (each with its own commit):
+    link shares with admin permission could create, change and delete custom
+    field definitions and replace and delete the workflow, although API.md
+    says "never" for both (the old tests asserted the opposite and were
+    changed); the list of manual rules answered link shares and told a missing
+    project from one the caller cannot write to (404 against 403, which the
+    module page says it does not); the lists of rules and secrets did the
+    same for a missing project; the notification of an approval outcome built
+    its translation keys by concatenation, so `check:translations` reported
+    them as dead and as missing; `too_many_actions`,
+    `duplicated_secrets_missing` and the outcome label "any" had no text.
+  - **New tests**: a permission matrix over every route of the six modules
+    (68 route cases) against 15 kinds of callers (anonymous, stranger, reader,
+    writer, admin, owner, link shares of three permissions, API tokens with the
+    scope, with another scope and with only the read permissions of the group,
+    a bot's token, a disabled account), with the exact refusal status and a
+    separate test of the "403 whether or not it exists" promise of automation;
+    every error code is held to its row in API.md (status) and the source must
+    not define a code the table lacks; the codes no web test asserted by number
+    (20001 to 20005, 22006, 23006, 23010, 23011, 24004, 24010) are reached over
+    HTTP; boundaries of the title length (in characters, two- and four-byte
+    letters, on all three databases), of 50 approver sources and of the save
+    size; the forced move of a removed status follows manual kanban buckets
+    (both directions); a refused over-limit save leaves forms alone, and a
+    save that goes through disables exactly the forms that name the status;
+    deleting an account through `DeleteUser` anonymises its form submissions;
+    duplicating a project remaps the initial status, fields and option
+    defaults of its forms; the notification texts of forms and automation are
+    rendered (escaping included) and the form event carries what the page says
+    and nothing else; dry runs of scripts plan their writes, conditions cannot
+    set a status, assignees or labels; the table migrations of five modules run
+    on an empty schema; the title keys the server sends (catalog, enums, skip
+    and disabled reasons, report options) exist in both language files; the
+    IPv6 /64 keying of the public routes is tested through the real router.
+  - **Weak assertions strengthened**: the check that a field value is refused
+    only looked for a 400 and now looks for the code; the unreadable-field
+    probe test compared statuses and now compares codes and messages; the
+    "a project that does not exist" test of automation accepted any error and
+    now requires the plain refusal; the form notification test never rendered
+    the message.
+  - **Open items of the earlier rounds**: the manual-kanban path of the forced
+    move, the forms case of a refused save and the `DeleteUser` flow for form
+    submissions are now tested; the per-user submission limit and the /64
+    keying were run against broken code and fail there (the "reports" rate
+    limit named in an earlier entry is the per-user limit of forms; reports
+    have none).
+  - `mage check:translations` still exits 1: the 4 API keys are fixed, and the
+    remaining 178 frontend keys are looked up at run time from titles the server
+    sends (`title_key`, `automation.enum.*`, `automation.skipReason.*`, report
+    options), which the check cannot see; they are not dead and were not
+    removed, and a Go test checks that each one exists in both files. Not
+    touched, upstream-owned magefile.
+  - **Not covered, and why**: `pkg/automation/script/child.go` (the sandbox
+    process is a re-executed binary, its coverage is not collected);
+    23009 (report timeout), 22008 (undecryptable secret as an answer) and
+    24008 (self approval) are reached in model tests only; the 20000-task
+    limit of 21011 is tested at its boundary with a lowered limit, not with
+    20000 real rows; the error returns of cleanup crons and of `Error()`
+    methods; the case sensitivity of `like` on text custom fields (PostgreSQL
+    is case-sensitive, SQLite and MySQL are not, like the title filter of
+    upstream) and the order of secrets by name across collations are not
+    promised by the docs and not tested. A request whose body is invalid is
+    answered 422 before the permission check of the route (Huma validates
+    first), so a caller without access sees the validation errors of a body.
+  - Verified: `mage test:feature` (59 packages ok) and `mage test:web` exit 0 on SQLite,
+    PostgreSQL 18 and MySQL 8, one at a time, uncached, on the tree after the
+    last code change; `mage lint` reports 0 issues; `check_parity.py`
+    passes; `mage check:translations` still exits 1 for the reason above. A
+    first full run failed once in the new matrix test, which relied on another
+    test leaving time tracking switched on; it now switches the feature on
+    itself. Not run: the frontend tests, a browser.
 
 ## Remaining
 

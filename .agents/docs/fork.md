@@ -34,6 +34,19 @@ The fork must always be able to merge `upstream/main`. Every change is judged by
 - A test that passes on SQLite says little about locking, identifier limits or transaction behaviour. Run the three-database matrix (`fork-db-matrix` skill) before merging anything that touches models, migrations or SQL.
 - Tests of the script processes in `pkg/automation/script` are timing-sensitive. Do not run two test suites at the same time on one machine.
 
+## Testing the fork's modules
+
+The upstream rules in [testing.md](testing.md) hold. What is specific to the fork's tests:
+
+- **A new endpoint goes into the permission matrix.** `pkg/webtests/huma_fork_permissions_test.go` calls every route of the six modules as an anonymous request, a stranger, a reader, a writer, an admin, the owner, link shares of every permission, API tokens (with the scope of the route, with another group's scope, with only the read permissions of the group), the token of a bot and a disabled account. Add the route to `matrixEndpoints()` with the role it needs, the permission a link share needs (`-1` when shares never get through) and the status of the first caller that does. A route that is in no API token scope fails the test.
+- **Codes and statuses are held to the documentation.** `pkg/models/error_codes_docs_test.go` fails when an error code is defined in `error_*.go` and not listed in the test, and when the HTTP status of a code differs from its row in `API.md`. `pkg/webtests/huma_fork_error_codes_test.go` asserts, over HTTP, the codes that no other web test checked by number.
+- **Compare the body, not only the status**, where the documentation promises that two situations look alike (a missing and an unreadable custom field, a missing project and one the caller cannot administer, a rule that does not exist and one the caller may not see).
+- **Strings the server names at run time** (catalog title keys, enum values, skip and disabled reasons, report option keys) are looked up in `frontend/src/i18n/lang/{en,tr-TR}.json` by Go tests (`pkg/automation/i18n_keys_test.go`, `pkg/models/reports_options_i18n_test.go`). `mage check:translations` cannot see these references and reports about 180 of the keys as dead; that is expected, and removing them breaks the editor.
+- **Boundaries**: test the limit itself (accepted) and one more (refused), with multi-byte characters where the limit is in characters. Lower the limit through the config key or the package variable (`maxTasksChangedBySave`) instead of creating 20000 rows.
+- **Show that a test bites**: break the code under test on purpose (flip a comparison, remove the check), see the test fail, restore. A permission test that passes with the check removed is worth nothing.
+- **Table migrations** that only create tables are run on an empty schema by `pkg/migration/20261122000000_fork_tables_test.go`; a migration that changes an existing table needs a test that starts from the old schema, like `20261124100000_test.go`.
+- Run the new tests on PostgreSQL and MySQL as well (`fork-db-matrix`), in particular anything that stores text, compares text or counts under a lock.
+
 ## How a change gets into `main`
 
 Use the `fork-change` skill. In short: implement in a worktree with a failing test first, have the change reviewed by someone who has not seen the author's reasoning, fix, run the full suites on SQLite, PostgreSQL and MySQL on the final tree, then fast-forward `main`.
