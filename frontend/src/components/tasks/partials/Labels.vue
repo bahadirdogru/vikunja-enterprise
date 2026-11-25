@@ -12,6 +12,7 @@
 </template>
 
 <script setup lang="ts">
+import {i18n} from '@/i18n'
 import {computed} from 'vue'
 
 import type {Label} from '@/client/generated'
@@ -23,7 +24,7 @@ const props = defineProps<{
 
 const displayLabels = computed(() =>
 	Array.from(new Map(props.labels.map(label => [label.id, label])).values())
-		.sort((a, b) => (a.title ?? '').localeCompare(b.title ?? '')),
+		.sort((a, b) => (a.title ?? '').localeCompare(b.title ?? '', i18n.global.locale.value)),
 )
 </script>
 

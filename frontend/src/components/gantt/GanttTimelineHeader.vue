@@ -36,11 +36,11 @@
 				role="columnheader"
 				:aria-label="dateIsToday(date) 
 					? $t('project.gantt.dayLabelToday', {
-						date: date.toLocaleDateString(),
+						date: date.toLocaleDateString($i18n.locale),
 						weekday: weekDayFromDate(date)
 					})
 					: $t('project.gantt.dayLabel', {
-						date: date.toLocaleDateString(),
+						date: date.toLocaleDateString($i18n.locale),
 						weekday: weekDayFromDate(date)
 					})"
 			>

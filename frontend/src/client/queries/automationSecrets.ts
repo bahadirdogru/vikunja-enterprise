@@ -37,7 +37,7 @@ export function automationSecretsQuery(projectId: number) {
 					updated: item.updated ?? '',
 					unreadable: item.unreadable === true,
 				}))
-				.sort((a, b) => a.name.localeCompare(b.name))
+				.sort((a, b) => a.name.localeCompare(b.name, i18n.global.locale.value))
 		},
 		enabled: projectId > 0,
 	})

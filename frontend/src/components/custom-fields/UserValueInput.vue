@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import {i18n} from '@/i18n'
 import {computed, ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 
@@ -50,7 +51,7 @@ const results = computed<Member[]>(() => [...known.value.values()]
 	.filter(user => !selectedIds.value.includes(user.id))
 	.filter(user => search.value === ''
 		|| `${user.name} ${user.username ?? ''}`.toLowerCase().includes(search.value.toLowerCase()))
-	.sort((a, b) => a.name.localeCompare(b.name)))
+	.sort((a, b) => a.name.localeCompare(b.name, i18n.global.locale.value)))
 
 function update(value: Member | Member[] | null) {
 	const users = Array.isArray(value) ? value : []

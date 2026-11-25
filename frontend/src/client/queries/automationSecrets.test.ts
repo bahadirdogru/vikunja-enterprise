@@ -5,7 +5,7 @@ const sdk = vi.hoisted(() => ({automationSecretsDelete: vi.fn(), automationSecre
 vi.mock('@/client/generated', () => sdk)
 const message = vi.hoisted(() => ({error: vi.fn(), success: vi.fn()}))
 vi.mock('@/message', () => message)
-vi.mock('@/i18n', () => ({i18n: {global: {t: (key: string) => key}}}))
+vi.mock('@/i18n', () => ({i18n: {global: {t: (key: string) => key, locale: {value: 'en'}}}}))
 
 import {automationSecretKeys, automationSecretsQuery, deleteSecretMutationOptions, setSecretMutationOptions, type AutomationSecretResponse} from './automationSecrets'
 import {ApiError} from '@/client/problem'

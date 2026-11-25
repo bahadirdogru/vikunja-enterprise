@@ -34,6 +34,7 @@
 </template>
 
 <script setup lang="ts">
+import {i18n} from '@/i18n'
 import {ref, computed, watch, nextTick} from 'vue'
 import {useI18n} from 'vue-i18n'
 
@@ -145,7 +146,7 @@ const foundUsers = computed(() => withIds(userResults.value.filter(props.filter)
 	.sort((a, b) => {
 		if (a.id === authStore.info?.id) return -1
 		if (b.id === authStore.info?.id) return 1
-		return a.name.localeCompare(b.name)
+		return a.name.localeCompare(b.name, i18n.global.locale.value)
 	}),
 )
 </script>

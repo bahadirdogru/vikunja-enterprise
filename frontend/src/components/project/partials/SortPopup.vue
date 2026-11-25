@@ -54,6 +54,7 @@
 </template>
 
 <script setup lang="ts">
+import {i18n} from '@/i18n'
 import {ref, computed, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import XButton from '@/components/input/Button.vue'
@@ -101,7 +102,7 @@ const options = computed(() => {
 		{value: 'created:asc', label: t('sorting.options.createdAsc')},
 		{value: 'updated:desc', label: t('sorting.options.updatedDesc')},
 		{value: 'updated:asc', label: t('sorting.options.updatedAsc')},
-	].sort((a, b) => a.label.localeCompare(b.label))
+	].sort((a, b) => a.label.localeCompare(b.label, i18n.global.locale.value))
 
 	return [manual, ...rest]
 })

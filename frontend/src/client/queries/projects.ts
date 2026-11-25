@@ -122,7 +122,7 @@ function sortProjects(projects: ProjectResponse[]): ProjectResponse[] {
 }
 
 function sortSavedFilters(projects: ProjectResponse[]): ProjectResponse[] {
-	return [...projects].sort((a, b) => a.title.localeCompare(b.title))
+	return [...projects].sort((a, b) => a.title.localeCompare(b.title, i18n.global.locale.value))
 }
 
 function partitionProjects(projects: Project[]): ProjectListResult {

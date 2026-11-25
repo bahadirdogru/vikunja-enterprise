@@ -189,6 +189,7 @@
 </template>
 
 <script lang="ts" setup>
+import {i18n} from '@/i18n'
 import {computed, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {useRoute, useRouter} from 'vue-router'
@@ -215,7 +216,7 @@ const {data: team, isFetching} = useTeam(teamId)
 
 const userIsAdmin = computed(() => (team.value?.max_permission ?? PERMISSIONS.READ) === PERMISSIONS.ADMIN)
 const userInfo = computed(() => authStore.info)
-const sortedMembers = computed(() => [...(team.value?.members ?? [])].sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b), undefined, {sensitivity: 'base'})))
+const sortedMembers = computed(() => [...(team.value?.members ?? [])].sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b), i18n.global.locale.value, {sensitivity: 'base'})))
 const updateMutation = useUpdateTeamMutation()
 const deleteMutation = useDeleteTeamMutation()
 const addMemberMutation = useAddTeamMemberMutation()

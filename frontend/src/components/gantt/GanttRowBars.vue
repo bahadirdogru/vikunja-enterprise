@@ -212,6 +212,7 @@
 </template>
 
 <script setup lang="ts">
+import {i18n} from '@/i18n'
 import {computed} from 'vue'
 import dayjs from 'dayjs'
 import {useI18n} from 'vue-i18n'
@@ -429,8 +430,8 @@ function getBarTextColor(bar: GanttBarModel) {
 
 function getBarAriaLabel(bar: GanttBarModel): string {
 	const task = bar.meta?.label || bar.id
-	const startDate = bar.start.toLocaleDateString()
-	const endDate = bar.end.toLocaleDateString()
+	const startDate = bar.start.toLocaleDateString(i18n.global.locale.value)
+	const endDate = bar.end.toLocaleDateString(i18n.global.locale.value)
 
 	let dateType: string
 	if (bar.meta?.dateType === 'startOnly') {
