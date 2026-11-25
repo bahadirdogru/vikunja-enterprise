@@ -179,7 +179,7 @@ Schema violations (an enum, a range, a missing required property) are `422`, and
 | 21008 | 409 | Removed statuses still have tasks; send `move_tasks_to` | workflow PUT |
 | 21009 | 400 | A status board needs a workflow | views |
 | 21010 | 400 | Buckets of a status view are managed by the workflow | views |
-| 21011 | 409 | A removed status has more tasks than one request moves (20000); move some of them first | workflow PUT |
+| 21011 | 409 | The save would move or change more than 20000 tasks (removed statuses and changed categories together, trashed tasks included); nothing is written | workflow PUT |
 | 22002 | 400 | Invalid rule, with `details.issues[] = {path, message}` and, for scripts, `line` and `column` | automation |
 | 22005 | 400 | Scripts are disabled on this instance | automation |
 | 22008 | 409 | A secret cannot be decrypted (`service.secret` changed) | secrets |

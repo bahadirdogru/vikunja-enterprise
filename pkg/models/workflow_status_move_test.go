@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	"code.vikunja.io/api/pkg/automation/spec"
 	"code.vikunja.io/api/pkg/db"
 	"code.vikunja.io/api/pkg/events"
 
@@ -249,9 +250,9 @@ func TestWorkflow_RemovedStatusWithTooManyTasksIsRefused(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		createWorkflowTask(t, 11, &Task{Title: "many", ProjectID: 11})
 	}
-	previous := maxTasksMovedWithAStatus
-	maxTasksMovedWithAStatus = 3
-	t.Cleanup(func() { maxTasksMovedWithAStatus = previous })
+	previous := maxTasksChangedBySave
+	maxTasksChangedBySave = 3
+	t.Cleanup(func() { maxTasksChangedBySave = previous })
 
 	wf := readWorkflow(t, 11)
 	wf.Statuses = wf.Statuses[1:]
@@ -265,4 +266,63 @@ func TestWorkflow_RemovedStatusWithTooManyTasksIsRefused(t *testing.T) {
 	assert.Equal(t, int64(1), taskStatusOf(t, 20).StatusID, "nothing was moved")
 	assert.Zero(t, events.CountDispatchedEvents("task.status.changed"))
 	db.AssertExists(t, "workflow_statuses", map[string]interface{}{"id": 1}, false)
+}
+
+func TestWorkflow_RefusedSaveWritesNothing(t *testing.T) {
+	previous := maxTasksChangedBySave
+	t.Cleanup(func() { maxTasksChangedBySave = previous })
+
+	t.Run("a rule that names the removed status stays enabled", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+		onTodo := autoRule(11, spec.TriggerTaskStatusChanged, setPriority(1))
+		onTodo.Trigger.Options = map[string]any{"from_status_id": 1}
+		mustSaveAutomationRule(t, onTodo, autoUser1)
+
+		maxTasksChangedBySave = 0
+		wf := readWorkflow(t, 11)
+		wf.Statuses = wf.Statuses[1:]
+		wf.Statuses[0].IsInitial = true
+		wf.Transitions = nil
+		wf.MoveTasksTo = wf.Statuses[0].ID
+		_, err := saveWorkflow(t, wf, cfUser1)
+		require.Error(t, err)
+		assert.True(t, IsErrWorkflowStatusMoveTooLarge(err), "%v", err)
+		assert.True(t, reloadAutomationRule(t, onTodo.ID).Enabled, "the rule was not disabled")
+		assert.Equal(t, int64(1), taskStatusOf(t, 20).StatusID)
+	})
+
+	t.Run("a pending approval request is not cancelled", func(t *testing.T) {
+		env := newApprovalEnv(t, apCfg(ApprovalModeAny, 6), nil)
+		req := env.request(t, apU1)
+
+		maxTasksChangedBySave = 0
+		wf := readWorkflow(t, apProject)
+		var kept []*WorkflowStatus
+		for _, st := range wf.Statuses {
+			if st.ID != env.todo {
+				kept = append(kept, st)
+			}
+		}
+		wf.Statuses = kept
+		wf.Transitions = nil
+		wf.MoveTasksTo = env.doing
+		for _, st := range wf.Statuses {
+			st.IsInitial = st.ID == env.doing
+		}
+		_, err := saveWorkflow(t, wf, wfOwner6)
+		require.Error(t, err)
+		assert.True(t, IsErrWorkflowStatusMoveTooLarge(err), "%v", err)
+		assert.Equal(t, ApprovalStatusPending, readApprovalRow(t, req.ID).Status)
+	})
+
+	t.Run("a category change over the limit is refused too", func(t *testing.T) {
+		db.LoadAndAssertFixtures(t)
+		maxTasksChangedBySave = 0
+		wf := readWorkflow(t, 11)
+		wf.Statuses[0].Category = WorkflowCategoryDone
+		_, err := saveWorkflow(t, wf, cfUser1)
+		require.Error(t, err)
+		assert.True(t, IsErrWorkflowStatusMoveTooLarge(err), "%v", err)
+		assert.False(t, taskDone(t, 20))
+	})
 }

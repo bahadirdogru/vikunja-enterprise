@@ -1861,7 +1861,7 @@
 		"21008": "Kaldırılan durumlardaki görevlerin taşınacağı bir durum seç.",
 		"21009": "İş akışı durumları, yalnızca projede bir iş akışı varsa sütun olarak kullanılabilir.",
 		"21010": "Bu görünümün sütunları iş akışı durumlarıdır. Bunları iş akışı ayarlarından değiştir.",
-		"21011": "\"{title}\" durumunda {tasks} görev var. Bir durum kaldırılırken en fazla {limit} görev taşınabilir: önce bir kısmını başka bir duruma taşı.",
+		"21011": "Bu değişiklik {tasks} görevi taşıyacak veya değiştirecek. İş akışının bir kaydında en fazla {limit} görev değiştirilebilir: önce bir kısmını başka durumlara taşı.",
 		"22001": "Bu otomasyon kuralı bulunamadı.",
 		"22002": "Otomasyon kuralı geçerli değil.",
 		"22003": "Bu otomasyon çalıştırması bulunamadı.",

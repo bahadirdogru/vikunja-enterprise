@@ -503,6 +503,9 @@ func (wf *Workflow) Update(s *xorm.Session, a web.Auth) (err error) {
 	if err != nil {
 		return err
 	}
+	if err = wf.checkWorkflowSaveSize(s, plan); err != nil {
+		return err
+	}
 
 	created := existing == nil
 	if created {
@@ -618,6 +621,9 @@ func (wf *Workflow) removeStatuses(s *xorm.Session, a web.Auth, plan *workflowDo
 	removedIDs := make([]int64, 0, len(plan.removed))
 	for _, st := range plan.removed {
 		removedIDs = append(removedIDs, st.ID)
+	}
+	if err := lockTasksForRemoval(s, removedIDs); err != nil {
+		return err
 	}
 	if err := disableAutomationRulesForStatuses(s, wf.ProjectID, removedIDs); err != nil {
 		return err

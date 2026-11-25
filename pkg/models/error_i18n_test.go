@@ -103,7 +103,7 @@ func TestI18nParamsContract(t *testing.T) {
 		},
 		{
 			name:         "ErrWorkflowStatusMoveTooLarge",
-			err:          models.ErrWorkflowStatusMoveTooLarge{StatusID: 1, Title: "x", Tasks: 2, Limit: 1},
+			err:          models.ErrWorkflowStatusMoveTooLarge{Tasks: 2, Limit: 1},
 			expectedCode: models.ErrCodeWorkflowStatusMoveTooLarge,
 		},
 		{

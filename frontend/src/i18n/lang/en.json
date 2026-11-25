@@ -1864,7 +1864,7 @@
     "21008": "Choose a status to move the tasks of the removed statuses to.",
     "21009": "Workflow statuses can only be used as columns when the project has a workflow.",
     "21010": "The columns of this board are the workflow statuses. Change them in the workflow settings.",
-    "21011": "The status \"{title}\" has {tasks} tasks. At most {limit} tasks can be moved when a status is removed: move some of them to another status first.",
+    "21011": "This change would move or change {tasks} tasks. At most {limit} tasks can be changed by one save of the workflow: move some of them to other statuses first.",
     "22001": "This automation rule does not exist.",
     "22002": "The automation rule is invalid.",
     "22003": "This automation run does not exist.",

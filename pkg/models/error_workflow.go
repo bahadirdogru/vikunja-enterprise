@@ -325,13 +325,11 @@ func (err ErrStatusViewBucketsManaged) HTTPError() web.HTTPError {
 	}
 }
 
-// ErrWorkflowStatusMoveTooLarge represents an error where removing a status would move more tasks at once than a
-// single request moves.
+// ErrWorkflowStatusMoveTooLarge represents an error where saving a workflow would move or flip more tasks than one
+// save does.
 type ErrWorkflowStatusMoveTooLarge struct {
-	StatusID int64
-	Title    string
-	Tasks    int64
-	Limit    int64
+	Tasks int64
+	Limit int64
 }
 
 // IsErrWorkflowStatusMoveTooLarge checks if an error is ErrWorkflowStatusMoveTooLarge.
@@ -341,7 +339,7 @@ func IsErrWorkflowStatusMoveTooLarge(err error) bool {
 }
 
 func (err ErrWorkflowStatusMoveTooLarge) Error() string {
-	return fmt.Sprintf("Too many tasks to move with one removed status [StatusID: %d, Tasks: %d, Limit: %d]", err.StatusID, err.Tasks, err.Limit)
+	return fmt.Sprintf("Too many tasks changed by one workflow save [Tasks: %d, Limit: %d]", err.Tasks, err.Limit)
 }
 
 // ErrCodeWorkflowStatusMoveTooLarge holds the unique world-error code of this error
@@ -353,9 +351,8 @@ func (err ErrWorkflowStatusMoveTooLarge) HTTPError() web.HTTPError {
 	return web.HTTPError{
 		HTTPCode: http.StatusConflict,
 		Code:     ErrCodeWorkflowStatusMoveTooLarge,
-		Message:  fmt.Sprintf("The status \"%s\" has %d tasks. At most %d tasks can be moved when a status is removed: move some of them to another status first.", err.Title, err.Tasks, err.Limit),
+		Message:  fmt.Sprintf("This change would move or change %d tasks. At most %d tasks can be changed by one save of the workflow: move some of them to other statuses first.", err.Tasks, err.Limit),
 		I18nParams: map[string]string{
-			"title": err.Title,
 			"tasks": strconv.FormatInt(err.Tasks, 10),
 			"limit": strconv.FormatInt(err.Limit, 10),
 		},

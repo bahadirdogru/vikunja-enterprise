@@ -50,20 +50,12 @@ import (
 // payload of the task) per event, whether a rule listens or not, and the session keeps all events (N, 2N when done
 // changes) in memory until the commit.
 //
-// A status with more than maxTasksMovedWithAStatus tasks is not moved: the request is refused with
-// ErrWorkflowStatusMoveTooLarge and nothing is written (the transaction rolls back), so the admin first moves
-// tasks to other statuses in smaller batches. The events cannot be dropped to make a big move cheaper, and a move of
-// that size is better seen than started by accident. The limit is a variable only for the tests.
-var maxTasksMovedWithAStatus int64 = 20000
-
+// The size is checked before anything is written, for the whole save, see checkWorkflowSaveSize.
 func moveTasksBetweenStatuses(s *xorm.Session, a web.Auth, projectID int64, from, to *WorkflowStatus, removedIDs []int64) error {
-	// Lock the tasks before anything else is read, in one statement, like lockApprovalRequest: a task that is
-	// changed at the same moment holds this lock first (it takes the task, then the status row), so after this
-	// the list of tasks in the status is the truth, nobody moves one out of it unseen, and no history row or event
-	// is written for a task that left the status meanwhile.
-	if _, err := s.Exec("UPDATE tasks SET id = id WHERE id IN (SELECT task_id FROM task_statuses WHERE status_id = ?)", from.ID); err != nil {
-		return err
-	}
+	// The tasks of the removed statuses were locked, in task order, before anything else was written
+	// (lockTasksForRemoval). This read is the truth about who is in the status: a task that is changed at the same
+	// moment holds its lock first (task, then status row) and has finished or has not started, so no history row or
+	// event is written for a task that left the status meanwhile.
 	taskIDs := []int64{}
 	if err := lockingSession(s).Table("task_statuses").Where("status_id = ?", from.ID).OrderBy("task_id ASC").Cols("task_id").Find(&taskIDs); err != nil {
 		return err
@@ -71,8 +63,9 @@ func moveTasksBetweenStatuses(s *xorm.Session, a web.Auth, projectID int64, from
 	if len(taskIDs) == 0 {
 		return nil
 	}
-	if int64(len(taskIDs)) > maxTasksMovedWithAStatus {
-		return ErrWorkflowStatusMoveTooLarge{StatusID: from.ID, Title: from.Title, Tasks: int64(len(taskIDs)), Limit: maxTasksMovedWithAStatus}
+	// Tasks that came into the status after the first read are locked now (a no-op for the others).
+	if err := lockTasksOrdered(s, taskIDs); err != nil {
+		return err
 	}
 
 	m := &forcedStatusMove{
@@ -266,6 +259,75 @@ func flipDoneOfTasks(s *xorm.Session, a web.Auth, taskIDs []int64, done bool) er
 				updated.DoneAt = now
 			}
 			events.DispatchOnCommit(s, &TaskUpdatedEvent{Task: &updated, Doer: doer, OldTask: &old})
+		}
+	}
+	return nil
+}
+
+// maxTasksChangedBySave is the most tasks one save of a workflow may move to another status (removed statuses) or
+// give another done flag (statuses whose category changed), trashed tasks included. The limit is a variable only for
+// the tests.
+var maxTasksChangedBySave int64 = 20000
+
+// checkWorkflowSaveSize refuses a save that would change more than maxTasksChangedBySave tasks, before it has
+// written anything: it counts the tasks in all removed statuses and in all statuses whose category changes between
+// done and not done. Soft-deleted tasks count, they are moved too.
+func (wf *Workflow) checkWorkflowSaveSize(s *xorm.Session, plan *workflowDocPlan) error {
+	ids := make([]int64, 0, len(plan.removed))
+	for _, st := range plan.removed {
+		ids = append(ids, st.ID)
+	}
+	for _, st := range wf.Statuses {
+		if st.ID > 0 {
+			if stored := plan.stored[st.ID]; stored != nil && !stored.Archived && stored.Category.isFinal() != st.Category.isFinal() {
+				ids = append(ids, st.ID)
+			}
+		}
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	count, err := s.Where(builder.In("status_id", ids)).Count(&TaskStatus{})
+	if err != nil {
+		return err
+	}
+	if count > maxTasksChangedBySave {
+		return ErrWorkflowStatusMoveTooLarge{Tasks: count, Limit: maxTasksChangedBySave}
+	}
+	return nil
+}
+
+// lockTasksForRemoval takes the locks of every task the removal of statuses touches, in task order, before any other
+// row of the removal is written: the tasks in the removed statuses and the tasks of the pending approval requests
+// that name one of them (those requests are cancelled afterwards, which takes the task, then the request, like a
+// decision does).
+func lockTasksForRemoval(s *xorm.Session, removedIDs []int64) error {
+	ids := []int64{}
+	if err := s.Table("task_statuses").Where(builder.In("status_id", removedIDs)).Cols("task_id").Find(&ids); err != nil {
+		return err
+	}
+	requested := []int64{}
+	if err := s.Table("approval_requests").Where(builder.And(
+		builder.Eq{"status": ApprovalStatusPending},
+		builder.Or(builder.In("from_status_id", removedIDs), builder.In("to_status_id", removedIDs)),
+	)).Cols("task_id").Find(&requested); err != nil {
+		return err
+	}
+	return lockTasksOrdered(s, append(ids, requested...))
+}
+
+// lockTasksOrdered locks the task rows, trashed ones too, in ascending id order and in bounded chunks: the order
+// every path that holds more than one task lock follows, so that two of them cannot wait for each other. A locking
+// read, not an UPDATE with a subquery, whose row order is up to the plan and which scans the table on old MySQL.
+// On SQLite the helper is a plain read: there is one writer, and the callers have written by then.
+func lockTasksOrdered(s *xorm.Session, ids []int64) error {
+	sorted := slices.Clone(ids)
+	slices.Sort(sorted)
+	sorted = slices.Compact(sorted)
+	for _, chunk := range chunkInt64s(sorted) {
+		locked := []int64{}
+		if err := lockingSession(s).Table("tasks").Where(builder.In("id", chunk)).OrderBy("id ASC").Cols("id").Find(&locked); err != nil {
+			return err
 		}
 	}
 	return nil
