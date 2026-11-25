@@ -153,17 +153,27 @@ func (*AutomationEvent) TableName() string {
 	return "automation_events"
 }
 
+// AutomationMessage is a sentence of the server that the interface can say in its own language: Code names it, Params
+// are the values it mentions. The English text of it is kept next to it wherever it is stored.
+type AutomationMessage struct {
+	Code   string            `json:"code" doc:"The stable name of the sentence, e.g. set_title."`
+	Params map[string]string `json:"params,omitempty" doc:"The values the sentence mentions, by name."`
+}
+
 // AutomationRunStep is one executed action of a run.
 type AutomationRunStep struct {
-	ID         int64     `xorm:"bigint autoincr not null unique pk" json:"id" readOnly:"true" doc:"The unique, numeric id of this step."`
-	RunID      int64     `xorm:"bigint not null INDEX unique(automation_run_steps_position)" json:"run_id" readOnly:"true" doc:"The run the step belongs to."`
-	Position   int64     `xorm:"bigint not null unique(automation_run_steps_position)" json:"position" readOnly:"true" doc:"The index of the action in the rule, starting at 0."`
-	ActionType string    `xorm:"varchar(100) not null" json:"action_type" readOnly:"true" doc:"The type of the action."`
-	Status     string    `xorm:"varchar(20) not null" json:"status" readOnly:"true" enum:"success,failed,skipped" doc:"success, failed or skipped."`
-	Error      string    `xorm:"text null" json:"error" readOnly:"true" doc:"Why the step failed."`
-	Output     string    `xorm:"text null" json:"output" readOnly:"true" doc:"What the step did, truncated to 16 KiB."`
-	DurationMs int64     `xorm:"bigint not null default 0" json:"duration_ms" readOnly:"true" doc:"How long the step took."`
-	Created    time.Time `xorm:"created not null" json:"created" readOnly:"true" doc:"When the step was recorded."`
+	ID             int64                `xorm:"bigint autoincr not null unique pk" json:"id" readOnly:"true" doc:"The unique, numeric id of this step."`
+	RunID          int64                `xorm:"bigint not null INDEX unique(automation_run_steps_position)" json:"run_id" readOnly:"true" doc:"The run the step belongs to."`
+	Position       int64                `xorm:"bigint not null unique(automation_run_steps_position)" json:"position" readOnly:"true" doc:"The index of the action in the rule, starting at 0."`
+	ActionType     string               `xorm:"varchar(100) not null" json:"action_type" readOnly:"true" doc:"The type of the action."`
+	Status         string               `xorm:"varchar(20) not null" json:"status" readOnly:"true" enum:"success,failed,skipped" doc:"success, failed or skipped."`
+	Error          string               `xorm:"text null" json:"error" readOnly:"true" doc:"Why the step failed, in English. Show error_code translated when the client knows it and this text when it does not."`
+	ErrorCode      string               `xorm:"varchar(100) null" json:"error_code,omitempty" readOnly:"true" doc:"A stable code for why the step failed, e.g. title_empty, script_thrown or a numeric API error code like 4002. Empty for a step recorded before codes existed; use error then."`
+	ErrorParams    map[string]string    `xorm:"json null" json:"error_params,omitempty" readOnly:"true" doc:"The values the sentence of error_code mentions, by name."`
+	Output         string               `xorm:"text null" json:"output" readOnly:"true" doc:"What the step did, in English, truncated to 16 KiB."`
+	OutputMessages []*AutomationMessage `xorm:"json null" json:"output_messages,omitempty" readOnly:"true" doc:"The leading lines of output that the server wrote itself (what the step did, its warnings), one entry per line, as codes with values. The lines of output after them are data (a script log, an HTTP answer) and are shown as they are."`
+	DurationMs     int64                `xorm:"bigint not null default 0" json:"duration_ms" readOnly:"true" doc:"How long the step took."`
+	Created        time.Time            `xorm:"created not null" json:"created" readOnly:"true" doc:"When the step was recorded."`
 }
 
 // TableName returns the table name of automation run steps.

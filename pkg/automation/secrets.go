@@ -70,10 +70,10 @@ func (st *secretStore) get(name string) (string, error) {
 	}
 	v, ok := st.values[name]
 	if !ok {
-		return "", &ActionError{Msg: models.ErrAutomationSecretDoesNotExist{Name: name}.Error()}
+		return "", wrapActionErr(models.ErrAutomationSecretDoesNotExist{Name: name})
 	}
 	if v.Err != nil {
-		return "", &ActionError{Msg: v.Err.Error()}
+		return "", wrapActionErr(v.Err)
 	}
 	st.accessed[name] = true
 	return v.Value, nil
@@ -86,10 +86,10 @@ func (st *secretStore) exists(name string) error {
 	}
 	v, ok := st.values[name]
 	if !ok {
-		return &ActionError{Msg: models.ErrAutomationSecretDoesNotExist{Name: name}.Error()}
+		return wrapActionErr(models.ErrAutomationSecretDoesNotExist{Name: name})
 	}
 	if v.Err != nil {
-		return &ActionError{Msg: v.Err.Error()}
+		return wrapActionErr(v.Err)
 	}
 	return nil
 }
@@ -158,6 +158,9 @@ func (m *masker) mask(text string) string {
 type maskedError struct {
 	msg string
 	err error
+	// code and params are those of err with the secrets removed from the values.
+	code   string
+	params map[string]string
 }
 
 func (e *maskedError) Error() string { return e.msg }
@@ -177,8 +180,19 @@ func (e *Env) maskErr(err error) error {
 		return err
 	}
 	msg := err.Error()
-	if masked := e.secrets.masker().mask(msg); masked != msg {
-		return &maskedError{msg: masked, err: err}
+	code, params := errorMessage(err)
+	m := e.secrets.masker()
+	changed := m.mask(msg) != msg
+	var maskedParams map[string]string
+	if params != nil {
+		maskedParams = make(map[string]string, len(params))
+		for k, v := range params {
+			maskedParams[k] = m.mask(v)
+			changed = changed || maskedParams[k] != v
+		}
+	}
+	if changed {
+		return &maskedError{msg: m.mask(msg), err: err, code: code, params: maskedParams}
 	}
 	return err
 }

@@ -35,6 +35,9 @@ import (
 // would fail the same way, so the run fails right away.
 type ActionError struct {
 	Msg string
+	// Code and Params say the same in a form the interface can translate (see messages.go).
+	Code   string
+	Params map[string]string
 	// NoBlame keeps the failure from counting towards disabling the rule: it is permanent, but not the rule's
 	// doing (a task too large to be passed to a script, a script process killed by someone else).
 	NoBlame bool
@@ -42,8 +45,21 @@ type ActionError struct {
 
 func (e *ActionError) Error() string { return e.Msg }
 
+// actionErrorf is an ActionError without a code of its own: the interface shows its English text. Use actionErr
+// wherever a person can read the failure.
 func actionErrorf(format string, args ...any) error {
 	return &ActionError{Msg: fmt.Sprintf(format, args...)}
+}
+
+// wrapActionErr turns the error of a model into an ActionError that keeps its text and its code.
+func wrapActionErr(err error) error {
+	code, params := errorMessage(err)
+	return &ActionError{Msg: err.Error(), Code: code, Params: params}
+}
+
+// actionErr is an ActionError with the code and values of its sentence.
+func actionErr(code string, params P, format string, args ...any) error {
+	return &ActionError{Msg: fmt.Sprintf(format, args...), Code: code, Params: params.strings()}
 }
 
 // Env is everything an action works with.
@@ -104,11 +120,49 @@ type Plan struct {
 	Wait time.Duration
 	// CreatedTaskID is set by apply when the action created the task the run continues with.
 	CreatedTaskID int64
+	// Msg and WarnMsgs say what Summary and Warnings say, as codes with values for the interface (messages.go). Lines,
+	// when set by apply, replaces both: the sentences of the output of a step whose output is not its summary.
+	Msg      *models.AutomationMessage
+	WarnMsgs []*models.AutomationMessage
+	Lines    []*models.AutomationMessage
+	// rawOutput marks an output that is data (an HTTP answer): it has no sentences of the server.
+	rawOutput bool
 
 	apply func() (string, error)
 	// preview, when set, is what a dry run does instead of only reading Summary: it runs the action against a
 	// host that records what it would do. Only the dry run calls it, only the runner calls apply.
 	preview func() (summary string, warnings []string, err error)
+}
+
+// say sets the summary of the plan in English and as a code with values.
+func (pl *Plan) say(code string, params P, format string, args ...any) {
+	pl.Summary = fmt.Sprintf(format, args...)
+	pl.Msg = say(code, params)
+}
+
+// warn adds a warning in English and as a code with values.
+func (pl *Plan) warn(code string, params P, format string, args ...any) {
+	pl.Warnings = append(pl.Warnings, fmt.Sprintf(format, args...))
+	pl.WarnMsgs = append(pl.WarnMsgs, say(code, params))
+}
+
+// nothingToDo turns the summary into the remark that the task is as it should be already.
+func (pl *Plan) nothingToDo(tail string) {
+	pl.Summary = "nothing to do: " + pl.Summary + " (" + tail + ")"
+	if pl.Msg != nil {
+		pl.Msg = say("nothing_to_do", P{"inner": pl.Msg.Code}.with(pl.Msg.Params))
+	}
+}
+
+// outputMessages is what the output of the step says in codes: the lines the server wrote.
+func (pl *Plan) outputMessages() []*models.AutomationMessage {
+	if pl.Lines != nil {
+		return pl.Lines
+	}
+	if pl.rawOutput || pl.Msg == nil {
+		return nil
+	}
+	return append([]*models.AutomationMessage{pl.Msg}, pl.WarnMsgs...)
 }
 
 type action struct {
@@ -175,7 +229,7 @@ func init() {
 // requireWritableTask checks that the task exists and the owner of the rule may change it.
 func requireWritableTask(env *Env) (*models.Task, error) {
 	if env.Sub == nil || env.Sub.Task == nil {
-		return nil, actionErrorf("the task does not exist any more")
+		return nil, actionErr("task_gone", nil, "the task does not exist any more")
 	}
 	task := &models.Task{ID: env.Sub.Task.ID}
 	can, err := task.CanWrite(env.S, env.Auth)
@@ -195,25 +249,25 @@ func resolveUserParam(env *Env, v any) (int64, error) {
 			if id := env.Sub.DoerID(); id != 0 {
 				return id, nil
 			}
-			return 0, actionErrorf("the event has no doer")
+			return 0, actionErr("no_doer", nil, "the event has no doer")
 		case spec.UserTaskCreator:
 			if env.Sub.CreatedBy != 0 {
 				return env.Sub.CreatedBy, nil
 			}
-			return 0, actionErrorf("the task has no creator")
+			return 0, actionErr("no_creator", nil, "the task has no creator")
 		}
-		return 0, actionErrorf("%q is not a user", s)
+		return 0, actionErr("not_a_user", P{"value": s}, "%q is not a user", s)
 	}
 	id, ok := spec.ToInt64(v)
 	if !ok || id <= 0 {
-		return 0, actionErrorf("not a user id")
+		return 0, actionErr("not_a_user_id", nil, "not a user id")
 	}
 	return id, nil
 }
 
 func renderedWarning(env *Env, plan *Plan, before int) {
 	for _, name := range env.Unknown[before:] {
-		plan.Warnings = append(plan.Warnings, "unknown placeholder {{"+name+"}} renders empty")
+		plan.warn("unknown_placeholder", P{"name": name}, "unknown placeholder {{%s}} renders empty", name)
 	}
 }
 
@@ -236,31 +290,31 @@ func planSetField(env *Env, p params) (*Plan, error) {
 		s, _ := value.(string)
 		update.Title = strings.TrimSpace(env.render(s))
 		if update.Title == "" {
-			return nil, actionErrorf("the title would be empty")
+			return nil, actionErr("title_empty", nil, "the title would be empty")
 		}
 		changed = update.Title != task.Title
-		plan.Summary = fmt.Sprintf("set title to %q", update.Title)
+		plan.say("set_title", P{"title": update.Title}, "set title to %q", update.Title)
 	case "description":
 		s, _ := value.(string)
 		update.Description = env.render(s)
 		changed = update.Description != task.Description
-		plan.Summary = "set the description"
+		plan.say("set_description", nil, "set the description")
 	case "priority":
 		f, ok := spec.ToFloat64(value)
 		if !ok || f < 0 || f > 5 || f != float64(int64(f)) {
-			return nil, actionErrorf("the priority must be a whole number from 0 to 5")
+			return nil, actionErr("priority_invalid", nil, "the priority must be a whole number from 0 to 5")
 		}
 		update.Priority = int64(f)
 		changed = update.Priority != task.Priority
-		plan.Summary = fmt.Sprintf("set priority to %d", update.Priority)
+		plan.say("set_priority", P{"priority": update.Priority}, "set priority to %d", update.Priority)
 	case "percent_done":
 		f, ok := spec.ToFloat64(value)
 		if !ok || f < 0 || f > 1 {
-			return nil, actionErrorf("percent_done must be a number from 0 to 1")
+			return nil, actionErr("percent_done_invalid", nil, "percent_done must be a number from 0 to 1")
 		}
 		update.PercentDone = f
 		changed = update.PercentDone != task.PercentDone
-		plan.Summary = fmt.Sprintf("set percent_done to %v", f)
+		plan.say("set_percent_done", P{"value": f}, "set percent_done to %v", f)
 	case "hex_color":
 		s, _ := value.(string)
 		s = strings.TrimSpace(s)
@@ -269,17 +323,17 @@ func planSetField(env *Env, p params) (*Plan, error) {
 		} else {
 			m := hexColorPattern.FindStringSubmatch(s)
 			if m == nil {
-				return nil, actionErrorf("%q is not a hex color like #ff8800", s)
+				return nil, actionErr("hex_color_invalid", P{"value": s}, "%q is not a hex color like #ff8800", s)
 			}
 			update.HexColor = strings.ToLower(m[1])
 		}
 		changed = update.HexColor != task.HexColor
-		plan.Summary = fmt.Sprintf("set hex_color to %q", update.HexColor)
+		plan.say("set_hex_color", P{"color": update.HexColor}, "set hex_color to %q", update.HexColor)
 	case "due_date", "start_date", "end_date":
 		s, _ := value.(string)
 		d, err := spec.ParseDateSpec(s, true)
 		if err != nil {
-			return nil, actionErrorf("%s", err.Error())
+			return nil, actionErr("invalid_date", P{"value": s}, "%s", err.Error())
 		}
 		at := d.Resolve(env.Now)
 		var current time.Time
@@ -293,17 +347,17 @@ func planSetField(env *Env, p params) (*Plan, error) {
 		}
 		changed = !at.Equal(current)
 		if at.IsZero() {
-			plan.Summary = "clear " + field
+			plan.say("clear_"+field, nil, "clear %s", field)
 		} else {
-			plan.Summary = fmt.Sprintf("set %s to %s", field, at.UTC().Format(time.RFC3339))
+			plan.say("set_"+field, P{"date": at.UTC().Format(time.RFC3339)}, "set %s to %s", field, at.UTC().Format(time.RFC3339))
 		}
 	default:
-		return nil, actionErrorf("the field %q cannot be set", field)
+		return nil, actionErr("field_not_settable", P{"field": field}, "the field %q cannot be set", field)
 	}
 	renderedWarning(env, plan, unknownBefore)
 
 	if !changed {
-		plan.Summary = "nothing to do: " + plan.Summary + " (already so)"
+		plan.nothingToDo("already so")
 		return plan, nil
 	}
 	plan.apply = func() (string, error) {
@@ -334,7 +388,7 @@ func planSetCustomField(env *Env, p params) (*Plan, error) {
 		case models.CustomFieldTypeDate:
 			d, err := spec.ParseDateSpec(s, true)
 			if err != nil {
-				return nil, actionErrorf("%s", err.Error())
+				return nil, actionErr("invalid_date", P{"value": s}, "%s", err.Error())
 			}
 			at := d.Resolve(env.Now)
 			if at.IsZero() {
@@ -360,9 +414,9 @@ func planSetCustomField(env *Env, p params) (*Plan, error) {
 		return nil, err
 	}
 	if value == nil {
-		plan.Summary = fmt.Sprintf("clear custom field %d", fieldID)
+		plan.say("clear_custom_field", P{"field": fieldID}, "clear custom field %d", fieldID)
 	} else {
-		plan.Summary = fmt.Sprintf("set custom field %d to %v", fieldID, value)
+		plan.say("set_custom_field", P{"field": fieldID, "value": value}, "set custom field %d to %v", fieldID, value)
 	}
 	plan.apply = func() (string, error) {
 		if err := v.Update(env.S, env.Auth); err != nil {
@@ -379,9 +433,14 @@ func planSetDone(env *Env, p params) (*Plan, error) {
 		return nil, err
 	}
 	done := p.bool("done")
-	plan := &Plan{Summary: fmt.Sprintf("mark the task as %s", map[bool]string{true: "done", false: "not done"}[done])}
+	plan := &Plan{}
+	if done {
+		plan.say("mark_done", nil, "mark the task as done")
+	} else {
+		plan.say("mark_not_done", nil, "mark the task as not done")
+	}
 	if task.Done == done {
-		plan.Summary = "nothing to do: " + plan.Summary + " (already so)"
+		plan.nothingToDo("already so")
 		return plan, nil
 	}
 	update := &models.Task{ID: task.ID, ProjectID: task.ProjectID, Done: done}
@@ -411,23 +470,24 @@ func planSetStatus(env *Env, p params) (*Plan, error) {
 		return nil, models.ErrGenericForbidden{}
 	}
 	if current, ok := env.Sub.Fields["status"].(float64); ok && int64(current) == change.ToStatusID {
-		plan.Summary = fmt.Sprintf("nothing to do: the task is in status %d already", change.ToStatusID)
+		plan.say("status_same", P{"status": change.ToStatusID}, "nothing to do: the task is in status %d already", change.ToStatusID)
 		return plan, nil
 	}
 	if err := change.Check(env.S, env.Auth); err != nil {
 		return nil, err
 	}
-	plan.Summary = fmt.Sprintf("change the status to %d", change.ToStatusID)
+	plan.say("change_status", P{"status": change.ToStatusID}, "change the status to %d", change.ToStatusID)
 	if change.RequiresApproval() {
 		// The transition asks for an approval instead of moving the task; the owner of the rule is the requester.
-		plan.Summary = fmt.Sprintf("would request approval for the status change to %d", change.ToStatusID)
+		plan.say("request_status_approval", P{"status": change.ToStatusID}, "would request approval for the status change to %d", change.ToStatusID)
 	}
 	plan.apply = func() (string, error) {
 		if err := change.Create(env.S, env.Auth); err != nil {
 			return "", err
 		}
 		if change.Approval != nil {
-			return fmt.Sprintf("approval requested (#%d)", change.Approval.ID), nil
+			plan.say("approval_requested", P{"id": change.Approval.ID}, "approval requested (#%d)", change.Approval.ID)
+			return plan.Summary, nil
 		}
 		return plan.Summary, nil
 	}
@@ -446,7 +506,7 @@ func planApprovalRequest(env *Env, p params) (*Plan, error) {
 	description := env.render(p.str("description"))
 	renderedWarning(env, plan, unknownBefore)
 	if title == "" {
-		return nil, actionErrorf("the title would be empty")
+		return nil, actionErr("title_empty", nil, "the title would be empty")
 	}
 
 	approvers := []int64{}
@@ -473,7 +533,7 @@ func planApprovalRequest(env *Env, p params) (*Plan, error) {
 		add(id)
 	}
 	if len(approvers) == 0 {
-		return nil, actionErrorf("nobody is left to ask: the approvers are empty or only the owner of the rule")
+		return nil, actionErr("no_approvers", nil, "nobody is left to ask: the approvers are empty or only the owner of the rule")
 	}
 
 	request := &models.ApprovalRequest{
@@ -486,7 +546,7 @@ func planApprovalRequest(env *Env, p params) (*Plan, error) {
 	if p.has("due_offset") {
 		offset, err := spec.ParseOffset(p.str("due_offset"))
 		if err != nil {
-			return nil, actionErrorf("%s", err.Error())
+			return nil, actionErr("invalid_duration", P{"value": p.str("due_offset")}, "%s", err.Error())
 		}
 		due := env.Now.Add(offset)
 		request.Due = &due
@@ -499,12 +559,13 @@ func planApprovalRequest(env *Env, p params) (*Plan, error) {
 		return nil, models.ErrGenericForbidden{}
 	}
 
-	plan.Summary = fmt.Sprintf("request approval %q from %d user(s)", title, len(approvers))
+	plan.say("request_approval", P{"title": title, "count": len(approvers)}, "request approval %q from %d user(s)", title, len(approvers))
 	plan.apply = func() (string, error) {
 		if err := request.Create(env.S, env.Auth); err != nil {
 			return "", err
 		}
-		return fmt.Sprintf("approval requested (#%d)", request.ID), nil
+		plan.say("approval_requested", P{"id": request.ID}, "approval requested (#%d)", request.ID)
+		return plan.Summary, nil
 	}
 	return plan, nil
 }
@@ -538,10 +599,14 @@ func planAssign(env *Env, p params, add bool) (*Plan, error) {
 		return nil, err
 	}
 	assigned := containsID(env.Sub.Fields["assignees"], userID)
-	verb := map[bool]string{true: "assign", false: "unassign"}[add]
-	plan := &Plan{Summary: fmt.Sprintf("%s user %d", verb, userID)}
+	plan := &Plan{}
+	if add {
+		plan.say("assign_user", P{"user": userID}, "assign user %d", userID)
+	} else {
+		plan.say("unassign_user", P{"user": userID}, "unassign user %d", userID)
+	}
 	if assigned == add {
-		plan.Summary = "nothing to do: " + plan.Summary + " (already so)"
+		plan.nothingToDo("already so")
 		return plan, nil
 	}
 
@@ -597,10 +662,14 @@ func planLabel(env *Env, p params, add bool) (*Plan, error) {
 	}
 	labelID := p.int("label_id")
 	has := containsID(env.Sub.Fields["labels"], labelID)
-	verb := map[bool]string{true: "add", false: "remove"}[add]
-	plan := &Plan{Summary: fmt.Sprintf("%s label %d", verb, labelID)}
+	plan := &Plan{}
+	if add {
+		plan.say("add_label", P{"label": labelID}, "add label %d", labelID)
+	} else {
+		plan.say("remove_label", P{"label": labelID}, "remove label %d", labelID)
+	}
 	if has == add {
-		plan.Summary = "nothing to do: " + plan.Summary + " (already so)"
+		plan.nothingToDo("already so")
 		return plan, nil
 	}
 	lt := &models.LabelTask{TaskID: task.ID, LabelID: labelID}
@@ -651,7 +720,7 @@ func planAddComment(env *Env, p params) (*Plan, error) {
 	text := strings.TrimSpace(env.render(p.str("text")))
 	renderedWarning(env, plan, unknownBefore)
 	if text == "" {
-		return nil, actionErrorf("the comment would be empty")
+		return nil, actionErr("comment_empty", nil, "the comment would be empty")
 	}
 	comment := &models.TaskComment{TaskID: task.ID, Comment: textToHTML(text)}
 	can, err := comment.CanCreate(env.S, env.Auth)
@@ -661,7 +730,7 @@ func planAddComment(env *Env, p params) (*Plan, error) {
 	if !can {
 		return nil, models.ErrGenericForbidden{}
 	}
-	plan.Summary = fmt.Sprintf("add the comment %q", text)
+	plan.say("add_comment", P{"text": text}, "add the comment %q", text)
 	plan.apply = func() (string, error) {
 		if err := comment.Create(env.S, env.Auth); err != nil {
 			return "", err
@@ -682,14 +751,14 @@ func planCreateTask(env *Env, p params, subtask bool) (*Plan, error) {
 	description := env.render(p.str("description"))
 	renderedWarning(env, plan, unknownBefore)
 	if title == "" {
-		return nil, actionErrorf("the title would be empty")
+		return nil, actionErr("title_empty", nil, "the title would be empty")
 	}
 
 	created := &models.Task{Title: title, Description: description, ProjectID: task.ProjectID}
 	if p.has("due_offset") {
 		offset, err := spec.ParseOffset(p.str("due_offset"))
 		if err != nil {
-			return nil, actionErrorf("%s", err.Error())
+			return nil, actionErr("invalid_duration", P{"value": p.str("due_offset")}, "%s", err.Error())
 		}
 		created.DueDate = env.Now.Add(offset)
 	}
@@ -720,11 +789,11 @@ func planCreateTask(env *Env, p params, subtask bool) (*Plan, error) {
 		return nil, models.ErrGenericForbidden{}
 	}
 
-	what := "related task"
 	if subtask {
-		what = "subtask"
+		plan.say("create_subtask", P{"title": title}, "create the subtask %q", title)
+	} else {
+		plan.say("create_related_task", P{"title": title}, "create the related task %q", title)
 	}
-	plan.Summary = fmt.Sprintf("create the %s %q", what, title)
 	plan.apply = func() (string, error) {
 		if err := created.Create(env.S, env.Auth); err != nil {
 			return "", err
@@ -743,7 +812,9 @@ func planCreateTask(env *Env, p params, subtask bool) (*Plan, error) {
 		if err := relation.Create(env.S, env.Auth); err != nil {
 			return "", err
 		}
-		return fmt.Sprintf("%s (task %d)", plan.Summary, created.ID), nil
+		out := fmt.Sprintf("%s (task %d)", plan.Summary, created.ID)
+		plan.Lines = []*models.AutomationMessage{say("task_created", P{"inner": plan.Msg.Code, "id": created.ID}.with(plan.Msg.Params))}
+		return out, nil
 	}
 	return plan, nil
 }
@@ -754,9 +825,10 @@ func planMove(env *Env, p params) (*Plan, error) {
 		return nil, err
 	}
 	target := p.int("project_id")
-	plan := &Plan{Summary: fmt.Sprintf("move the task to project %d", target)}
+	plan := &Plan{}
+	plan.say("move_task", P{"project": target}, "move the task to project %d", target)
 	if target == task.ProjectID {
-		plan.Summary = "nothing to do: " + plan.Summary + " (already there)"
+		plan.nothingToDo("already there")
 		return plan, nil
 	}
 	update := &models.Task{ID: task.ID, ProjectID: target}
@@ -780,14 +852,18 @@ func planMove(env *Env, p params) (*Plan, error) {
 func planStopIf(env *Env, p params) (*Plan, error) {
 	c, ok := spec.ConditionFromParam(p["condition"])
 	if !ok {
-		return nil, actionErrorf("the condition is invalid")
+		return nil, actionErr("condition_invalid", nil, "the condition is invalid")
 	}
 	holds, err := Evaluate(c, env.Sub)
 	if err != nil {
-		return nil, actionErrorf("%s", err.Error())
+		return nil, actionErr("condition_failed", P{"message": err.Error()}, "%s", err.Error())
 	}
 	if holds {
-		return &Plan{Summary: "the condition holds: stop the run", Stop: true}, nil
+		plan := &Plan{Stop: true}
+		plan.say("condition_holds", nil, "the condition holds: stop the run")
+		return plan, nil
 	}
-	return &Plan{Summary: "the condition does not hold: continue"}, nil
+	plan := &Plan{}
+	plan.say("condition_fails", nil, "the condition does not hold: continue")
+	return plan, nil
 }

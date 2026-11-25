@@ -222,11 +222,13 @@ func (rc *runContext) finish(s *xorm.Session, status, reason string, runErr erro
 	rc.run.Status = status
 	rc.run.SkipReason = reason
 	rc.run.Error = ""
+	rc.run.ErrorCode, rc.run.ErrorParams = "", nil
 	if runErr != nil {
 		rc.run.Error = truncate(runErr.Error(), 4000)
+		rc.run.ErrorCode, rc.run.ErrorParams = errorMessage(runErr)
 	}
 	rc.run.Finished = now()
-	if _, err := s.ID(rc.run.ID).Cols("status", "skip_reason", "error", "finished").Update(rc.run); err != nil {
+	if _, err := s.ID(rc.run.ID).Cols("status", "skip_reason", "error", "error_code", "error_params", "finished").Update(rc.run); err != nil {
 		return err
 	}
 	countRun(status)
@@ -428,7 +430,7 @@ func (rc *runContext) execute(ctx context.Context, s *xorm.Session, fresh bool) 
 		return err
 	}
 	if maxActions := config.AutomationMaxActions.GetInt(); maxActions > 0 && len(rc.rule.Actions) > maxActions {
-		return rc.finish(s, models.AutomationRunFailed, SkipTooManyActions, actionErrorf("the rule has %d actions, at most %d are allowed", len(rc.rule.Actions), maxActions))
+		return rc.finish(s, models.AutomationRunFailed, SkipTooManyActions, actionErr("too_many_actions", P{"count": len(rc.rule.Actions), "max": maxActions}, "the rule has %d actions, at most %d are allowed", len(rc.rule.Actions), maxActions))
 	}
 
 	existing := []*models.AutomationRunStep{}
@@ -486,7 +488,8 @@ func (rc *runContext) execute(ctx context.Context, s *xorm.Session, fresh bool) 
 				return ctx.Err()
 			}
 			log.Debugf("[automation] run %d: step %d failed temporarily: %v", rc.run.ID, position, err)
-			if _, uerr := s.ID(rc.run.ID).Cols("error").Update(&models.AutomationRun{Error: truncate(err.Error(), 4000)}); uerr != nil {
+			code, params := errorMessage(err)
+			if _, uerr := s.ID(rc.run.ID).Cols("error", "error_code", "error_params").Update(&models.AutomationRun{Error: truncate(err.Error(), 4000), ErrorCode: code, ErrorParams: params}); uerr != nil {
 				log.Errorf("[automation] could not store the error of run %d: %v", rc.run.ID, uerr)
 			}
 			return err
@@ -535,7 +538,7 @@ func (rc *runContext) executeStep(runCtx, parent context.Context, position int64
 	impl := registry[act.Type]
 	started := time.Now()
 	if impl == nil {
-		err = actionErrorf("unknown action %q", act.Type)
+		err = actionErr("unknown_action", P{"type": act.Type}, "unknown action %q", act.Type)
 		rc.recordFailedStep(position, act.Type, err, started)
 		return false, false, err
 	}
@@ -576,7 +579,7 @@ func (rc *runContext) executeStep(runCtx, parent context.Context, position int64
 		err = events.PendingHookError(s)
 	}
 	if err == nil {
-		err = rc.storeStep(s, position, act.Type, models.AutomationStepSuccess, "", output, started)
+		err = rc.storeStep(s, position, act.Type, models.AutomationStepSuccess, nil, output, plan.outputMessages(), started)
 	}
 	if err == nil {
 		err = s.Commit()
@@ -639,15 +642,19 @@ func (rc *runContext) applyStep(ctx context.Context, s *xorm.Session, impl *acti
 }
 
 // storeStep inserts or updates the row of the step. Position is unique per run.
-func (rc *runContext) storeStep(s *xorm.Session, position int64, typ, status, errText, output string, started time.Time) error {
+func (rc *runContext) storeStep(s *xorm.Session, position int64, typ, status string, stepErr error, output string, lines []*models.AutomationMessage, started time.Time) error {
 	row := &models.AutomationRunStep{
-		RunID:      rc.run.ID,
-		Position:   position,
-		ActionType: typ,
-		Status:     status,
-		Error:      truncate(errText, 4000),
-		Output:     truncate(output, maxOutputBytes),
-		DurationMs: time.Since(started).Milliseconds(),
+		RunID:          rc.run.ID,
+		Position:       position,
+		ActionType:     typ,
+		Status:         status,
+		Output:         truncate(output, maxOutputBytes),
+		OutputMessages: lines,
+		DurationMs:     time.Since(started).Milliseconds(),
+	}
+	if stepErr != nil {
+		row.Error = truncate(stepErr.Error(), 4000)
+		row.ErrorCode, row.ErrorParams = errorMessage(stepErr)
 	}
 	existing := &models.AutomationRunStep{}
 	has, err := s.Where("run_id = ? AND position = ?", rc.run.ID, position).Get(existing)
@@ -655,7 +662,7 @@ func (rc *runContext) storeStep(s *xorm.Session, position int64, typ, status, er
 		return err
 	}
 	if has {
-		_, err = s.ID(existing.ID).Cols("action_type", "status", "error", "output", "duration_ms").Update(row)
+		_, err = s.ID(existing.ID).Cols("action_type", "status", "error", "error_code", "error_params", "output", "output_messages", "duration_ms").Update(row)
 		return err
 	}
 	_, err = s.Insert(row)
@@ -665,7 +672,7 @@ func (rc *runContext) storeStep(s *xorm.Session, position int64, typ, status, er
 func (rc *runContext) recordFailedStep(position int64, typ string, stepErr error, started time.Time) {
 	s := db.NewAutocommitSession()
 	defer s.Close()
-	if err := rc.storeStep(s, position, typ, models.AutomationStepFailed, stepErr.Error(), "", started); err != nil {
+	if err := rc.storeStep(s, position, typ, models.AutomationStepFailed, stepErr, "", nil, started); err != nil {
 		log.Errorf("[automation] could not record the failed step %d of run %d: %v", position, rc.run.ID, err)
 	}
 }

@@ -584,6 +584,19 @@ export type AutomationManualRule = {
     title?: string;
 };
 
+export type AutomationMessage = {
+    /**
+     * The stable name of the sentence, e.g. set_title.
+     */
+    code?: string;
+    /**
+     * The values the sentence mentions, by name.
+     */
+    params?: {
+        [key: string]: string;
+    };
+};
+
 export type AutomationRule = {
     /**
      * A URL to the JSON Schema for this object.
@@ -780,9 +793,19 @@ export type AutomationRun = {
      */
     readonly depth?: number;
     /**
-     * Why the run failed.
+     * Why the run failed, in English. Show error_code translated when the client knows it and this text when it does not.
      */
     readonly error?: string;
+    /**
+     * A stable code for why the run failed, e.g. title_empty, script_error or a numeric API error code like 4002. Empty for a run that stored its error before codes existed; use error then.
+     */
+    readonly error_code?: string;
+    /**
+     * The values the sentence of error_code mentions, by name.
+     */
+    readonly error_params?: {
+        [key: string]: string;
+    };
     /**
      * The outbox event that caused the run.
      */
@@ -884,17 +907,31 @@ export type AutomationRunStep = {
      */
     readonly duration_ms?: number;
     /**
-     * Why the step failed.
+     * Why the step failed, in English. Show error_code translated when the client knows it and this text when it does not.
      */
     readonly error?: string;
+    /**
+     * A stable code for why the step failed, e.g. title_empty, script_error or a numeric API error code like 4002. Empty for a step recorded before codes existed; use error then.
+     */
+    readonly error_code?: string;
+    /**
+     * The values the sentence of error_code mentions, by name.
+     */
+    readonly error_params?: {
+        [key: string]: string;
+    };
     /**
      * The unique, numeric id of this step.
      */
     readonly id?: number;
     /**
-     * What the step did, truncated to 16 KiB.
+     * What the step did, in English, truncated to 16 KiB.
      */
     readonly output?: string;
+    /**
+     * The leading lines of output that the server wrote itself (what the step did, its warnings), one entry per line, as codes with values. The lines of output after them are data (a script log, an HTTP answer) and are shown as they are.
+     */
+    readonly output_messages?: Array<AutomationMessage> | null;
     /**
      * The index of the action in the rule, starting at 0.
      */
@@ -1847,7 +1884,11 @@ export type DryRunResult = {
      */
     conditions_met?: boolean;
     /**
-     * General remarks about the test.
+     * The notes as codes with values, in the order of notes.
+     */
+    note_messages?: Array<AutomationMessage> | null;
+    /**
+     * General remarks about the test, in English.
      */
     notes?: Array<string> | null;
     /**
@@ -1862,9 +1903,19 @@ export type DryRunResult = {
 
 export type DryRunStep = {
     /**
-     * Why the action would fail right now, e.g. a workflow transition that is not allowed.
+     * Why the action would fail right now, e.g. a workflow transition that is not allowed, in English.
      */
     error?: string;
+    /**
+     * The code of error, see the error_code of a run.
+     */
+    error_code?: string;
+    /**
+     * The values the sentence of error_code mentions.
+     */
+    error_params?: {
+        [key: string]: string;
+    };
     /**
      * The index of the action in the rule.
      */
@@ -1874,15 +1925,23 @@ export type DryRunStep = {
      */
     stops?: boolean;
     /**
-     * What the action would do. Empty when it would fail.
+     * What the action would do, in English. Empty when it would fail.
      */
     summary?: string;
+    /**
+     * The first line of summary as a code with values.
+     */
+    summary_message?: AutomationMessage;
     /**
      * The type of the action.
      */
     type?: string;
     /**
-     * Problems that would not stop the action, e.g. a placeholder that renders empty.
+     * The warnings as codes with values, in the order of warnings.
+     */
+    warning_messages?: Array<AutomationMessage> | null;
+    /**
+     * Problems that would not stop the action, e.g. a placeholder that renders empty, in English.
      */
     warnings?: Array<string> | null;
 };
@@ -7412,6 +7471,10 @@ export type AutomationRuleReadBodyWritable = {
     trigger?: Trigger;
 };
 
+export type AutomationRunWritable = {
+    [key: string]: never;
+};
+
 export type AutomationRunQueuedWritable = {
     /**
      * The outbox event that starts the run.
@@ -7428,6 +7491,14 @@ export type AutomationRunRequestWritable = {
      * The task to run the rule for. You need write access to it, and it has to belong to the project of the rule.
      */
     task_id: number;
+};
+
+export type AutomationRunRetryWritable = {
+    [key: string]: never;
+};
+
+export type AutomationRunStepWritable = {
+    [key: string]: never;
 };
 
 export type AutomationSecretWritable = {
@@ -7870,7 +7941,11 @@ export type DryRunResultWritable = {
      */
     conditions_met?: boolean;
     /**
-     * General remarks about the test.
+     * The notes as codes with values, in the order of notes.
+     */
+    note_messages?: Array<AutomationMessage> | null;
+    /**
+     * General remarks about the test, in English.
      */
     notes?: Array<string> | null;
     /**
@@ -8321,7 +8396,7 @@ export type PaginatedAutomationRuleWritable = {
 };
 
 export type PaginatedAutomationRunWritable = {
-    items?: Array<unknown> | null;
+    items?: Array<AutomationRunWritable> | null;
     page?: number;
     per_page?: number;
     total?: number;

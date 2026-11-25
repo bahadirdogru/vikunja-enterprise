@@ -30,18 +30,20 @@ import (
 
 // AutomationRun is one execution of a rule for an event. There is at most one per (event, rule).
 type AutomationRun struct {
-	ID           int64     `xorm:"bigint autoincr not null unique pk" json:"id" param:"run" readOnly:"true" doc:"The unique, numeric id of this run."`
-	RuleID       int64     `xorm:"bigint not null INDEX unique(automation_runs_event_rule)" json:"rule_id" param:"rule" readOnly:"true" doc:"The rule that ran. Taken from the URL."`
-	RuleRevision int64     `xorm:"bigint not null" json:"rule_revision" readOnly:"true" doc:"The revision of the rule the run executed."`
-	EventID      int64     `xorm:"bigint not null unique(automation_runs_event_rule)" json:"event_id" readOnly:"true" doc:"The outbox event that caused the run."`
-	ProjectID    int64     `xorm:"bigint not null INDEX" json:"project_id" param:"project" readOnly:"true" doc:"The project of the rule. Taken from the URL."`
-	TaskID       int64     `xorm:"bigint null" json:"task_id" readOnly:"true" doc:"The task the event was about, 0 when none."`
-	Status       string    `xorm:"varchar(20) not null" json:"status" readOnly:"true" enum:"running,success,failed,skipped,aborted" doc:"running while the run is executing or waits for a retry, then success, failed, skipped (a limit or the conditions stopped it) or aborted (the owner may no longer run the rule)."`
-	SkipReason   string    `xorm:"varchar(100) null" json:"skip_reason" readOnly:"true" doc:"Why the run was skipped or aborted, e.g. max_depth, rate_limit, self_trigger, conditions_not_met, flow_stopped, owner_not_admin."`
-	Error        string    `xorm:"text null" json:"error" readOnly:"true" doc:"Why the run failed."`
-	Depth        int64     `xorm:"bigint not null default 0" json:"depth" readOnly:"true" doc:"How many rules triggered each other before this run; 0 for a change made by a person."`
-	Started      time.Time `xorm:"DATETIME not null" json:"started" readOnly:"true" doc:"When the run started."`
-	Finished     time.Time `xorm:"DATETIME null" json:"finished" readOnly:"true" doc:"When the run finished; zero while running."`
+	ID           int64             `xorm:"bigint autoincr not null unique pk" json:"id" param:"run" readOnly:"true" doc:"The unique, numeric id of this run."`
+	RuleID       int64             `xorm:"bigint not null INDEX unique(automation_runs_event_rule)" json:"rule_id" param:"rule" readOnly:"true" doc:"The rule that ran. Taken from the URL."`
+	RuleRevision int64             `xorm:"bigint not null" json:"rule_revision" readOnly:"true" doc:"The revision of the rule the run executed."`
+	EventID      int64             `xorm:"bigint not null unique(automation_runs_event_rule)" json:"event_id" readOnly:"true" doc:"The outbox event that caused the run."`
+	ProjectID    int64             `xorm:"bigint not null INDEX" json:"project_id" param:"project" readOnly:"true" doc:"The project of the rule. Taken from the URL."`
+	TaskID       int64             `xorm:"bigint null" json:"task_id" readOnly:"true" doc:"The task the event was about, 0 when none."`
+	Status       string            `xorm:"varchar(20) not null" json:"status" readOnly:"true" enum:"running,success,failed,skipped,aborted" doc:"running while the run is executing or waits for a retry, then success, failed, skipped (a limit or the conditions stopped it) or aborted (the owner may no longer run the rule)."`
+	SkipReason   string            `xorm:"varchar(100) null" json:"skip_reason" readOnly:"true" doc:"Why the run was skipped or aborted, e.g. max_depth, rate_limit, self_trigger, conditions_not_met, flow_stopped, owner_not_admin."`
+	Error        string            `xorm:"text null" json:"error" readOnly:"true" doc:"Why the run failed, in English. Show error_code translated when the client knows it and this text when it does not."`
+	ErrorCode    string            `xorm:"varchar(100) null" json:"error_code,omitempty" readOnly:"true" doc:"A stable code for why the run failed, e.g. title_empty, script_thrown or a numeric API error code like 4002. Empty for a run that stored its error before codes existed; use error then."`
+	ErrorParams  map[string]string `xorm:"json null" json:"error_params,omitempty" readOnly:"true" doc:"The values the sentence of error_code mentions, by name."`
+	Depth        int64             `xorm:"bigint not null default 0" json:"depth" readOnly:"true" doc:"How many rules triggered each other before this run; 0 for a change made by a person."`
+	Started      time.Time         `xorm:"DATETIME not null" json:"started" readOnly:"true" doc:"When the run started."`
+	Finished     time.Time         `xorm:"DATETIME null" json:"finished" readOnly:"true" doc:"When the run finished; zero while running."`
 
 	EventName string               `xorm:"-" json:"event_name,omitempty" readOnly:"true" doc:"The internal event that caused the run."`
 	Steps     []*AutomationRunStep `xorm:"-" json:"steps,omitempty" readOnly:"true" doc:"The executed actions. Only included when reading a single run."`
@@ -179,7 +181,7 @@ func (rr *AutomationRunRetry) Create(s *xorm.Session, _ web.Auth) error {
 	// Back to running: the worker resumes a running run at its first step that did not succeed. The transition is
 	// conditional, so two requests at once queue one event: the one that finds the run running already is refused.
 	affected, err := s.Where("id = ? AND status = ?", run.ID, AutomationRunFailed).
-		Cols("status", "error", "skip_reason", "finished").
+		Cols("status", "error", "error_code", "error_params", "skip_reason", "finished").
 		Update(&AutomationRun{Status: AutomationRunRunning})
 	if err != nil {
 		return err
@@ -193,6 +195,8 @@ func (rr *AutomationRunRetry) Create(s *xorm.Session, _ web.Auth) error {
 	}
 	run.Status = AutomationRunRunning
 	run.Error = ""
+	run.ErrorCode = ""
+	run.ErrorParams = nil
 	run.SkipReason = ""
 	run.Finished = time.Time{}
 	if err = insertAutomationResumeEvent(s, run, resumeAt); err != nil {

@@ -10,10 +10,11 @@ import AutomationBadge from '@/components/automation/AutomationBadge.vue'
 import AutomationSelect from '@/components/automation/AutomationSelect.vue'
 import {useAutomationContext} from '@/components/automation/context'
 import {isRequestContextAbort} from '@/client/requestContext'
-import {useTestRuleMutation, type DryRunResponse} from '@/client/queries/automation'
+import {useTestRuleMutation, type DryRunResponse, type DryRunStepResponse} from '@/client/queries/automation'
 import {tasksQuery} from '@/client/queries/tasks'
 import {actionDef, catalogLabel, parseWebhookPayload} from '@/helpers/automation'
 import {getErrorText} from '@/message'
+import {automationCodeText, automationMessageText} from '@/helpers/automationMessages'
 
 const props = defineProps<{
 	ruleId: number | null
@@ -76,6 +77,19 @@ async function run() {
 function splitSummary(summary: string): {head: string, rest: string} {
 	const index = summary.indexOf('\n')
 	return index === -1 ? {head: summary, rest: ''} : {head: summary.slice(0, index), rest: summary.slice(index + 1)}
+}
+
+// The sentences of the server in the language of the reader; the English text is what an unknown code falls back to.
+function summaryHead(step: DryRunStepResponse): string {
+	return step.summary_message ? automationMessageText(step.summary_message, splitSummary(step.summary).head) : splitSummary(step.summary).head
+}
+
+function warningText(step: DryRunStepResponse, index: number): string {
+	return automationMessageText(step.warning_messages?.[index], step.warnings[index] ?? '')
+}
+
+function noteText(index: number): string {
+	return automationMessageText(result.value?.note_messages?.[index], result.value?.notes[index] ?? '')
 }
 
 function stepTitle(type: string): string {
@@ -177,7 +191,7 @@ function stepTitle(type: string): string {
 					:class="{'has-error': step.error}"
 				>
 					<strong>{{ stepTitle(step.type) }}</strong>
-					<span v-if="step.summary">: {{ splitSummary(step.summary).head }}</span>
+					<span v-if="step.summary">: {{ summaryHead(step) }}</span>
 					<AutomationBadge
 						v-if="step.stops"
 						variant="info"
@@ -194,23 +208,23 @@ function stepTitle(type: string): string {
 						v-if="step.error"
 						class="help is-danger"
 					>
-						{{ $t('automation.test.wouldFail') }}: {{ step.error }}
+						{{ $t('automation.test.wouldFail') }}: {{ automationCodeText(step.error_code, step.error_params, step.error) }}
 					</p>
 					<p
-						v-for="warning in step.warnings"
+						v-for="(warning, index) in step.warnings"
 						:key="warning"
 						class="help dry-run__warning"
 					>
-						<Icon icon="exclamation-circle" /> {{ warning }}
+						<Icon icon="exclamation-circle" /> {{ warningText(step, index) }}
 					</p>
 				</li>
 			</ol>
 			<p
-				v-for="note in result.notes"
+				v-for="(note, index) in result.notes"
 				:key="note"
 				class="help"
 			>
-				{{ note }}
+				{{ noteText(index) }}
 			</p>
 		</div>
 	</section>

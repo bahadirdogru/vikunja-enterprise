@@ -53,13 +53,19 @@ export type AutomationRuleResponse = {
 
 export type AutomationRunStatus = 'running' | 'success' | 'failed' | 'skipped' | 'aborted'
 
+// A sentence of the server as a code with values; the interface says it in the language of the reader.
+export type AutomationMessageResponse = {code: string, params: Record<string, string>}
+
 export type AutomationStepResponse = {
 	id: number
 	position: number
 	action_type: string
 	status: string
 	error: string
+	error_code: string
+	error_params: Record<string, string>
 	output: string
+	output_messages: AutomationMessageResponse[]
 	duration_ms: number
 }
 
@@ -73,6 +79,8 @@ export type AutomationRunResponse = {
 	status: AutomationRunStatus | string
 	skip_reason: string
 	error: string
+	error_code: string
+	error_params: Record<string, string>
 	depth: number
 	started: string | null
 	finished: string | null
@@ -82,8 +90,28 @@ export type AutomationRunResponse = {
 export type DryRunResponse = {
 	task_id: number
 	conditions_met: boolean
-	steps: {position: number, type: string, summary: string, warnings: string[], error: string, stops: boolean}[]
+	steps: DryRunStepResponse[]
 	notes: string[]
+	note_messages: AutomationMessageResponse[]
+}
+
+export type DryRunStepResponse = {
+	position: number
+	type: string
+	summary: string
+	warnings: string[]
+	error: string
+	stops: boolean
+	summary_message?: AutomationMessageResponse
+	warning_messages: AutomationMessageResponse[]
+	error_code: string
+	error_params: Record<string, string>
+}
+
+type MessageLike = {code?: string, params?: Record<string, string>}
+
+function normalizeMessage(message: MessageLike): AutomationMessageResponse {
+	return {code: message.code ?? '', params: message.params ?? {}}
 }
 
 // The API sends Go zero times for "never".
@@ -157,7 +185,10 @@ function normalizeStep(step: AutomationRunStep): AutomationStepResponse {
 		action_type: step.action_type ?? '',
 		status: step.status ?? '',
 		error: step.error ?? '',
+		error_code: step.error_code ?? '',
+		error_params: step.error_params ?? {},
 		output: step.output ?? '',
+		output_messages: (step.output_messages ?? []).map(normalizeMessage),
 		duration_ms: step.duration_ms ?? 0,
 	}
 }
@@ -173,6 +204,8 @@ export function normalizeRun(run: AutomationRun): AutomationRunResponse {
 		status: run.status ?? '',
 		skip_reason: run.skip_reason ?? '',
 		error: run.error ?? '',
+		error_code: run.error_code ?? '',
+		error_params: run.error_params ?? {},
 		depth: run.depth ?? 0,
 		started: dateOrNull(run.started),
 		finished: dateOrNull(run.finished),
@@ -191,8 +224,13 @@ function normalizeDryRun(result: DryRunResult): DryRunResponse {
 			warnings: step.warnings ?? [],
 			error: step.error ?? '',
 			stops: step.stops ?? false,
+			summary_message: step.summary_message ? normalizeMessage(step.summary_message) : undefined,
+			warning_messages: (step.warning_messages ?? []).map(normalizeMessage),
+			error_code: step.error_code ?? '',
+			error_params: step.error_params ?? {},
 		})),
 		notes: result.notes ?? [],
+		note_messages: (result.note_messages ?? []).map(normalizeMessage),
 	}
 }
 

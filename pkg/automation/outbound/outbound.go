@@ -37,6 +37,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -105,6 +106,9 @@ type Response struct {
 // BlockedError is returned when the guard refused the address.
 type BlockedError struct{ Err error }
 
+// CodeBlocked is the code of a refused address, see InvalidError.Code.
+const CodeBlocked = "address_blocked"
+
 func (e *BlockedError) Error() string {
 	return "the address is not allowed (private, loopback, link-local or otherwise not publicly routable)"
 }
@@ -112,31 +116,36 @@ func (e *BlockedError) Unwrap() error { return e.Err }
 
 // InvalidError is a request that cannot be sent as it is (bad URL, scheme, header, too large). It is a failure of
 // the rule, not a temporary one.
-type InvalidError struct{ Msg string }
+type InvalidError struct {
+	Msg string
+	// Code names the sentence for a client that translates it, Params are the values it mentions.
+	Code   string
+	Params map[string]string
+}
 
 func (e *InvalidError) Error() string { return e.Msg }
 
-func invalid(format string, args ...any) error {
-	return &InvalidError{Msg: fmt.Sprintf(format, args...)}
+func invalid(code string, params map[string]string, format string, args ...any) error {
+	return &InvalidError{Msg: fmt.Sprintf(format, args...), Code: code, Params: params}
 }
 
 // ValidateURL checks what can be checked without connecting: the scheme and the presence of a host.
 func ValidateURL(raw string) (*url.URL, error) {
 	u, err := url.Parse(strings.TrimSpace(raw))
 	if err != nil {
-		return nil, invalid("the URL is not valid")
+		return nil, invalid("url_invalid", nil, "the URL is not valid")
 	}
 	if u.Scheme != "http" && u.Scheme != "https" {
-		return nil, invalid("only http and https URLs are allowed")
+		return nil, invalid("url_scheme", nil, "only http and https URLs are allowed")
 	}
 	if u.Hostname() == "" {
-		return nil, invalid("the URL has no host")
+		return nil, invalid("url_no_host", nil, "the URL has no host")
 	}
 	if u.User != nil {
-		return nil, invalid("credentials in the URL are not allowed, use a header")
+		return nil, invalid("url_credentials", nil, "credentials in the URL are not allowed, use a header")
 	}
 	if targetsOwnHooks(u) {
-		return nil, invalid("the URL is an incoming webhook of this server: a rule cannot start rules through a request")
+		return nil, invalid("url_own_webhook", nil, "the URL is an incoming webhook of this server: a rule cannot start rules through a request")
 	}
 	return u, nil
 }
@@ -195,10 +204,10 @@ func Do(ctx context.Context, r *Request) (*Response, error) {
 	switch method {
 	case http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodHead:
 	default:
-		return nil, invalid("the method %q is not allowed", r.Method)
+		return nil, invalid("method_not_allowed", map[string]string{"method": r.Method}, "the method %q is not allowed", r.Method)
 	}
 	if r.MaxRequest > 0 && len(r.Body) > r.MaxRequest {
-		return nil, invalid("the request body is larger than %d bytes", r.MaxRequest)
+		return nil, invalid("body_too_large", map[string]string{"max": strconv.Itoa(r.MaxRequest)}, "the request body is larger than %d bytes", r.MaxRequest)
 	}
 
 	timeout := config.AutomationHTTPTimeout.GetDuration()
@@ -218,7 +227,7 @@ func Do(ctx context.Context, r *Request) (*Response, error) {
 	u.RawQuery = escapeQuery(u.RawQuery)
 	req, err := http.NewRequestWithContext(ctx, method, u.String(), body)
 	if err != nil {
-		return nil, invalid("the request is not valid")
+		return nil, invalid("request_invalid", nil, "the request is not valid")
 	}
 	req.Header.Set("User-Agent", UserAgent)
 	userHeaders := map[string]bool{}
@@ -239,13 +248,13 @@ func Do(ctx context.Context, r *Request) (*Response, error) {
 	origin := u.Host
 	client.CheckRedirect = func(next *http.Request, via []*http.Request) error {
 		if len(via) > MaxRedirects {
-			return invalid("more than %d redirects", MaxRedirects)
+			return invalid("too_many_redirects", map[string]string{"max": strconv.Itoa(MaxRedirects)}, "more than %d redirects", MaxRedirects)
 		}
 		if next.URL.Scheme != "http" && next.URL.Scheme != "https" {
-			return invalid("redirect to a URL that is not http or https")
+			return invalid("redirect_scheme", nil, "redirect to a URL that is not http or https")
 		}
 		if targetsOwnHooks(next.URL) {
-			return invalid("redirect to an incoming webhook of this server")
+			return invalid("redirect_own_webhook", nil, "redirect to an incoming webhook of this server")
 		}
 		if next.URL.Host != origin {
 			// Whatever the rule put in the headers was meant for the first host only.
@@ -285,12 +294,12 @@ func Do(ctx context.Context, r *Request) (*Response, error) {
 func checkHeader(name, value string) error {
 	for _, c := range name + value {
 		if c == '\r' || c == '\n' || c == 0 {
-			return invalid("the header %q contains a line break", name)
+			return invalid("header_line_break", map[string]string{"header": name}, "the header %q contains a line break", name)
 		}
 	}
 	switch strings.ToLower(name) {
 	case "host", "content-length", "transfer-encoding", "connection", "upgrade":
-		return invalid("the header %q cannot be set", name)
+		return invalid("header_not_allowed", map[string]string{"header": name}, "the header %q cannot be set", name)
 	}
 	return nil
 }

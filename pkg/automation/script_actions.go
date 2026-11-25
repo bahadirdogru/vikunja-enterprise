@@ -50,12 +50,13 @@ func (e *Env) ctx() context.Context {
 func mapScriptError(err error) error {
 	var scriptErr *script.Error
 	if errors.As(err, &scriptErr) {
-		return &ActionError{Msg: scriptErr.Error(), NoBlame: !scriptErr.Blamed()}
+		code, params := errorMessage(scriptErr)
+		return &ActionError{Msg: scriptErr.Error(), NoBlame: !scriptErr.Blamed(), Code: code, Params: params}
 	}
 	return err
 }
 
-var errScriptsDisabled = &ActionError{Msg: "scripts are disabled on this instance (automation.scripts.enabled is false)"}
+var errScriptsDisabled = &ActionError{Msg: "scripts are disabled on this instance (automation.scripts.enabled is false)", Code: "scripts_disabled"}
 
 // scriptInput builds what a script sees of the world: the event, the task as it is now and the project.
 func (e *Env) scriptInput(source string, host script.Host, limits script.Limits, condition bool) (*script.Input, error) {
@@ -107,7 +108,7 @@ func (e *Env) scriptCondition(source string) (bool, error) {
 }
 
 func scriptSummary(res *script.Result, extra []string) string {
-	lines := []string{fmt.Sprintf("script finished in %d ms (%d vikunja calls, %d http requests)", res.Duration.Milliseconds(), res.APICalls, res.HTTPRequests)}
+	lines := []string{scriptFinished(res).text}
 	lines = append(lines, extra...)
 	if res.Log != "" {
 		lines = append(lines, "log:\n"+res.Log)
@@ -118,23 +119,37 @@ func scriptSummary(res *script.Result, extra []string) string {
 	return strings.Join(lines, "\n")
 }
 
+// finishedLine is the first line of the output of a script step, with its code.
+type finishedLine struct {
+	text string
+	msg  *models.AutomationMessage
+}
+
+func scriptFinished(res *script.Result) finishedLine {
+	return finishedLine{
+		text: fmt.Sprintf("script finished in %d ms (%d vikunja calls, %d http requests)", res.Duration.Milliseconds(), res.APICalls, res.HTTPRequests),
+		msg:  say("script_finished", P{"ms": res.Duration.Milliseconds(), "calls": res.APICalls, "requests": res.HTTPRequests}),
+	}
+}
+
 func planScript(env *Env, p params) (*Plan, error) {
 	if !script.Enabled() {
 		return nil, errScriptsDisabled
 	}
 	source := p.str("source")
 	if strings.TrimSpace(source) == "" {
-		return nil, actionErrorf("the script is empty")
+		return nil, actionErr("script_empty", nil, "the script is empty")
 	}
 	if limit := script.MaxSource(); limit > 0 && len(source) > limit {
-		return nil, actionErrorf("the script is %d bytes long, at most %d are allowed", len(source), limit)
+		return nil, actionErr("script_too_long", P{"length": len(source), "max": limit}, "the script is %d bytes long, at most %d are allowed", len(source), limit)
 	}
 	// Loaded before anything runs, so everything the step prints can be checked against the secrets.
 	if err := env.store().load(); err != nil {
 		return nil, err
 	}
 
-	plan := &Plan{Summary: "run a script"}
+	plan := &Plan{}
+	plan.say("run_script", nil, "run a script")
 	// The two phases build their own host: apply the one that writes, preview the one that records. Nothing
 	// else decides.
 	plan.apply = func() (string, error) {
@@ -146,6 +161,7 @@ func planScript(env *Env, p params) (*Plan, error) {
 		if err != nil {
 			return "", env.maskErr(mapScriptError(err))
 		}
+		plan.Lines = []*models.AutomationMessage{scriptFinished(res).msg}
 		return env.maskOutput(scriptSummary(res, nil)), nil
 	}
 	plan.preview = func() (string, []string, error) {
@@ -158,6 +174,7 @@ func planScript(env *Env, p params) (*Plan, error) {
 		if err != nil {
 			return "", nil, env.maskErr(mapScriptError(err))
 		}
+		plan.Lines = []*models.AutomationMessage{scriptFinished(res).msg}
 		return env.maskOutput(scriptSummary(res, host.calls)), nil, nil
 	}
 	return plan, nil
@@ -169,8 +186,10 @@ func httpRequestError(err error) error {
 	var blocked *outbound.BlockedError
 	var invalid *outbound.InvalidError
 	switch {
-	case errors.As(err, &blocked), errors.As(err, &invalid):
-		return &ActionError{Msg: err.Error()}
+	case errors.As(err, &blocked):
+		return &ActionError{Msg: err.Error(), Code: outbound.CodeBlocked}
+	case errors.As(err, &invalid):
+		return &ActionError{Msg: err.Error(), Code: invalid.Code, Params: invalid.Params}
 	}
 	return err
 }
@@ -207,7 +226,7 @@ func planHTTPRequest(env *Env, p params) (*Plan, error) {
 	}
 	rawURL := strings.TrimSpace(renderWith(p.str("url"), env.Sub, &env.Unknown, escaped))
 	if _, err := outbound.ValidateURL(rawURL); err != nil {
-		return nil, &ActionError{Msg: err.Error()}
+		return nil, httpRequestError(err)
 	}
 	method := strings.ToUpper(p.str("method"))
 	if method == "" {
@@ -242,7 +261,7 @@ func planHTTPRequest(env *Env, p params) (*Plan, error) {
 	}
 	for k, v := range headers {
 		if strings.ContainsAny(k+v, "\r\n\x00") {
-			return nil, actionErrorf("the header %q contains a line break", k)
+			return nil, actionErr("header_line_break", P{"header": k}, "the header %q contains a line break", k)
 		}
 	}
 
@@ -251,7 +270,7 @@ func planHTTPRequest(env *Env, p params) (*Plan, error) {
 		names = append(names, k)
 	}
 	sort.Strings(names)
-	plan.Summary = fmt.Sprintf("send %s %s with %d bytes of body and the headers %s", method, rawURL, len(body), strings.Join(names, ", "))
+	plan.say("send_request", P{"method": method, "url": rawURL, "bytes": len(body), "headers": strings.Join(names, ", ")}, "send %s %s with %d bytes of body and the headers %s", method, rawURL, len(body), strings.Join(names, ", "))
 
 	plan.apply = func() (string, error) {
 		resp, err := outbound.Do(env.ctx(), &outbound.Request{
@@ -265,6 +284,7 @@ func planHTTPRequest(env *Env, p params) (*Plan, error) {
 		if err != nil {
 			return "", env.maskErr(httpRequestError(err))
 		}
+		plan.rawOutput = true
 		snippet := strings.TrimSpace(string(resp.Body))
 		if resp.Truncated {
 			snippet += "\n[answer truncated]"
@@ -275,7 +295,7 @@ func planHTTPRequest(env *Env, p params) (*Plan, error) {
 			// The other side has a problem: worth trying again later.
 			return "", env.maskErr(fmt.Errorf("%s\n%s", line, snippet))
 		case resp.Status >= 400:
-			return "", env.maskErr(&ActionError{Msg: line + "\n" + snippet})
+			return "", env.maskErr(&ActionError{Msg: line + "\n" + snippet, Code: "request_failed", Params: map[string]string{"status": strconv.Itoa(resp.Status), "response": line + "\n" + snippet}})
 		}
 		return line + "\n" + snippet, nil
 	}

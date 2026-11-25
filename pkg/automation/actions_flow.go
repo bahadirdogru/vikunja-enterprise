@@ -46,21 +46,21 @@ func planCreateStandaloneTask(env *Env, p params) (*Plan, error) {
 	description := env.render(p.str("description"))
 	renderedWarning(env, plan, unknownBefore)
 	if title == "" {
-		return nil, actionErrorf("the title would be empty")
+		return nil, actionErr("title_empty", nil, "the title would be empty")
 	}
 
 	created := &models.Task{Title: title, Description: description, ProjectID: env.Rule.ProjectID}
 	if p.has("priority") {
 		f, ok := spec.ToFloat64(p["priority"])
 		if !ok || f < 0 || f > 5 || f != float64(int64(f)) {
-			return nil, actionErrorf("the priority must be a whole number from 0 to 5")
+			return nil, actionErr("priority_invalid", nil, "the priority must be a whole number from 0 to 5")
 		}
 		created.Priority = int64(f)
 	}
 	if p.has("due_offset") {
 		offset, err := spec.ParseOffset(p.str("due_offset"))
 		if err != nil {
-			return nil, actionErrorf("%s", err.Error())
+			return nil, actionErr("invalid_duration", P{"value": p.str("due_offset")}, "%s", err.Error())
 		}
 		created.DueDate = env.Now.Add(offset)
 	}
@@ -83,7 +83,7 @@ func planCreateStandaloneTask(env *Env, p params) (*Plan, error) {
 		return nil, models.ErrGenericForbidden{}
 	}
 
-	plan.Summary = fmt.Sprintf("create the task %q", title)
+	plan.say("create_task", P{"title": title}, "create the task %q", title)
 	plan.apply = func() (string, error) {
 		if err := created.Create(env.S, env.Auth); err != nil {
 			return "", err
@@ -103,22 +103,20 @@ func planCreateStandaloneTask(env *Env, p params) (*Plan, error) {
 func planWait(env *Env, p params) (*Plan, error) {
 	d, err := spec.ParseOffset(p.str("duration"))
 	if err != nil {
-		return nil, actionErrorf("%s", err.Error())
+		return nil, actionErr("invalid_duration", P{"value": p.str("duration")}, "%s", err.Error())
 	}
 	if d < spec.MinWait {
-		return nil, actionErrorf("the wait must be at least 1m")
+		return nil, actionErr("wait_too_short", nil, "the wait must be at least 1m")
 	}
 	if maxWait := config.AutomationWaitMax.GetDuration(); maxWait > 0 && d > maxWait {
-		return nil, actionErrorf("the wait is longer than the %s this server allows", maxWait)
+		return nil, actionErr("wait_too_long", P{"max": maxWait}, "the wait is longer than the %s this server allows", maxWait)
 	}
 	resumeAt := env.Now.Add(d)
-	plan := &Plan{
-		Summary: fmt.Sprintf("would wait %s (until %s), then continue with the next actions", p.str("duration"), resumeAt.UTC().Format(time.RFC3339)),
-		Wait:    d,
-	}
+	plan := &Plan{Wait: d}
+	plan.say("would_wait", P{"duration": p.str("duration"), "until": resumeAt.UTC().Format(time.RFC3339)}, "would wait %s (until %s), then continue with the next actions", p.str("duration"), resumeAt.UTC().Format(time.RFC3339))
 	plan.apply = func() (string, error) {
 		if env.RunID == 0 || env.Event == nil {
-			return "", actionErrorf("a wait needs a run")
+			return "", actionErr("wait_needs_run", nil, "a wait needs a run")
 		}
 		// Every waiting run has a resume event that is not done yet: they are what a project may not pile up.
 		limit := int64(config.AutomationMaxPendingWaits.GetInt())
@@ -130,7 +128,7 @@ func planWait(env *Env, p params) (*Plan, error) {
 			return "", err
 		}
 		if limit > 0 && waiting >= limit {
-			return "", actionErrorf("%d runs of this project are waiting already, which is the most this server allows (automation.maxpendingwaits)", waiting)
+			return "", actionErr("too_many_waits", P{"count": waiting}, "%d runs of this project are waiting already, which is the most this server allows (automation.maxpendingwaits)", waiting)
 		}
 		payload := *env.Event
 		payload.RuleID = env.Rule.ID
@@ -152,6 +150,7 @@ func planWait(env *Env, p params) (*Plan, error) {
 		if _, err := env.S.Insert(row); err != nil {
 			return "", err
 		}
+		plan.Lines = []*models.AutomationMessage{say("wait_until", P{"until": resumeAt.UTC().Format(time.RFC3339)})}
 		return waitOutput + resumeAt.UTC().Format(time.RFC3339), nil
 	}
 	return plan, nil
@@ -164,7 +163,7 @@ func planNotify(env *Env, p params) (*Plan, error) {
 	message := strings.TrimSpace(env.render(p.str("message")))
 	renderedWarning(env, plan, unknownBefore)
 	if message == "" {
-		return nil, actionErrorf("the message would be empty")
+		return nil, actionErr("message_empty", nil, "the message would be empty")
 	}
 	if len(message) > 1000 {
 		message = message[:1000]
@@ -201,7 +200,7 @@ func planNotify(env *Env, p params) (*Plan, error) {
 			return nil, err
 		}
 		if !can {
-			return nil, actionErrorf("the team does not exist or the owner of the rule cannot see it")
+			return nil, actionErr("team_not_visible", nil, "the team does not exist or the owner of the rule cannot see it")
 		}
 		members := []int64{}
 		if err := env.S.Table("team_members").Where("team_id = ?", teamID).OrderBy("id ASC").Cols("user_id").Find(&members); err != nil {
@@ -222,7 +221,7 @@ func planNotify(env *Env, p params) (*Plan, error) {
 	}
 
 	if len(ids) > maxNotifyRecipients {
-		plan.Warnings = append(plan.Warnings, fmt.Sprintf("%d recipients, only the first %d are notified", len(ids), maxNotifyRecipients))
+		plan.warn("too_many_recipients", P{"count": len(ids), "max": maxNotifyRecipients}, "%d recipients, only the first %d are notified", len(ids), maxNotifyRecipients)
 		ids = ids[:maxNotifyRecipients]
 	}
 	targets := []*user.User{}
@@ -247,12 +246,12 @@ func planNotify(env *Env, p params) (*Plan, error) {
 		targets = append(targets, target)
 	}
 	if len(targets) == 0 {
-		return nil, actionErrorf("nobody to notify: the recipients are empty, unknown or cannot read the project")
+		return nil, actionErr("nobody_to_notify", nil, "nobody to notify: the recipients are empty, unknown or cannot read the project")
 	}
 
-	plan.Summary = fmt.Sprintf("notify %d user(s): %q", len(targets), message)
+	plan.say("notify", P{"count": len(targets), "message": message}, "notify %d user(s): %q", len(targets), message)
 	if skipped > 0 {
-		plan.Warnings = append(plan.Warnings, fmt.Sprintf("%d recipient(s) skipped: unknown or without access to the project", skipped))
+		plan.warn("recipients_skipped", P{"count": skipped}, "%d recipient(s) skipped: unknown or without access to the project", skipped)
 	}
 	plan.apply = func() (string, error) {
 		// The notification is persisted in the transaction of the step. Its mail is queued by the AfterInsert of the

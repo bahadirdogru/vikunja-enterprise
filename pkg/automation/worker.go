@@ -293,7 +293,7 @@ func causeFor(cause error, ruleID int64) error {
 		return err
 	}
 	// The rule's own run did not fail this time: it has no error that could blame it.
-	return &ActionError{Msg: "the event was given up after its retries ran out (another rule of it kept failing: " + re.first.Error() + ")", NoBlame: true}
+	return &ActionError{Msg: "the event was given up after its retries ran out (another rule of it kept failing: " + re.first.Error() + ")", NoBlame: true, Code: "retries_given_up", Params: map[string]string{"message": re.first.Error()}}
 }
 
 // renewLock gives the worker of a claimed event the lock duration again. The lock covers one run timeout, and every

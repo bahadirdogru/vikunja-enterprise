@@ -16,6 +16,7 @@ import {
 } from '@/client/queries/automation'
 import {actionDef, catalogLabel, humanize, type CatalogResponse} from '@/helpers/automation'
 import {formatDateLong, formatDateSince} from '@/helpers/time/formatDate'
+import {automationCodeText, automationOutput} from '@/helpers/automationMessages'
 
 const props = defineProps<{
 	projectId: number
@@ -85,6 +86,11 @@ function skipReason(run: AutomationRunResponse): string {
 	if (run.skip_reason === '') return ''
 	const key = `automation.skipReason.${run.skip_reason}`
 	return te(key) ? t(key) : humanize(run.skip_reason)
+}
+
+// The reason a run or a step failed, said in the language of the reader when the server sent a code for it.
+function failure(item: {error: string, error_code?: string, error_params?: {[key: string]: string}}): string {
+	return automationCodeText(item.error_code, item.error_params, item.error)
 }
 
 function stepTitle(type: string): string {
@@ -262,7 +268,7 @@ const totalPages = computed(() => runs.data.value?.total_pages ?? 1)
 					class="help is-danger"
 					role="alert"
 				>
-					{{ selected.error }}
+					{{ failure(selected) }}
 				</p>
 				<p
 					v-if="skipReason(selected)"
@@ -291,14 +297,23 @@ const totalPages = computed(() => runs.data.value?.total_pages ?? 1)
 							v-if="step.error"
 							class="help is-danger"
 						>
-							{{ step.error }}
+							{{ failure(step) }}
 						</p>
-						<pre
-							v-if="step.output"
-							class="run-detail__output"
-							tabindex="0"
-							:aria-label="$t('automation.runs.output')"
-						>{{ step.output }}</pre>
+						<template v-if="step.output">
+							<p
+								v-for="sentence in automationOutput(step.output, step.output_messages).sentences"
+								:key="sentence"
+								class="help"
+							>
+								{{ sentence }}
+							</p>
+							<pre
+								v-if="automationOutput(step.output, step.output_messages).rest"
+								class="run-detail__output"
+								tabindex="0"
+								:aria-label="$t('automation.runs.output')"
+							>{{ automationOutput(step.output, step.output_messages).rest }}</pre>
+						</template>
 					</li>
 				</ol>
 			</template>

@@ -280,10 +280,11 @@ func ReapStuckAutomationRuns(s *xorm.Session, now time.Time) (int64, error) {
 		if !run.Started.Before(now.Add(-(time.Duration(max(waits, 1))*maxWait + automationStuckRunGrace))) {
 			continue
 		}
-		n, err := s.Where(builder.Eq{"id": run.ID, "status": AutomationRunRunning}).Cols("status", "error", "finished").NoAutoTime().Update(&AutomationRun{
-			Status:   AutomationRunFailed,
-			Error:    "the run did not finish in time and was ended: it was waiting longer than automation.waitmax allows",
-			Finished: now,
+		n, err := s.Where(builder.Eq{"id": run.ID, "status": AutomationRunRunning}).Cols("status", "error", "error_code", "error_params", "finished").NoAutoTime().Update(&AutomationRun{
+			Status:    AutomationRunFailed,
+			Error:     "the run did not finish in time and was ended: it was waiting longer than automation.waitmax allows",
+			ErrorCode: "run_timed_out",
+			Finished:  now,
 		})
 		if err != nil {
 			return reaped, err

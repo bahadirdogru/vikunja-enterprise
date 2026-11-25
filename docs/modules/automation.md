@@ -19,6 +19,7 @@ The engine is still one process: no Redis, no worker container. Delivery is **at
 - **Event** (`automation_events`): the outbox row. Model events of a project (`task.created`, ...) are written in the same transaction as the change; time, manual, webhook and resume events are written for **one rule** (`rule_id`). Status `pending`, `processing`, `done` or `dead`.
 - **Run** (`automation_runs`): one rule handling one event. Status `running` (also while waiting for a retry or a wait), `success`, `failed`, `skipped` (a limit or the conditions stopped it, see `skip_reason`) or `aborted` (the owner may no longer run the rule, or the rule changed under a resumed run).
 - **Step** (`automation_run_steps`): one action of a run, with status, error, output (cut to 16 KiB) and duration.
+- **Messages in the reader's language.** What the server says about a run is an English sentence for readers of the API and, next to it, a stable code with values for the interface, which translates it (`automation.messages.<code>` in `en.json` and `tr-TR.json`). A run and a step have `error_code` and `error_params` next to `error` (a code is a short name such as `title_empty` or `script_thrown`, or the number of an API error such as `4002`, which the interface looks up like any API error). A step has `output_messages`: one `{code, params}` per leading line of `output` that the server wrote itself (what the step did, its warnings); the lines after them are data (a script log, an HTTP answer) and are shown as they are. A test run (`POST .../test`) has `summary_message`, `warning_messages`, `error_code` and `error_params` on each step and `note_messages` on the result. A client that does not know a code shows the English text; rows written before the codes existed have none. Text that cannot be coded stays as it is and is framed by a translated sentence ("Betik hatası: …" for the exception of a script, the answer of the other server for a failed request). The fields are additive; nothing was removed or renamed.
 - **Catalog**: the machine-readable list of triggers, condition fields, operators and actions with parameter schemas, served by `GET /api/v2/automations/catalog`. The visual editor is generated from it.
 - **Skip reasons**: `max_depth`, `self_trigger`, `rate_limit`, `conditions_not_met`, `task_not_found`, `rule_disabled`, `owner_not_admin`, `owner_unavailable`, `too_many_actions`, `rule_changed`.
 
@@ -314,6 +315,7 @@ erDiagram
         bigint event_id
         string status
         string skip_reason
+        string error_code
         bigint depth
         datetime started
         datetime finished
@@ -324,6 +326,7 @@ erDiagram
         bigint position
         string action_type
         string status
+        string error_code
         text output
         bigint duration_ms
     }
