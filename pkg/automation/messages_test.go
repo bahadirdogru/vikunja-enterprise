@@ -398,3 +398,14 @@ func TestSentencesStayTheLeadingLinesOfTheOutput(t *testing.T) {
 		assert.Contains(t, steps[0].Output, "line two")
 	})
 }
+
+func TestTruncateCutsOnACharacterBoundary(t *testing.T) {
+	text := strings.Repeat("ş", 3000) // two bytes each
+	for _, n := range []int{4000, 4001, 1, 2, 3} {
+		cut := truncate(text, n)
+		assert.True(t, utf8.ValidString(cut), "cut at %d bytes", n)
+		assert.LessOrEqual(t, len(cut), n)
+	}
+	assert.Equal(t, "kısa", truncate("kısa", 4000))
+	assert.Equal(t, "", truncate("ş", 1))
+}

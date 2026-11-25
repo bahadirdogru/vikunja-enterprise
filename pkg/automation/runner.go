@@ -22,6 +22,7 @@ import (
 	"slices"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"code.vikunja.io/api/pkg/automation/script"
 	"code.vikunja.io/api/pkg/automation/spec"
@@ -68,6 +69,10 @@ func dbTime(t time.Time) string {
 func truncate(s string, n int) string {
 	if len(s) <= n {
 		return s
+	}
+	// Cut on a character boundary: half of a multi-byte character is not valid UTF-8, and PostgreSQL refuses to store it.
+	for n > 0 && !utf8.RuneStart(s[n]) {
+		n--
 	}
 	return s[:n]
 }
