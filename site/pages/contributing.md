@@ -11,7 +11,7 @@ The guide for contributors and agents is [`.agents/docs/fork.md`](../../.agents/
 - **Stay mergeable.** The fork must always be able to merge upstream's `main`. Put fork code in fork-owned packages and files, touch upstream-owned files as little as possible, and list every upstream-owned file a change touched.
 - **Translations.** `en.json` and `tr-TR.json` are kept complete and identical in keys, by hand, in the same commit as the change.
 - **Documentation.** A change that alters behaviour updates the module page in `docs/modules/`, `API.md` when the API changed, `config-raw.json` for configuration keys, and the log in the roadmap.
-- **Databases.** Raw SQL and migrations must run on the minimum database versions that upstream documents. Test on SQLite, PostgreSQL and MySQL before merging anything that touches models, migrations or SQL.
+- **Databases.** Raw SQL and migrations must run on the minimum database versions that upstream documents. Test on SQLite and PostgreSQL before merging anything that touches models, migrations or SQL.
 
 ## This website
 

@@ -159,7 +159,7 @@ docker run -d --name vikunja \
   ghcr.io/bahadirdogru/vikunja-enterprise:main</code></pre>
 <p>CI publishes the image with <code>.github/workflows/enterprise-docker.yml</code>: the tags <code>main</code> and <code>sha-&lt;short&gt;</code> on pushes to <code>main</code>, and <code>&lt;tag&gt;</code> plus <code>latest</code> for tags that start with <code>e</code>.</p>
 <ul>
-<li><strong>Database.</strong> Without further settings the image uses SQLite at <code>/db/vikunja.db</code> (<code>VIKUNJA_DATABASE_PATH</code>), so mount <code>/db</code> and make it writable for user <code>1000</code>. For MySQL or PostgreSQL set <code>VIKUNJA_DATABASE_TYPE</code> and the connection settings. The fork is tested on PostgreSQL 18 and 19 and on MySQL 8; for PostgreSQL, 18 or newer is recommended. Upstream's documented minimum versions still apply to the code but are not tested here.</li>
+<li><strong>Database.</strong> Without further settings the image uses SQLite at <code>/db/vikunja.db</code> (<code>VIKUNJA_DATABASE_PATH</code>), so mount <code>/db</code> and make it writable for user <code>1000</code>. For PostgreSQL set <code>VIKUNJA_DATABASE_TYPE</code> and the connection settings. The fork is tested and supported on SQLite and on PostgreSQL (18 and 19; 18 or newer is recommended). MySQL and MariaDB are compatible by design, as in upstream: the code avoids engine-specific SQL, but the fork does not test them and gives no guarantee. Upstream's documented minimum versions still apply to the code but are not tested here.</li>
 <li><strong>Files.</strong> Attachments go to <code>files</code> (<code>files.basepath</code>) relative to the root path, which the image sets to <code>/app/vikunja/</code>.</li>
 <li><strong>Secret.</strong> Set <code>service.secret</code>. It signs tokens, and if it is unset a random one is generated at every start, which invalidates all issued tokens on each restart. Project secrets of automation rules are encrypted with it as well, so changing it makes them unreadable until they are set again.</li>
 <li><strong>Public URL.</strong> Set <code>service.publicurl</code> to the address people really use. Incoming webhook addresses and e-mail links are built from it. Public forms are served from <code>/forms/&lt;token&gt;</code> on the same origin.</li>
@@ -201,8 +201,7 @@ docker run -d --name vikunja \
 <div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Database</th><th scope="col">Status in this fork</th></tr></thead><tbody>
 <tr><td>SQLite</td><td>The default and the simplest choice for a small group. The backend test suites pass on it.</td></tr>
 <tr><td>PostgreSQL</td><td>Tested on 18 and 19; 18 or newer is recommended.</td></tr>
-<tr><td>MySQL</td><td>Tested on 8.</td></tr>
-<tr><td>MariaDB</td><td>Supported by upstream; not tested in this fork.</td></tr>
+<tr><td>MySQL, MariaDB</td><td>Compatible by design, not guaranteed. The fork's code follows upstream's rules for portable SQL, and its suites passed on MySQL 8 until November 2026, but they are no longer run there. Use it at your own risk and test before upgrading.</td></tr>
 <tr><td>Older versions</td><td>Upstream documents lower minimum versions. The code is written for them, but they are not tested here.</td></tr>
 </tbody></table></div>
 <p>Which suites were run on which database, and when, is recorded in the <a href="roadmap.html">roadmap</a>; that page is the source of truth, not this table. Raw SQL and migrations in the fork follow upstream's <a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/.agents/docs/databases.md">supported databases</a>.</p>
@@ -234,7 +233,7 @@ docker run -d --name vikunja \
 <h2 id="backups">Backups <a class="anchor" href="#backups" aria-label="Link to this section: Backups">#</a></h2>
 <p>Back up three things together, and keep the secret with them:</p>
 <ul>
-<li><strong>The database.</strong> For SQLite, stop the container and copy the file (or use <code>sqlite3 vikunja.db &quot;.backup backup.db&quot;</code> on a running instance). For PostgreSQL use <code>pg_dump</code>, for MySQL <code>mysqldump</code>.</li>
+<li><strong>The database.</strong> For SQLite, stop the container and copy the file (or use <code>sqlite3 vikunja.db &quot;.backup backup.db&quot;</code> on a running instance). For PostgreSQL use <code>pg_dump</code>.</li>
 <li><strong>The files directory</strong> (<code>/app/vikunja/files</code>), which holds attachments.</li>
 <li><strong>Your settings</strong>, in particular <code>service.secret</code>. It signs login tokens, and the encrypted project secrets of <a href="modules/automation.html">automation</a> rules are encrypted with a key derived from it. A restored database with a different secret cannot read them.</li>
 </ul>

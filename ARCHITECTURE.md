@@ -65,7 +65,7 @@ flowchart LR
 What the picture says:
 
 - **One process.** There is no separate worker container and no queue server. Durable background work is a table in the main database (the automation outbox), and the workers are goroutines in the same process.
-- **Database.** SQLite (the image default, a file under `/db`), MySQL or MariaDB, or PostgreSQL, chosen with `database.type`. All three are supported by every query and migration of the fork. See [Database portability and migrations](#database-portability-and-migrations).
+- **Database.** SQLite (the image default, a file under `/db`), or PostgreSQL, chosen with `database.type`. These two are tested and supported. MySQL and MariaDB are compatible by design: every query and migration of the fork is written to run on them, but the fork does not test them. See [Database portability and migrations](#database-portability-and-migrations).
 - **Files.** Attachments, avatars and form logos go to the configured file backend (`files.type`: `local` or `s3`). A form logo is stored as a normal file and referenced by `forms.brand_logo_file_id`.
 - **Optional pieces.** SMTP (`mailer.*`) for e-mail notifications, Redis (`keyvalue.type`, `redis.*`) for the key-value store and rate-limit counters, Prometheus metrics (`metrics.*`), and Sentry. None is required. The automation metrics `vikunja_automation_runs_total` and `vikunja_automation_events` exist only with `metrics.enabled`.
 - **Outbound traffic** from automation (`http.request`, `http.fetch`) and from upstream's user webhooks goes through the same SSRF-protected HTTP client (`outgoingrequests.*`).
@@ -402,7 +402,7 @@ The other public paths (`/info`, `/health`, the OpenAPI document, the docs page,
 
 ## Database portability and migrations
 
-All three engines are supported by every query and migration of the fork. The documented minimum versions (from [.agents/docs/databases.md](.agents/docs/databases.md)) are MySQL 8.0, MariaDB 10.2, PostgreSQL 9.5 and SQLite 3.25. They come from hand-written SQL in the code, not from a startup check, and CI tests only the newest versions. Which databases the fork's own suites have been run on is recorded in the [roadmap](docs/enterprise/ROADMAP.md).
+Every query and migration of the fork is written to run on all three engines. The fork tests and supports SQLite and PostgreSQL; MySQL and MariaDB are kept compatible by the rules below but are not tested and not guaranteed. The documented minimum versions (from [.agents/docs/databases.md](.agents/docs/databases.md)) are MySQL 8.0, MariaDB 10.2, PostgreSQL 9.5 and SQLite 3.25. They come from hand-written SQL in the code, not from a startup check, and CI tests only the newest versions. Which databases the fork's own suites have been run on is recorded in the [roadmap](docs/enterprise/ROADMAP.md).
 
 Rules the fork follows:
 

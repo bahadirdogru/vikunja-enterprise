@@ -152,7 +152,7 @@
 <li><strong>Stay mergeable.</strong> The fork must always be able to merge upstream's <code>main</code>. Put fork code in fork-owned packages and files, touch upstream-owned files as little as possible, and list every upstream-owned file a change touched.</li>
 <li><strong>Translations.</strong> <code>en.json</code> and <code>tr-TR.json</code> are kept complete and identical in keys, by hand, in the same commit as the change.</li>
 <li><strong>Documentation.</strong> A change that alters behaviour updates the module page in <code>docs/modules/</code>, <code>API.md</code> when the API changed, <code>config-raw.json</code> for configuration keys, and the log in the roadmap.</li>
-<li><strong>Databases.</strong> Raw SQL and migrations must run on the minimum database versions that upstream documents. Test on SQLite, PostgreSQL and MySQL before merging anything that touches models, migrations or SQL.</li>
+<li><strong>Databases.</strong> Raw SQL and migrations must run on the minimum database versions that upstream documents. Test on SQLite and PostgreSQL before merging anything that touches models, migrations or SQL.</li>
 </ul>
 <h2 id="this-website">This website <a class="anchor" href="#this-website" aria-label="Link to this section: This website">#</a></h2>
 <p>The site is generated from the Markdown documents of the repository by a small script, so a documentation fix is a Markdown edit. See <a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/site/README.md"><code>site/README.md</code></a> for the one command that regenerates <code>docs/</code>.</p>

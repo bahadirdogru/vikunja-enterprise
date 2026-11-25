@@ -24,7 +24,7 @@ That is an aim, not a claim. The fork is a development project and has not reach
 "True to the spirit of Vikunja" means, in practice:
 
 - **A small difference to upstream.** New features live in their own packages, files and database tables. Upstream files are touched as little as possible so that upstream changes can still be merged. See [ARCHITECTURE.md](ARCHITECTURE.md#repository-and-package-map).
-- **The same stack.** Go and xorm on the backend, Vue 3 and TypeScript on the frontend, SQLite, MySQL/MariaDB or PostgreSQL. No new service is required.
+- **The same stack.** Go and xorm on the backend, Vue 3 and TypeScript on the frontend, SQLite or PostgreSQL; MySQL and MariaDB stay compatible by design but are not tested. No new service is required.
 - **The same permission model.** Everything the fork adds is gated by the existing project rights (read, write, admin), link shares and API token scopes. Nothing runs with more rights than the person who set it up has. See [ARCHITECTURE.md](ARCHITECTURE.md#permission-model).
 - **Self-hosted, one binary.** One image, one process, the API and the web app on port `3456`. Background work uses a database outbox inside the same process, not a queue server or a worker container.
 - **AGPL.** The code is licensed [AGPL-3.0-or-later](LICENSE), as upstream.
@@ -63,7 +63,7 @@ docker run -d --name vikunja \
 
 CI publishes the image with `.github/workflows/enterprise-docker.yml`: the tags `main` and `sha-<short>` on pushes to `main`, and `<tag>` plus `latest` for tags that start with `e`.
 
-- **Database.** Without further settings the image uses SQLite at `/db/vikunja.db` (`VIKUNJA_DATABASE_PATH`), so mount `/db` and make it writable for user `1000`. For MySQL or PostgreSQL set `VIKUNJA_DATABASE_TYPE` and the connection settings. The fork is tested on PostgreSQL 18 and 19 and on MySQL 8; for PostgreSQL, 18 or newer is recommended. Upstream's documented minimum versions still apply to the code but are not tested here.
+- **Database.** Without further settings the image uses SQLite at `/db/vikunja.db` (`VIKUNJA_DATABASE_PATH`), so mount `/db` and make it writable for user `1000`. For PostgreSQL set `VIKUNJA_DATABASE_TYPE` and the connection settings. The fork is tested and supported on SQLite and on PostgreSQL (18 and 19; 18 or newer is recommended). MySQL and MariaDB are compatible by design, as in upstream: the code avoids engine-specific SQL, but the fork does not test them and gives no guarantee. Upstream's documented minimum versions still apply to the code but are not tested here.
 - **Files.** Attachments go to `files` (`files.basepath`) relative to the root path, which the image sets to `/app/vikunja/`.
 - **Secret.** Set `service.secret`. It signs tokens, and if it is unset a random one is generated at every start, which invalidates all issued tokens on each restart. Project secrets of automation rules are encrypted with it as well, so changing it makes them unreadable until they are set again.
 - **Public URL.** Set `service.publicurl` to the address people really use. Incoming webhook addresses and e-mail links are built from it. Public forms are served from `/forms/<token>` on the same origin.

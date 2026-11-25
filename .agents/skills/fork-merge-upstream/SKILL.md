@@ -41,7 +41,7 @@ description: Merge upstream Vikunja (`upstream/main`) into this fork and bring t
 7. **Verify.**
    - `go build ./...`
    - for a small merge that does not touch the fork's areas: the tests of the packages upstream changed (`mage test:filter`);
-   - otherwise the full suites, and the three-database matrix (`fork-db-matrix` skill) when models, migrations or SQL changed;
+   - otherwise the full suites, and the SQLite and PostgreSQL runs (`fork-db-matrix` skill) when models, migrations or SQL changed;
    - frontend when it changed: `pnpm lint`, `vue-tsc --noEmit`, `vitest`.
 
 8. **Push** the merge as its own push, separate from feature work, so a problem can be traced to it.

@@ -26,12 +26,12 @@ The fork must always be able to merge `upstream/main`. Every change is judged by
 ## Things that bite on this code base
 
 - Plain `go test` does not work; tests run through `mage` (see [testing.md](testing.md)).
-- The Go test cache ignores `VIKUNJA_DATABASE_*`. When running against PostgreSQL or MySQL, set `GOFLAGS=-count=1` or you get cached results of another database.
+- The Go test cache ignores `VIKUNJA_DATABASE_*`. When running against PostgreSQL, set `GOFLAGS=-count=1` or you get cached results of another database.
 - Generators and tests need `LC_ALL=C` on machines with a Turkish locale; otherwise generated identifiers contain a dotless `ı`.
-- MySQL limits identifiers to 64 characters, including the index names xorm derives from struct tags. Name long indexes explicitly.
+- The fork tests SQLite and PostgreSQL. MySQL and MariaDB are not tested and not guaranteed, but the code must stay compatible with them by construction: no engine-specific SQL, and no identifier longer than 64 characters, including the index names xorm derives from struct tags (name long indexes explicitly).
 - PostgreSQL aborts the transaction after a failed statement. Code that expects an insert to fail (a unique index used as a guard) must do its follow-up read in a new session.
 - Two code paths that lock the same rows must lock them in the same order. In approvals the order is task, then request.
-- A test that passes on SQLite says little about locking, identifier limits or transaction behaviour. Run the three-database matrix (`fork-db-matrix` skill) before merging anything that touches models, migrations or SQL.
+- A test that passes on SQLite says little about locking, identifier limits or transaction behaviour. Run the suites on SQLite and PostgreSQL (`fork-db-matrix` skill) before merging anything that touches models, migrations or SQL.
 - Tests of the script processes in `pkg/automation/script` are timing-sensitive. Do not run two test suites at the same time on one machine.
 
 ## Testing the fork's modules
@@ -45,11 +45,11 @@ The upstream rules in [testing.md](testing.md) hold. What is specific to the for
 - **Boundaries**: test the limit itself (accepted) and one more (refused), with multi-byte characters where the limit is in characters. Lower the limit through the config key or the package variable (`maxTasksChangedBySave`) instead of creating 20000 rows.
 - **Show that a test bites**: break the code under test on purpose (flip a comparison, remove the check), see the test fail, restore. A permission test that passes with the check removed is worth nothing.
 - **Table migrations** that only create tables are run on an empty schema by `pkg/migration/20261122000000_fork_tables_test.go`; a migration that changes an existing table needs a test that starts from the old schema, like `20261124100000_test.go`.
-- Run the new tests on PostgreSQL and MySQL as well (`fork-db-matrix`), in particular anything that stores text, compares text or counts under a lock.
+- Run the new tests on PostgreSQL as well (`fork-db-matrix`), in particular anything that stores text, compares text or counts under a lock.
 
 ## How a change gets into `main`
 
-Use the `fork-change` skill. In short: implement in a worktree with a failing test first, have the change reviewed by someone who has not seen the author's reasoning, fix, run the full suites on SQLite, PostgreSQL and MySQL on the final tree, then fast-forward `main`.
+Use the `fork-change` skill. In short: implement in a worktree with a failing test first, have the change reviewed by someone who has not seen the author's reasoning, fix, run the full suites on SQLite and PostgreSQL on the final tree, then fast-forward `main`.
 
 ## Website
 

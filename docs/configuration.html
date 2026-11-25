@@ -145,7 +145,7 @@
 <tr><td><code>service.publicurl</code></td><td>The address people use. Links in e-mails and incoming webhook addresses are built from it.</td></tr>
 <tr><td><code>service.secret</code></td><td>Signs tokens. If it is unset, a random one is created at every start and all tokens become invalid on restart. Encrypted project secrets of automation rules depend on it as well.</td></tr>
 <tr><td><code>service.ipextractionmethod</code>, <code>service.trustedproxies</code></td><td>Which client address the server uses. The per-IP limits of public forms and webhooks rely on it. See <a href="getting-started.html#behind-a-reverse-proxy">behind a reverse proxy</a>.</td></tr>
-<tr><td><code>database.type</code> and the other <code>database.*</code> keys</td><td>SQLite by default; MySQL and PostgreSQL are supported. See <a href="getting-started.html#choosing-a-database">choosing a database</a>.</td></tr>
+<tr><td><code>database.type</code> and the other <code>database.*</code> keys</td><td>SQLite by default; PostgreSQL is the other tested choice. MySQL and MariaDB are compatible by design but not tested. See <a href="getting-started.html#choosing-a-database">choosing a database</a>.</td></tr>
 <tr><td><code>files.basepath</code></td><td>Where attachments are stored. The image sets the root path to <code>/app/vikunja/</code>.</td></tr>
 </tbody></table></div>
 <h2 id="configuration-keys-at-a-glance">Configuration keys at a glance <a class="anchor" href="#configuration-keys-at-a-glance" aria-label="Link to this section: Configuration keys at a glance">#</a></h2>

@@ -13,6 +13,10 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
   merged regularly.
 - **Everything unlocked.** No license key, no feature gating.
 - New API routes go on `/api/v2`.
+- **Databases.** The fork is tested and supported on SQLite and PostgreSQL.
+  MySQL and MariaDB are compatible by design (portable SQL, upstream's rules)
+  but are not tested and not guaranteed. Decided on 2026-11-25; entries in the
+  log before that date also report MySQL 8 runs, the last on that day.
 - Organisation / multi-tenant hierarchy is deferred until there is a real need.
 
 ## Status
@@ -705,8 +709,8 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
 - Default dashboards for new projects with a workflow (4c).
 - MCP exposure of the fork's endpoints; the new automation routes are not in
   the MCP allow-list.
-- The arm64 image has not been started on real ARM hardware. MariaDB and the
-  documented minimum database versions are not tested.
+- The arm64 image has not been started on real ARM hardware. MySQL, MariaDB and
+  the documented minimum database versions are not tested.
 - The parts of the newest UI listed as not run end to end in the browser
   pass above (ticker-driven rules, `wait`, HMAC, workload estimate field,
   Turkish strings).

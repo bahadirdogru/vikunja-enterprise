@@ -13,7 +13,7 @@ These are upstream keys, but a working install of the fork depends on them:
 | `service.publicurl` | The address people use. Links in e-mails and incoming webhook addresses are built from it. |
 | `service.secret` | Signs tokens. If it is unset, a random one is created at every start and all tokens become invalid on restart. Encrypted project secrets of automation rules depend on it as well. |
 | `service.ipextractionmethod`, `service.trustedproxies` | Which client address the server uses. The per-IP limits of public forms and webhooks rely on it. See [behind a reverse proxy](getting-started.md#behind-a-reverse-proxy). |
-| `database.type` and the other `database.*` keys | SQLite by default; MySQL and PostgreSQL are supported. See [choosing a database](getting-started.md#choosing-a-database). |
+| `database.type` and the other `database.*` keys | SQLite by default; PostgreSQL is the other tested choice. MySQL and MariaDB are compatible by design but not tested. See [choosing a database](getting-started.md#choosing-a-database). |
 | `files.basepath` | Where attachments are stored. The image sets the root path to `/app/vikunja/`. |
 
 {{include docs/modules/README.md | Configuration keys at a glance}}

@@ -49,8 +49,7 @@ The `files` directory must be writable for user `1000`, as in the `docker run` e
 |---|---|
 | SQLite | The default and the simplest choice for a small group. The backend test suites pass on it. |
 | PostgreSQL | Tested on 18 and 19; 18 or newer is recommended. |
-| MySQL | Tested on 8. |
-| MariaDB | Supported by upstream; not tested in this fork. |
+| MySQL, MariaDB | Compatible by design, not guaranteed. The fork's code follows upstream's rules for portable SQL, and its suites passed on MySQL 8 until November 2026, but they are no longer run there. Use it at your own risk and test before upgrading. |
 | Older versions | Upstream documents lower minimum versions. The code is written for them, but they are not tested here. |
 
 Which suites were run on which database, and when, is recorded in the [roadmap](../../docs/enterprise/ROADMAP.md); that page is the source of truth, not this table. Raw SQL and migrations in the fork follow upstream's [supported databases](../../.agents/docs/databases.md).
@@ -92,7 +91,7 @@ There is no downgrade path. If an upgrade goes wrong, restore the backup and sta
 
 Back up three things together, and keep the secret with them:
 
-- **The database.** For SQLite, stop the container and copy the file (or use `sqlite3 vikunja.db ".backup backup.db"` on a running instance). For PostgreSQL use `pg_dump`, for MySQL `mysqldump`.
+- **The database.** For SQLite, stop the container and copy the file (or use `sqlite3 vikunja.db ".backup backup.db"` on a running instance). For PostgreSQL use `pg_dump`.
 - **The files directory** (`/app/vikunja/files`), which holds attachments.
 - **Your settings**, in particular `service.secret`. It signs login tokens, and the encrypted project secrets of [automation](../../docs/modules/automation.md) rules are encrypted with a key derived from it. A restored database with a different secret cannot read them.
 

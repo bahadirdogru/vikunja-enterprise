@@ -150,6 +150,10 @@ tables; upstream files are touched as little as possible so upstream can be
 merged regularly.</li>
 <li><strong>Everything unlocked.</strong> No license key, no feature gating.</li>
 <li>New API routes go on <code>/api/v2</code>.</li>
+<li><strong>Databases.</strong> The fork is tested and supported on SQLite and PostgreSQL.
+MySQL and MariaDB are compatible by design (portable SQL, upstream's rules)
+but are not tested and not guaranteed. Decided on 2026-11-25; entries in the
+log before that date also report MySQL 8 runs, the last on that day.</li>
 <li>Organisation / multi-tenant hierarchy is deferred until there is a real need.</li>
 </ul>
 <h2 id="status">Status <a class="anchor" href="#status" aria-label="Link to this section: Status">#</a></h2>
@@ -850,8 +854,8 @@ run and passed six times in a row afterwards; cause not established.</li>
 <li>Default dashboards for new projects with a workflow (4c).</li>
 <li>MCP exposure of the fork's endpoints; the new automation routes are not in
 the MCP allow-list.</li>
-<li>The arm64 image has not been started on real ARM hardware. MariaDB and the
-documented minimum database versions are not tested.</li>
+<li>The arm64 image has not been started on real ARM hardware. MySQL, MariaDB and
+the documented minimum database versions are not tested.</li>
 <li>The parts of the newest UI listed as not run end to end in the browser
 pass above (ticker-driven rules, <code>wait</code>, HMAC, workload estimate field,
 Turkish strings).</li>

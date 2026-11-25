@@ -1,6 +1,6 @@
 ---
 name: fork-change
-description: The path a change takes into `main` in this fork — worktree, failing test first, independent review, fixes, three-database verification, fast-forward. Use when implementing a feature or fix in the fork's modules, when delegating such work to another agent, or when deciding whether a branch is ready to merge.
+description: The path a change takes into `main` in this fork — worktree, failing test first, independent review, fixes, verification on SQLite and PostgreSQL, fast-forward. Use when implementing a feature or fix in the fork's modules, when delegating such work to another agent, or when deciding whether a branch is ready to merge.
 ---
 
 # Getting a change into main
@@ -9,11 +9,11 @@ This is the process that worked while the fork's modules were built. Each step e
 
 ## 1. Work in a worktree, on a branch
 
-Never on `main` directly. One concern per branch. Two pieces of work that touch the same package run one after the other, not in parallel; work that also needs the PostgreSQL and MySQL test databases does not overlap with other work that needs them.
+Never on `main` directly. One concern per branch. Two pieces of work that touch the same package run one after the other, not in parallel; work that also needs the PostgreSQL test database does not overlap with other work that needs it.
 
 ## 2. Failing test first
 
-For a bug: a test that reproduces it and fails before the fix. Keep the failing output. For a concurrency bug the test must run on PostgreSQL and MySQL, because SQLite has no row locks. If a test cannot fail against the old code because it uses new API, prove it bites by reverting the fix and showing the failure.
+For a bug: a test that reproduces it and fails before the fix. Keep the failing output. For a concurrency bug the test must run on PostgreSQL, because SQLite has no row locks. If a test cannot fail against the old code because it uses new API, prove it bites by reverting the fix and showing the failure.
 
 Permission paths need a positive and a negative test. A limit needs a test at the limit, one above it, and one showing that data already above the limit keeps working.
 
@@ -42,7 +42,7 @@ An author's report is a claim, not a result. "All fixed, tests pass" has been wr
 After the last edit, including lint-only edits:
 
 - `go build ./...`
-- full `test:feature` and `test:web` on SQLite, PostgreSQL and MySQL (`fork-db-matrix` skill)
+- full `test:feature` and `test:web` on SQLite and PostgreSQL (`fork-db-matrix` skill)
 - `mage lint` (never `lint:fix`), and for frontend changes `pnpm lint`, `vue-tsc --noEmit`, `vitest`
 - i18n parity check
 - for interface changes: look at them in a browser (`run-e2e-tests` skill), or say that this was not done
