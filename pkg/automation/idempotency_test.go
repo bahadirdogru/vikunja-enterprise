@@ -137,8 +137,15 @@ func TestIdempotency_ConditionsAreNotEvaluatedAgainWhenResuming(t *testing.T) {
 	require.NoError(t, s.Commit())
 	s.Close()
 
+	// The retry is due after the backoff on a clock the test moves: with a real clock and a backoff of 1 ms, a second
+	// boundary in that millisecond made the retry not due (DATETIME is stored in whole seconds) and drain returned.
+	retryBase = time.Hour
+	advance := fakeClock(t)
 	newTask(t, projectOwned, "task", user1)
-	drain(t) // the retry follows at once: the backoff is 1ms
+	drain(t)
+	assert.Equal(t, models.AutomationRunRunning, allRuns(t, r.ID)[0].Status, "the failed step waits for its retry")
+	advance(2 * time.Hour)
+	drain(t)
 	assert.Equal(t, 1, counter("after"))
 	assert.Equal(t, models.AutomationRunSuccess, allRuns(t, r.ID)[0].Status)
 }
