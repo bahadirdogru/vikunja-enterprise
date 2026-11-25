@@ -39,7 +39,8 @@ const nameError = computed(() => {
 	if (props.existing?.includes(effectiveName.value)) return 'exists'
 	return ''
 })
-const valueError = computed(() => touched.value && value.value === '')
+// The value is cleared after every save, so an empty box after a failed save is not a missing value.
+const valueError = computed(() => touched.value && value.value === '' && failure.value === '')
 
 async function submit() {
 	touched.value = true

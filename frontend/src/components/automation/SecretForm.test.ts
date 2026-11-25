@@ -92,7 +92,8 @@ describe('SecretForm', () => {
 		await wrapper.get('form').trigger('submit')
 		await flushPromises()
 
-		expect(wrapper.findAll('[role="alert"]').map(a => a.text())).toContain('The secret store is full.')
+		expect(wrapper.findAll('[role="alert"]').map(a => a.text())).toEqual(['The secret store is full.'])
+		expect(valueInput(wrapper).attributes('aria-invalid')).toBeUndefined()
 		expect((valueInput(wrapper).element as HTMLInputElement).value).toBe('')
 		expect(wrapper.emitted('saved')).toBeUndefined()
 	})
