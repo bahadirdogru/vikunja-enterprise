@@ -18,6 +18,7 @@ package models
 
 import (
 	"encoding/json"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -33,28 +34,74 @@ import (
 // The interface turns the code of an API error into a sentence (error.<code> in the language files of the frontend).
 // A code without a sentence shows the English message of the server, so every code the server can send has one in
 // both files, and the Turkish one is not the English one.
-func TestEveryErrorCodeOfTheServerHasATextInBothLanguages(t *testing.T) {
-	// Every constant that names a code, whatever its prefix (ErrCode..., ErrorCode...), in every package. A Go literal
-	// with a leading zero is octal: ErrorCodeGenericForbidden = 0001 is the number 1, which is what the JSON carries.
-	definition := regexp.MustCompile(`(?m)^\s*(?:const )?\w*Code\w*\s+(?:int\s+)?=\s*([0-9]+)\s*(?://.*)?$`)
+// codeConstant matches every constant that names an error code, whatever its prefix (ErrCode..., ErrorCode...) and
+// whatever its integer type.
+var codeConstant = regexp.MustCompile(`(?m)^\s*(?:const )?\w*Code\w*\s+(?:u?int\d*\s+)?=\s*([0-9]+)\s*(?://.*)?$`)
+
+// scanErrorCodes finds the error codes defined in the Go files below root, test files excluded, by their number: a Go
+// literal with a leading zero is octal, so ErrorCodeGenericForbidden = 0001 is the number 1, which is what the JSON
+// carries and what the interface looks up (error.1).
+func scanErrorCodes(t *testing.T, root string) map[string]string {
+	t.Helper()
+	var paths []string
+	require.NoError(t, filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() && strings.HasSuffix(path, ".go") && !strings.HasSuffix(path, "_test.go") {
+			paths = append(paths, path)
+		}
+		return nil
+	}))
 	codes := map[string]string{}
-	// The packages of pkg/ are at most four levels deep.
-	for _, pattern := range []string{"../*.go", "../*/*.go", "../*/*/*.go", "../*/*/*/*.go"} {
-		files, err := filepath.Glob(pattern)
+	for _, path := range paths {
+		src, err := os.ReadFile(path) //nolint:gosec // the packages of this repository
 		require.NoError(t, err)
-		for _, path := range files {
-			if strings.HasSuffix(path, "_test.go") {
-				continue
-			}
-			src, err := os.ReadFile(path)
-			require.NoError(t, err)
-			for _, m := range definition.FindAllStringSubmatch(string(src), -1) {
-				number, err := strconv.ParseInt(m[1], 0, 64)
-				require.NoError(t, err, "%s: %s", path, m[1])
-				codes[strconv.FormatInt(number, 10)] = path
-			}
+		for _, m := range codeConstant.FindAllStringSubmatch(string(src), -1) {
+			number, err := strconv.ParseInt(m[1], 0, 64)
+			require.NoError(t, err, "%s: %s", path, m[1])
+			codes[strconv.FormatInt(number, 10)] = path
 		}
 	}
+	return codes
+}
+
+// The scan finds the codes it is meant to guard: both prefixes, every integer type, octal literals, a package deeper
+// than any glob of fixed depth would reach.
+func TestTheScanOfErrorCodesFindsEveryKindOfConstant(t *testing.T) {
+	dir := t.TempDir()
+	deep := filepath.Join(dir, "a", "b", "c", "d", "e")
+	require.NoError(t, os.MkdirAll(deep, 0o755))
+	write := func(path, src string) {
+		require.NoError(t, os.WriteFile(path, []byte(src), 0o600))
+	}
+	write(filepath.Join(dir, "a.go"), "package x\n\n// ErrorCodeGenericForbidden is 1.\nconst ErrorCodeGenericForbidden = 0001\n")
+	write(filepath.Join(dir, "a", "b.go"), "package x\n\nconst (\n\tErrCodeUsernameReserved = 1026 // comment\n\tErrorCodeBig int64 = 4242\n\tErrCodeSmall uint16 = 77\n)\n")
+	write(filepath.Join(deep, "deep.go"), "package x\n\nconst ErrCodeDeep = 99001\n")
+	write(filepath.Join(deep, "ignored_test.go"), "package x\n\nconst ErrCodeFromATest = 55555\n")
+	write(filepath.Join(deep, "not_a_code.go"), "package x\n\nconst maxCodeLength = 1 << 20\nconst codeLength int = 12 * 3\n")
+
+	found := scanErrorCodes(t, dir)
+	assert.Contains(t, found, "1", "ErrorCodeGenericForbidden = 0001 is the number 1")
+	for _, code := range []string{"1026", "4242", "77", "99001"} {
+		assert.Contains(t, found, code)
+	}
+	assert.NotContains(t, found, "55555")
+	assert.NotContains(t, found, "1048576")
+	assert.Len(t, found, 5)
+
+	// What the first version of the guard (ErrCode only, a fixed depth) saw of the same tree.
+	old := regexp.MustCompile(`(?m)^\s*(?:const )?ErrCode\w+\s+(?:int\s+)?=\s*([0-9]+)`)
+	src, err := os.ReadFile(filepath.Join(dir, "a.go"))
+	require.NoError(t, err)
+	assert.Empty(t, old.FindAllString(string(src), -1), "the old pattern did not see ErrorCodeGenericForbidden")
+}
+
+// The interface turns the code of an API error into a sentence (error.<code> in the language files of the frontend).
+// A code without a sentence shows the English message of the server, so every code the server can send has one in
+// both files, and the Turkish one is not the English one.
+func TestEveryErrorCodeOfTheServerHasATextInBothLanguages(t *testing.T) {
+	codes := scanErrorCodes(t, "..")
 	require.Greater(t, len(codes), 200, "the scan found suspiciously few codes: did the definition change?")
 
 	load := func(file string) map[string]string {
@@ -84,20 +131,5 @@ func TestEveryErrorCodeOfTheServerHasATextInBothLanguages(t *testing.T) {
 		assert.NotEmpty(t, en[code], "en.json has no text for the error code %s (defined in %s)", code, codes[code])
 		assert.NotEmpty(t, tr[code], "tr-TR.json has no text for the error code %s (defined in %s)", code, codes[code])
 		assert.NotEqual(t, en[code], tr[code], "tr-TR.json has the English text for the error code %s", code)
-	}
-}
-
-// The guard has to see the codes it is meant to guard: the generic forbidden error (written 0001, which is 1) and the
-// codes of the user package that are named ErrorCode...
-func TestTheGuardOfErrorCodesSeesEveryPrefix(t *testing.T) {
-	assert.Equal(t, 1, ErrorCodeGenericForbidden, "the literal 0001 is octal: the JSON code is 1, and the interface looks up error.1")
-	raw, err := os.ReadFile("../../frontend/src/i18n/lang/en.json")
-	require.NoError(t, err)
-	var lang struct {
-		Error map[string]string `json:"error"`
-	}
-	require.NoError(t, json.Unmarshal(raw, &lang))
-	for _, code := range []string{"1", "1026", "1027", "1028", "1029"} {
-		assert.NotEmpty(t, lang.Error[code], "error.%s", code)
 	}
 }
