@@ -467,9 +467,10 @@ func createProjectView(s *xorm.Session, p *ProjectView, a web.Auth, createBacklo
 }
 
 func createDefaultKanbanBuckets(s *xorm.Session, a web.Auth, p *ProjectView, addExistingTasksToView bool) (err error) {
+	lang := languageOf(s, a)
 	backlog := &Bucket{
 		ProjectViewID: p.ID,
-		Title:         defaultKanbanBucketTitle(s, a, "kanban.default_buckets.todo"),
+		Title:         defaultKanbanBucketTitleIn(lang, "kanban.default_buckets.todo"),
 		Position:      100,
 	}
 	err = backlog.Create(s, a)
@@ -479,7 +480,7 @@ func createDefaultKanbanBuckets(s *xorm.Session, a web.Auth, p *ProjectView, add
 
 	doing := &Bucket{
 		ProjectViewID: p.ID,
-		Title:         defaultKanbanBucketTitle(s, a, "kanban.default_buckets.doing"),
+		Title:         defaultKanbanBucketTitleIn(lang, "kanban.default_buckets.doing"),
 		Position:      200,
 	}
 	err = doing.Create(s, a)
@@ -489,7 +490,7 @@ func createDefaultKanbanBuckets(s *xorm.Session, a web.Auth, p *ProjectView, add
 
 	done := &Bucket{
 		ProjectViewID: p.ID,
-		Title:         defaultKanbanBucketTitle(s, a, "kanban.default_buckets.done"),
+		Title:         defaultKanbanBucketTitleIn(lang, "kanban.default_buckets.done"),
 		Position:      300,
 	}
 	err = done.Create(s, a)
