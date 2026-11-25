@@ -235,7 +235,7 @@ describe('notificationText in Turkish', () => {
 			'seni #12 görevine atadı',
 			'sam kişisini Design ekibine ekledi',
 			'#12 görevinde onayını istedi: "Kapak"',
-			'#12 görevindeki "Kapak" onayı reddedildi',
+			'#12 görevindeki "Kapak" onay talebi reddedildi',
 			'"Destek" formu gönderildi; #12 görevi oluşturuldu',
 		])
 	})

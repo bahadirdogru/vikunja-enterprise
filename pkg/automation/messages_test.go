@@ -355,3 +355,12 @@ func TestValuesOfSentencesAreBounded(t *testing.T) {
 		assert.Len(t, boundMessages(many), maxOutputMessages)
 	})
 }
+
+func TestALimitInTheWaitIsSentInSecondsNotAsAGoDuration(t *testing.T) {
+	reset(t)
+	run, steps := runRaw(t, rawAct(spec.ActionWait, "duration", "9999d"))
+	require.Equal(t, models.AutomationRunFailed, run.Status)
+	assert.Equal(t, "wait_too_long", run.ErrorCode)
+	_, err := strconv.ParseInt(steps[0].ErrorParams["max"], 10, 64)
+	assert.NoError(t, err, "the limit is a number of seconds, the interface formats it: %q", steps[0].ErrorParams["max"])
+}

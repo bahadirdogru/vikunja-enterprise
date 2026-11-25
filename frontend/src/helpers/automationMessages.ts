@@ -1,5 +1,6 @@
 import {i18n} from '@/i18n'
 import {formatDateLong} from '@/helpers/time/formatDate'
+import {secondsToPeriod} from '@/helpers/time/period'
 
 // What the server tells about an automation run (why a step failed, what it did, which warnings it has) comes as an
 // English sentence and as a stable code with values. The code is looked up as automation.messages.<code>; a code of
@@ -16,8 +17,27 @@ type Params = {[key: string]: string}
 // Dates arrive as RFC 3339 text and are shown in the format of the reader.
 const DATE_PARAMS = ['until', 'date']
 
-function prepare(params: Params | null | undefined): Params {
+const INTL_UNIT = {seconds: 'second', minutes: 'minute', hours: 'hour', days: 'day', weeks: 'week', months: 'month', years: 'year'} as const
+
+// A number of seconds as people say it: "720 saat".
+function formatSeconds(seconds: number): string {
+	const {unit, amount} = secondsToPeriod(seconds)
+	return new Intl.NumberFormat(i18n.global.locale.value, {style: 'unit', unit: INTL_UNIT[unit], unitDisplay: 'long'}).format(amount)
+}
+
+// Values the server sends in the form of its own: a ratio as 0.5, a limit in seconds.
+function prepareValues(code: string, out: Params) {
+	if (code === 'set_percent_done' && out.value !== undefined && !Number.isNaN(Number(out.value))) {
+		out.value = new Intl.NumberFormat(i18n.global.locale.value, {style: 'percent', maximumFractionDigits: 1}).format(Number(out.value))
+	}
+	if (code === 'wait_too_long' && out.max !== undefined && !Number.isNaN(Number(out.max))) {
+		out.max = formatSeconds(Number(out.max))
+	}
+}
+
+function prepare(params: Params | null | undefined, code = ''): Params {
 	const out: Params = {...params}
+	prepareValues(code, out)
 	for (const name of DATE_PARAMS) {
 		if (typeof out[name] === 'string' && out[name] !== '') out[name] = formatDateLong(out[name])
 	}
@@ -35,7 +55,7 @@ function lookup(key: string, params: Params): string | null {
  */
 export function automationCodeText(code: string | null | undefined, params: Params | null | undefined, fallback = ''): string {
 	if (!code) return fallback
-	const values = prepare(params)
+	const values = prepare(params, code)
 
 	if (/^\d+$/.test(code)) {
 		return lookup(`error.${code}`, values) ?? fallback

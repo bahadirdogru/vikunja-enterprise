@@ -109,7 +109,7 @@ func planWait(env *Env, p params) (*Plan, error) {
 		return nil, actionErr("wait_too_short", nil, "the wait must be at least 1m")
 	}
 	if maxWait := config.AutomationWaitMax.GetDuration(); maxWait > 0 && d > maxWait {
-		return nil, actionErr("wait_too_long", P{"max": maxWait}, "the wait is longer than the %s this server allows", maxWait)
+		return nil, actionErr("wait_too_long", P{"max": int64(maxWait.Seconds())}, "the wait is longer than the %s this server allows", maxWait)
 	}
 	resumeAt := env.Now.Add(d)
 	plan := &Plan{Wait: d}

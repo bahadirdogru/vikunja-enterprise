@@ -1,6 +1,6 @@
 import {afterAll, beforeAll, describe, expect, it} from 'vitest'
 
-import {setLanguage} from '@/i18n'
+import {i18n, setLanguage} from '@/i18n'
 import {automationCodeText, automationMessageText, automationOutput} from '@/helpers/automationMessages'
 
 describe('the sentences of the server about an automation run', () => {
@@ -15,7 +15,7 @@ describe('the sentences of the server about an automation run', () => {
 		afterAll(async () => { await setLanguage('en') })
 
 		it('says a code with its values', () => {
-			expect(automationCodeText('set_title', {title: 'Yeni'}, 'set title to "Yeni"')).toBe('Başlık "Yeni" yapılacak')
+			expect(automationCodeText('set_title', {title: 'Yeni'}, 'set title to "Yeni"')).toBe('Başlığı "Yeni" olarak ayarla')
 		})
 
 		it('frames the error of a script and keeps its text', () => {
@@ -29,12 +29,34 @@ describe('the sentences of the server about an automation run', () => {
 
 		it('wraps the sentence of an action that had nothing to do', () => {
 			expect(automationCodeText('nothing_to_do', {inner: 'mark_done'}, 'nothing to do: mark the task as done (already so)'))
-				.toBe('Yapılacak bir şey yok, zaten öyle: Görev tamamlandı olarak işaretlenecek')
+				.toBe('Yapılacak bir şey yok, zaten öyle: Görevi tamamlandı olarak işaretle')
 		})
 
 		it('says the error of a failed condition inside the note', () => {
 			expect(automationCodeText('note_conditions_fail', {code: 'script_thrown', message: 'boom'}, 'x'))
 				.toBe('Koşullar başarısız oldu: Betik hatası: boom')
+		})
+
+		it('says what a step did in the imperative, which is right for a test and for the history', () => {
+			expect(automationCodeText('set_title', {title: 'Yeni'})).toBe('Başlığı "Yeni" olarak ayarla')
+			expect(automationCodeText('mark_done', {})).toBe('Görevi tamamlandı olarak işaretle')
+			expect(automationCodeText('add_comment', {text: 'Görüldü'})).toBe('"Görüldü" yorumunu ekle')
+			expect(automationCodeText('notify', {count: '2', message: 'Merhaba'})).toBe('2 kullanıcıya bildirim gönder: "Merhaba"')
+		})
+
+		it('never says a step in the future tense, because the history shows steps that ran', () => {
+			const stepKeys = ['add_comment', 'add_label', 'assign_user', 'change_status', 'clear_custom_field', 'clear_due_date', 'clear_end_date',
+				'clear_start_date', 'create_related_task', 'create_subtask', 'create_task', 'mark_done', 'mark_not_done', 'move_task', 'notify',
+				'remove_label', 'request_approval', 'run_script', 'send_request', 'set_custom_field', 'set_description', 'set_due_date',
+				'set_end_date', 'set_hex_color', 'set_percent_done', 'set_priority', 'set_start_date', 'set_title', 'unassign_user',
+				'condition_fails', 'condition_holds']
+			const future = stepKeys.filter(key => /(ecek|acak)(\s|\.|$)/u.test(i18n.global.t(`automation.messages.${key}`, {} as never)))
+			expect(future).toEqual([])
+		})
+
+		it('shows a ratio of progress as a percentage and a limit in seconds as a duration', () => {
+			expect(automationCodeText('set_percent_done', {value: '0.5'})).toBe('İlerlemeyi %50 olarak ayarla')
+			expect(automationCodeText('wait_too_long', {max: '2592000'})).toBe('Bekleme, sunucunun izin verdiği 30 gün süresinden uzun.')
 		})
 
 		it('shows the English text for a code it does not know', () => {
@@ -54,7 +76,7 @@ describe('the sentences of the server about an automation run', () => {
 				{code: 'set_title', params: {title: 'Yeni'}},
 				{code: 'unknown_placeholder', params: {name: 'x'}},
 			])
-			expect(result.sentences).toEqual(['Başlık "Yeni" yapılacak', 'Bilinmeyen yer tutucu x boş görünecek'])
+			expect(result.sentences).toEqual(['Başlığı "Yeni" olarak ayarla', 'Bilinmeyen yer tutucu x boş görünecek'])
 			expect(result.rest).toBe('log:\nhello')
 		})
 
