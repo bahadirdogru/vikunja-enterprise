@@ -404,9 +404,9 @@ func TestFormLogo_ClosedNonPublicFormLooksLikeAnUnknownToken(t *testing.T) {
 	t.Run("an open form keeps its logo, so does a closed public one", func(t *testing.T) {
 		open := withLogo(FormAccessMembers, &FormSettings{})
 		err := load(open.Token)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		pub := withLogo(FormAccessPublic, &FormSettings{CloseDate: &closed})
 		err = load(pub.Token)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 }
