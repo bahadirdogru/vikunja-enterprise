@@ -18,7 +18,6 @@ package models
 
 import (
 	"encoding/json"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -36,22 +35,21 @@ import (
 func TestEveryErrorCodeOfTheServerHasATextInBothLanguages(t *testing.T) {
 	definition := regexp.MustCompile(`(?m)^\s*(?:const )?ErrCode\w+\s+(?:int\s+)?=\s*([0-9]+)`)
 	codes := map[string]string{}
-	require.NoError(t, filepath.WalkDir("..", func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
+	// The packages of pkg/ are at most four levels deep.
+	for _, pattern := range []string{"../*.go", "../*/*.go", "../*/*/*.go", "../*/*/*/*.go"} {
+		files, err := filepath.Glob(pattern)
+		require.NoError(t, err)
+		for _, path := range files {
+			if strings.HasSuffix(path, "_test.go") {
+				continue
+			}
+			src, err := os.ReadFile(path)
+			require.NoError(t, err)
+			for _, m := range definition.FindAllStringSubmatch(string(src), -1) {
+				codes[m[1]] = path
+			}
 		}
-		if d.IsDir() || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
-			return nil
-		}
-		src, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		for _, m := range definition.FindAllStringSubmatch(string(src), -1) {
-			codes[m[1]] = path
-		}
-		return nil
-	}))
+	}
 	require.Greater(t, len(codes), 200, "the scan found suspiciously few codes: did the definition change?")
 
 	load := func(file string) map[string]string {
