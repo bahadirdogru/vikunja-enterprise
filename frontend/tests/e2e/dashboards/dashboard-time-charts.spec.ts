@@ -15,19 +15,20 @@ function pad(n: number) {
 	return String(n).padStart(2, '0')
 }
 
-// Midday of a day some days ago, local time: far from any midnight, so a bucket of a day cannot be missed.
+// Midday of a day some days ago, in UTC like the days of the report (the test user has no time zone of their own): far
+// from any midnight, and the same day as the server counts whatever the clock of the machine says.
 function middayAgo(days: number): Date {
 	const d = new Date(Date.now() - days * DAY)
-	d.setHours(12, 0, 0, 0)
+	d.setUTCHours(12, 0, 0, 0)
 	return d
 }
 
 function sqlDateTime(d: Date): string {
-	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+	return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`
 }
 
 function dayKey(d: Date): string {
-	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+	return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`
 }
 
 // Six tasks in Alpha. Created: two five days ago, one three days ago, three yesterday. Finished: two three days ago, one yesterday.
