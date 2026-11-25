@@ -67,6 +67,9 @@ type reportKey struct {
 type reportLabel struct {
 	label string
 	color string
+	// code names a label the server wrote itself (Open, Done, Low...), so the interface can say it in its own
+	// language; it is empty for names that belong to the data (a project, a label, a user).
+	code string
 }
 
 type reportJoin struct {
@@ -266,10 +269,10 @@ func resolveStatusLabels(s *xorm.Session, keys []reportKey) (map[string]reportLa
 }
 
 var reportCategoryLabels = map[WorkflowStatusCategory]reportLabel{
-	WorkflowCategoryOpen:       {"Open", "#94a3b8"},
-	WorkflowCategoryInProgress: {"In progress", "#3b82f6"},
-	WorkflowCategoryDone:       {"Done", "#22c55e"},
-	WorkflowCategoryCancelled:  {"Cancelled", "#ef4444"},
+	WorkflowCategoryOpen:       {"Open", "#94a3b8", "status_category.open"},
+	WorkflowCategoryInProgress: {"In progress", "#3b82f6", "status_category.in_progress"},
+	WorkflowCategoryDone:       {"Done", "#22c55e", "status_category.done"},
+	WorkflowCategoryCancelled:  {"Cancelled", "#ef4444", "status_category.cancelled"},
 }
 
 func resolveStatusCategoryLabels(_ *xorm.Session, keys []reportKey) (map[string]reportLabel, error) {
@@ -350,19 +353,20 @@ func resolvePriorityLabels(_ *xorm.Session, keys []reportKey) (map[string]report
 		}
 		name, known := reportPriorityNames[id]
 		if !known {
-			name = k.canon
+			out[k.canon] = reportLabel{label: k.canon}
+			continue
 		}
-		out[k.canon] = reportLabel{label: name}
+		out[k.canon] = reportLabel{label: name, code: "priority." + k.canon}
 	}
 	return out, nil
 }
 
 func resolveDoneLabels(_ *xorm.Session, _ []reportKey) (map[string]reportLabel, error) {
-	return map[string]reportLabel{"true": {"Done", "#22c55e"}, "false": {"Open", "#94a3b8"}}, nil
+	return map[string]reportLabel{"true": {"Done", "#22c55e", "done.true"}, "false": {"Open", "#94a3b8", "done.false"}}, nil
 }
 
 func resolveCheckedLabels(_ *xorm.Session, _ []reportKey) (map[string]reportLabel, error) {
-	return map[string]reportLabel{"true": {"Checked", ""}, "false": {"Not checked", ""}}, nil
+	return map[string]reportLabel{"true": {"Checked", "", "checked.true"}, "false": {"Not checked", "", "checked.false"}}, nil
 }
 
 func resolveNumberLabels(_ *xorm.Session, keys []reportKey) (map[string]reportLabel, error) {

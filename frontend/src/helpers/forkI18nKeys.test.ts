@@ -79,6 +79,7 @@ const FAMILIES: Record<string, string[]> = {
 	'forms.tabs': ['fields', 'settings', 'share'],
 	'forms.share.who': ['members', 'users', 'public'],
 	'forms.public.unavailable': ['closed', 'full', 'disabled'],
+	'forms.public.errors.server': ['required', 'invalid', 'too_long', 'too_many', 'unknown_field', 'file_too_large', 'file_type_not_allowed', 'attachments_disabled'],
 	'forms.target': ['title', 'description', 'due_date', 'priority', 'labels', 'attachments'],
 	'forms.presets': ['simple.title', 'simple.text', 'simple.formTitle', 'dueDate.title', 'dueDate.text', 'dueDate.formTitle', 'bug.title', 'bug.text', 'bug.formTitle'],
 	'workflow.fields': ['assignees', 'due_date', 'start_date', 'end_date', 'description', 'attachments', 'labels'],

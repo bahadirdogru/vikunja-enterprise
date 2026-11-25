@@ -4217,9 +4217,13 @@ export type ReportGroup = {
      */
     key?: unknown;
     /**
-     * The display name, resolved by the server.
+     * The display name, resolved by the server, in English where the server wrote it.
      */
     label?: string;
+    /**
+     * A stable code for a name the server wrote itself (status_category.open, done.true, checked.false, priority.3), so a client can say it in its own language. Empty for names that belong to the data: a project, a label, a user.
+     */
+    label_code?: string;
     /**
      * True for the group of tasks that have no value for the dimension.
      */

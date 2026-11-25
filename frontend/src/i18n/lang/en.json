@@ -2598,7 +2598,9 @@
     "lineHelp": "Use the arrow keys to move between points, Enter to show the tasks.",
     "tasks": "no tasks | {count} task | {count} tasks",
     "tasksUnit": "tasks | task | tasks",
-    "deltaPrevious": "compared with the previous period"
+    "deltaPrevious": "compared with the previous period",
+    "checked": "Checked",
+    "notChecked": "Not checked"
   },
   "dashboards": {
     "title": "Dashboards",
@@ -2859,7 +2861,8 @@
         "listLimitRange": "Enter a number between 1 and 100.",
         "projectRequired": "Choose the project: statuses belong to the workflow of one project."
       }
-    }
+    },
+    "exportCannotList": "The tasks of this widget cannot be listed for this setting."
   },
   "reports": {
     "dimension": {

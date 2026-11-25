@@ -93,14 +93,16 @@ type ReportPoint struct {
 
 // ReportGroup is one group of tasks.
 type ReportGroup struct {
-	Key      any            `json:"key" doc:"The identity of the group: an id, a category name, a number or a boolean, depending on the dimension. null for the none and other groups."`
-	Label    string         `json:"label" doc:"The display name, resolved by the server."`
-	Color    string         `json:"color,omitempty" doc:"A hex color including #, when the group has one."`
-	Value    float64        `json:"value" doc:"The measure of the tasks of the group."`
-	None     bool           `json:"none,omitempty" doc:"True for the group of tasks that have no value for the dimension."`
-	Other    bool           `json:"other,omitempty" doc:"True for the group the remaining groups beyond the limit are folded into. It has no children."`
-	Series   []*ReportPoint `json:"series,omitempty" doc:"The values per time bucket, for time series."`
-	Children []*ReportGroup `json:"children,omitempty" doc:"The groups of then_by inside this group."`
+	Key   any    `json:"key" doc:"The identity of the group: an id, a category name, a number or a boolean, depending on the dimension. null for the none and other groups."`
+	Label string `json:"label" doc:"The display name, resolved by the server, in English where the server wrote it."`
+	// LabelCode is set when the server wrote the name itself.
+	LabelCode string         `json:"label_code,omitempty" doc:"A stable code for a name the server wrote itself (status_category.open, done.true, checked.false, priority.3), so a client can say it in its own language. Empty for names that belong to the data: a project, a label, a user."`
+	Color     string         `json:"color,omitempty" doc:"A hex color including #, when the group has one."`
+	Value     float64        `json:"value" doc:"The measure of the tasks of the group."`
+	None      bool           `json:"none,omitempty" doc:"True for the group of tasks that have no value for the dimension."`
+	Other     bool           `json:"other,omitempty" doc:"True for the group the remaining groups beyond the limit are folded into. It has no children."`
+	Series    []*ReportPoint `json:"series,omitempty" doc:"The values per time bucket, for time series."`
+	Children  []*ReportGroup `json:"children,omitempty" doc:"The groups of then_by inside this group."`
 }
 
 // ReportTimeInfo describes the time range a time series covered.
@@ -881,7 +883,7 @@ func (r *reportRun) compare(rep *TaskReport) (*ReportComparison, error) {
 }
 
 func (r *reportRun) toGroup(n *reportNode) *ReportGroup {
-	g := &ReportGroup{Label: n.label.label, Color: n.label.color, Value: n.agg.value(r.plan.measure), Other: n.other}
+	g := &ReportGroup{Label: n.label.label, LabelCode: n.label.code, Color: n.label.color, Value: n.agg.value(r.plan.measure), Other: n.other}
 	switch {
 	case n.other:
 	case n.key.none:

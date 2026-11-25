@@ -14,6 +14,8 @@ export type ChartGroup = {
 	value: number
 	none?: boolean
 	other?: boolean
+	// Set when the server wrote the name itself (Open, Done, Low...): it is said in the language of the reader.
+	label_code?: string
 	children?: ChartGroup[]
 	series?: ChartPoint[]
 }
@@ -108,12 +110,33 @@ export function assignColors(groups: ChartGroup[]): string[] {
 	return colors
 }
 
-// The API names the empty and the folded group in English.
+// The names the server writes itself, by their label_code, and the translation that says each of them.
+export const GROUP_LABEL_KEYS: Record<string, string> = {
+	'status_category.open': 'workflow.categories.open',
+	'status_category.in_progress': 'workflow.categories.in_progress',
+	'status_category.done': 'workflow.categories.done',
+	'status_category.cancelled': 'workflow.categories.cancelled',
+	'done.true': 'workflow.categories.done',
+	'done.false': 'workflow.categories.open',
+	'checked.true': 'charts.checked',
+	'checked.false': 'charts.notChecked',
+	'priority.1': 'task.priority.low',
+	'priority.2': 'task.priority.medium',
+	'priority.3': 'task.priority.high',
+	'priority.4': 'task.priority.urgent',
+	'priority.5': 'task.priority.doNow',
+}
+
+// The API names the empty and the folded group, and the groups of a few dimensions, in English.
 export function groupLabel(group: ChartGroup, t: (key: string) => string): string {
 	if (group.other) {
 		return t('charts.other')
 	}
-	return group.none ? t('charts.noValue') : group.label
+	if (group.none) {
+		return t('charts.noValue')
+	}
+	const key = group.label_code ? GROUP_LABEL_KEYS[group.label_code] : undefined
+	return key ? t(key) : group.label
 }
 
 export function seriesColor(series: ChartSeries, index: number): string {

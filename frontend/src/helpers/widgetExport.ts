@@ -1,3 +1,4 @@
+import {translatedError} from '@/message'
 import {taskReportQuery, type TaskReportResponse} from '@/client/queries/reports'
 import type {ChartPoint} from '@/helpers/charts'
 import {fetchReportCsv, fetchTasksCsv, fetchWidgetReportCsv} from '@/client/queries/reportWidgets'
@@ -86,7 +87,7 @@ export async function exportWidgetTasks(type: string, config: Record<string, unk
 		const report = await queryClient.fetchQuery(taskReportQuery(request!))
 		const result = drilldownFilter(numberRangeInput(type, config, reportRangePoint(report.time)))
 		if (!result.ok) {
-			throw new Error(`The tasks of this widget cannot be listed: ${result.reason}`)
+			throw translatedError('dashboards.exportCannotList')
 		}
 		params.filter = result.filter
 		params.filter_include_nulls = result.includeNulls
@@ -103,7 +104,7 @@ async function createdVsDoneFilter(config: Record<string, unknown>, base: string
 	const ranges = ([['created', reports[0]], ['done_at', reports[1]]] as const).map(([column, report]) => {
 		const point = reportRangePoint(report?.time)
 		if (!point) {
-			throw new Error('The tasks of this widget cannot be listed: unknown_dimension')
+			throw translatedError('dashboards.exportCannotList')
 		}
 		return `(${column} >= ${JSON.stringify(point.start)} && ${column} < ${JSON.stringify(point.end)})`
 	})

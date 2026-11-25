@@ -2598,7 +2598,9 @@
 		"lineHelp": "Noktalar arasında gezinmek için ok tuşlarını, görevleri göstermek için Enter'ı kullan.",
 		"tasks": "görev yok | {count} görev | {count} görev",
 		"tasksUnit": "görev | görev | görev",
-		"deltaPrevious": "önceki dönemle karşılaştırıldığında"
+		"deltaPrevious": "önceki dönemle karşılaştırıldığında",
+		"checked": "İşaretli",
+		"notChecked": "İşaretli değil"
 	},
 	"dashboards": {
 		"title": "Panolar",
@@ -2859,7 +2861,8 @@
 				"listLimitRange": "1 ile 100 arasında bir sayı gir.",
 				"projectRequired": "Projeyi seç: durumlar tek bir projenin iş akışına aittir."
 			}
-		}
+		},
+		"exportCannotList": "Bu bileşenin görevleri bu ayarla listelenemiyor."
 	},
 	"reports": {
 		"dimension": {

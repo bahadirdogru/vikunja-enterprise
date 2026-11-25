@@ -68,6 +68,7 @@ export function normalizeGroup(group: ReportGroup): ReportGroupResponse {
 	return {
 		key: group.key ?? null,
 		label: group.label ?? '',
+		label_code: group.label_code ?? '',
 		color: group.color ?? '',
 		value: group.value ?? 0,
 		none: group.none ?? false,

@@ -1,10 +1,13 @@
 import {describe, expect, it} from 'vitest'
 
 import fixture from './stackedReports.fixture.json'
+import {readFileSync} from 'node:fs'
+import {resolve as resolvePath} from 'node:path'
 
 import {
 	assignColors,
 	groupLabel,
+	GROUP_LABEL_KEYS,
 	bandScale,
 	donutArcs,
 	formatAxisNumber,
@@ -252,5 +255,32 @@ describe('colours and labels of nested groups (real reports)', () => {
 		expect(groupLabel({key: null, label: 'None', value: 1, none: true}, t)).toBe('Değeri yok')
 		expect(groupLabel({key: null, label: 'Other', value: 1, other: true}, t)).toBe('Diğer')
 		expect(groupLabel({key: 1, label: 'Son', value: 1}, t)).toBe('Son')
+	})
+})
+
+const load = (name: string) => JSON.parse(readFileSync(resolvePath(process.cwd(), 'src/i18n/lang', `${name}.json`), 'utf-8')) as Record<string, unknown>
+const en = load('en')
+const trMessages = load('tr-TR')
+
+describe('names the server writes itself', () => {
+	const tr = (key: string) => `tr:${key}`
+
+	it('says the category, done, checked and priority groups in the language of the reader', () => {
+		expect(groupLabel({key: 'open', label: 'Open', value: 1, label_code: 'status_category.open'}, tr)).toBe('tr:workflow.categories.open')
+		expect(groupLabel({key: true, label: 'Done', value: 1, label_code: 'done.true'}, tr)).toBe('tr:workflow.categories.done')
+		expect(groupLabel({key: false, label: 'Not checked', value: 1, label_code: 'checked.false'}, tr)).toBe('tr:charts.notChecked')
+		expect(groupLabel({key: 5, label: 'DO NOW', value: 1, label_code: 'priority.5'}, tr)).toBe('tr:task.priority.doNow')
+	})
+
+	it('keeps the name of a group that belongs to the data, and of a code it does not know', () => {
+		expect(groupLabel({key: 3, label: 'Proje Alfa', value: 1}, tr)).toBe('Proje Alfa')
+		expect(groupLabel({key: 3, label: 'Something', value: 1, label_code: 'from_a_newer_server'}, tr)).toBe('Something')
+	})
+
+	it('has a text for every code in both languages', () => {
+		for (const [name, messages] of [['en', en], ['tr-TR', trMessages]] as const) {
+			const missing = Object.values(GROUP_LABEL_KEYS).filter(key => !key.split('.').reduce<unknown>((node, part) => (node as Record<string, unknown> | undefined)?.[part], messages))
+			expect(missing, name).toEqual([])
+		}
 	})
 })
