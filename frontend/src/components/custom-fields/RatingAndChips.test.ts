@@ -48,6 +48,54 @@ describe('RatingInput', () => {
 	})
 })
 
+describe('RatingInput keyboard', () => {
+	const mountRating = (modelValue: unknown, props: Record<string, unknown> = {}) =>
+		mount(RatingInput, {props: {modelValue, max: 5, labelledby: 'lbl', ...props}, global, attachTo: document.body})
+	const stars = (wrapper: ReturnType<typeof mountRating>) => wrapper.findAll('[role="radio"]')
+
+	it('has one tab stop: the chosen star, or the first when nothing is chosen', () => {
+		expect(stars(mountRating(3)).map(s => s.attributes('tabindex'))).toEqual(['-1', '-1', '0', '-1', '-1'])
+		expect(stars(mountRating(null)).map(s => s.attributes('tabindex'))).toEqual(['0', '-1', '-1', '-1', '-1'])
+		expect(stars(mountRating(9)).map(s => s.attributes('tabindex'))).toEqual(['0', '-1', '-1', '-1', '-1'])
+	})
+
+	it.each([
+		['ArrowRight', 2, 3],
+		['ArrowDown', 2, 3],
+		['ArrowLeft', 2, 1],
+		['ArrowUp', 2, 1],
+		['Home', 4, 1],
+		['End', 2, 5],
+		['ArrowRight', 5, 1],
+		['ArrowLeft', 1, 5],
+	])('%s from star %i chooses star %i and moves focus there', async (key, from, to) => {
+		const wrapper = mountRating(from)
+		await stars(wrapper)[from - 1]!.trigger('keydown', {key})
+		expect(wrapper.emitted('commit')).toEqual([[to]])
+		expect(document.activeElement).toBe(stars(wrapper)[to - 1]!.element)
+	})
+
+	it('starts at the first star when nothing is chosen and arrow right is pressed on it', async () => {
+		const wrapper = mountRating(null)
+		await stars(wrapper)[0]!.trigger('keydown', {key: 'ArrowRight'})
+		expect(wrapper.emitted('commit')).toEqual([[2]])
+	})
+
+	it('does not re-send the star that is already chosen and ignores other keys', async () => {
+		const wrapper = mountRating(1)
+		await stars(wrapper)[0]!.trigger('keydown', {key: 'Home'})
+		await stars(wrapper)[0]!.trigger('keydown', {key: 'a'})
+		await stars(wrapper)[0]!.trigger('keydown', {key: 'Tab'})
+		expect(wrapper.emitted('commit')).toBeUndefined()
+	})
+
+	it('does nothing when disabled', async () => {
+		const wrapper = mountRating(2, {disabled: true})
+		await stars(wrapper)[1]!.trigger('keydown', {key: 'ArrowRight'})
+		expect(wrapper.emitted('commit')).toBeUndefined()
+	})
+})
+
 describe('OptionChips', () => {
 	const options = [
 		{id: 1, title: 'DE', color: '#22aa55', position: 1},
