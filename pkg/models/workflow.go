@@ -631,7 +631,7 @@ func (wf *Workflow) removeStatuses(s *xorm.Session, a web.Auth, plan *workflowDo
 
 	for _, st := range plan.removed {
 		if target != nil {
-			if err := moveTasksBetweenStatuses(s, a, wf.ProjectID, st, target); err != nil {
+			if err := moveTasksBetweenStatuses(s, a, wf.ProjectID, st, target, removedIDs); err != nil {
 				return err
 			}
 		}

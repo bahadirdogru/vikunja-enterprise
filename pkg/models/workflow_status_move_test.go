@@ -57,6 +57,7 @@ func TestWorkflow_RemovedStatusMoveIsAStatusChange(t *testing.T) {
 		wf.MoveTasksTo = 2
 		events.ClearDispatchedEvents()
 		mustSaveWorkflow(t, wf, cfUser1)
+		requireNoTaskOnARemovedStatus(t, 11)
 
 		for _, id := range ids {
 			assert.Equal(t, int64(2), taskStatusOf(t, id).StatusID)
@@ -132,6 +133,17 @@ func TestWorkflow_RemovedStatusMoveIsAStatusChange(t *testing.T) {
 	})
 }
 
+// requireNoTaskOnARemovedStatus fails when a task of the workflow of the project is on a status that is archived or
+// gone: it would be off every board column.
+func requireNoTaskOnARemovedStatus(t *testing.T, projectID int64) {
+	t.Helper()
+	s := db.NewSession()
+	defer s.Close()
+	n, err := s.SQL("SELECT COUNT(*) FROM task_statuses ts JOIN workflows w ON w.id = ts.workflow_id LEFT JOIN workflow_statuses ws ON ws.id = ts.status_id WHERE w.project_id = ? AND (ws.id IS NULL OR ws.archived = ?)", projectID, true).Count()
+	require.NoError(t, err)
+	require.Zero(t, n, "tasks are left on a removed or archived status")
+}
+
 func removeTodoMovingTo(t *testing.T, targetTitle string) {
 	t.Helper()
 	wf := readWorkflow(t, 11)
@@ -141,6 +153,7 @@ func removeTodoMovingTo(t *testing.T, targetTitle string) {
 	wf.MoveTasksTo = statusIDByTitle(wf, targetTitle)
 	require.NotZero(t, wf.MoveTasksTo)
 	mustSaveWorkflow(t, wf, cfUser1)
+	requireNoTaskOnARemovedStatus(t, 11)
 }
 
 func TestWorkflow_RemovedStatusMoveDetails(t *testing.T) {
@@ -181,6 +194,7 @@ func TestWorkflow_RemovedStatusMoveDetails(t *testing.T) {
 		removeTodoMovingTo(t, "Done")
 
 		assert.False(t, taskDone(t, repeating.ID), "a repeating task is not done for good")
+		assert.Equal(t, int64(2), taskStatusOf(t, repeating.ID).StatusID, "it is reopened in the initial status of the new document, not in the removed one")
 		s := db.NewSession()
 		defer s.Close()
 		stored, err := GetTaskByIDSimple(s, repeating.ID)

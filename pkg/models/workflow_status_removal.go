@@ -17,6 +17,7 @@
 package models
 
 import (
+	"slices"
 	"time"
 
 	"code.vikunja.io/api/pkg/events"
@@ -55,7 +56,7 @@ import (
 // that size is better seen than started by accident. The limit is a variable only for the tests.
 var maxTasksMovedWithAStatus int64 = 20000
 
-func moveTasksBetweenStatuses(s *xorm.Session, a web.Auth, projectID int64, from, to *WorkflowStatus) error {
+func moveTasksBetweenStatuses(s *xorm.Session, a web.Auth, projectID int64, from, to *WorkflowStatus, removedIDs []int64) error {
 	// Lock the tasks before anything else is read, in one statement, like lockApprovalRequest: a task that is
 	// changed at the same moment holds this lock first (it takes the task, then the status row), so after this
 	// the list of tasks in the status is the truth, nobody moves one out of it unseen, and no history row or event
@@ -75,7 +76,7 @@ func moveTasksBetweenStatuses(s *xorm.Session, a web.Auth, projectID int64, from
 	}
 
 	m := &forcedStatusMove{
-		s: s, a: a, projectID: projectID, from: from, to: to,
+		s: s, a: a, projectID: projectID, from: from, to: to, removedIDs: removedIDs,
 		toFinal:     to.Category.isFinal(),
 		doneChanges: from.Category.isFinal() != to.Category.isFinal(),
 		doer:        doerFromAuth(s, a),
@@ -103,6 +104,7 @@ type forcedStatusMove struct {
 	a           web.Auth
 	projectID   int64
 	from, to    *WorkflowStatus
+	removedIDs  []int64
 	toFinal     bool
 	doneChanges bool
 	manualViews []*ProjectView
@@ -141,6 +143,14 @@ func (m *forcedStatusMove) moveChunk(chunk []int64) error {
 			var err error
 			if m.d, err = loadWorkflowDef(m.s, m.projectID); err != nil {
 				return err
+			}
+			// The workflow is read in the middle of its update: a status that is being removed still has its
+			// initial flag, and it sorts first. A repeating task is reopened in the initial status, which has to
+			// be the one of the submitted document, so the statuses that go away are no candidates.
+			for _, st := range m.d.workflow.Statuses {
+				if slices.Contains(m.removedIDs, st.ID) {
+					st.IsInitial = false
+				}
 			}
 		}
 		if _, err := m.d.runStatusChange(m.s, m.a, &statusChange{Task: t, ToStatusID: m.to.ID, SkipChecks: true, Cause: historyCauseStatusRemoved}); err != nil {
