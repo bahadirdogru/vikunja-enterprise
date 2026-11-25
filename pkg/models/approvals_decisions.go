@@ -94,8 +94,8 @@ func evaluateApproval(mode ApprovalMode, approvers []*ApprovalApprover) Approval
 	return ""
 }
 
-// dropApproversWithoutAccess removes the undecided approvers who cannot read the project any more, so their slot
-// no longer counts. It returns the approvers that are left.
+// dropApproversWithoutAccess removes the undecided approvers who cannot read the project any more or whose account
+// is disabled or gone, so their slot no longer counts. It returns the approvers that are left.
 func dropApproversWithoutAccess(s *xorm.Session, req *ApprovalRequest) ([]*ApprovalApprover, error) {
 	rows, err := getApprovalApprovers(s, req.ID, true)
 	if err != nil {
@@ -107,7 +107,9 @@ func dropApproversWithoutAccess(s *xorm.Session, req *ApprovalRequest) ([]*Appro
 			undecided = append(undecided, row.UserID)
 		}
 	}
-	allowed, err := usersWhoMayReadProject(s, req.ProjectID, undecided)
+	// Somebody who is only locked out by failed logins keeps the slot: otherwise ten bad logins would remove an
+	// approver from an "all" request and let the others decide without them.
+	allowed, err := usersWhoMayReadProjectWhere(s, req.ProjectID, undecided, true)
 	if err != nil {
 		return nil, err
 	}
@@ -424,7 +426,7 @@ func announceCancellation(s *xorm.Session, req *ApprovalRequest, by *user.User) 
 // locking read and skipped when somebody else resolved them first.
 func cancelPendingApprovals(s *xorm.Session, cond builder.Cond, reason string) error {
 	reqs := []*ApprovalRequest{}
-	if err := lockingSession(s).Where(builder.And(cond, builder.Eq{"status": ApprovalStatusPending})).OrderBy("id ASC").Find(&reqs); err != nil {
+	if err := lockingSession(s).Where(builder.And(cond, builder.Eq{"status": ApprovalStatusPending})).OrderBy("task_id ASC, id ASC").Find(&reqs); err != nil {
 		return err
 	}
 	for _, req := range reqs {

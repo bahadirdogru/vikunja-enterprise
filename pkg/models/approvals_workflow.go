@@ -263,6 +263,14 @@ func executeApprovedTransition(s *xorm.Session, req *ApprovalRequest, task *Task
 	if requester == nil {
 		return ApprovalCancelRequesterNoAccess, "", nil
 	}
+	// A bot cannot authenticate once its owner is disabled, although the bot itself stays active. A login lockout
+	// (user.StatusAccountLocked) does not stop the transition on purpose: it is temporary and anybody can cause it,
+	// and the requester asked while they could act; only an admin's decision to disable the account does.
+	if requester.IsBot() {
+		if _, err = user.GetUserByID(s, requester.BotOwnerID); user.IsErrAccountDisabled(err) {
+			return ApprovalCancelRequesterDisabled, "", nil
+		}
+	}
 
 	_, err = d.runStatusChange(s, requester, &statusChange{
 		Task:              task,

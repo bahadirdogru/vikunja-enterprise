@@ -370,8 +370,17 @@ func hydrateApprovalRequest(s *xorm.Session, req *ApprovalRequest) error {
 	return hydrateApprovalRequests(s, []*ApprovalRequest{req})
 }
 
-// usersWhoMayReadProject returns the given users who exist, are active and can read the project.
+// usersWhoMayReadProject returns the given users who exist, are active and can read the project. A bot counts
+// only while its owner is active too: a bot of a disabled owner cannot authenticate.
 func usersWhoMayReadProject(s *xorm.Session, projectID int64, userIDs []int64) ([]*user.User, error) {
+	return usersWhoMayReadProjectWhere(s, projectID, userIDs, false)
+}
+
+// usersWhoMayReadProjectWhere is usersWhoMayReadProject; keepLocked also accepts accounts that are locked out by
+// failed logins. The lockout is temporary and anybody can cause it, so an approver who is only locked out keeps
+// their slot (see dropApproversWithoutAccess). A disabled account, one that waits for its e-mail address to be
+// confirmed (how admins freeze one) and a deleted one do not.
+func usersWhoMayReadProjectWhere(s *xorm.Session, projectID int64, userIDs []int64, keepLocked bool) ([]*user.User, error) {
 	userIDs = uniqueInts(userIDs)
 	if len(userIDs) == 0 {
 		return []*user.User{}, nil
@@ -380,11 +389,29 @@ func usersWhoMayReadProject(s *xorm.Session, projectID int64, userIDs []int64) (
 	if err != nil {
 		return nil, err
 	}
+	ownerIDs := []int64{}
+	for _, u := range users {
+		if u.IsBot() {
+			ownerIDs = append(ownerIDs, u.BotOwnerID)
+		}
+	}
+	owners, err := user.GetUsersByIDs(s, uniqueInts(ownerIDs))
+	if err != nil {
+		return nil, err
+	}
+	eligible := func(u *user.User) bool {
+		return u.Status == user.StatusActive || (keepLocked && u.Status == user.StatusAccountLocked)
+	}
 	result := make([]*user.User, 0, len(userIDs))
 	for _, id := range userIDs {
 		u, has := users[id]
-		if !has || u.Status != user.StatusActive {
+		if !has || !eligible(u) {
 			continue
+		}
+		if u.IsBot() {
+			if owner, ok := owners[u.BotOwnerID]; !ok || !eligible(owner) {
+				continue
+			}
 		}
 		can, _, err := (&Project{ID: projectID}).CanRead(s, &user.User{ID: id})
 		if err != nil {

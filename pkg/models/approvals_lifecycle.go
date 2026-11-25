@@ -45,28 +45,34 @@ func deleteApprovalsForProject(s *xorm.Session, projectID int64) error {
 // given projects or everywhere when none are given, and looks at each request again: it may now be approved
 // because everybody who is left approved, or cancelled because nobody is left.
 func dropApproverFromPendingApprovals(s *xorm.Session, userID int64, projectIDs []int64, everywhere bool) error {
-	pending := builder.Select("id").From("approval_requests").Where(builder.Eq{"status": ApprovalStatusPending})
-	if !everywhere {
-		if len(projectIDs) == 0 {
-			return nil
-		}
-		pending = builder.Select("id").From("approval_requests").Where(builder.And(
-			builder.Eq{"status": ApprovalStatusPending},
-			builder.In("project_id", projectIDs),
-		))
+	return dropApproversFromPendingApprovals(s, []int64{userID}, projectIDs, everywhere)
+}
+
+// dropApproversFromPendingApprovals is dropApproverFromPendingApprovals for several users at once. The requests
+// are walked in the order of their tasks, then of their ids: every path that takes more than one task lock (a
+// status move, another disabled or deleted account) takes them in task id order, and walking in request id order
+// let two of these deadlock on PostgreSQL (40P01) and MySQL (1213) when their requests sit on the same tasks in
+// opposite order.
+func dropApproversFromPendingApprovals(s *xorm.Session, userIDs []int64, projectIDs []int64, everywhere bool) error {
+	if len(userIDs) == 0 || (!everywhere && len(projectIDs) == 0) {
+		return nil
 	}
-	requestIDs := []int64{}
-	err := s.Table("approval_approvers").
-		Where(builder.And(builder.Eq{"user_id": userID}, builder.IsNull{"decision"}, builder.In("request_id", pending))).
-		OrderBy("request_id ASC").
-		Cols("request_id").
-		Find(&requestIDs)
-	if err != nil {
+	conds := []builder.Cond{
+		builder.Eq{"status": ApprovalStatusPending},
+		builder.In("id", builder.Select("request_id").From("approval_approvers").
+			Where(builder.And(builder.In("user_id", userIDs), builder.IsNull{"decision"}))),
+	}
+	if !everywhere {
+		conds = append(conds, builder.In("project_id", projectIDs))
+	}
+	reqs := []*ApprovalRequest{}
+	if err := s.Cols("id", "task_id").Where(builder.And(conds...)).OrderBy("task_id ASC, id ASC").Find(&reqs); err != nil {
 		return err
 	}
 
-	for _, id := range requestIDs {
-		if err = lockApprovalRequest(s, id); err != nil {
+	for _, r := range reqs {
+		id := r.ID
+		if err := lockApprovalRequest(s, id); err != nil {
 			return err
 		}
 		req, err := getApprovalRequest(s, id, true)
@@ -76,7 +82,7 @@ func dropApproverFromPendingApprovals(s *xorm.Session, userID int64, projectIDs 
 		if req.Status != ApprovalStatusPending {
 			continue
 		}
-		if _, err = s.Where(builder.And(builder.Eq{"request_id": id}, builder.Eq{"user_id": userID}, builder.IsNull{"decision"})).
+		if _, err = s.Where(builder.And(builder.Eq{"request_id": id}, builder.In("user_id", userIDs), builder.IsNull{"decision"})).
 			Delete(&ApprovalApprover{}); err != nil {
 			return err
 		}
@@ -98,12 +104,4 @@ func removeUserFromApprovals(s *xorm.Session, userID int64) error {
 	}
 	_, err := s.Where("user_id = ?", userID).Delete(&ApprovalApprover{})
 	return err
-}
-
-// removeDisabledUserFromApprovals is part of disabling an account: it is dropped from the undecided slots of the
-// pending requests like a deleted user, so a request that was waiting only for them ends as no_approvers instead
-// of staying pending. The requests they made are left alone: the account may be enabled again, and a transition
-// that is approved while the requester is disabled ends as requester_disabled (see executeApprovedTransition).
-func removeDisabledUserFromApprovals(s *xorm.Session, userID int64) error {
-	return dropApproverFromPendingApprovals(s, userID, nil, true)
 }
