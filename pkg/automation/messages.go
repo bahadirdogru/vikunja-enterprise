@@ -18,6 +18,7 @@ package automation
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -57,7 +58,8 @@ func (p P) with(other map[string]string) P {
 
 // What is stored and sent as values of a sentence is bounded like the English text next to it (Error is cut to 4000
 // bytes, Output to 16 KiB): a task description of a megabyte must not become a megabyte per run, and a row must fit
-// the text column of every database. The bound is applied where a sentence leaves the engine (stored in a run or
+// the text column of every database: the values of an error are at most 4000 bytes (24 KB as JSON, whatever the
+// escaping), the sentences of a step at most the size of the output (16 KiB as JSON). The bound is applied where a sentence leaves the engine (stored in a run or
 // step, sent in a test), after the secrets were masked: a cut before the mask could split a secret into a piece the
 // masker no longer finds.
 const (
@@ -120,6 +122,16 @@ func boundMessages(list []*models.AutomationMessage) []*models.AutomationMessage
 			continue
 		}
 		out = append(out, &models.AutomationMessage{Code: m.Code, Params: boundParams(m.Params, maxMessageParamBytes)})
+	}
+	// What is stored is the JSON of the list, and JSON escaping can make a value six times longer (control
+	// characters): the list is bounded as it is stored, to what the output of a step may be, which every database's
+	// text column holds (MySQL TEXT: 64 KiB).
+	for len(out) > 0 {
+		encoded, err := json.Marshal(out)
+		if err != nil || len(encoded) <= maxOutputBytes {
+			break
+		}
+		out = out[:len(out)-1]
 	}
 	return out
 }

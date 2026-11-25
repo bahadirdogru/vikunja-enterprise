@@ -53,11 +53,7 @@ func languageOf(s *xorm.Session, a web.Auth) string {
 	return full.Language
 }
 
-// defaultKanbanBucketTitle is the name of a default column in the language of the person who creates the view.
-func defaultKanbanBucketTitle(s *xorm.Session, a web.Auth, key string) string {
-	return defaultKanbanBucketTitleIn(languageOf(s, a), key)
-}
-
+// defaultKanbanBucketTitleIn is the name of a default column in the language of the person who creates the view.
 func defaultKanbanBucketTitleIn(lang, key string) string {
 	text := i18n.T(lang, key)
 	if text == "" || text == key {

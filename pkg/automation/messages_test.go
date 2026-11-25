@@ -538,12 +538,34 @@ func TestACreatedTaskIsSaidInThePastWithItsNumberInEveryKind(t *testing.T) {
 	} {
 		t.Run(typ, func(t *testing.T) {
 			reset(t)
-			_, run, steps := runAction(t, projectOwned, user1, user1, act(typ, map[string]any{"title": "Yeni iş"}))
+			// The task that is created triggers the rule again (one level deeper): look at the run of the person's change.
+			r := addRule(t, projectOwned, user1, rule(spec.TriggerTaskCreated, nil, nil, act(typ, map[string]any{"title": "Yeni iş"})))
+			newTask(t, projectOwned, "Original title", user1)
+			drain(t)
+			var run *models.AutomationRun
+			for _, candidate := range allRuns(t, r.ID) {
+				if candidate.Depth == 0 {
+					run = candidate
+				}
+			}
+			require.NotNil(t, run)
 			require.Equal(t, models.AutomationRunSuccess, run.Status, run.Error)
+			steps := runSteps(t, run.ID)
 			require.NotEmpty(t, steps[0].OutputMessages)
 			assert.Equal(t, code, steps[0].OutputMessages[0].Code)
 			assert.Equal(t, "Yeni iş", steps[0].OutputMessages[0].Params["title"])
 			assert.NotEmpty(t, steps[0].OutputMessages[0].Params["id"])
 		})
 	}
+}
+
+func TestTheSentencesOfAStepFitTheirColumnAsJSON(t *testing.T) {
+	// Control characters are escaped to six bytes in JSON.
+	many := make([]*models.AutomationMessage, maxOutputMessages)
+	for i := range many {
+		many[i] = say("add_comment", P{"text": strings.Repeat("\x01", 1000)})
+	}
+	bounded := boundMessages(many)
+	assert.LessOrEqual(t, jsonSize(t, bounded), maxOutputBytes)
+	assert.NotEmpty(t, bounded)
 }
