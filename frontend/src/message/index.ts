@@ -7,7 +7,7 @@ function errorRecord(value: unknown): Record<string, unknown> {
 
 // Some errors name their reason in code (reason_code) besides the English text: the reason is said in the language of
 // the reader. reason_type and reason_limit are the values the text of the reason mentions.
-function translatedReason(params: Record<string, unknown>): Record<string, unknown> {
+export function translatedReason(params: Record<string, unknown>): Record<string, unknown> {
 	const key = `customFields.reasons.${String(params.reason_code)}`
 	if (typeof params.reason_code !== 'string' || !i18n.global.te(key)) return params
 	return {...params, reason: i18n.global.t(key, {type: params.reason_type, limit: params.reason_limit})}

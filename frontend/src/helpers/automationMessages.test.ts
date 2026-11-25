@@ -27,6 +27,15 @@ describe('the sentences of the server about an automation run', () => {
 			expect(automationCodeText('4002', {}, 'The task does not exist.')).toBe('Görev bulunamadı.')
 		})
 
+		it('says the reason of a custom field error in Turkish too', () => {
+			const text = automationCodeText('20005', {reason: 'expected a number', reason_code: 'expected_number'}, 'x')
+			expect(text).toBe('Değer bu özel alan için geçerli değil: bir sayı bekleniyor')
+		})
+
+		it('keeps the English note when the failed condition has no sentence of its own', () => {
+			expect(automationCodeText('note_conditions_fail', {code: 'a_code_from_a_newer_server'}, 'The conditions fail: boom')).toBe('The conditions fail: boom')
+		})
+
 		it('wraps the sentence of an action that had nothing to do', () => {
 			expect(automationCodeText('nothing_to_do', {inner: 'mark_done'}, 'nothing to do: mark the task as done (already so)'))
 				.toBe('Yapılacak bir şey yok, zaten öyle: Görevi tamamlandı olarak işaretle')

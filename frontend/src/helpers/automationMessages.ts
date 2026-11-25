@@ -1,4 +1,5 @@
 import {i18n} from '@/i18n'
+import {translatedReason} from '@/message'
 import {formatDateLong} from '@/helpers/time/formatDate'
 import {secondsToPeriod} from '@/helpers/time/period'
 
@@ -58,7 +59,7 @@ export function automationCodeText(code: string | null | undefined, params: Para
 	const values = prepare(params, code)
 
 	if (/^\d+$/.test(code)) {
-		return lookup(`error.${code}`, values) ?? fallback
+		return lookup(`error.${code}`, translatedReason(values) as Params) ?? fallback
 	}
 	// A sentence that wraps another one: "nothing to do: <what it would have done>".
 	if (code === 'nothing_to_do' || code === 'task_created') {
@@ -69,6 +70,8 @@ export function automationCodeText(code: string | null | undefined, params: Para
 	// The conditions of a test failed with an error of their own.
 	if (code === 'note_conditions_fail') {
 		const error = automationCodeText(values.code, params, values.message ?? '')
+		// Without a sentence for the failure, the English note of the server says more than a note with nothing after it.
+		if (error === '') return fallback
 		return lookup(`automation.messages.${code}`, {...values, error}) ?? fallback
 	}
 	return lookup(`automation.messages.${code}`, values) ?? fallback
