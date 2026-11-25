@@ -2,7 +2,7 @@ import type {APIRequestContext, Browser, Page} from '@playwright/test'
 import {UserFactory} from '../factories/user'
 import {UserProjectFactory} from '../factories/users_project'
 import {login} from './authenticateUser'
-import {apiV1Url} from './apiUrl'
+import {apiRootUrl, apiV1Url} from './apiUrl'
 
 /**
  * Helpers the e2e specs of the fork's modules share: seeding through the real API (so default views, buckets and
@@ -79,3 +79,23 @@ export async function pageAs(browser: Browser, request: APIRequestContext, user:
 	await login(page, request, user)
 	return page
 }
+
+export interface WorkflowStatus {
+	id: number
+	title: string
+	category: string
+	is_initial: boolean
+}
+
+/** Replaces the workflow of a project through /api/v2. Statuses may be referred to by a negative id in the transitions. */
+export async function putWorkflow(request: APIRequestContext, token: string, projectId: number, document: Record<string, unknown>): Promise<{statuses: WorkflowStatus[], transitions: {id: number, from_status_id: number, to_status_id: number}[]}> {
+	const base = `${apiRootUrl(process.env.API_URL || 'http://127.0.0.1:3456')}/api/v2`
+	return await check(await request.put(`${base}/projects/${projectId}/workflow`, {headers: headers(token), data: document}), 'put workflow')
+}
+
+export const DEFAULT_STATUSES = [
+	{id: -1, title: 'To do', category: 'open', is_initial: true},
+	{id: -2, title: 'In progress', category: 'in_progress'},
+	{id: -3, title: 'In review', category: 'in_progress'},
+	{id: -4, title: 'Done', category: 'done'},
+]
