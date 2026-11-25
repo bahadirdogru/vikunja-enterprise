@@ -410,11 +410,16 @@ func (l *SendApprovalResolvedNotification) Handle(msg *message.Message) error {
 	return sess.Commit()
 }
 
-// RegisterApprovalReminderCron registers the job that reminds approvers of requests whose due time passed.
+// RegisterApprovalReminderCron registers the job that reminds approvers of requests whose due time passed, and the
+// one that repairs the slots of deactivated approvers.
 func RegisterApprovalReminderCron() {
 	err := cron.Schedule("*/5 * * * *", func() { sendApprovalReminders(time.Now()) })
 	if err != nil {
 		log.Fatalf("Could not register the approval reminder cron: %s", err)
+	}
+	// The repair of the approver slots of deactivated accounts runs in the same place, see repairApprovalApprovers.
+	if err = cron.Schedule("*/5 * * * *", repairApprovalApprovers); err != nil {
+		log.Fatalf("Could not register the approval repair cron: %s", err)
 	}
 }
 
