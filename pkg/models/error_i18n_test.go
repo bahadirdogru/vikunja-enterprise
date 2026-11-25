@@ -102,6 +102,11 @@ func TestI18nParamsContract(t *testing.T) {
 			expectedCode: models.ErrCodeCustomFieldValueTooLong,
 		},
 		{
+			name:         "ErrWorkflowStatusMoveTooLarge",
+			err:          models.ErrWorkflowStatusMoveTooLarge{StatusID: 1, Title: "x", Tasks: 2, Limit: 1},
+			expectedCode: models.ErrCodeWorkflowStatusMoveTooLarge,
+		},
+		{
 			name:         "migration.ErrCSVDuplicateColumnMapping",
 			err:          &migration.ErrCSVDuplicateColumnMapping{Column: 1},
 			expectedCode: migration.ErrCodeCSVDuplicateColumnMapping,
