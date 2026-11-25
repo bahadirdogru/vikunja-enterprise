@@ -85,8 +85,6 @@ type matrixEndpoint struct {
 	deny, denyStranger int
 	// only restricts who gets through to the named callers; everybody else is refused with the deny status.
 	only []string
-	// noToken is set for routes that are in no token scope.
-	noToken bool
 }
 
 type matrixWorld struct {

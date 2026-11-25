@@ -166,8 +166,8 @@ func TestWorkflow_SaveSizeBoundary(t *testing.T) {
 	}
 
 	t.Run("exactly the limit is accepted", func(t *testing.T) {
-		require.NoError(t, remove(t, extra+1)) // the three new tasks and fixture task 20
-		requireNoTaskOnARemovedStatus(t, 11)
+		require.NoError(t, remove(t, extra+1))                            // the three new tasks and fixture task 20
+		db.AssertCount(t, "task_statuses", builder.Eq{"status_id": 1}, 0) // nothing is left on the removed status
 		db.AssertCount(t, "task_status_history", builder.Like{"comment", "%status_removed%"}, extra+1)
 	})
 

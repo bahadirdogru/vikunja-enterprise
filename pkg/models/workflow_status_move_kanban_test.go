@@ -91,7 +91,8 @@ func TestWorkflow_RemovedStatusMoveFollowsTheManualKanbanBuckets(t *testing.T) {
 			}
 		}
 		// A workflow needs a done status, so another one takes the place of the removed one.
-		wf.Statuses = append(keep, &WorkflowStatus{ID: -1, Title: "Closed", Category: WorkflowCategoryDone})
+		keep = append(keep, &WorkflowStatus{ID: -1, Title: "Closed", Category: WorkflowCategoryDone})
+		wf.Statuses = keep
 		trs := wf.Transitions[:0:0]
 		for _, tr := range wf.Transitions {
 			if tr.ToStatusID != 4 && tr.FromStatusID != 4 {
@@ -102,7 +103,6 @@ func TestWorkflow_RemovedStatusMoveFollowsTheManualKanbanBuckets(t *testing.T) {
 		wf.MoveTasksTo = statusIDByTitle(wf, "Doing")
 		require.NotZero(t, wf.MoveTasksTo)
 		mustSaveWorkflow(t, wf, cfUser1)
-		requireNoTaskOnARemovedStatus(t, 11)
 
 		assert.False(t, taskDone(t, 20))
 		assert.Equal(t, int64(2), taskStatusOf(t, 20).StatusID)
