@@ -563,6 +563,7 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
 
 ## Remaining
 
+- Workflow: changing the category of a status in the editor flips the done flag of its tasks (and announces `task.updated`), but does not move them to the done bucket of manual kanban views; tasks moved because their status was removed do.
 - Default dashboards for new projects with a workflow (4c).
 - MCP exposure of the fork's endpoints; the new automation routes are not in
   the MCP allow-list.
