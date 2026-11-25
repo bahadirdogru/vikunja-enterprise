@@ -1871,7 +1871,7 @@
 		"22008": "Gizli anahtarın şifresi artık çözülemiyor. Yeniden gir.",
 		"22009": "Bu otomasyon çalıştırılamaz: kapalı ya da elle çalıştırma tetikleyicisi yok.",
 		"22010": "Bu webhook adresi bulunamadı.",
-		"22011": "İsteğin imzası geçerli değil. Gizli anahtarı ve zaman damgasını kontrol et (gönderenin saati birkaç dakikadan fazla sapmış olabilir) ve her çağrıyı yeniden imzaladığından emin ol.",
+		"22011": "İsteğin imzası geçerli değil. Gizli anahtarı ve zaman damgasını kontrol et (gönderenin saati birkaç dakikadan fazla sapmış olabilir) ve her yeni çağrıyı yeniden imzaladığından emin ol.",
 		"22012": "Bu webhook'a çok fazla çağrı yapıldı. Daha sonra tekrar dene.",
 		"22013": "İsteğin gövdesi bir JSON nesnesi olmalı.",
 		"22014": "Bu proje otomasyon kuralı sınırına ulaştı. İhtiyacın olmayan bir kuralı sil ya da bir yöneticiden automation.maxrulesperproject değerini yükseltmesini iste.",
@@ -3354,7 +3354,7 @@
 			"saveFirst": "Önce değişikliklerini kaydet.",
 			"usage": "Gövdesi bir JSON nesnesi olan bir POST isteği gönder (boş gövde için {'{}'} kullan). İstek hemen yanıtlanır ve kural arka planda çalışır.",
 			"signature": "Bir imza anahtarı seçildiyse çağrılar X-Vikunja-Timestamp (Unix zamanı, saniye cinsinden) ve X-Vikunja-Signature: sha256=HEX başlıklarını taşımalıdır (HEX; zaman damgası, nokta, bu webhook'un adresindeki erişim anahtarı, nokta ve ham gövde art arda eklenerek oluşan metnin gizli anahtarla hesaplanan HMAC-SHA256 değeridir). Başka bir webhook için yapılmış imza burada kabul edilmez.",
-			"replay": "İmzalı çağrılar tekrar oynatmaya (replay) karşı korunur: zaman damgası birkaç dakikadan (varsayılan 5) eski olan çağrı ve aynı imzayla gelen ikinci çağrı (kabul edilmiş bir çağrının yeniden denemesi de) reddedilir. Her çağrıda yeni bir zaman damgası ve imza gönder. İmza anahtarı olmayan bir webhook imzalı değildir ve korunmaz: adresi bilen herkes onu çağırabilir.",
+			"replay": "İmzalı çağrılar tekrar oynatmaya (replay) karşı korunur: zaman damgası birkaç dakikadan (varsayılan 5) eski olan çağrı reddedilir. Aynı çağrıyı (aynı zaman damgası ve imza) yeniden göndermek güvenlidir: çağrı daha önce kabul edildiyse aynı yanıtı alırsın ve hiçbir şey ikinci kez çalışmaz. Her yeni çağrıda yeni bir zaman damgası ve imza gönder. İmza anahtarı olmayan bir webhook imzalı değildir ve korunmaz: adresi bilen herkes onu çağırabilir.",
 			"rotateConfirm": {
 				"title": "Yeni webhook adresi oluşturulsun mu?",
 				"text": "Geçerli adres hemen geçersiz olur. Onu kullanan her hizmete yeni adres verilmelidir."

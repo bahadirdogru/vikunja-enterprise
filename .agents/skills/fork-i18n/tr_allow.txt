@@ -13,6 +13,8 @@ title-case frontend:workflow.empty.text  # example status names
 title-case frontend:workflow.validation.noDone  # name of the status category "Tamamlandı"
 title-case frontend:workflow.matrix.corner  # "Nereden \ Nereye", two labels of one table corner
 title-case frontend:automation.templates.fieldOnDone.title  # name of the status category "Tamamlandı"
+title-case frontend:error.20008  # "Latin alfabesi", a proper name (TDK)
+title-case frontend:customFields.errors.value.tooLong  # "Latin alfabesi", a proper name (TDK)
 
 # Not words.
 untranslated pkg:notifications.email_confirm.subject_new  # "%[1]s + Vikunja = <3" has nothing to translate
