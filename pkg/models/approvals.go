@@ -22,12 +22,14 @@ import (
 	"strings"
 	"time"
 
+	"code.vikunja.io/api/pkg/db"
 	"code.vikunja.io/api/pkg/events"
 	"code.vikunja.io/api/pkg/user"
 	"code.vikunja.io/api/pkg/web"
 
 	"xorm.io/builder"
 	"xorm.io/xorm"
+	"xorm.io/xorm/schemas"
 )
 
 // ApprovalStatus is the state of an approval request.
@@ -229,8 +231,25 @@ func isLinkShareAuth(a web.Auth) bool {
 // cancellations of one request. The reads that follow have to be locking reads for the same reason, see
 // lockingSession.
 func lockApprovalRequest(s *xorm.Session, id int64) error {
-	if _, err := s.Exec("UPDATE tasks SET id = id WHERE id IN (SELECT task_id FROM approval_requests WHERE id = ?)", id); err != nil {
-		return err
+	if dbType := db.Type(); dbType != schemas.MYSQL && dbType != schemas.POSTGRES {
+		// SQLite has one writer and no row locks. The first statement is a write with a subquery, so a transaction
+		// that reads first never has to upgrade its lock.
+		if _, err := s.Exec("UPDATE tasks SET id = id WHERE id IN (SELECT task_id FROM approval_requests WHERE id = ?)", id); err != nil {
+			return err
+		}
+	} else {
+		// Two steps, each by primary key. An UPDATE with an IN subquery runs as a dependent subquery on MySQL before
+		// 8.0.21 and MariaDB 10.2 and takes next-key locks on the tasks it scans. The task of a request never changes.
+		var taskID int64
+		has, err := s.Table("approval_requests").Where("id = ?", id).Cols("task_id").Get(&taskID)
+		if err != nil {
+			return err
+		}
+		if has {
+			if _, err = s.Table("tasks").Where("id = ?", taskID).Update(map[string]any{"id": taskID}); err != nil {
+				return err
+			}
+		}
 	}
 	_, err := s.Table("approval_requests").Where("id = ?", id).Update(map[string]any{"id": id})
 	return err

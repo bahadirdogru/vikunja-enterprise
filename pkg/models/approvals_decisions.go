@@ -422,15 +422,30 @@ func announceCancellation(s *xorm.Session, req *ApprovalRequest, by *user.User) 
 	return nil
 }
 
-// cancelPendingApprovals cancels every pending request that matches the condition. The requests are read with a
-// locking read and skipped when somebody else resolved them first.
+// cancelPendingApprovals cancels every pending request that matches the condition. The requests are found without
+// a lock and then taken one by one in the order of their tasks (lockApprovalRequest: the task, then the request,
+// like every other path), so a decision on one of them that holds its task and waits for the request cannot meet
+// this one that holds the request and waits for the task. A request somebody resolved first is skipped.
 func cancelPendingApprovals(s *xorm.Session, cond builder.Cond, reason string) error {
-	reqs := []*ApprovalRequest{}
-	if err := lockingSession(s).Where(builder.And(cond, builder.Eq{"status": ApprovalStatusPending})).OrderBy("task_id ASC, id ASC").Find(&reqs); err != nil {
+	candidates := []*ApprovalRequest{}
+	if err := s.Cols("id", "task_id").Where(builder.And(cond, builder.Eq{"status": ApprovalStatusPending})).OrderBy("task_id ASC, id ASC").Find(&candidates); err != nil {
 		return err
 	}
-	for _, req := range reqs {
-		err := cancelApprovalRequest(s, req, reason, "", nil)
+	for _, c := range candidates {
+		if err := lockApprovalRequest(s, c.ID); err != nil {
+			return err
+		}
+		req, err := getApprovalRequest(s, c.ID, true)
+		if IsErrApprovalRequestDoesNotExist(err) {
+			continue
+		}
+		if err != nil {
+			return err
+		}
+		if req.Status != ApprovalStatusPending {
+			continue
+		}
+		err = cancelApprovalRequest(s, req, reason, "", nil)
 		if IsErrApprovalNotPending(err) {
 			continue
 		}
