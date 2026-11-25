@@ -1146,6 +1146,22 @@
       "title_key": "automation.field.event_new_cancel_reason"
     },
     {
+      "name": "event.new.cause",
+      "kind": "enum",
+      "enum": [
+        "status_removed"
+      ],
+      "operators": [
+        "=",
+        "!=",
+        "in",
+        "not in",
+        "is_empty",
+        "is_not_empty"
+      ],
+      "title_key": "automation.field.event_new_cause"
+    },
+    {
       "name": "event.new.form_id",
       "kind": "number",
       "operators": [

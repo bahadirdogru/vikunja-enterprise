@@ -47,7 +47,7 @@ Nineteen trigger types. "Event" is the engine event the trigger listens to.
 | `task.completed` | `task.updated` | none | The done flag changed to true |
 | `task.reopened` | `task.updated` | none | The done flag changed to false |
 | `task.deleted` | `task.deleted` | none | Runs after the task is gone; conditions and templates see the task as it was; actions that need the task fail |
-| `task.status_changed` | `task.status.changed` | `from_status_id`, `to_status_id`, `to_category` | |
+| `task.status_changed` | `task.status.changed` | `from_status_id`, `to_status_id`, `to_category` | `event.new.cause` is `status_removed` when the status the task was in was removed from the workflow and its tasks were moved, empty for a change somebody made |
 | `task.custom_field_changed` | `task.custom-field-value.updated` | `field_id` | |
 | `task.assignee_added` | `task.assignee.created` | none | |
 | `task.assignee_removed` | `task.assignee.deleted` | none | |

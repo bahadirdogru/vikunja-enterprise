@@ -474,6 +474,7 @@ func Fields() []*FieldDef {
 		field("event.new.approvers", KindUsers, multiple),
 		field("event.new.outcome", KindEnum, enumOf(ApprovalOutcomes...)),
 		field("event.new.cancel_reason", KindString),
+		field("event.new.cause", KindEnum, enumOf("status_removed")),
 		field("event.new.form_id", KindNumber),
 		field("event.new.form_title", KindString),
 		field("event.new.submitter_name", KindString),

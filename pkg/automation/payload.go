@@ -159,7 +159,13 @@ func describe(event events.Event) (p *Payload, ok bool) {
 		if e.Task == nil {
 			return nil, false
 		}
-		p = taskPayload(e.Name(), e.Task, e.Doer, statusValues(e.FromStatus), statusValues(e.ToStatus))
+		cur := statusValues(e.ToStatus)
+		if cur != nil && e.Cause != "" {
+			// Set when the system made the change (the status the task was in was removed), so a rule can tell it from
+			// a change somebody made.
+			cur["cause"] = e.Cause
+		}
+		p = taskPayload(e.Name(), e.Task, e.Doer, statusValues(e.FromStatus), cur)
 		return p, true
 	case *models.TaskCustomFieldValueUpdatedEvent:
 		if e.Task == nil || e.CustomField == nil {

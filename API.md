@@ -281,7 +281,7 @@ The tables below list every `/api/v2` operation the fork registers, grouped by m
 | POST | `/tasks/{task}/status` | `task-status-change` | write on task, plus the transition rules | Change the status of a task |
 | GET | `/tasks/{task}/status/history` | `task-status-history-list` | read on task | List the status history of a task |
 
-A history entry has `cause`: empty for a change somebody made, `status_removed` when the status the task was in was removed from the workflow and its tasks moved (`from_title` is the removed status, `comment` is empty, the doer is the person who saved the workflow). The `task.status.changed` event carries the same `cause`.
+A history entry has `cause`: empty for a change somebody made, `status_removed` when the status the task was in was removed from the workflow and its tasks moved (`from_title` is the removed status, `comment` is empty, the doer is the person who saved the workflow). The `task.status.changed` event carries the same `cause`, and automation rules see it as `event.new.cause` (`status_removed`, absent for a change somebody made).
 
 ### Approvals
 
