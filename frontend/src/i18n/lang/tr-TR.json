@@ -3102,7 +3102,7 @@
 			"owner_unavailable": "Kuralın sahibinin hesabı kullanılamıyor",
 			"rule_changed": "Kural, çalıştırma beklerken değiştirildi",
 			"rule_disabled": "Kural devre dışı bırakıldı",
-			"too_many_actions": "Kural aynı anda çok fazla eylem çalıştıracaktı"
+			"too_many_actions": "Kuralın eylem sayısı izin verilen sınırı aşıyor"
 		},
 		"disabledReason": {
 			"owner_not_admin": "Bu kural, sahibi artık proje yöneticisi olmadığı için devre dışı bırakıldı. Devralmak için yeniden kaydet.",
@@ -3270,6 +3270,9 @@
 			"PUT": "PUT",
 			"PATCH": "PATCH",
 			"DELETE": "DELETE",
+			"outcome": {
+				"any": "Herhangi bir sonuç"
+			},
 			"scope": {
 				"tasks": "Koşullara uyan her görev",
 				"project": "Proje, bir kez (görevsiz)"

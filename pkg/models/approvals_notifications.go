@@ -66,7 +66,18 @@ func approvalNotificationInfo(req *ApprovalRequest) *ApprovalNotificationInfo {
 }
 
 func approvalOutcomeWord(lang string, status ApprovalStatus) string {
-	return i18n.T(lang, "notifications.approval.outcome."+string(status))
+	// One literal per key: the translation check finds keys by their literal text.
+	switch status {
+	case ApprovalStatusPending:
+		return i18n.T(lang, "notifications.approval.outcome.pending")
+	case ApprovalStatusApproved:
+		return i18n.T(lang, "notifications.approval.outcome.approved")
+	case ApprovalStatusRejected:
+		return i18n.T(lang, "notifications.approval.outcome.rejected")
+	case ApprovalStatusCancelled:
+		return i18n.T(lang, "notifications.approval.outcome.cancelled")
+	}
+	return string(status)
 }
 
 // ApprovalRequestedNotification asks an approver to decide.

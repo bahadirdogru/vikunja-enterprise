@@ -3102,7 +3102,7 @@
       "owner_unavailable": "The owner of the rule is unavailable",
       "rule_changed": "The rule was changed while the run was waiting",
       "rule_disabled": "The rule was disabled",
-      "too_many_actions": "The rule would have run too many actions at once"
+      "too_many_actions": "The rule has more actions than are allowed"
     },
     "disabledReason": {
       "owner_not_admin": "This rule was disabled because its owner is no longer a project admin. Save it again to take it over.",
@@ -3270,6 +3270,9 @@
       "PUT": "PUT",
       "PATCH": "PATCH",
       "DELETE": "DELETE",
+      "outcome": {
+        "any": "Any outcome"
+      },
       "scope": {
         "tasks": "Each matching task",
         "project": "The project, once (without a task)"
