@@ -727,50 +727,39 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
     established beyond missing mail and OpenID services. PostgreSQL is not
     used by the e2e run.
 
-- Turkish pass (2026-11-25): "when Turkish is selected nothing may be in another language". Audit in six sources (the
-  tr-TR files, hard-coded strings of the frontend, text from the server, notifications and mails, dates and
-  collation, other surfaces), then fixes in the order fork modules, server text, mails, upstream keys, upstream
-  components, formatting.
-  - Found and fixed: 59 error codes of the server had no text in either language file (the interface showed the
-    English message of the server); automation runs, steps, test runs and their notes were English prose (63 error
-    sites, ~35 sentences about what a step did): the server now stores and sends a code with values next to the
-    English text (`error_code`, `error_params`, `output_messages`, in a test run `summary_message`,
+- Turkish pass (2026-11-25), reviewed and corrected. Audit in six sources (the tr-TR files, hard-coded strings of
+  the frontend, text from the server, notifications and mails, dates and collation, other surfaces), then fixes in
+  the order fork modules, server text, mails, upstream keys, upstream components, formatting.
+  - Found and fixed: 59 API error codes had no text in either language file, and the guard that said every code has
+    one missed `ErrorCode...` constants: code 1 (written `0001` in Go, an octal literal, so the interface looked up
+    `error.1`) and 1026-1029 had none (now fixed, the guard reads every code constant of every package); automation
+    runs, steps, test runs and their notes were English prose: the server now stores and sends a code with values
+    next to the English text (`error_code`, `error_params`, `output_messages`, in a test run `summary_message`,
     `warning_messages`, `note_messages`; migration `20261129100000`), the interface translates them
-    (`automation.messages.<code>`, numeric codes as `error.<code>`) and frames what cannot be coded (a script's
-    exception: "Betik hatası: ..."; the answer of another server); custom field reasons (20002, 20005) come as
-    `reason_code`; a failed validation (422), a gateway answer and a request that never arrived have a sentence of
-    their own; the answer errors of the public form page are said by their code; the names the server writes in
-    report groups (statuses, done, checked, priorities) have `label_code`; the in-app notification texts
-    ("commented on ...") were hard-coded English in `helpers/notification.ts`; 8 hard-coded labels of upstream
-    components; `localeCompare` and `toLocale*String` without a locale (11 files) used the browser's language;
-    approval deadlines in mails were written in UTC without a zone; the default Kanban columns of a new project
-    are named in the language of the creator.
-  - Guards: `check_turkish.py` reports every tr-TR value that equals its English one (16 listed with a reason);
-    Go tests that every error code (`error_codes_i18n_test.go`), every automation message code
-    (`messages_test.go`), every custom field reason, every form answer error code and every report label code has a
-    text in both files; unit tests of the code-to-text mapping with the fallback; the Turkish e2e walk
-    `turkish-walk.spec.ts` (41 screens, popups, the visitor's login pages and a failed automation run, with a list of
-    common English UI words; a canary shows it finds English on an English screen).
+    (`automation.messages.<code>`, numeric codes as `error.<code>` with the reason translation) and frames what
+    cannot be coded (a script's exception, the answer of another server). The values are bounded (1000 characters
+    each, 4000 bytes per error, 700 bytes per sentence, 20 sentences, masked before cut). The Turkish says what a
+    step did in the imperative, which is right in the dry run and in the history. Custom field reasons (20002,
+    20005) come as `reason_code`; a failed validation (422), a gateway answer and a request that never arrived have
+    a sentence of their own and a specific detail of the server follows it; three uncoded errors of the fork (22016,
+    25010, 25011) have codes; the answer errors of the public form page are said by their code; report groups have
+    `label_code`; the in-app notification texts were hard-coded English; 8 hard-coded labels of upstream components;
+    `localeCompare` and `toLocale*String` without a locale used the browser's language; approval deadlines in mails
+    were written in UTC without a zone; the default Kanban columns of a new project are named in the language of the
+    creator.
+  - Guards: `check_turkish.py` reports every tr-TR value that equals its English one (16 listed with a reason); Go
+    tests that every error code of every package (`error_codes_i18n_test.go`), every automation message code
+    (derived from the source, `messages_test.go`), every custom field reason, form answer error code and report
+    label code has a text in both files; unit tests of the code-to-text mapping with the fallback; the Turkish e2e
+    walk `turkish-walk.spec.ts` (41 screens, popups, the visitor's login pages and a failed automation run, with a
+    list of common English UI words; a canary shows it finds English on an English screen).
   - Not changed, with the reason: the English examples of the quick add magic help (the parser only understands
     them); the `<noscript>` text of `index.html` (no script, no language); the CSV files of reports (English
-    headers and Yes/No, a documented format; proposal: a `lang` query parameter or the user's language); the
-    names of default views and the Inbox of existing data (stored values, the interface already maps the
-    built-ins); buckets that exist already keep their English names; identifiers (event names, API token
-    permission names, filter field names, HTTP methods); the screen-reader description inside the logo SVGs
-    (upstream asset).
-  - Verified on the final tree: `mage lint` 0 issues; `test:feature` 59 packages ok and `test:web` ok on SQLite
-    and on PostgreSQL 17 (container `vke-polish-pg`); vitest 324 files / 4336 tests, `vue-tsc` and `pnpm lint`
-    (0 errors) clean; all 73 fork e2e specs pass (69 before, 4 new in `i18n/turkish-walk.spec.ts`);
-    `check_parity.py` ok. Not verified: MySQL and MariaDB (not tested by the fork); the admin screens in Turkish
-    (they need an admin user, the walk does not log one in); a real mail in Turkish (the texts are keys that the
-    existing tests render, nothing was sent); the new migration on a database that holds old runs (it adds
-    nullable columns, the migration test starts from the old schema with rows in it).
-  - What a Turkish user can still see in English: the date and repeat words of the quick add magic help (the
-    parser needs them), the CSV files of reports and tasks (headers, Yes/No), identifiers (event names,
-    token permission names, filter field names), the text of a script's own exception and of another server's
-    answer (inside a Turkish sentence), the `<noscript>` notice, the logo's screen-reader description, names the
-    server created before this pass (Kanban columns To-Do/Doing/Done of existing projects), and any text the
-    users wrote themselves.
+    headers and Yes/No, a documented format; proposal: the user's language); names stored before this pass; the
+    identifiers (event names, API token permission names, filter field names); the screen-reader description inside
+    the logo SVGs (upstream asset). Uncoded details of upstream routes (the MCP, avatar and notification refusals,
+    for example) follow the translated sentence in English.
+  - Verification of the final tree: see the log of the review fixes below.
 
 ## Remaining
 
