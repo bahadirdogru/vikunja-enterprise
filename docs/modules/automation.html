@@ -170,6 +170,7 @@
 <li><strong>Event</strong> (<code>automation_events</code>): the outbox row. Model events of a project (<code>task.created</code>, ...) are written in the same transaction as the change; time, manual, webhook and resume events are written for <strong>one rule</strong> (<code>rule_id</code>). Status <code>pending</code>, <code>processing</code>, <code>done</code> or <code>dead</code>.</li>
 <li><strong>Run</strong> (<code>automation_runs</code>): one rule handling one event. Status <code>running</code> (also while waiting for a retry or a wait), <code>success</code>, <code>failed</code>, <code>skipped</code> (a limit or the conditions stopped it, see <code>skip_reason</code>) or <code>aborted</code> (the owner may no longer run the rule, or the rule changed under a resumed run).</li>
 <li><strong>Step</strong> (<code>automation_run_steps</code>): one action of a run, with status, error, output (cut to 16 KiB) and duration.</li>
+<li><strong>Messages in the reader's language.</strong> What the server says about a run is an English sentence for readers of the API and, next to it, a stable code with values for the interface, which translates it (<code>automation.messages.&lt;code&gt;</code> in <code>en.json</code> and <code>tr-TR.json</code>). A run and a step have <code>error_code</code> and <code>error_params</code> next to <code>error</code> (a code is a short name such as <code>title_empty</code> or <code>script_thrown</code>, or the number of an API error such as <code>4002</code>, which the interface looks up like any API error). A step has <code>output_messages</code>: one <code>{code, params}</code> per leading line of <code>output</code> that the server wrote itself (what the step did, its warnings); the lines after them are data (a script log, an HTTP answer) and are shown as they are. A test run (<code>POST .../test</code>) has <code>summary_message</code>, <code>warning_messages</code>, <code>error_code</code> and <code>error_params</code> on each step and <code>note_messages</code> on the result. A client that does not know a code shows the English text; rows written before the codes existed have none. Text that cannot be coded stays as it is and is framed by a translated sentence (&quot;Betik hatası: …&quot; for the exception of a script, the answer of the other server for a failed request). The fields are additive; nothing was removed or renamed.</li>
 <li><strong>Catalog</strong>: the machine-readable list of triggers, condition fields, operators and actions with parameter schemas, served by <code>GET /api/v2/automations/catalog</code>. The visual editor is generated from it.</li>
 <li><strong>Skip reasons</strong>: <code>max_depth</code>, <code>self_trigger</code>, <code>rate_limit</code>, <code>conditions_not_met</code>, <code>task_not_found</code>, <code>rule_disabled</code>, <code>owner_not_admin</code>, <code>owner_unavailable</code>, <code>too_many_actions</code>, <code>rule_changed</code>.</li>
 </ul>
@@ -366,7 +367,7 @@ return {parent: parentId, sum: sum};</code></pre>
 <li><strong>Outbound marker</strong>: every request the engine sends carries <code>X-Vikunja-Automation-Depth: 1</code>; the server answers every <code>/api/v1</code> and <code>/api/v2</code> request that carries it with <code>508</code>. <code>http.request</code> and <code>http.fetch</code> also refuse URLs that look like this server's webhook endpoints (the host of <code>service.publicurl</code> and the path <code>/api/v2/automation/hooks/</code>; without a public URL the path alone decides), also after redirects. A proxy that strips the header, or a second hop through an external service that calls back without it, is outside what the guard can see.</li>
 </ol>
 <h2 id="data-model">Data model <a class="anchor" href="#data-model" aria-label="Link to this section: Data model">#</a></h2>
-<figure class="diagram"><figcaption>Diagram, shown as its Mermaid source. This site has no scripts, so it cannot draw it. <a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/docs/modules/automation.md#L270">View the rendered diagram on GitHub</a>.</figcaption><pre><code class="language-mermaid">erDiagram
+<figure class="diagram"><figcaption>Diagram, shown as its Mermaid source. This site has no scripts, so it cannot draw it. <a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/docs/modules/automation.md#L271">View the rendered diagram on GitHub</a>.</figcaption><pre><code class="language-mermaid">erDiagram
     projects ||--o{ automation_rules : &quot;has&quot;
     projects ||--o{ automation_secrets : &quot;has&quot;
     projects ||--o{ automation_events : &quot;outbox&quot;
@@ -412,6 +413,7 @@ return {parent: parentId, sum: sum};</code></pre>
         bigint event_id
         string status
         string skip_reason
+        string error_code
         bigint depth
         datetime started
         datetime finished
@@ -422,6 +424,7 @@ return {parent: parentId, sum: sum};</code></pre>
         bigint position
         string action_type
         string status
+        string error_code
         text output
         bigint duration_ms
     }

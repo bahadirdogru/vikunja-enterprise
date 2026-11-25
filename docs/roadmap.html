@@ -832,10 +832,10 @@ itself. Not run: the frontend tests, a browser.</li>
 </ul></li>
 </ul>
 <ul>
-<li><strong>End-to-end pass over the six modules (2026-11-25).</strong> 48 new Playwright
+<li><p><strong>End-to-end pass over the six modules (2026-11-25).</strong> 48 new Playwright
 tests (51 with the three existing fork specs) in
 <code>frontend/tests/e2e/{custom-fields,workflow,approvals,automation,dashboards,forms,i18n}/</code>,
-run through <code>mage test:e2e</code> against the real server on its own SQLite.
+run through <code>mage test:e2e</code> against the real server on its own SQLite.</p>
 <ul>
 <li>Found and fixed in the browser: a filter made only of a custom field
 condition (<code>Budget &gt; 100</code>) was sent as search text and returned nothing;
@@ -873,6 +873,54 @@ linked-account settings, API token scopes, unlicensed time tracking);
 the same 13 fail without the fork's changes of this pass, cause not
 established beyond missing mail and OpenID services. PostgreSQL is not
 used by the e2e run.</li>
+</ul></li>
+</ul>
+<ul>
+<li>Turkish pass (2026-11-25): &quot;when Turkish is selected nothing may be in another language&quot;. Audit in six sources (the
+tr-TR files, hard-coded strings of the frontend, text from the server, notifications and mails, dates and
+collation, other surfaces), then fixes in the order fork modules, server text, mails, upstream keys, upstream
+components, formatting.
+<ul>
+<li>Found and fixed: 59 error codes of the server had no text in either language file (the interface showed the
+English message of the server); automation runs, steps, test runs and their notes were English prose (63 error
+sites, ~35 sentences about what a step did): the server now stores and sends a code with values next to the
+English text (<code>error_code</code>, <code>error_params</code>, <code>output_messages</code>, in a test run <code>summary_message</code>,
+<code>warning_messages</code>, <code>note_messages</code>; migration <code>20261129100000</code>), the interface translates them
+(<code>automation.messages.&lt;code&gt;</code>, numeric codes as <code>error.&lt;code&gt;</code>) and frames what cannot be coded (a script's
+exception: &quot;Betik hatası: ...&quot;; the answer of another server); custom field reasons (20002, 20005) come as
+<code>reason_code</code>; a failed validation (422), a gateway answer and a request that never arrived have a sentence of
+their own; the answer errors of the public form page are said by their code; the names the server writes in
+report groups (statuses, done, checked, priorities) have <code>label_code</code>; the in-app notification texts
+(&quot;commented on ...&quot;) were hard-coded English in <code>helpers/notification.ts</code>; 8 hard-coded labels of upstream
+components; <code>localeCompare</code> and <code>toLocale*String</code> without a locale (11 files) used the browser's language;
+approval deadlines in mails were written in UTC without a zone; the default Kanban columns of a new project
+are named in the language of the creator.</li>
+<li>Guards: <code>check_turkish.py</code> reports every tr-TR value that equals its English one (16 listed with a reason);
+Go tests that every error code (<code>error_codes_i18n_test.go</code>), every automation message code
+(<code>messages_test.go</code>), every custom field reason, every form answer error code and every report label code has a
+text in both files; unit tests of the code-to-text mapping with the fallback; the Turkish e2e walk
+<code>turkish-walk.spec.ts</code> (41 screens, popups, the visitor's login pages and a failed automation run, with a list of
+common English UI words; a canary shows it finds English on an English screen).</li>
+<li>Not changed, with the reason: the English examples of the quick add magic help (the parser only understands
+them); the <code>&lt;noscript&gt;</code> text of <code>index.html</code> (no script, no language); the CSV files of reports (English
+headers and Yes/No, a documented format; proposal: a <code>lang</code> query parameter or the user's language); the
+names of default views and the Inbox of existing data (stored values, the interface already maps the
+built-ins); buckets that exist already keep their English names; identifiers (event names, API token
+permission names, filter field names, HTTP methods); the screen-reader description inside the logo SVGs
+(upstream asset).</li>
+<li>Verified on the final tree: <code>mage lint</code> 0 issues; <code>test:feature</code> 59 packages ok and <code>test:web</code> ok on SQLite
+and on PostgreSQL 17 (container <code>vke-polish-pg</code>); vitest 324 files / 4336 tests, <code>vue-tsc</code> and <code>pnpm lint</code>
+(0 errors) clean; all 73 fork e2e specs pass (69 before, 4 new in <code>i18n/turkish-walk.spec.ts</code>);
+<code>check_parity.py</code> ok. Not verified: MySQL and MariaDB (not tested by the fork); the admin screens in Turkish
+(they need an admin user, the walk does not log one in); a real mail in Turkish (the texts are keys that the
+existing tests render, nothing was sent); the new migration on a database that holds old runs (it adds
+nullable columns, the migration test starts from the old schema with rows in it).</li>
+<li>What a Turkish user can still see in English: the date and repeat words of the quick add magic help (the
+parser needs them), the CSV files of reports and tasks (headers, Yes/No), identifiers (event names,
+token permission names, filter field names), the text of a script's own exception and of another server's
+answer (inside a Turkish sentence), the <code>&lt;noscript&gt;</code> notice, the logo's screen-reader description, names the
+server created before this pass (Kanban columns To-Do/Doing/Done of existing projects), and any text the
+users wrote themselves.</li>
 </ul></li>
 </ul>
 <h2 id="remaining">Remaining <a class="anchor" href="#remaining" aria-label="Link to this section: Remaining">#</a></h2>
