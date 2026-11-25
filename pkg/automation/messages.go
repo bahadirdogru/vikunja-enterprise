@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"unicode/utf8"
 
 	"code.vikunja.io/api/pkg/automation/script"
 	"code.vikunja.io/api/pkg/models"
@@ -54,6 +55,94 @@ func (p P) with(other map[string]string) P {
 	return p
 }
 
+// What is stored and sent as values of a sentence is bounded like the English text next to it (Error is cut to 4000
+// bytes, Output to 16 KiB): a task description of a megabyte must not become a megabyte per run, and a row must fit
+// the text column of every database. The bound is applied where a sentence leaves the engine (stored in a run or
+// step, sent in a test), after the secrets were masked: a cut before the mask could split a secret into a piece the
+// masker no longer finds.
+const (
+	maxParamRunes        = 1000
+	maxErrorParamsBytes  = 4000
+	maxMessageParamBytes = 700
+	maxOutputMessages    = 20
+)
+
+// clipRunes cuts text to at most max runes, on a rune boundary, and says so with an ellipsis.
+func clipRunes(text string, max int) string {
+	if utf8.RuneCountInString(text) <= max {
+		return text
+	}
+	return string([]rune(text)[:max-1]) + "…"
+}
+
+// boundParams cuts every value to maxParamRunes runes and the values together to totalBytes bytes (the longest
+// value is halved until they fit).
+func boundParams(params map[string]string, totalBytes int) map[string]string {
+	if len(params) == 0 {
+		return params
+	}
+	out := make(map[string]string, len(params))
+	size := 0
+	for k, v := range params {
+		out[k] = clipRunes(v, maxParamRunes)
+		size += len(k) + len(out[k])
+	}
+	for size > totalBytes {
+		longest := ""
+		for k, v := range out {
+			if len(v) > len(out[longest]) {
+				longest = k
+			}
+		}
+		v := out[longest]
+		if len(v) <= 4 {
+			break // only keys are left; they are code, not data
+		}
+		cut := clipRunes(v, utf8.RuneCountInString(v)/2)
+		if len(cut) >= len(v) {
+			break
+		}
+		size -= len(v) - len(cut)
+		out[longest] = cut
+	}
+	return out
+}
+
+// boundMessages is the list of sentences of a step as it is stored or sent: at most maxOutputMessages of them, the
+// values of each cut to maxMessageParamBytes.
+func boundMessages(list []*models.AutomationMessage) []*models.AutomationMessage {
+	if len(list) > maxOutputMessages {
+		list = list[:maxOutputMessages]
+	}
+	out := make([]*models.AutomationMessage, 0, len(list))
+	for _, m := range list {
+		if m == nil {
+			continue
+		}
+		out = append(out, &models.AutomationMessage{Code: m.Code, Params: boundParams(m.Params, maxMessageParamBytes)})
+	}
+	return out
+}
+
+// maskMessages removes the secrets of the step from the values of sentences, before they are bounded.
+func (e *Env) maskMessages(list []*models.AutomationMessage) []*models.AutomationMessage {
+	out := make([]*models.AutomationMessage, 0, len(list))
+	for _, m := range list {
+		if m == nil {
+			continue
+		}
+		masked := &models.AutomationMessage{Code: m.Code}
+		if len(m.Params) > 0 {
+			masked.Params = make(map[string]string, len(m.Params))
+			for k, v := range m.Params {
+				masked.Params[k] = e.maskOutput(v)
+			}
+		}
+		out = append(out, masked)
+	}
+	return out
+}
+
 // say is a sentence of the server with its code and values.
 func say(code string, params P) *models.AutomationMessage {
 	return &models.AutomationMessage{Code: code, Params: params.strings()}
@@ -72,9 +161,16 @@ const (
 	CodeScriptUnavailable = "script_unavailable"
 )
 
-// errorMessage gives the code and the values of an error. An error of the models with a numeric API error code gives
-// that code as text ("4002"), which the interface looks up like any API error (error.<code>).
+// errorMessage gives the code and the bounded values of an error, as they are stored. errorMessageRaw gives them whole,
+// for masking.
 func errorMessage(err error) (code string, params map[string]string) {
+	code, params = errorMessageRaw(err)
+	return code, boundParams(params, maxErrorParamsBytes)
+}
+
+// errorMessageRaw gives the code and the values of an error. An error of the models with a numeric API error code gives
+// that code as text ("4002"), which the interface looks up like any API error (error.<code>).
+func errorMessageRaw(err error) (code string, params map[string]string) {
 	if err == nil {
 		return "", nil
 	}

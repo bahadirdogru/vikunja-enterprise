@@ -156,15 +156,17 @@ func DryRunWith(_ context.Context, rule *models.AutomationRule, taskID int64, ho
 			if !isPermanent(err) {
 				var actionErr *ActionError
 				if !errors.As(err, &actionErr) {
-					step.Error = "could not be checked: " + err.Error()
+					step.Error = env.maskOutput("could not be checked: " + err.Error())
 					step.ErrorCode, step.ErrorParams = "could_not_check", map[string]string{"message": env.maskOutput(err.Error())}
 				}
 			}
 			continue
 		}
 		step.Summary = plan.Summary
-		step.SummaryMessage = plan.Msg
-		step.WarningMessages = plan.WarnMsgs
+		if plan.Msg != nil {
+			step.SummaryMessage = boundMessages(env.maskMessages([]*models.AutomationMessage{plan.Msg}))[0]
+		}
+		step.WarningMessages = boundMessages(env.maskMessages(plan.WarnMsgs))
 		step.Stops = plan.Stop
 		if act.Type == spec.ActionCreateTask && !hasTask {
 			virtualTask = true
@@ -184,7 +186,7 @@ func DryRunWith(_ context.Context, rule *models.AutomationRule, taskID int64, ho
 			}
 			step.Summary = summary
 			if len(plan.Lines) > 0 {
-				step.SummaryMessage = plan.Lines[0]
+				step.SummaryMessage = boundMessages(env.maskMessages(plan.Lines[:1]))[0]
 			}
 			step.Warnings = append(step.Warnings, warnings...)
 		}

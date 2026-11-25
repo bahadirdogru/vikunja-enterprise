@@ -180,7 +180,7 @@ func (e *Env) maskErr(err error) error {
 		return err
 	}
 	msg := err.Error()
-	code, params := errorMessage(err)
+	code, params := errorMessageRaw(err)
 	m := e.secrets.masker()
 	changed := m.mask(msg) != msg
 	var maskedParams map[string]string

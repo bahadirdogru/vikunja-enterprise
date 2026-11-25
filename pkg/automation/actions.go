@@ -53,7 +53,7 @@ func actionErrorf(format string, args ...any) error {
 
 // wrapActionErr turns the error of a model into an ActionError that keeps its text and its code.
 func wrapActionErr(err error) error {
-	code, params := errorMessage(err)
+	code, params := errorMessageRaw(err)
 	return &ActionError{Msg: err.Error(), Code: code, Params: params}
 }
 

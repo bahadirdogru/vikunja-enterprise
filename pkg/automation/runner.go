@@ -638,6 +638,14 @@ func (rc *runContext) applyStep(ctx context.Context, s *xorm.Session, impl *acti
 	if plan.Stop {
 		output = stopOutput + output
 	}
+	// The sentences of the step lose the secrets too (the cut happens when they are stored).
+	if plan.Lines != nil {
+		plan.Lines = env.maskMessages(plan.Lines)
+	}
+	plan.WarnMsgs = env.maskMessages(plan.WarnMsgs)
+	if plan.Msg != nil {
+		plan.Msg = env.maskMessages([]*models.AutomationMessage{plan.Msg})[0]
+	}
 	return truncate(env.maskOutput(output), maxOutputBytes), plan, ctx.Err()
 }
 
@@ -649,7 +657,7 @@ func (rc *runContext) storeStep(s *xorm.Session, position int64, typ, status str
 		ActionType:     typ,
 		Status:         status,
 		Output:         truncate(output, maxOutputBytes),
-		OutputMessages: lines,
+		OutputMessages: boundMessages(lines),
 		DurationMs:     time.Since(started).Milliseconds(),
 	}
 	if stepErr != nil {

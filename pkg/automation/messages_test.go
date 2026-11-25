@@ -18,14 +18,17 @@ package automation
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"code.vikunja.io/api/pkg/automation/outbound"
 	"code.vikunja.io/api/pkg/automation/script"
@@ -34,6 +37,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"xorm.io/xorm"
 )
 
 // codeSources are the files that name a code of a message. The codes they name are looked up in the language files:
@@ -260,4 +264,94 @@ func runRaw(t *testing.T, actions ...*spec.Action) (*models.AutomationRun, []*mo
 	runs := allRuns(t, r.ID)
 	require.Len(t, runs, 1)
 	return runs[0], runSteps(t, runs[0].ID)
+}
+
+func newTaskWithDescription(t *testing.T, description string) *models.Task {
+	t.Helper()
+	task := &models.Task{Title: "Original title", ProjectID: projectOwned, Description: description}
+	mustCommit(t, func(s *xorm.Session) error { return task.Create(s, user1) })
+	return task
+}
+
+func jsonSize(t *testing.T, v any) int {
+	t.Helper()
+	raw, err := json.Marshal(v)
+	require.NoError(t, err)
+	return len(raw)
+}
+
+func TestValuesOfSentencesAreBounded(t *testing.T) {
+	t.Run("a task description of a megabyte does not become a megabyte per step", func(t *testing.T) {
+		reset(t)
+		r := addRule(t, projectOwned, user1, rule(spec.TriggerTaskCreated, nil, nil, act(spec.ActionAddComment, map[string]any{"text": "{{task.description}}"})))
+		newTaskWithDescription(t, strings.Repeat("ş", 500_000))
+		drain(t)
+		runs := allRuns(t, r.ID)
+		require.Len(t, runs, 1)
+		require.Equal(t, models.AutomationRunSuccess, runs[0].Status, runs[0].Error)
+		steps := runSteps(t, runs[0].ID)
+		require.Len(t, steps, 1)
+		require.NotEmpty(t, steps[0].OutputMessages)
+		text := steps[0].OutputMessages[0].Params["text"]
+		assert.LessOrEqual(t, utf8.RuneCountInString(text), maxParamRunes)
+		assert.True(t, utf8.ValidString(text))
+		assert.LessOrEqual(t, jsonSize(t, steps[0].OutputMessages), 16*1024)
+		assert.LessOrEqual(t, len(steps[0].Output), maxOutputBytes)
+	})
+
+	t.Run("a thrown script error of tens of kilobytes is cut in the values of the run and the step", func(t *testing.T) {
+		reset(t)
+		_, run, steps := runAction(t, projectOwned, user1, user1, scriptAction(`throw new Error("ç".repeat(30000))`))
+		require.Equal(t, models.AutomationRunFailed, run.Status)
+		assert.Equal(t, "script_thrown", run.ErrorCode)
+		for _, params := range []map[string]string{run.ErrorParams, steps[0].ErrorParams} {
+			assert.LessOrEqual(t, jsonSize(t, params), maxErrorParamsBytes+64)
+			assert.True(t, utf8.ValidString(params["message"]))
+		}
+		assert.LessOrEqual(t, len(run.Error), 4000)
+	})
+
+	t.Run("a cut keeps multi-byte characters whole and says so", func(t *testing.T) {
+		cut := boundParams(map[string]string{"v": strings.Repeat("ğ", 3000)}, maxErrorParamsBytes)
+		assert.True(t, utf8.ValidString(cut["v"]))
+		assert.Equal(t, maxParamRunes, utf8.RuneCountInString(cut["v"]))
+		assert.True(t, strings.HasSuffix(cut["v"], "…"))
+		assert.Equal(t, "kısa", boundParams(map[string]string{"v": "kısa"}, maxErrorParamsBytes)["v"])
+	})
+
+	t.Run("the values together stay within the bound", func(t *testing.T) {
+		in := map[string]string{}
+		for _, k := range []string{"a", "b", "c", "d", "e", "f", "g", "h"} {
+			in[k] = strings.Repeat("ü", 1000)
+		}
+		out := boundParams(in, maxErrorParamsBytes)
+		size := 0
+		for k, v := range out {
+			size += len(k) + len(v)
+			assert.True(t, utf8.ValidString(v))
+		}
+		assert.LessOrEqual(t, size, maxErrorParamsBytes)
+	})
+
+	t.Run("a secret is masked before the cut, so a cut cannot leave a piece of it", func(t *testing.T) {
+		secret := "S3CR3T-VALUE-XYZ"
+		env := &Env{secrets: &secretStore{loaded: true, accessed: map[string]bool{"TOKEN": true}, values: map[string]*models.AutomationSecretValue{"TOKEN": {Value: secret}}}}
+		// The secret starts a few characters before the cut at 1000 runes.
+		long := strings.Repeat("a", maxParamRunes-4) + secret + strings.Repeat("b", 50)
+		err := env.maskErr(actionErr("request_failed", P{"response": long}, "%s", long))
+		_, params := errorMessage(err)
+		assert.NotContains(t, params["response"], "S3CR3T")
+		assert.NotContains(t, params["response"], "S3C")
+		// The sentences of a step are masked the same way.
+		msgs := boundMessages(env.maskMessages([]*models.AutomationMessage{{Code: "add_comment", Params: map[string]string{"text": long}}}))
+		assert.NotContains(t, msgs[0].Params["text"], "S3C")
+	})
+
+	t.Run("a step has at most a bounded number of sentences", func(t *testing.T) {
+		many := make([]*models.AutomationMessage, 50)
+		for i := range many {
+			many[i] = say("unknown_placeholder", P{"name": strconv.Itoa(i)})
+		}
+		assert.Len(t, boundMessages(many), maxOutputMessages)
+	})
 }
