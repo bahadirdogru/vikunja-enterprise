@@ -3096,7 +3096,8 @@
       "owner_not_admin": "The owner of the rule is no longer a project admin",
       "owner_unavailable": "The owner of the rule is unavailable",
       "rule_changed": "The rule was changed while the run was waiting",
-      "rule_disabled": "The rule was disabled"
+      "rule_disabled": "The rule was disabled",
+      "too_many_actions": "The rule would have run too many actions at once"
     },
     "disabledReason": {
       "owner_not_admin": "This rule was disabled because its owner is no longer a project admin. Save it again to take it over.",
@@ -3106,6 +3107,7 @@
       "status_deleted": "This rule was disabled because a status it uses was deleted.",
       "duplicated": "This copy of a rule is disabled until you have checked it.",
       "duplicated_unmapped_reference": "This copy was disabled because it refers to something that could not be copied with the project. Check it before enabling it.",
+      "duplicated_secrets_missing": "This copy was disabled because the secrets it uses were not copied with the project. Add them in the project settings, then enable it.",
       "unknown": "This rule was disabled by the system ({reason})."
     },
     "trigger": {
@@ -3189,7 +3191,6 @@
       "labels": "Labels",
       "status": "Status",
       "status_category": "Status category",
-      "repeat_after": "Repeat interval",
       "cf_<id>": "Custom field",
       "custom_field": "Custom field",
       "event_doer_id": "Person who made the change (id)",

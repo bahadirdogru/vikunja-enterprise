@@ -1212,7 +1212,7 @@
 		"multiselect": {
 			"createPlaceholder": "Oluştur",
 			"selectPlaceholder": "Seçmek için tıkla ya da Enter'a bas",
-			"removeItem": "Bu ögeyi kaldır",
+			"removeItem": "Bu öğeyi kaldır",
 			"clear": "Seçimi temizle",
 			"moreResultsHint": "Toplam {total} eşleşmeden ilk {shown} tanesi gösteriliyor. Kalanları bulmak için aramanı daralt."
 		},
@@ -1922,8 +1922,8 @@
 		"10007": "Bir proje görünümünde en fazla 100 sütun olabilir.",
 		"11001": "Kayıtlı filtre bulunamadı.",
 		"11002": "Kayıtlı filtreler paylaşım bağlantılarında kullanılamaz.",
-		"12001": "Abonelik öge türü geçersiz.",
-		"12002": "Bu ögeye veya onun üst ögesine zaten abonesin.",
+		"12001": "Abonelik öğe türü geçersiz.",
+		"12002": "Bu öğeye veya onun üst öğesine zaten abonesin.",
 		"12003": "Abonelikleri listelemek için bir kullanıcı belirtmelisin.",
 		"13001": "Bu paylaşım bağlantısı şifre gerektiriyor ancak bir şifre girilmedi.",
 		"13002": "Girdiğin paylaşım bağlantısı şifresi hatalı.",
@@ -3096,7 +3096,8 @@
 			"owner_not_admin": "Kuralın sahibi artık proje yöneticisi değil",
 			"owner_unavailable": "Kuralın sahibinin hesabı kullanılamıyor",
 			"rule_changed": "Kural, çalıştırma beklerken değiştirildi",
-			"rule_disabled": "Kural devre dışı bırakıldı"
+			"rule_disabled": "Kural devre dışı bırakıldı",
+			"too_many_actions": "Kural aynı anda çok fazla eylem çalıştıracaktı"
 		},
 		"disabledReason": {
 			"owner_not_admin": "Bu kural, sahibi artık proje yöneticisi olmadığı için devre dışı bırakıldı. Devralmak için yeniden kaydet.",
@@ -3106,6 +3107,7 @@
 			"status_deleted": "Bu kural, kullandığı bir durum silindiği için devre dışı bırakıldı.",
 			"duplicated": "Kuralın bu kopyası, kontrol edene kadar devre dışıdır.",
 			"duplicated_unmapped_reference": "Bu kopya, proje ile birlikte kopyalanamayan bir öğeye başvurduğu için devre dışı bırakıldı. Etkinleştirmeden önce kontrol et.",
+			"duplicated_secrets_missing": "Bu kopya, kullandığı gizli anahtarlar proje ile birlikte kopyalanmadığı için devre dışı bırakıldı. Gizli anahtarları proje ayarlarından ekle, sonra etkinleştir.",
 			"unknown": "Bu kural sistem tarafından devre dışı bırakıldı ({reason})."
 		},
 		"trigger": {
@@ -3189,7 +3191,6 @@
 			"labels": "Etiketler",
 			"status": "Durum",
 			"status_category": "Durum kategorisi",
-			"repeat_after": "Tekrar aralığı",
 			"cf_<id>": "Özel alan",
 			"custom_field": "Özel alan",
 			"event_doer_id": "Değişikliği yapan kişi (kimlik)",
