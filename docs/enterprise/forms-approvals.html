@@ -484,7 +484,7 @@ the request. If something no longer holds the request becomes <code>cancelled</c
 <code>transition_removed</code>, <code>target_archived</code>, <code>status_changed</code> (the task is no
 longer in the <code>from</code> status), <code>requirements_not_met</code> (a required field or the
 comment is gone; the message lists them), <code>requester_lost_access</code>,
-<code>requester_not_in_team</code> or <code>requester_deleted</code>. The response to the decision
+<code>requester_not_in_team</code>, <code>requester_deleted</code> or <code>requester_disabled</code>. The response to the decision
 is still <code>200</code>; the request in it says what happened.</li>
 <li><strong>Rejected.</strong> The task stays, or moves to <code>rejected_status_id</code> as a system
 transition (rules bypassed; the history names the rejecting approver and the

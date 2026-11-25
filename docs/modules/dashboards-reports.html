@@ -246,7 +246,7 @@
 <tr><td>GET</td><td><code>/reports/tasks/options</code></td><td><code>reports-tasks-options</code></td><td>signed-in user (read on project for project_id)</td><td>List what a task report can use</td></tr>
 </tbody></table></div>
 <p><code>GET /reports/tasks/options?project_id=</code> lists what a request may use in a scope (dimensions including the <code>cf_&lt;id&gt;</code> fields of that project, measures with their numeric fields, time fields, whether a workflow exists, the limits of this instance); the widget editor is generated from it. The dashboard document carries its widgets: a read includes them, and a <code>PUT</code> with <code>widgets: [...]</code> replaces them as a whole (an id of this dashboard keeps and updates the widget, no id creates, missing ones are deleted; <code>null</code> or no <code>widgets</code> keeps them; an id of another dashboard is <code>404</code> / <code>23007</code>). <code>PUT .../layout</code> with <code>{&quot;items&quot;: [{&quot;id&quot;, &quot;x&quot;, &quot;y&quot;, &quot;w&quot;, &quot;h&quot;}]}</code> only moves and resizes (<code>x + w &lt;= 12</code>).</p>
-<p>A worked report request and response are in <a href="../api.html#examples">API.md</a>. Request problems are <code>400</code> / <code>23001</code> with <code>details.param</code>; enum and range violations of the schema are <code>422</code>. Error codes <code>23001</code> to <code>23010</code> are in <a href="../api.html#errors">API.md</a>.</p>
+<p>A worked report request and response are in <a href="../api.html#examples">API.md</a>. Request problems are <code>400</code> / <code>23001</code> with <code>details.param</code>; enum and range violations of the schema are <code>422</code>. Error codes <code>23001</code> to <code>23011</code> are in <a href="../api.html#errors">API.md</a>.</p>
 <p><strong>CSV export.</strong> <code>POST /reports/tasks/export</code>, <code>/reports/status-time/export</code>, <code>/reports/workload/export</code> and <code>/reports/time-tracking/export</code> return the same report as a CSV file; <code>POST /reports/tasks/export/rows</code> returns the tasks behind a report (what a drill-down lists) with the core columns and one column per custom field. Files are UTF-8 with a byte order mark so Excel reads them correctly, comma separated; cells that start with <code>=</code>, <code>+</code>, <code>-</code> or <code>@</code> are prefixed with a single quote so a spreadsheet does not run them.</p>
 <h2 id="configuration-keys">Configuration keys <a class="anchor" href="#configuration-keys" aria-label="Link to this section: Configuration keys">#</a></h2>
 <div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Key</th><th scope="col">Default</th><th scope="col">Meaning</th></tr></thead><tbody>
@@ -254,6 +254,7 @@
 <tr><td><code>reports.maxgroups</code></td><td><code>200</code></td><td>The maximum number of groups a report returns per level. Requests asking for more are rejected; groups beyond a request's limit are folded into one &quot;other&quot; group.</td></tr>
 <tr><td><code>reports.maxbuckets</code></td><td><code>366</code></td><td>The maximum number of time buckets (days, weeks or months) of a time series report.</td></tr>
 <tr><td><code>reports.maxrows</code></td><td><code>50000</code></td><td>The maximum number of rows a report that is computed in memory (time in status, time tracking) or a CSV export of tasks reads. Requests that would read more are rejected.</td></tr>
+<tr><td><code>reports.maxcells</code></td><td><code>50000</code></td><td>The maximum number of values one task report returns: groups, child groups and the time points of every leaf group. Reports above it are refused (<code>23011</code>) after the groups are known and before the time series are read. <code>0</code> disables the limit.</td></tr>
 <tr><td><code>reports.timeout</code></td><td><code>20s</code></td><td>The maximum duration of the database queries of one report. The queries are cancelled when it is exceeded.</td></tr>
 </tbody></table></div>
 <h2 id="ui">UI <a class="anchor" href="#ui" aria-label="Link to this section: UI">#</a></h2>
@@ -262,7 +263,7 @@
 <li><strong>Charts</strong> are hand-written SVG (bar, stacked and grouped bar, donut, line, number tile) with tooltips, hidden data tables, empty, loading and error states.</li>
 <li><strong>Grid</strong>: 12 columns, one column at 768 px and below; edit mode with drag, resize, keyboard control, compaction, a visible save state and undo.</li>
 <li><strong>Widget editor</strong>: type gallery, a form built from the report options, the view filter editor, relative period presets and a live preview of the unsaved configuration.</li>
-<li><strong>Drill-down</strong> lists exactly the tasks behind a mark; marks that cannot be expressed in the filter syntax are inert and say why. <strong>CSV export</strong> from the widget menu and the drill-down; number widgets can compare with the previous period.</li>
+<li><strong>Drill-down</strong> lists exactly the tasks behind a mark; marks that cannot be expressed in the filter syntax are inert and say why. A number, bar, donut or line widget with a time range lists (and exports) only the tasks of that range; created vs completed lists the tasks created in the range of the first series or done in the range of the second. <strong>CSV export</strong> from the widget menu and the drill-down; number widgets can compare with the previous period.</li>
 <li>Bar direction, stacking and legend are per-viewer browser settings.</li>
 </ul>
 <p>Details: <a href="../design.html#dashboards-and-reports">DESIGN.md</a>.</p>
@@ -276,7 +277,9 @@
 <ul>
 <li>At most two dimensions plus time.</li>
 <li><code>reports.maxbuckets</code> time buckets (<code>23002</code>), <code>reports.maxgroups</code> groups per level (<code>23003</code> for a request that asks for more; groups beyond a request's <code>limit</code>, default 20, fold into <code>other</code>).</li>
+<li><code>reports.maxcells</code> result cells (<code>23011</code>) for a task report. The default <code>50000</code> is about 4 MB of JSON; the widgets the editor offers stay far below it (a line chart of 20 groups over 366 daily buckets is about 7,300 cells, a grouped bar chart of two dimensions over 30 days with 5 x 5 groups is under 1,000). The two-dimension case with 20 x 20 groups over 366 buckets (about 160,000 cells, 13 MB) is what it exists to refuse.</li>
 <li><code>reports.maxrows</code> rows for reports computed in memory (time in status, time tracking) and CSV exports (<code>23010</code>). The rows read (history, current statuses, assignees or labels) are bounded by it.</li>
+<li>Names of groups (users, projects, labels, statuses, field options) are looked up in chunks of 500 ids, so a report over more distinct values than a database accepts parameters in one statement still runs. The task ids of the time tracking report are a subquery, never a list.</li>
 <li><code>reports.timeout</code> for the database queries of one report; exceeded queries are cancelled (<code>503</code> / <code>23009</code>).</li>
 <li>A cache per authenticated identity and normalized request for <code>reports.cachettl</code>, at most 256 entries, no invalidation; <code>0</code> disables it. In a multi-instance deployment each process has its own cache.</li>
 <li>Bucket boundaries are second precision; there is one time zone per request.</li>
@@ -285,9 +288,6 @@
 <p>From the <a href="../roadmap.html">roadmap</a>:</p>
 <ul>
 <li>Default dashboards for new projects with a workflow are not created.</li>
-<li>The response size is unbounded in groups x children x buckets (13 MB measured with two 20-option fields and 366 buckets).</li>
-<li>The time tracking report builds <code>IN</code> lists from task ids (parameter-limit risk).</li>
-<li>Bar and donut widgets with a time range ignore it in drill-down and export; only number widgets are fixed.</li>
 <li><code>created_vs_done</code> has no server-side running open count (the client combines two reports); a <code>text</code> widget stores the editor's HTML, sanitized on render; the <code>line</code> chart does not offer a second dimension.</li>
 <li>The new widgets (time in status, workload, time tracking), CSV export and the previous-period comparison were checked in a browser (see the roadmap); the workload estimate field was not.</li>
 <li>Not exposed over MCP.</li>
@@ -301,7 +301,7 @@
 <tr><td>Cache</td><td><code>pkg/models/reports_cache.go</code></td></tr>
 <tr><td>CSV export</td><td><code>pkg/models/reports_export.go</code>, <code>pkg/models/csv_export.go</code></td></tr>
 <tr><td>Dashboards and widgets</td><td><code>pkg/models/dashboards.go</code>, <code>pkg/models/dashboards_widgets.go</code>, <code>pkg/models/dashboards_lifecycle.go</code>, <code>pkg/models/dashboards_permissions.go</code></td></tr>
-<tr><td>Errors</td><td><code>pkg/models/error_reports.go</code> (<code>23001</code> to <code>23010</code>)</td></tr>
+<tr><td>Errors</td><td><code>pkg/models/error_reports.go</code> (<code>23001</code> to <code>23011</code>)</td></tr>
 <tr><td>Routes</td><td><code>pkg/routes/api/v2/reports.go</code>, <code>pkg/routes/api/v2/dashboards.go</code></td></tr>
 <tr><td>Task list scope</td><td><code>pkg/models/task_collection.go</code> (<code>readableTasksQuery</code>)</td></tr>
 <tr><td>Migration</td><td><code>pkg/migration/20261122160000.go</code></td></tr>

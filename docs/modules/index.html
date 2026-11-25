@@ -168,6 +168,7 @@
 <tr><td><code>forms.public.ratelimit</code></td><td><code>10</code></td><td><a href="forms.html">Forms</a></td></tr>
 <tr><td><code>forms.public.formratelimit</code></td><td><code>300</code></td><td><a href="forms.html">Forms</a></td></tr>
 <tr><td><code>forms.public.requestratelimit</code></td><td><code>60</code></td><td><a href="forms.html">Forms</a></td></tr>
+<tr><td><code>forms.users.ratelimit</code></td><td><code>60</code></td><td><a href="forms.html">Forms</a></td></tr>
 <tr><td><code>automation.enabled</code></td><td><code>true</code></td><td><a href="automation.html">Automation</a></td></tr>
 <tr><td><code>automation.maxdepth</code></td><td><code>3</code></td><td><a href="automation.html">Automation</a></td></tr>
 <tr><td><code>automation.maxactions</code></td><td><code>25</code></td><td><a href="automation.html">Automation</a></td></tr>
@@ -200,10 +201,13 @@
 <tr><td><code>automation.scripts.maxcallstack</code></td><td><code>512</code></td><td><a href="automation.html">Automation</a></td></tr>
 <tr><td><code>automation.scripts.maxresults</code></td><td><code>200</code></td><td><a href="automation.html">Automation</a></td></tr>
 <tr><td><code>automation.scripts.httptimeout</code></td><td><code>10s</code></td><td><a href="automation.html">Automation</a></td></tr>
+<tr><td><code>customfields.maxfieldsperproject</code></td><td><code>100</code></td><td><a href="custom-fields.html">Custom fields</a></td></tr>
+<tr><td><code>customfields.maxoptionsperfield</code></td><td><code>200</code></td><td><a href="custom-fields.html">Custom fields</a></td></tr>
 <tr><td><code>reports.cachettl</code></td><td><code>30s</code></td><td><a href="dashboards-reports.html">Dashboards and reports</a></td></tr>
 <tr><td><code>reports.maxgroups</code></td><td><code>200</code></td><td><a href="dashboards-reports.html">Dashboards and reports</a></td></tr>
 <tr><td><code>reports.maxbuckets</code></td><td><code>366</code></td><td><a href="dashboards-reports.html">Dashboards and reports</a></td></tr>
 <tr><td><code>reports.maxrows</code></td><td><code>50000</code></td><td><a href="dashboards-reports.html">Dashboards and reports</a></td></tr>
+<tr><td><code>reports.maxcells</code></td><td><code>50000</code></td><td><a href="dashboards-reports.html">Dashboards and reports</a></td></tr>
 <tr><td><code>reports.timeout</code></td><td><code>20s</code></td><td><a href="dashboards-reports.html">Dashboards and reports</a></td></tr>
 </tbody></table></div>
 <p>The modules without keys of their own (custom fields, workflows, approvals) share the instance's database and file settings. Besides these keys, <code>service.publicurl</code>, <code>service.secret</code>, <code>service.timezone</code>, <code>service.ipextractionmethod</code>, <code>service.trustedproxies</code>, <code>outgoingrequests.allownonroutableips</code> and <code>outgoingrequests.proxyurl</code> come from upstream and are used by the fork as described on the module pages.</p>

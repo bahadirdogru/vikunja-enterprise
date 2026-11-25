@@ -526,8 +526,9 @@ index, expiry index), the editor strings (en and tr) in vitest. Not
 checked: two real server processes against one PostgreSQL or MySQL
 (the cross-instance refusal is shown by the memory being a table, in one
 process), the editor text in a browser, a sender in another language.
-A retry of an accepted call is refused like a replay (senders re-sign every
-attempt). <code>automation.webhook.tolerance</code> needs a unit and at least 1s (a
+A retry of an accepted call was refused like a replay at that time (changed
+later: it now gets the <code>202</code> of the first call, see the entry on the retry
+of an accepted call). <code>automation.webhook.tolerance</code> needs a unit and at least 1s (a
 bare <code>300</code> is nanoseconds and would refuse every call: it falls back to the
 default with a warning). Changing <code>automation.webhook.tolerance</code> upward does not bring back rows
 already deleted: calls captured earlier can be replayed until their new
@@ -545,9 +546,224 @@ helper with openssl), clock-skew dependent row expiry, files of a refused
 project duplicate (now refused before anything is written), and a replay
 that was answered 429 instead of 401. Re-verified on SQLite, PostgreSQL 18
 and MySQL 8, see the report of that pass.</li>
+<li>Approvals and disabled accounts (fixed). Disabling an account
+(<code>ChangeUserStatus</code>, the one function behind the admin routes and the
+CLI) now drops it from the undecided slots of every pending request in the
+same transaction, with the code path of a deleted user: a request that
+waited only for it ends as <code>no_approvers</code>, one where everybody who is left
+approved is approved. An approved transition for a requester whose
+account is disabled is not performed: the request ends <code>cancelled</code> with
+the new reason <code>requester_disabled</code> (decisions stay, no history row, the
+usual resolved event and notification). A disabled approver could
+already not decide and was already not asked. Verified: the new tests in
+<code>approvals_disabled_test.go</code> failed before the change and pass after it;
+<code>TestApprovals*</code>, <code>TestAdmin*</code> and <code>TestUser*</code> pass on SQLite; the frontend
+cancel-reason test passes.</li>
+<li>Workflow, removing a status with <code>move_tasks_to</code> (fixed). Each moved task
+now gets a status history row (comment <code>Moved because the status &quot;&lt;title&gt;&quot;
+was removed from the workflow.</code>, doer is the person who saved the
+workflow) and a <code>task.status.changed</code> event, plus <code>task.updated</code> when the
+category change flips the done flag. Chunks of 200 tasks in the
+transaction of the removal: 4 statements per chunk, 4 * ceil(N/200) for N
+tasks, N to 2N events held until the commit. Verified: the new tests in
+<code>workflow_status_move_test.go</code> failed before the change and pass after
+it; <code>TestWorkflow*</code> and <code>TestApprovals*</code> pass on SQLite. Not measured with
+a large N.</li>
+<li>Custom field limits (fixed). New keys <code>customfields.maxfieldsperproject</code>
+(100) and <code>customfields.maxoptionsperfield</code> (200), error codes 20006 (409),
+20007 (400) and 20008 (400, also an invalid value to code that checks for
+one, so forms need no change). Only adding is refused: a project or field
+that is already above the limit keeps working, can be edited, and an
+option list can shrink. Text, long text, url and email values are checked
+in bytes against 65535, the size of MySQL's <code>text</code> column, so a value that
+one database stores all three store; multi-byte characters count with
+their bytes. The messages of the three codes are in the error table of
+both frontend languages (with the limit as parameter) and the value editor
+checks the byte length before sending. Verified: the new Go tests failed
+before the change and pass after it (<code>custom_field_limits_test.go</code>, the
+wire test <code>huma_custom_field_limits_test.go</code>), the vitest tests of the
+helper and the message table pass; en and tr keys and placeholders are
+identical. Not verified: the editor in a browser; concurrent creates can
+overshoot the field limit by the requests in flight; field descriptions
+are still not length-checked.</li>
+<li>Incoming webhook, retry of an accepted call (fixed). An exact replay of an
+accepted signed call (same hook, timestamp, body and signature) now gets
+the answer of the first call, <code>202</code> with <code>{&quot;queued&quot;: true}</code>, and queues
+nothing; two identical calls at once queue one run and both get the <code>202</code>.
+The replay is still looked up before the rate limit, so it does not use
+the budget, also when the budget is used up. A wrong or malformed
+signature, a missing, stale or future timestamp and a signature made for
+another hook are unchanged: the uniform <code>401</code> / 22011. What this tells an
+attacker who holds a captured call: previously the <code>401</code> of a replay told
+them the original had been accepted; now both answer <code>202</code>, so the answer
+tells nothing, and a call that was blocked on the way is accepted once
+when they send it first, as before. The timing is not the same (a replay
+skips the insert), the answer is. Updated: the tests that asserted <code>401</code>
+on a replay (<code>TestWebhook_ReplayProtection</code>, the <code>/api/v2</code> trigger test),
+the editor text in both languages, the route description, API.md and the
+automation module page. Verified: the changed tests failed before the
+change and pass after it (<code>TestWebhook*</code>, <code>TestHumaAutomation*</code> on SQLite).</li>
+<li>Verification of the four fixes above (approvals and disabled accounts,
+status removal, custom field limits, webhook retry): at commit 7d12ae6ed
+<code>mage test:feature</code> and <code>mage test:web</code> pass uncached
+(<code>GOFLAGS=-count=1</code>) on SQLite, PostgreSQL 18 and MySQL 8, one database at
+a time; the first SQLite feature run failed once in
+<code>TestIdempotency_ConditionsAreNotEvaluatedAgainWhenResuming</code> (a test that
+relies on a 1 ms backoff and real time, run while other test suites were
+running on the machine) and passed on the rerun of the whole suite. An
+earlier run of the same tree caught the missing <code>TestI18nParamsContract</code>
+cases of the new error codes, fixed in that commit. <code>mage lint</code> reports
+only the 12 known <code>unused</code> findings in <code>pkg/license/</code>; <code>mage
+check:yaegiSymbols</code> is clean; <code>vue-tsc --noEmit</code> and vitest of the touched
+frontend areas (1460 tests) pass; <code>pnpm lint</code> reports one error in
+<code>TaskStatus.vue</code> (unused <code>WorkflowStatusResponse</code>) that these changes do not
+touch. Not run: the UI in a browser, the e2e tests.</li>
+<li>Known defects pass (reports, forms, automation), SQLite only so far. Reports:
+<code>reports.maxcells</code> (default 50000, 0 turns it off) refuses a task report with
+more cells (groups, child groups, time points of leaf groups) with <code>400</code> /
+<code>23011</code>; the count is exact for the kept groups and checked before the
+series statement runs, and widgets show the translated message (en and tr).
+The time tracking report already read its task ids through a subquery; what
+could exceed the parameter limit were the id lists that name users,
+projects, labels, statuses and options: they are chunked (500) now, shown by
+a test with 33000 ids (fails with &quot;too many SQL variables&quot; on SQLite before).
+Number, bar, donut and line widgets limit drill-down and task export to
+their time range, created vs completed exports the union of both ranges.
+Forms: the address of a signed-in submitter was empty because the claims of
+a token carry none and <code>GetUserByID</code> leaves it out (the old test compared
+two empty strings); it is stored on the submission of members forms only,
+not on users or public forms (a review found that a users form would let
+anyone collect the account addresses of its submitters), the form page
+tells the submitter so, the address is cleared when the account is deleted,
+and it is kept out of the task, the placeholders and the <code>form.submitted</code>
+event. A closed members or users form answers an
+anonymous caller like an unknown token (404 / 25001) and a signed-in caller
+who may not submit with 403; an open one still answers 401. New
+<code>forms.users.ratelimit</code> (60 per user, form and hour). IPv6 clients are
+counted by /64 in the hourly per-IP limit and in the per-minute floor, which
+is the same limiter as the one of the incoming webhooks (<code>hooks</code>), so that
+one is keyed by /64 now too. The submission routes look the form up before
+Huma reads the body (a test counts the bytes read: none for an unknown
+token, a closed form, a non-member; the form that takes the submission
+reads it). Automation: retrying a run queues the event a <code>wait</code> writes
+(names the run and its rule) instead of resetting the original event; a
+test shows that a rule created, and one enabled, after the event do not run
+and the original event stays as it was. Each new regression test was run
+against the unfixed code and failed (the cap, id lookups, drill-down and
+export, closed forms, body reads, retry; the per-user limit and the key
+helpers are new code, their tests did not compile before; the IPv6 test of
+the hourly limit was not run against the unfixed code). Verified on
+SQLite (<code>GOFLAGS=-count=1</code>): <code>mage test:feature</code> and <code>mage test:web</code> pass,
+<code>mage lint</code> reports only the 12 known <code>unused</code> findings of
+<code>pkg/license/</code>, <code>pnpm lint</code> only the known error in <code>TaskStatus.vue</code>,
+<code>vue-tsc --noEmit</code> is clean, vitest of helpers, dashboards and client
+passes (127 files, 1880 tests). Not run: PostgreSQL and MySQL, a browser
+(the translated 23011 text in a widget was not looked at), IPv6 through a
+real proxy. Still open from these areas: a reachable form that does not ask
+for files still reads an upload before the 422; the per-user limit is per
+form, not across forms; the account address is stored in plain text like
+the one a form collects. After the review: the logo of a closed or full
+non-public form answers an anonymous caller like an unknown token; two
+retries of one run at the same time queue one event (the second gets
+22004); a retry whose original event was deleted is refused (22015). These
+follow-up tests were not run against the unfixed code.</li>
+<li>Review round on the four defect fixes (fixed unless listed below):
+<ul>
+<li>Disabling an account no longer calls into the approvals from upstream
+code. The cleanup of the approver slots hangs on the event hook
+(<code>events.OnCommit</code>, registered in <code>approvals_accounts.go</code>), runs in its own
+transaction after the status change has committed, and a failure is logged,
+never returned, so it cannot veto the disabling. It covers the admin routes
+and the CLI (both <code>ChangeUserStatus</code>; the CLI does dispatch the event after
+its commit, an earlier note here said otherwise), a disabled bot, and the
+bots of a disabled owner. <code>admin_user_actions.go</code> is back to upstream; no
+upstream line remains for this. The requests are walked in task order, which
+removes a deadlock between two accounts disabled or deleted at once. An
+approver who is only locked out by failed logins keeps the slot.</li>
+<li>The status removal marks its history rows and events with <code>cause:
+status_removed</code> (a reserved marker in the stored comment, no column), the
+editor shows the sentence in the language of the viewer, the tasks are
+locked before they are read, repeating tasks and tasks that need a done
+bucket go through the normal status change, the update time is touched, a
+category change announces <code>task.updated</code>, and a status with more than 20000
+tasks is refused (<code>21011</code>). Measured on SQLite with 5001 tasks: 136
+statements, 0.42 s, about 12 MB of extra heap without a rule; with one rule
+on <code>task.status_changed</code> 5137 statements, 0.69 s, about 16 MB. Not measured
+on PostgreSQL or MySQL, or above 5001 tasks.</li>
+<li>Text values with a NUL character are refused (PostgreSQL cannot store them).</li>
+<li>The flaky <code>TestIdempotency_ConditionsAreNotEvaluatedAgainWhenResuming</code> now
+uses the fake clock.</li>
+<li>Not done or not verified: the path of the forced move that handles tasks
+with manual kanban buckets has no test of its own; the done buckets of manual
+kanban views are still not updated when a status changes category in the
+editor (only the done flag and the event are); the history entry in the
+editor has no component test; <code>TestI18nParamsContract</code> still has the cases of
+the new error codes in the upstream-owned test file because its coverage
+check compares one table.</li>
+<li>Verified at commit b37f0e3ec: <code>mage test:feature</code> and <code>mage test:web</code> exit 0
+on SQLite, PostgreSQL 18 and MySQL 8, one at a time, uncached; <code>mage lint</code>
+reports 0 issues; <code>vue-tsc --noEmit</code> and vitest of the touched areas pass.
+The new deadlock test fails with 40P01 on PostgreSQL when the requests are
+walked in request id order again, and passes in task order.</li>
+</ul></li>
+<li>Second review round on the defect fixes:
+<ul>
+<li>A repeating task in a removed initial status was reopened into the status
+being removed (the flag is cleared only on archiving) and ended on an
+archived status. The reopen now ignores the statuses that go away, and the
+tests assert that no task of the project is left on a removed or archived
+status.</li>
+<li>Lock order of the removal: the save locks, in task order and in chunks, every
+task in a removed status and every task with a pending request that names one
+(a locking read, not an <code>UPDATE ... IN (subquery)</code>), then cancels the
+requests, which now takes task, then request, per request in task order.
+<code>lockApprovalRequest</code> uses two lookups by primary key on PostgreSQL and MySQL
+(no dependent subquery on MySQL before 8.0.21 or MariaDB 10.2); on SQLite
+it keeps the single <code>UPDATE</code> with a subquery as its first statement (one
+writer, no row locks, the write-first property is kept). Tests for a
+decision and for the disable cleanup against a status removal run on
+PostgreSQL and MySQL; both also pass on the code before this change (the
+window is narrow), so they only guard against a regression.</li>
+<li>The size limit is per save: the tasks of all removed statuses and of all
+statuses whose category changes between done and not done, trashed tasks
+included, are counted before anything is written; 21011 is refused with no
+rule disabled and no request cancelled (tested for rules and approvals, not
+for forms).</li>
+<li>Accounts: any status other than active in the admin event drops the slot
+(disabled, waiting for confirmation, locked by an admin); a lockout by failed
+logins never does. Whether a stored &quot;locked&quot; came from an admin or from
+failed logins is not recorded: if the hook was missed for an admin lock, the
+repair keeps the slot (a gap that needs a stored reason). The approval cron
+repairs the requests a failed or missed cleanup left behind. The rule table
+is in the approvals module page and tested row by row.</li>
+<li>Status changes carry <code>event.new.cause</code> in the automation payload and the
+catalog.</li>
+<li>Verified at commit 868e90bed: <code>mage test:feature</code> and <code>mage test:web</code> exit 0
+on SQLite, PostgreSQL 18 and MySQL 8, one at a time, uncached; <code>mage lint</code>
+reports 0 issues; <code>vue-tsc --noEmit</code>, vitest of the touched areas and
+<code>check_parity.py</code> pass. Not run: the UI in a browser.</li>
+</ul></li>
 </ul>
 <h2 id="remaining">Remaining <a class="anchor" href="#remaining" aria-label="Link to this section: Remaining">#</a></h2>
 <ul>
+<li>Workflow: a save that would move or change more than 20000 tasks is
+refused (21011) and there is no tool to get below the limit: no bulk status
+change exists, the limit is not a config key, and changing the category of
+a large status, a cheap bulk update before, is refused as well. The way
+out today is one status change per task through the API.</li>
+<li>Workflow: on PostgreSQL a task can be left on a removed (archived) status
+when another request moves it into that status in the instant the save
+removes it; the save locks the tasks it finds, not the status. Older than
+the review rounds, not fixed.</li>
+<li>Approvals and workflow: three paths take several task locks out of task id
+order (a category flip before the removal lock in one save, the two passes
+of a user deletion, tasks that arrive in a removed status after the first
+lock). A deadlock needs a second multi-task locker on the same tasks at the
+same time; the database then aborts one of them with an error.</li>
+<li>Upstream test <code>TestConnectionAuth/closes_the_socket_when_the_token_expires</code>
+(<code>pkg/websocket</code>, untouched by the fork) failed once on PostgreSQL in a full
+run and passed six times in a row afterwards; cause not established.</li>
+<li>Workflow: changing the category of a status in the editor flips the done flag of its tasks (and announces <code>task.updated</code>), but does not move them to the done bucket of manual kanban views; tasks moved because their status was removed do.</li>
 <li>Default dashboards for new projects with a workflow (4c).</li>
 <li>MCP exposure of the fork's endpoints; the new automation routes are not in
 the MCP allow-list.</li>
@@ -560,30 +776,11 @@ Turkish strings).</li>
 <code>service.timezone</code> to the editor; the stuck-run reaper does not disable
 rules or update metrics; the <code>stop</code> step is still recognised by an output
 prefix; no templates gallery for the 3d types; no e-mail action.</li>
-<li>Reports: the time tracking report builds <code>IN</code> lists from task ids
-(parameter-limit risk); bar and donut widgets with a time range ignore it
-in drill-down and export (only number widgets are fixed).</li>
 </ul>
 <p>Open after the review pass, not fixed because they need a decision:</p>
 <ul>
-<li>Automation: retrying one failed run re-queues the whole event, so rules
-created after the event run for it too.</li>
 <li>Automation: goja's <code>find</code>, <code>findIndex</code>, <code>findLast</code> and <code>findLastIndex</code> on
 an array-like hit a nil-pointer panic (reported as an internal error).</li>
-<li>Approvals: an approved transition is performed for a requester whose
-account was disabled; a request whose only approver was disabled stays
-pending.</li>
-<li>Workflow: removing a status with <code>move_tasks_to</code> writes no history and
-fires no event.</li>
-<li>Reports: the response size is unbounded in groups x children x buckets
-(13 MB measured with two 20-option fields and 366 buckets).</li>
-<li>Custom fields: no cap on fields per project or options per field;
-<code>value_text</code> is 64 KB on MySQL and values are not length-checked.</li>
-<li>Forms: the e-mail of a signed-in submitter is never recorded although the
-field documentation says so; the title of a closed members form is shown
-to an anonymous holder of the link; no hourly limit on members forms;
-per-IP limits count full IPv6 addresses; uploads are buffered before the
-token is looked up.</li>
 <li>SQLite: a transaction that reads and then writes fails at once when
 another connection holds the write lock (<code>_txlock=immediate</code> would change
 that for every transaction).</li>
