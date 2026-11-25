@@ -264,10 +264,10 @@
 <div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Range</th><th scope="col">Module</th><th scope="col">File</th></tr></thead><tbody>
 <tr><td>20001 - 20008</td><td>Custom fields</td><td><code>pkg/models/error_custom_fields.go</code></td></tr>
 <tr><td>21001 - 21011</td><td>Workflows</td><td><code>pkg/models/error_workflow.go</code></td></tr>
-<tr><td>22001 - 22015</td><td>Automation (22005 - 22008 are scripts and secrets)</td><td><code>pkg/models/error_automation.go</code>, <code>pkg/models/error_automation_secrets.go</code></td></tr>
+<tr><td>22001 - 22016</td><td>Automation (22005 - 22008 are scripts and secrets)</td><td><code>pkg/models/error_automation.go</code>, <code>pkg/models/error_automation_secrets.go</code></td></tr>
 <tr><td>23001 - 23011</td><td>Reports and dashboards</td><td><code>pkg/models/error_reports.go</code></td></tr>
 <tr><td>24001 - 24010</td><td>Approvals</td><td><code>pkg/models/error_approvals.go</code></td></tr>
-<tr><td>25001 - 25009</td><td>Forms</td><td><code>pkg/models/error_forms.go</code></td></tr>
+<tr><td>25001 - 25011</td><td>Forms</td><td><code>pkg/models/error_forms.go</code></td></tr>
 </tbody></table></div>
 <p><strong>Codes a client most needs.</strong></p>
 <div class="table-scroll" role="region" aria-label="Table" tabindex="0"><table><thead><tr><th scope="col">Code</th><th scope="col">HTTP</th><th scope="col">Meaning</th><th scope="col">Where</th></tr></thead><tbody>
@@ -298,6 +298,7 @@
 <tr><td>22013</td><td>400</td><td>The webhook body is not a JSON object</td><td>incoming webhook</td></tr>
 <tr><td>22014</td><td>409</td><td>The project already has <code>automation.maxrulesperproject</code> rules; only adding is refused</td><td>rule create, project duplicate</td></tr>
 <tr><td>22015</td><td>409</td><td>The event of the failed run was deleted by the retention job, so the run cannot be retried</td><td>run retry</td></tr>
+<tr><td>22016</td><td>422</td><td>The rule has a trigger with a task and the test names none (<code>task_id</code>)</td><td>rule test</td></tr>
 <tr><td>23001</td><td>400</td><td>Invalid report parameter, <code>details.param</code> names it</td><td>reports</td></tr>
 <tr><td>23002 / 23003</td><td>400</td><td>Too many buckets or groups</td><td>reports</td></tr>
 <tr><td>23005</td><td>403</td><td>Not available through a link share</td><td>reports</td></tr>
@@ -527,11 +528,11 @@ curl -sS -X POST &quot;$BASE/automation/hooks/$WEBHOOK_TOKEN&quot; \
 <p>This response was recorded on the test fixtures:</p>
 <pre class="code"><code class="language-json">{
   &quot;groups&quot;: [
-    {&quot;key&quot;: false, &quot;label&quot;: &quot;Open&quot;, &quot;color&quot;: &quot;#94a3b8&quot;, &quot;value&quot;: 19,
+    {&quot;key&quot;: false, &quot;label&quot;: &quot;Open&quot;, &quot;label_code&quot;: &quot;done.false&quot;, &quot;color&quot;: &quot;#94a3b8&quot;, &quot;value&quot;: 19,
      &quot;series&quot;: [
        {&quot;bucket&quot;: &quot;2018-11-01&quot;, &quot;start&quot;: &quot;2018-11-01T00:00:00+03:00&quot;, &quot;end&quot;: &quot;2018-12-01T00:00:00+03:00&quot;, &quot;value&quot;: 0},
        {&quot;bucket&quot;: &quot;2018-12-01&quot;, &quot;start&quot;: &quot;2018-12-01T00:00:00+03:00&quot;, &quot;end&quot;: &quot;2019-01-01T00:00:00+03:00&quot;, &quot;value&quot;: 19}]},
-    {&quot;key&quot;: true, &quot;label&quot;: &quot;Done&quot;, &quot;color&quot;: &quot;#22c55e&quot;, &quot;value&quot;: 1, &quot;series&quot;: [&quot;...&quot;]}
+    {&quot;key&quot;: true, &quot;label&quot;: &quot;Done&quot;, &quot;label_code&quot;: &quot;done.true&quot;, &quot;color&quot;: &quot;#22c55e&quot;, &quot;value&quot;: 1, &quot;series&quot;: [&quot;...&quot;]}
   ],
   &quot;total&quot;: 20, &quot;value&quot;: 20, &quot;measure&quot;: &quot;count&quot;, &quot;unit&quot;: &quot;tasks&quot;, &quot;multi_valued&quot;: false,
   &quot;time&quot;: {&quot;field&quot;: &quot;created&quot;, &quot;bucket&quot;: &quot;month&quot;, &quot;from&quot;: &quot;2018-11-01T00:00:00+03:00&quot;,

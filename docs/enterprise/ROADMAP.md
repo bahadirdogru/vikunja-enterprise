@@ -759,7 +759,11 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
     identifiers (event names, API token permission names, filter field names); the screen-reader description inside
     the logo SVGs (upstream asset). Uncoded details of upstream routes (the MCP, avatar and notification refusals,
     for example) follow the translated sentence in English.
-  - Verification of the final tree: see the log of the review fixes below.
+  - Verified on the final tree: `mage lint` 0 issues; `test:feature` 59 packages ok and `test:web` ok on SQLite and
+    on PostgreSQL 17; vitest 324 files / 4348 tests, `vue-tsc` and `pnpm lint` (0 errors) clean; all 73 fork e2e
+    specs pass; `check_parity.py` ok. The review found that a long Turkish error was cut in the middle of a
+    character (`truncate` cut bytes) and PostgreSQL refused the step row: fixed, with a test that fails without it.
+    Not verified: MySQL and MariaDB; the admin screens in Turkish; a real mail in Turkish.
 
 ## Remaining
 
