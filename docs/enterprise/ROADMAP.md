@@ -775,6 +775,11 @@ vikunja-enterprise is an independent, community fork of [Vikunja](https://github
     fails because the browser's day is already the next one while the API's is not (it passes with `TZ=UTC`; the
     test is older than this pass); `check_parity.py` ok. Not verified: MySQL and MariaDB; the admin screens in
     Turkish; a real mail in Turkish; the `could_not_check` bound (no test reaches that branch).
+- Instance option `service.showapiconfig` (issue #1): `false` hides the API server line and its change link on the
+  web login, registration and password reset pages; exposed as `show_api_config` in `/info` on both API versions;
+  default `true` keeps upstream's behaviour, the desktop app is unchanged. Covered by a `NoAuthWrapper` unit test
+  (web on and off, page without the line, desktop with and without a stored server) and a webtest on `/api/v1/info`
+  and `/api/v2/info`, which fails when the field is not filled. Not checked in a browser. Proposed upstream.
 
 ## Remaining
 

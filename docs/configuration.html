@@ -135,6 +135,7 @@
 <li class="toc-2"><a href="#settings-you-should-always-look-at">Settings you should always look at</a></li>
 <li class="toc-2"><a href="#configuration-keys-at-a-glance">Configuration keys at a glance</a></li>
 <li class="toc-2"><a href="#no-license-key">No license key</a></li>
+<li class="toc-2"><a href="#hiding-the-api-server-on-the-login-page">Hiding the API server on the login page</a></li>
 </ul></nav></details>
 <div class="prose">
 <p>Every setting works as in upstream Vikunja: it comes from <code>config.yml</code> or from an environment variable, and the environment variable wins. This page covers what the fork adds. For the generic settings (database, mail, authentication, CORS, rate limits and so on) see upstream's <a href="https://vikunja.io/docs/config-options/">configuration options</a>; they are upstream's documentation and describe upstream's releases.</p>
@@ -206,6 +207,11 @@
 <p>The modules without keys of their own (custom fields, workflows, approvals) share the instance's database and file settings. Besides these keys, <code>service.publicurl</code>, <code>service.secret</code>, <code>service.timezone</code>, <code>service.ipextractionmethod</code>, <code>service.trustedproxies</code>, <code>outgoingrequests.allownonroutableips</code> and <code>outgoingrequests.proxyurl</code> come from upstream and are used by the fork as described on the module pages.</p>
 <h2 id="no-license-key">No license key <a class="anchor" href="#no-license-key" aria-label="Link to this section: No license key">#</a></h2>
 <p>Upstream gates a few optional features behind <code>license.key</code>. In this fork nothing reads the key, so the setting has no effect even though it is still listed in <code>config-raw.json</code>.</p>
+<h2 id="hiding-the-api-server-on-the-login-page">Hiding the API server on the login page <a class="anchor" href="#hiding-the-api-server-on-the-login-page" aria-label="Link to this section: Hiding the API server on the login page">#</a></h2>
+<p>The login, registration and password reset pages of the web frontend show the API server they talk to, with a link to change it. When the frontend is only ever used with this instance (for example a single OpenID Connect provider and <code>auth.local.enabled: false</code>), turn the line off:</p>
+<pre class="code"><code class="language-yaml">service:
+  showapiconfig: false</code></pre>
+<p>or <code>VIKUNJA_SERVICE_SHOWAPICONFIG=false</code>. The default <code>true</code> keeps upstream's behaviour. The value is published as <code>show_api_config</code> in <code>/api/v1/info</code> and <code>/api/v2/info</code>. The desktop app is not affected: it shows the server once one was chosen. The error page shown when the frontend cannot reach the API keeps its address field, so a wrong address can still be fixed.</p>
 </div>
 <p class="edit"><a href="https://github.com/bahadirdogru/vikunja-enterprise/blob/main/site/pages/configuration.md">Source of this page on GitHub</a></p>
 <nav class="pager" aria-label="Pages"><a class="prev" href="getting-started.html" rel="prev"><span>Previous</span>Getting started</a><a class="next" href="modules/index.html" rel="next"><span>Next</span>Modules</a></nav>
@@ -214,6 +220,7 @@
 <li class="toc-2"><a href="#settings-you-should-always-look-at">Settings you should always look at</a></li>
 <li class="toc-2"><a href="#configuration-keys-at-a-glance">Configuration keys at a glance</a></li>
 <li class="toc-2"><a href="#no-license-key">No license key</a></li>
+<li class="toc-2"><a href="#hiding-the-api-server-on-the-login-page">Hiding the API server on the login page</a></li>
 </ul></nav>
 </div>
 <footer class="site-footer">
