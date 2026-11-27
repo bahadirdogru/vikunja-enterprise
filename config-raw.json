@@ -129,6 +129,11 @@
                     "comment": "Allow changing the logo and other icons based on various occasions throughout the year."
                 },
                 {
+                    "key": "showapiconfig",
+                    "default_value": "true",
+                    "comment": "Show the API server and the link to change it on the login, registration and password reset pages of the web frontend. Set to false when the frontend is only ever used with this instance. The desktop app is not affected."
+                },
+                {
                     "key": "customlogourl",
                     "default_value": "",
                     "comment": "Allow using a custom logo via external URL."

@@ -56,6 +56,7 @@ type VikunjaInfos struct {
 	WebhooksEnabled            bool      `json:"webhooks_enabled" doc:"Whether webhooks are enabled."`
 	PublicTeamsEnabled         bool      `json:"public_teams_enabled" doc:"Whether public teams are enabled."`
 	AllowIconChanges           bool      `json:"allow_icon_changes" doc:"Whether users may change project icons."`
+	ShowAPIConfig              bool      `json:"show_api_config" doc:"Whether the web frontend shows the API server and the link to change it on its login pages."`
 	EnabledProFeatures         []string  `json:"enabled_pro_features" doc:"The licensed pro features enabled on this instance."`
 	// ConcurrentWrites reports whether the configured database can handle concurrent writes. It is false on SQLite, where overlapping write transactions deadlock, so clients should serialize batched writes instead of firing them in parallel.
 	ConcurrentWrites bool `json:"concurrent_writes" doc:"Whether the configured database supports concurrent writes. False on SQLite; clients should serialize batched writes when this is false."`
@@ -158,6 +159,7 @@ func BuildInfo() VikunjaInfos {
 		WebhooksEnabled:        config.WebhooksEnabled.GetBool(),
 		PublicTeamsEnabled:     config.ServiceEnablePublicTeams.GetBool(),
 		AllowIconChanges:       config.ServiceAllowIconChanges.GetBool(),
+		ShowAPIConfig:          config.ServiceShowAPIConfig.GetBool(),
 		ConcurrentWrites:       config.DatabaseType.GetString() != "sqlite",
 		EnabledProFeatures:     proFeatureNames,
 		AvailableMigrators: []string{

@@ -104,6 +104,7 @@ function defaultConfig(): ConfigState {
 		},
 		public_teams_enabled: false,
 		allow_icon_changes: true,
+		show_api_config: true,
 		enabled_pro_features: [],
 		concurrent_writes: false,
 	}

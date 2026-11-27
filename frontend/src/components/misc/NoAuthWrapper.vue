@@ -69,9 +69,9 @@ const props = withDefaults(
 
 const isDesktop = isDesktopApp()
 const hasStoredApiUrl = isDesktop && localStorage.getItem('API_URL') !== null
-const shouldShowApiConfig = computed(() => props.showApiConfig && (!isDesktop || hasStoredApiUrl))
-
 const configStore = useConfigStore()
+// On the web the instance decides; the desktop app shows it once an API server was chosen.
+const shouldShowApiConfig = computed(() => props.showApiConfig && (isDesktop ? hasStoredApiUrl : configStore.show_api_config))
 const motd = computed(() => configStore.motd)
 
 const route = useRoute()

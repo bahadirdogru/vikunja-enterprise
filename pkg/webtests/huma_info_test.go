@@ -46,6 +46,31 @@ func TestHumaInfo(t *testing.T) {
 	assert.Equal(t, config.DatabaseType.GetString() != "sqlite", body["concurrent_writes"])
 }
 
+// TestHumaInfoShowAPIConfig checks that the instance decides whether the web frontend shows the API server on its
+// login pages, on both API versions, and that it is shown unless the instance turns it off.
+func TestHumaInfoShowAPIConfig(t *testing.T) {
+	e, err := setupTestEnv()
+	require.NoError(t, err)
+
+	read := func(path string) map[string]any {
+		rec := humaRequest(t, e, http.MethodGet, path, "", "", "")
+		require.Equal(t, http.StatusOK, rec.Code, "body: %s", rec.Body.String())
+		var body map[string]any
+		require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &body))
+		return body
+	}
+
+	for _, path := range []string{"/api/v1/info", "/api/v2/info"} {
+		assert.Equal(t, true, read(path)["show_api_config"], path)
+	}
+
+	config.ServiceShowAPIConfig.Set(false)
+	t.Cleanup(func() { config.ServiceShowAPIConfig.Set(true) })
+	for _, path := range []string{"/api/v1/info", "/api/v2/info"} {
+		assert.Equal(t, false, read(path)["show_api_config"], path)
+	}
+}
+
 func TestHumaInfoLegalLinks(t *testing.T) {
 	e, err := setupTestEnv()
 	require.NoError(t, err)

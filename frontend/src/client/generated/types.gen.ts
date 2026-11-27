@@ -6955,6 +6955,10 @@ export type VikunjaInfos = {
      */
     public_teams_enabled?: boolean;
     /**
+     * Whether the web frontend shows the API server and the link to change it on its login pages.
+     */
+    show_api_config?: boolean;
+    /**
      * Whether task attachments are enabled.
      */
     task_attachments_enabled?: boolean;
@@ -9908,6 +9912,10 @@ export type VikunjaInfosWritable = {
      * Whether public teams are enabled.
      */
     public_teams_enabled?: boolean;
+    /**
+     * Whether the web frontend shows the API server and the link to change it on its login pages.
+     */
+    show_api_config?: boolean;
     /**
      * Whether task attachments are enabled.
      */

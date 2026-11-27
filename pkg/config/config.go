@@ -69,6 +69,7 @@ const (
 	ServiceEnableUserDeletion             Key = `service.enableuserdeletion`
 	ServiceMaxAvatarSize                  Key = `service.maxavatarsize`
 	ServiceAllowIconChanges               Key = `service.allowiconchanges`
+	ServiceShowAPIConfig                  Key = `service.showapiconfig`
 	ServiceCustomLogoURL                  Key = `service.customlogourl`
 	ServiceCustomLogoURLDark              Key = `service.customlogourldark`
 	ServiceEnablePublicTeams              Key = `service.enablepublicteams`
@@ -460,6 +461,7 @@ func initDefaultConfig() {
 	ServiceMaxAvatarSize.setDefault(1024)
 	ServiceDemoMode.setDefault(false)
 	ServiceEnablePublicTeams.setDefault(false)
+	ServiceShowAPIConfig.setDefault(true)
 	ServiceBcryptRounds.setDefault(11)
 	ServiceEnableOpenIDTeamUserOnlySearch.setDefault(false)
 	ServiceRestrictSearchToExternalTeams.setDefault(false)

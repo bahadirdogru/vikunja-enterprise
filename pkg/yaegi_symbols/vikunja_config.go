@@ -248,6 +248,7 @@ func init() {
 		"ServiceRestrictSearchToExternalTeams":       reflect.ValueOf(config.ServiceRestrictSearchToExternalTeams),
 		"ServiceRootpath":                            reflect.ValueOf(config.ServiceRootpath),
 		"ServiceSecret":                              reflect.ValueOf(config.ServiceSecret),
+		"ServiceShowAPIConfig":                       reflect.ValueOf(config.ServiceShowAPIConfig),
 		"ServiceTestingtoken":                        reflect.ValueOf(config.ServiceTestingtoken),
 		"ServiceTimeZone":                            reflect.ValueOf(config.ServiceTimeZone),
 		"ServiceTrustedProxies":                      reflect.ValueOf(config.ServiceTrustedProxies),
