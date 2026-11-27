@@ -929,7 +929,7 @@ test is older than this pass); <code>check_parity.py</code> ok. Not verified: My
 Turkish; a real mail in Turkish; the <code>could_not_check</code> bound (no test reaches that branch).</li>
 </ul></li>
 <li>Instance option <code>service.showapiconfig</code> (issue #1): <code>false</code> hides the API server line and its change link on the
-web login, registration and password reset pages; exposed as <code>show_api_config</code> in <code>/info</code> on both API versions;
+web pages shown before signing in; exposed as <code>show_api_config</code> in <code>/info</code> on both API versions;
 default <code>true</code> keeps upstream's behaviour, the desktop app is unchanged. Covered by a <code>NoAuthWrapper</code> unit test
 (web on and off, page without the line, desktop with and without a stored server) and a webtest on <code>/api/v1/info</code>
 and <code>/api/v2/info</code>, which fails when the field is not filled. Not checked in a browser. Proposed upstream.</li>

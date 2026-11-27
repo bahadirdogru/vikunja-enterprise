@@ -24,11 +24,11 @@ Upstream gates a few optional features behind `license.key`. In this fork nothin
 
 ## Hiding the API server on the login page
 
-The login, registration and password reset pages of the web frontend show the API server they talk to, with a link to change it. When the frontend is only ever used with this instance (for example a single OpenID Connect provider and `auth.local.enabled: false`), turn the line off:
+The pages of the web frontend that are shown before signing in (login, registration, password reset, OpenID Connect and link share sign-in) show the API server they talk to, with a link to change it. When the frontend is only ever used with this instance (for example a single OpenID Connect provider and `auth.local.enabled: false`), turn the line off:
 
 ```yaml
 service:
   showapiconfig: false
 ```
 
-or `VIKUNJA_SERVICE_SHOWAPICONFIG=false`. The default `true` keeps upstream's behaviour. The value is published as `show_api_config` in `/api/v1/info` and `/api/v2/info`. The desktop app is not affected: it shows the server once one was chosen. The error page shown when the frontend cannot reach the API keeps its address field, so a wrong address can still be fixed.
+or `VIKUNJA_SERVICE_SHOWAPICONFIG=false`. The default `true` keeps upstream's behaviour. The value is published as `show_api_config` in `/api/v1/info` and `/api/v2/info`. The desktop app is not affected: it shows the server once one was chosen. The error page shown when the frontend cannot reach the API keeps its address field. A browser that was earlier switched to another server that also turns the line off has no way back on that page; clearing the site data of the browser resets it.
