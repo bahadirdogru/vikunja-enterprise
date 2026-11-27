@@ -125,6 +125,8 @@ export const useConfigStore = defineStore('config', () => {
 			available_migrators: config.available_migrators ?? [],
 			enabled_background_providers: config.enabled_background_providers ?? [],
 			enabled_pro_features: config.enabled_pro_features ?? [],
+			// An older server does not send it: the line is shown, as before.
+			show_api_config: config.show_api_config ?? true,
 			legal: {
 				links: legalLinks(config.legal),
 			},

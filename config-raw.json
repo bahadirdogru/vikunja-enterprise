@@ -131,7 +131,7 @@
                 {
                     "key": "showapiconfig",
                     "default_value": "true",
-                    "comment": "Show the API server and the link to change it on the login, registration and password reset pages of the web frontend. Set to false when the frontend is only ever used with this instance. The desktop app is not affected."
+                    "comment": "Show the API server and the link to change it on the pages of the web frontend that are shown before signing in. Set to false when the frontend is only ever used with this instance. The desktop app is not affected."
                 },
                 {
                     "key": "customlogourl",

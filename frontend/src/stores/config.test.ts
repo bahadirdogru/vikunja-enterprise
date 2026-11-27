@@ -63,6 +63,18 @@ describe('config store', () => {
 			expect(store.enabled_pro_features).toEqual(['admin_panel'])
 		})
 
+		it('takes show_api_config from the server and shows the line when an older server does not send it', async () => {
+			const store = useConfigStore()
+
+			sdk.info.mockResolvedValue({data: {version: 'v2', show_api_config: false}})
+			await store.update()
+			expect(store.show_api_config).toBe(false)
+
+			sdk.info.mockResolvedValue({data: {version: 'v2'}})
+			await store.update()
+			expect(store.show_api_config).toBe(true)
+		})
+
 		it('normalizes null collections to empty arrays', async () => {
 			sdk.info.mockResolvedValue({
 				data: {
