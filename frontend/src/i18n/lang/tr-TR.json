@@ -556,6 +556,7 @@
 	"project": {
 		"archivedMessage": "Bu proje arşivlenmiş. Yeni görev eklenemez veya mevcut görevler düzenlenemez.",
 		"archived": "Arşivlendi",
+		"sharedWithOthers": "Başkalarıyla paylaşılıyor",
 		"showArchived": "Arşivlenenleri Göster",
 		"title": "Başlık",
 		"color": "Renk",
