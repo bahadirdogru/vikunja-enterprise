@@ -41,6 +41,12 @@
 						<Icon icon="filter" />
 					</span>
 					<span
+						v-else-if="isFavoritesPseudoProject(project)"
+						class="saved-filter-icon icon menu-item-icon"
+					>
+						<Icon icon="star" />
+					</span>
+					<span
 						v-if="canEditOrder && project.id > 0 && typeof project.max_permission === 'number' && project.max_permission > PERMISSIONS.READ"
 						class="icon menu-item-icon handle drag-handle"
 						@mousedown.stop
@@ -51,6 +57,14 @@
 					</span>
 				</div>
 				<span class="project-menu-title">{{ getProjectTitle(project) }}</span>
+				<span
+					v-if="project.is_shared"
+					v-tooltip="$t('project.sharedWithOthers')"
+					class="shared-icon"
+				>
+					<Icon icon="users" />
+					<span class="is-sr-only">{{ $t('project.sharedWithOthers') }}</span>
+				</span>
 			</BaseButton>
 			<BaseButton
 				v-if="canToggleFavorite"
@@ -108,6 +122,7 @@ import ProjectsNavigation from '@/components/home/ProjectsNavigation.vue'
 import {PERMISSIONS} from '@/constants/permissions'
 import {
 	getSavedFilterIdFromProjectId,
+	isFavoritesPseudoProject,
 	isSavedFilterProject,
 	usePatchProjectFavoriteMutation,
 } from '@/client/queries/projects'
@@ -203,7 +218,7 @@ const canToggleFavorite = computed(() => {
 	// Allow favorite toggle for:
 	// 1. Regular projects (id > 0) with write permission
 	// 2. Saved filters (id < -1) - user owns their own filters
-	if (props.project.id === -1) return false  // Favorites pseudo-project
+	if (isFavoritesPseudoProject(props.project)) return false
 	if (props.project.id > 0) {
 		return typeof props.project.max_permission === 'number' &&
 			props.project.max_permission > PERMISSIONS.READ
@@ -279,6 +294,12 @@ async function toggleProjectFavorite() {
 		margin: 0 !important;
 		padding: 0 !important;
 	}
+
+	// Line up with the icons of the top menu, which start left of the color bubbles
+	.saved-filter-icon {
+		inline-size: 1rem;
+		inset-inline-start: -.25rem;
+	}
 }
 
 .drag-handle {
@@ -301,8 +322,10 @@ async function toggleProjectFavorite() {
 	text-overflow: ellipsis;
 }
 
-.saved-filter-icon {
-	color: var(--grey-300) !important;
+.shared-icon {
+	flex-shrink: 0;
+	margin-inline-start: .375rem;
+	color: var(--grey-400);
 	font-size: .75rem;
 }
 

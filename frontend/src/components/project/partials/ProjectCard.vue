@@ -2,8 +2,8 @@
 	<div
 		class="project-card"
 		:class="{
-			'has-light-text': Boolean(background),
-			'has-background': Boolean(blurHashUrl || background)
+			'has-background': Boolean(blurHashUrl || background),
+			'is-light-background': backgroundIsLight,
 		}"
 		:style="{
 			'border-inline-start': project.hex_color ? `0.25rem solid ${project.hex_color}` : undefined,
@@ -24,17 +24,23 @@
 			class="project-title"
 			aria-hidden="true"
 		>
-			<span
-				v-if="project.id < -1"
-				class="saved-filter-icon icon"
-			>
-				<Icon icon="filter" />
+			<span class="project-title-text">
+				<span
+					v-if="project.id < -1"
+					class="saved-filter-icon icon"
+				>
+					<Icon icon="filter" />
+				</span>
+				{{ titleParts.head }}<span :class="{'title-tail': project.is_shared}">{{ titleParts.tail }}<span
+					v-if="project.is_shared"
+					v-tooltip="$t('project.sharedWithOthers')"
+					class="shared-icon"
+				><Icon icon="users" /></span></span>
 			</span>
-			{{ getProjectTitle(project) }}
 		</div>
 		<BaseButton
 			class="project-button"
-			:aria-label="project.title"
+			:aria-label="buttonLabel"
 			:title="textOnlyDescription"
 			:to="{
 				name: 'project.index',
@@ -62,6 +68,7 @@
 
 <script lang="ts" setup>
 import {computed} from 'vue'
+import {useI18n} from 'vue-i18n'
 import {usePatchProjectFavoriteMutation, type ProjectResponse} from '@/client/queries/projects'
 
 import BaseButton from '@/components/base/BaseButton.vue'
@@ -71,12 +78,14 @@ import {PERMISSIONS} from '@/constants/permissions'
 import {useProjectBackground} from '@/composables/useProjectBackground'
 import {getProjectTitle} from '@/helpers/getProjectTitle'
 import {htmlToPreviewText} from '@/helpers/htmlToPreviewText'
+import {blurHashIsLight} from '@/helpers/color/blurHashIsLight'
 
 const props = defineProps<{
 	project: ProjectResponse,
 }>()
 
 const {background, blurHashUrl} = useProjectBackground(() => props.project)
+const backgroundIsLight = computed(() => blurHashIsLight(props.project.background_blur_hash ?? ''))
 
 const favoriteMutation = usePatchProjectFavoriteMutation()
 
@@ -86,6 +95,19 @@ async function toggleProjectFavorite() {
 	}
 	await favoriteMutation.mutateAsync({id: props.project.id, isFavorite: !props.project.is_favorite})
 }
+
+const {t} = useI18n()
+// The title is aria-hidden, so the shared state has to be in the link label.
+const buttonLabel = computed(() => props.project.is_shared
+	? `${props.project.title}, ${t('project.sharedWithOthers')}`
+	: props.project.title)
+
+// Keeps the icon on the same line as the last word.
+const titleParts = computed(() => {
+	const title = getProjectTitle(props.project)
+	const split = title.lastIndexOf(' ') + 1
+	return {head: title.slice(0, split), tail: title.slice(split)}
+})
 
 const textOnlyDescription = computed(() => htmlToPreviewText(props.project.description ?? ''))
 </script>
@@ -155,25 +177,51 @@ const textOnlyDescription = computed(() => htmlToPreviewText(props.project.descr
 	inline-size: 100%;
 	margin-block-end: 0;
 	max-block-size: calc(100% - (var(--project-card-padding) + 1rem)); // padding & height of the "is archived" badge
+	// The shadow filter stacks the title under .project-button; lift it so the shared icon gets hover.
+	z-index: 1;
+	pointer-events: none;
+}
+
+.project-title-text {
 	overflow: hidden;
 	text-overflow: ellipsis;
 	word-break: break-word;
+	// Room for descenders; more would reveal the clamped 4th line.
+	padding-block-end: .25rem;
+	margin-block-end: -.25rem;
 
 	display: -webkit-box;
 	-webkit-line-clamp: 3;
 	-webkit-box-orient: vertical;
 }
 
-.has-light-text .project-title {
-	color: var(--grey-100);
+// Fixed colours, not theme variables: the image looks the same in both themes.
+.has-background {
+	--on-image-text: hsl(0 0% 100%);
+	// Chained drop-shadows compound, hence the light values.
+	--on-image-shadow:
+		drop-shadow(0 0 2px hsl(216.9 19.1% 26.7%))
+		drop-shadow(0 0 6px rgb(0 0 0 / .6));
+
+	&.is-light-background {
+		--on-image-text: hsl(220.9 39.3% 11%);
+		--on-image-shadow:
+			drop-shadow(0 0 2px hsl(0 0% 100%))
+			drop-shadow(0 0 6px rgb(255 255 255 / .7));
+	}
 }
 
-.has-background .project-title {
-	text-shadow:
-		0 0 10px var(--black),
-		1px 1px 5px var(--grey-700),
-		-1px -1px 5px var(--grey-700);
-	color: var(--white);
+// Not text-shadow: the clamp's overflow would clip it.
+.has-background .project-title,
+.has-background .is-archived,
+.has-background .favorite,
+.has-background :deep(.dropdown-trigger) {
+	filter: var(--on-image-shadow);
+	color: var(--on-image-text);
+}
+
+.has-background .shared-icon {
+	opacity: .8;
 }
 
 .project-actions {
@@ -223,6 +271,17 @@ const textOnlyDescription = computed(() => htmlToPreviewText(props.project.descr
   &.is-visible {
     opacity: 1;
   }
+}
+
+.title-tail {
+	white-space: nowrap;
+}
+
+.shared-icon {
+	pointer-events: auto;
+	margin-inline-start: .375rem;
+	font-size: .875rem;
+	opacity: .5;
 }
 
 .saved-filter-icon {

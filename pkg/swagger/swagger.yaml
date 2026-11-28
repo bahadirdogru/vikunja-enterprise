@@ -550,7 +550,8 @@ definitions:
         description: The unique, numeric id of this project.
         type: integer
       identifier:
-        description: The unique project short identifier. Used to build task identifiers.
+        description: The project short identifier, unique among the projects its creator
+          can access. Used to build task identifiers.
         maxLength: 10
         minLength: 0
         type: string
@@ -561,6 +562,8 @@ definitions:
         description: True if a project is a favorite. Favorite projects show up in
           a separate parent project. This value depends on the user making the call
           to the api.
+        type: boolean
+      is_shared:
         type: boolean
       max_permission:
         $ref: '#/definitions/models.Permission'

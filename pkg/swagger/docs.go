@@ -9860,7 +9860,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "identifier": {
-                    "description": "The unique project short identifier. Used to build task identifiers.",
+                    "description": "The project short identifier, unique among the projects its creator can access. Used to build task identifiers.",
                     "type": "string",
                     "maxLength": 10,
                     "minLength": 0
@@ -9871,6 +9871,9 @@ const docTemplate = `{
                 },
                 "is_favorite": {
                     "description": "True if a project is a favorite. Favorite projects show up in a separate parent project. This value depends on the user making the call to the api.",
+                    "type": "boolean"
+                },
+                "is_shared": {
                     "type": "boolean"
                 },
                 "max_permission": {

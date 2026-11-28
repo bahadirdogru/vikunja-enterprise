@@ -44,8 +44,8 @@ type Project struct {
 	Title string `xorm:"varchar(250) not null" json:"title" valid:"required,runelength(1|250)" minLength:"1" maxLength:"250" doc:"The title of the project. You'll see this in the overview."`
 	// The description of the project.
 	Description string `xorm:"longtext null" json:"description" doc:"The description of the project."`
-	// The unique project short identifier. Used to build task identifiers.
-	Identifier string `xorm:"varchar(10) null" json:"identifier" valid:"runelength(0|10)" minLength:"0" maxLength:"10" doc:"The unique project short identifier. Used to build task identifiers (e.g. PROJ-123)."`
+	// The project short identifier, unique among the projects its creator can access. Used to build task identifiers.
+	Identifier string `xorm:"varchar(10) null" json:"identifier" valid:"runelength(0|10)" minLength:"0" maxLength:"10" doc:"The project short identifier, unique among the projects its creator can access. Used to build task identifiers (e.g. PROJ-123)."`
 	// The hex color of this project
 	HexColor string `xorm:"varchar(6) null" json:"hex_color" valid:"hexcolor" maxLength:"7" doc:"The hex color of this project, without the leading #."`
 
@@ -80,6 +80,7 @@ type Project struct {
 
 	Expand        ProjectExpandable `xorm:"-" json:"-" query:"expand"`
 	MaxPermission *Permission       `xorm:"-" json:"max_permission" readOnly:"true" doc:"The maximum permission the requesting user has on this project (0 = read, 1 = read/write, 2 = admin), or null when the permission was not computed for this response."`
+	IsShared      bool              `xorm:"-" json:"is_shared" readOnly:"true" doc:"Whether this project or one of its parent projects is shared with other users or teams. Link shares do not count."`
 
 	// A timestamp when this project was created. You cannot change this value.
 	Created time.Time `xorm:"created not null" json:"created" readOnly:"true" doc:"A timestamp when this project was created. You cannot change this value."`
@@ -531,18 +532,33 @@ func GetProjectSimpleByID(s *xorm.Session, projectID int64) (project *Project, e
 	return p.memoCopy(), nil
 }
 
-// GetProjectSimpleByIdentifier gets a project by its textual identifier (e.g. "PROJ").
-// Identifiers are stored uppercase, so the lookup normalizes the input.
-func GetProjectSimpleByIdentifier(s *xorm.Session, identifier string) (project *Project, err error) {
-	project, exists, err := getProjectSimple(s, builder.Eq{"identifier": strings.ToUpper(identifier)})
+// GetProjectSimpleByIdentifier resolves a textual identifier (e.g. "PROJ") among the projects a can read.
+// A share can make an identifier ambiguous for a user: their own project wins, then the oldest.
+func GetProjectSimpleByIdentifier(s *xorm.Session, a web.Auth, identifier string) (*Project, error) {
+	accessible, err := accessibleProjectIDsCond(s, a, "id")
 	if err != nil {
 		return nil, err
 	}
-	if !exists {
+
+	matches := []*Project{}
+	err = s.
+		Where(builder.And(builder.Eq{"identifier": strings.ToUpper(identifier)}, accessible)).
+		OrderBy("id").
+		Find(&matches)
+	if err != nil {
+		return nil, err
+	}
+	if len(matches) == 0 {
 		return nil, ErrProjectDoesNotExist{}
 	}
 
-	return
+	for _, project := range matches {
+		if project.OwnerID == a.GetID() {
+			return project, nil
+		}
+	}
+
+	return matches[0], nil
 }
 
 func getProjectSimple(s *xorm.Session, cond builder.Cond) (project *Project, exists bool, err error) {
@@ -800,6 +816,11 @@ func addProjectDetails(s *xorm.Session, projects []*Project, a web.Auth) (err er
 		return
 	}
 
+	err = addIsSharedToProjects(s, projects, u)
+	if err != nil {
+		return
+	}
+
 	viewMap := make(map[int64][]*ProjectView)
 	for _, v := range views {
 		if _, has := viewMap[v.ProjectID]; !has {
@@ -857,6 +878,53 @@ func addProjectDetails(s *xorm.Session, projects []*Project, a web.Auth) (err er
 	}
 
 	return
+}
+
+// u is nil for link shares.
+func addIsSharedToProjects(s *xorm.Session, projects []*Project, u *user.User) error {
+	projectIDs := make([]int64, 0, len(projects))
+	for _, p := range projects {
+		// Pseudo projects have no share rows.
+		if p.ID <= 0 {
+			continue
+		}
+		// Someone else's project is only visible to the doer through a share.
+		if u != nil && p.OwnerID != u.ID {
+			p.IsShared = true
+			continue
+		}
+		projectIDs = append(projectIDs, p.ID)
+	}
+	if len(projectIDs) == 0 {
+		return nil
+	}
+
+	// The closure table has a depth-0 self row, so direct shares match too.
+	sharedIDs := []int64{}
+	err := s.Table(&ProjectAncestor{}).
+		Where(builder.And(
+			builder.In("project_id", projectIDs),
+			builder.Or(
+				builder.In("ancestor_id", builder.Select("project_id").From("users_projects")),
+				builder.In("ancestor_id", builder.Select("project_id").From("team_projects")),
+			),
+		)).
+		Cols("project_id").
+		Find(&sharedIDs)
+	if err != nil {
+		return err
+	}
+
+	shared := make(map[int64]bool, len(sharedIDs))
+	for _, id := range sharedIDs {
+		shared[id] = true
+	}
+	for _, p := range projects {
+		if shared[p.ID] {
+			p.IsShared = true
+		}
+	}
+	return nil
 }
 
 func addMaxPermissionToProjects(s *xorm.Session, projects []*Project, u *user.User) (err error) {
@@ -973,13 +1041,26 @@ func checkProjectBeforeUpdateOrDelete(s *xorm.Session, project *Project) (err er
 	// case-sensitive by default, MySQL is not).
 	project.Identifier = strings.ToUpper(project.Identifier)
 
-	// Check if the identifier is unique and not empty
-	if project.Identifier != "" {
+	return nil
+}
+
+// Uniqueness is scoped to what the given users can reach; later shares can still collide.
+func checkProjectIdentifierIsAvailable(s *xorm.Session, project *Project, userIDs ...int64) error {
+	if project.Identifier == "" {
+		return nil
+	}
+
+	for _, userID := range slices.Compact(userIDs) {
 		// Trashed projects keep theirs so a restore can't collide
+		access, err := getProjectAccessIncludingTrash(s, userID)
+		if err != nil {
+			return err
+		}
 		exists, err := s.
 			Unscoped().
 			Where("identifier = ?", project.Identifier).
 			And("id != ?", project.ID).
+			And(access.cond("id", PermissionRead)).
 			Exist(&Project{})
 		if err != nil {
 			return err
@@ -1021,6 +1102,11 @@ func CreateProject(s *xorm.Session, project *Project, auth web.Auth, createBackl
 	err = checkProjectBeforeUpdateOrDelete(s, project)
 	if err != nil {
 		return
+	}
+
+	err = checkProjectIdentifierIsAvailable(s, project, doer.ID, project.OwnerID)
+	if err != nil {
+		return err
 	}
 
 	project.HexColor = utils.NormalizeHex(project.HexColor)
@@ -1205,6 +1291,18 @@ func UpdateProject(s *xorm.Session, project *Project, auth web.Auth, updateProje
 	storedProject, err := GetProjectSimpleByID(s, project.ID)
 	if err != nil {
 		return err
+	}
+
+	// Only on change: a collision caused by a later share must not block unrelated edits.
+	if project.Identifier != storedProject.Identifier {
+		userIDs := []int64{storedProject.OwnerID}
+		if _, isShare := auth.(*LinkSharing); !isShare {
+			userIDs = append(userIDs, auth.GetID())
+		}
+		err = checkProjectIdentifierIsAvailable(s, project, userIDs...)
+		if err != nil {
+			return err
+		}
 	}
 
 	err = checkProjectParentBeforeUpdate(s, project, storedProject, auth)

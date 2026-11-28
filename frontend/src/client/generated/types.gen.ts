@@ -3764,7 +3764,7 @@ export type Project = {
      */
     readonly id?: number;
     /**
-     * The unique project short identifier. Used to build task identifiers (e.g. PROJ-123).
+     * The project short identifier, unique among the projects its creator can access. Used to build task identifiers (e.g. PROJ-123).
      */
     identifier?: string;
     /**
@@ -3775,6 +3775,10 @@ export type Project = {
      * Whether the project is a favorite of the requesting user. This value is per-user and depends on who makes the call.
      */
     is_favorite?: boolean;
+    /**
+     * Whether this project or one of its parent projects is shared with other users or teams. Link shares do not count.
+     */
+    readonly is_shared?: boolean;
     /**
      * The maximum permission the requesting user has on this project (0 = read, 1 = read/write, 2 = admin), or null when the permission was not computed for this response.
      */
@@ -3889,7 +3893,7 @@ export type ProjectReadBody = {
      */
     readonly id?: number;
     /**
-     * The unique project short identifier. Used to build task identifiers (e.g. PROJ-123).
+     * The project short identifier, unique among the projects its creator can access. Used to build task identifiers (e.g. PROJ-123).
      */
     identifier?: string;
     /**
@@ -3900,6 +3904,10 @@ export type ProjectReadBody = {
      * Whether the project is a favorite of the requesting user. This value is per-user and depends on who makes the call.
      */
     is_favorite?: boolean;
+    /**
+     * Whether this project or one of its parent projects is shared with other users or teams. Link shares do not count.
+     */
+    readonly is_shared?: boolean;
     /**
      * The maximum permission the requesting user has on this project (0 = read, 1 = read/write, 2 = admin), or null when the permission was not computed for this response.
      */
@@ -6195,7 +6203,7 @@ export type TrashedProject = {
      */
     readonly id?: number;
     /**
-     * The unique project short identifier. Used to build task identifiers (e.g. PROJ-123).
+     * The project short identifier, unique among the projects its creator can access. Used to build task identifiers (e.g. PROJ-123).
      */
     identifier?: string;
     /**
@@ -6206,6 +6214,10 @@ export type TrashedProject = {
      * Whether the project is a favorite of the requesting user. This value is per-user and depends on who makes the call.
      */
     is_favorite?: boolean;
+    /**
+     * Whether this project or one of its parent projects is shared with other users or teams. Link shares do not count.
+     */
+    readonly is_shared?: boolean;
     /**
      * The maximum permission the requesting user has on this project (0 = read, 1 = read/write, 2 = admin), or null when the permission was not computed for this response.
      */
@@ -8689,7 +8701,7 @@ export type ProjectWritable = {
      */
     hex_color?: string;
     /**
-     * The unique project short identifier. Used to build task identifiers (e.g. PROJ-123).
+     * The project short identifier, unique among the projects its creator can access. Used to build task identifiers (e.g. PROJ-123).
      */
     identifier?: string;
     /**
@@ -8754,7 +8766,7 @@ export type ProjectReadBodyWritable = {
      */
     hex_color?: string;
     /**
-     * The unique project short identifier. Used to build task identifiers (e.g. PROJ-123).
+     * The project short identifier, unique among the projects its creator can access. Used to build task identifiers (e.g. PROJ-123).
      */
     identifier?: string;
     /**
@@ -9538,7 +9550,7 @@ export type TrashedProjectWritable = {
      */
     hex_color?: string;
     /**
-     * The unique project short identifier. Used to build task identifiers (e.g. PROJ-123).
+     * The project short identifier, unique among the projects its creator can access. Used to build task identifiers (e.g. PROJ-123).
      */
     identifier?: string;
     /**
